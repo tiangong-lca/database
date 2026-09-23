@@ -1,6 +1,6 @@
 ---
-lastReviewedAt: 2026-09-22
-lastReviewedCommit: a29d82d1fc63c3242234caa635a6cbecb3467865
+lastReviewedAt: 2026-09-23
+lastReviewedCommit: 15afe29391b0ec3b44602a64bc769b8851583c1f
 lastReviewedNote: 'Reviewed for Database #690 / workspace #1464: the role-gated Sample Library extends the shared raw Hybrid search helpers and refreshes their exact fingerprints without changing the immutable Portal projection helper closure, storage, writer, rollout, or recovery procedure; the Portal Hybrid and candidate-first suites pass 64/64 and 83/83 assertions.'
 title: Portal Projection Migration Recovery
 docType: runbook

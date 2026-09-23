@@ -112,7 +112,7 @@ begin
         select
           candidate.rank as semantic_rank,
           candidate.id as semantic_id
-        from private.semantic_simple_dataset_candidates(
+        from private.semantic_dataset_candidates_dispatch_v1(
           $8, $9, $10, $11, $12, $3, $6, $5
         ) candidate
       ),

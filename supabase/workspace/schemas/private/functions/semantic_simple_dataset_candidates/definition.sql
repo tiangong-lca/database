@@ -41,8 +41,6 @@ begin
 
   if normalized_data_source = 'tg' then
     visibility_clause := 'd.state_code = 100 and ($7::uuid is null or d.team_id = $7)';
-  elsif normalized_data_source = 'sl' then
-    visibility_clause := 'api.sample_library_row_matches_v1($9, d.state_code, d.user_id, d.id, d.version, ''{}''::jsonb, false)';
   elsif normalized_data_source = 'ex' then
     if auth.uid() is null then return; end if;
     visibility_clause := 'd.state_code = -1 and ($7::uuid is null or d.team_id = $7)';
@@ -63,8 +61,8 @@ begin
   end if;
 
   json_filter_clause := case
-    when private.sample_library_business_filter_v1(filter_condition_jsonb) = '{}'::jsonb then ''
-    else 'and d.json @> private.sample_library_business_filter_v1($2)'
+    when filter_condition_jsonb = '{}'::jsonb then ''
+    else 'and d.json @> $2'
   end;
 
   candidate_sql := format(
@@ -106,7 +104,7 @@ begin
   return query execute candidate_sql
     using query_embedding_vector, filter_condition_jsonb, candidate_size,
           threshold_distance, effective_user_id, normalized_match_count,
-          team_id_filter, state_code_filter, normalized_data_source;
+          team_id_filter, state_code_filter;
 end;
 $_$;
 

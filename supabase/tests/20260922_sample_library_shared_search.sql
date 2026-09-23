@@ -3,7 +3,35 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public, api, private, auth;
-select plan(10);
+select plan(15);
+
+select ok(
+  (select count(*) = 3
+   from pg_proc p
+   join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'private'
+     and p.proname in (
+       'semantic_process_candidates', 'semantic_flow_candidates',
+       'semantic_simple_dataset_candidates'
+     )
+     and 'hnsw.iterative_scan=strict_order' = any(p.proconfig)),
+  'existing semantic helpers retain their strict-order HNSW setting'
+);
+select ok(
+  (select count(*) = 2
+   from pg_proc p
+   join pg_namespace n on n.oid = p.pronamespace
+   where n.nspname = 'private'
+     and p.proname in (
+       'semantic_sample_library_candidates_v1',
+       'semantic_dataset_candidates_dispatch_v1'
+     )
+     and not exists (
+       select 1 from unnest(coalesce(p.proconfig, array[]::text[])) setting
+       where setting like 'hnsw.iterative_scan=%'
+     )),
+  'new Sample Library helpers require no HNSW parameter SET privilege'
+);
 
 create temporary table sample_library_shared_webhook_calls (
   edge_function text not null,
@@ -57,6 +85,16 @@ insert into public.sources(id, version, state_code, user_id, json, modified_at) 
   ('69000000-0000-4000-8000-000000000021','01.00.000',100,
    '69000000-0000-4000-8000-000000000002','{"name":"enterprise source"}',now());
 
+update public.processes
+set embedding_ft = ('[' || array_to_string(array_fill(0.1::double precision, array[1024]), ',') || ']')::extensions.vector(1024)
+where id in (
+  '69000000-0000-4000-8000-000000000010',
+  '69000000-0000-4000-8000-000000000011'
+);
+update public.sources
+set embedding_ft = ('[' || array_to_string(array_fill(0.1::double precision, array[1024]), ',') || ']')::extensions.vector(1024)
+where id = '69000000-0000-4000-8000-000000000020';
+
 set local role authenticated;
 select set_config('request.jwt.claim.role','authenticated',true);
 select set_config('request.jwt.claim.sub','69000000-0000-4000-8000-000000000002',true);
@@ -65,6 +103,13 @@ select is(
     data_source => 'sl', sample_origin_filter => 'all', sample_publication_status_filter => 'all')),
   '0',
   'sl list access is denied to a non-manager'
+);
+select is(
+  (select count(*)::text from api.hybrid_search_processes_v2(
+    query_text => '', query_embedding => '[' || array_to_string(array_fill(0.1::double precision, array[1024]), ',') || ']',
+    data_source => 'sl')),
+  '0',
+  'sl semantic candidates remain denied to a non-manager'
 );
 reset role;
 
@@ -77,6 +122,20 @@ select is(
     data_source => 'sl', sample_origin_filter => 'all', sample_publication_status_filter => 'all')),
   '2',
   'sl list is fixed to state_code 100 independently of tg'
+);
+select is(
+  (select count(*)::text from api.hybrid_search_processes_v2(
+    query_text => '', query_embedding => '[' || array_to_string(array_fill(0.1::double precision, array[1024]), ',') || ']',
+    data_source => 'sl')),
+  '2',
+  'sl Process hybrid routes through the dedicated semantic candidate path'
+);
+select is(
+  (select count(*)::text from api.hybrid_search_sources_v2(
+    query_text => '', query_embedding => '[' || array_to_string(array_fill(0.1::double precision, array[1024]), ',') || ']',
+    data_source => 'sl')),
+  '1',
+  'sl foundation hybrid routes through the dedicated semantic candidate path'
 );
 select is(
   (select count(*)::text from api.get_latest_process_versions(

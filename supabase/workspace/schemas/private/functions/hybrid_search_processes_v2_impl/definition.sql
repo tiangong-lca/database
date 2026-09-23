@@ -33,12 +33,9 @@ begin
     ),
     semantic as (
       select ss.rank as ss_rank, ss.id as ss_id
-      from private.semantic_process_candidates(
-        query_embedding,
-        filter_condition,
-        match_threshold,
-        semantic_match_count,
-        data_source
+      from private.semantic_dataset_candidates_dispatch_v1(
+        'public.processes'::regclass, query_embedding, filter_condition,
+        match_threshold, semantic_match_count, data_source
       ) ss
     ),
     fused_raw as (

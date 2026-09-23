@@ -22,7 +22,7 @@ begin
   threshold_distance := 1 - coalesce(match_threshold, 0.5);
   effective_user_id := private.dataset_search_effective_user_id('');
 
-  if normalized_data_source in ('tg', 'sl') then
+  if normalized_data_source = 'tg' then
     return query
       with candidates as materialized (
         select
@@ -30,8 +30,8 @@ begin
           (p.embedding_ft <=> query_embedding_vector) as candidate_distance
         from public.processes p
         where p.embedding_ft is not null
-          and ((normalized_data_source = 'tg' and p.state_code = 100) or api.sample_library_row_matches_v1(normalized_data_source, p.state_code, p.user_id, p.id, p.version, filter_condition_jsonb, true))
-          and (filter_condition_jsonb = '{}'::jsonb or p.json @> private.sample_library_business_filter_v1(filter_condition_jsonb))
+          and p.state_code = 100
+          and (filter_condition_jsonb = '{}'::jsonb or p.json @> filter_condition_jsonb)
         order by p.embedding_ft <=> query_embedding_vector
         limit candidate_size
       ),
@@ -59,7 +59,7 @@ begin
         from public.processes p
         where p.embedding_ft is not null
           and p.state_code = -1
-          and (filter_condition_jsonb = '{}'::jsonb or p.json @> private.sample_library_business_filter_v1(filter_condition_jsonb))
+          and (filter_condition_jsonb = '{}'::jsonb or p.json @> filter_condition_jsonb)
         order by p.embedding_ft <=> query_embedding_vector
         limit candidate_size
       ),
@@ -87,7 +87,7 @@ begin
         from public.processes p
         where p.embedding_ft is not null
           and p.state_code = 200
-          and (filter_condition_jsonb = '{}'::jsonb or p.json @> private.sample_library_business_filter_v1(filter_condition_jsonb))
+          and (filter_condition_jsonb = '{}'::jsonb or p.json @> filter_condition_jsonb)
         order by p.embedding_ft <=> query_embedding_vector
         limit candidate_size
       ),
@@ -119,7 +119,7 @@ begin
         from public.processes p
         where p.embedding_ft is not null
           and p.user_id = effective_user_id
-          and (filter_condition_jsonb = '{}'::jsonb or p.json @> private.sample_library_business_filter_v1(filter_condition_jsonb))
+          and (filter_condition_jsonb = '{}'::jsonb or p.json @> filter_condition_jsonb)
         order by p.embedding_ft <=> query_embedding_vector
         limit candidate_size
       ),
@@ -157,7 +157,7 @@ begin
               and r.team_id = p.team_id
               and r.role::text in ('admin', 'member', 'owner')
           )
-          and (filter_condition_jsonb = '{}'::jsonb or p.json @> private.sample_library_business_filter_v1(filter_condition_jsonb))
+          and (filter_condition_jsonb = '{}'::jsonb or p.json @> filter_condition_jsonb)
         order by p.embedding_ft <=> query_embedding_vector
         limit candidate_size
       ),

@@ -2414,765 +2414,166 @@ GRANT ALL ON FUNCTION "private"."search_processes_latest_v2_impl"("query_text" "
 
 GRANT ALL ON FUNCTION "private"."search_processes_latest_v2_impl"("query_text" "text", "filter_condition" "jsonb", "page_size" bigint, "page_current" bigint, "data_source" "text", "this_user_id" "text", "team_id_filter" "uuid", "state_code_filter" integer, "type_of_data_set_filter" "text", "query_terms" "text"[], "owner_draft_only" boolean) TO "api_internal_executor";
 
-CREATE OR REPLACE FUNCTION "private"."semantic_process_candidates"("query_embedding" "text", "filter_condition" "text" DEFAULT ''::"text", "match_threshold" double precision DEFAULT 0.5, "match_count" integer DEFAULT 20, "data_source" "text" DEFAULT 'tg'::"text") RETURNS TABLE("rank" bigint, "id" "uuid", "distance" double precision)
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'private', 'api', 'public', 'util', 'extensions', 'extensions', 'pg_temp'
-    SET "statement_timeout" TO '60s'
-    SET "plan_cache_mode" TO 'force_custom_plan'
-    SET "hnsw.iterative_scan" TO 'strict_order'
-    AS $$
-declare
-  query_embedding_vector vector(1024);
-  filter_condition_jsonb jsonb;
-  normalized_data_source text;
-  normalized_match_count integer;
-  candidate_size integer;
-  threshold_distance double precision;
-  effective_user_id uuid;
-begin
-  query_embedding_vector := query_embedding::vector(1024);
-  filter_condition_jsonb := coalesce(nullif(btrim(filter_condition), ''), '{}')::jsonb;
-  normalized_data_source := coalesce(nullif(lower(btrim(data_source)), ''), 'tg');
-  normalized_match_count := greatest(coalesce(match_count, 20), 1);
-  candidate_size := greatest(normalized_match_count * 10, 200);
-  threshold_distance := 1 - coalesce(match_threshold, 0.5);
-  effective_user_id := private.dataset_search_effective_user_id('');
-
-  if normalized_data_source in ('tg', 'sl') then
-    return query
-      with candidates as materialized (
-        select
-          p.id as candidate_id,
-          (p.embedding_ft <=> query_embedding_vector) as candidate_distance
-        from public.processes p
-        where p.embedding_ft is not null
-          and ((normalized_data_source = 'tg' and p.state_code = 100) or api.sample_library_row_matches_v1(normalized_data_source, p.state_code, p.user_id, p.id, p.version, filter_condition_jsonb, true))
-          and (filter_condition_jsonb = '{}'::jsonb or p.json @> private.sample_library_business_filter_v1(filter_condition_jsonb))
-        order by p.embedding_ft <=> query_embedding_vector
-        limit candidate_size
-      ),
-      filtered as (
-        select candidates.*
-        from candidates
-        where candidates.candidate_distance < threshold_distance
-      )
-      select
-        rank() over (order by filtered.candidate_distance)::bigint,
-        filtered.candidate_id,
-        filtered.candidate_distance
-      from filtered
-      order by filtered.candidate_distance
-      limit normalized_match_count;
-    return;
-  end if;
-
-  if normalized_data_source = 'ex' and auth.uid() is not null then
-    return query
-      with candidates as materialized (
-        select
-          p.id as candidate_id,
-          (p.embedding_ft <=> query_embedding_vector) as candidate_distance
-        from public.processes p
-        where p.embedding_ft is not null
-          and p.state_code = -1
-          and (filter_condition_jsonb = '{}'::jsonb or p.json @> private.sample_library_business_filter_v1(filter_condition_jsonb))
-        order by p.embedding_ft <=> query_embedding_vector
-        limit candidate_size
-      ),
-      filtered as (
-        select candidates.*
-        from candidates
-        where candidates.candidate_distance < threshold_distance
-      )
-      select
-        rank() over (order by filtered.candidate_distance)::bigint,
-        filtered.candidate_id,
-        filtered.candidate_distance
-      from filtered
-      order by filtered.candidate_distance
-      limit normalized_match_count;
-    return;
-  end if;
-
-  if normalized_data_source = 'co' then
-    return query
-      with candidates as materialized (
-        select
-          p.id as candidate_id,
-          (p.embedding_ft <=> query_embedding_vector) as candidate_distance
-        from public.processes p
-        where p.embedding_ft is not null
-          and p.state_code = 200
-          and (filter_condition_jsonb = '{}'::jsonb or p.json @> private.sample_library_business_filter_v1(filter_condition_jsonb))
-        order by p.embedding_ft <=> query_embedding_vector
-        limit candidate_size
-      ),
-      filtered as (
-        select candidates.*
-        from candidates
-        where candidates.candidate_distance < threshold_distance
-      )
-      select
-        rank() over (order by filtered.candidate_distance)::bigint,
-        filtered.candidate_id,
-        filtered.candidate_distance
-      from filtered
-      order by filtered.candidate_distance
-      limit normalized_match_count;
-    return;
-  end if;
-
-  if normalized_data_source = 'my' then
-    if effective_user_id is null then
-      return;
-    end if;
-
-    return query
-      with candidates as materialized (
-        select
-          p.id as candidate_id,
-          (p.embedding_ft <=> query_embedding_vector) as candidate_distance
-        from public.processes p
-        where p.embedding_ft is not null
-          and p.user_id = effective_user_id
-          and (filter_condition_jsonb = '{}'::jsonb or p.json @> private.sample_library_business_filter_v1(filter_condition_jsonb))
-        order by p.embedding_ft <=> query_embedding_vector
-        limit candidate_size
-      ),
-      filtered as (
-        select candidates.*
-        from candidates
-        where candidates.candidate_distance < threshold_distance
-      )
-      select
-        rank() over (order by filtered.candidate_distance)::bigint,
-        filtered.candidate_id,
-        filtered.candidate_distance
-      from filtered
-      order by filtered.candidate_distance
-      limit normalized_match_count;
-    return;
-  end if;
-
-  if normalized_data_source = 'te' then
-    if effective_user_id is null then
-      return;
-    end if;
-
-    return query
-      with candidates as materialized (
-        select
-          p.id as candidate_id,
-          (p.embedding_ft <=> query_embedding_vector) as candidate_distance
-        from public.processes p
-        where p.embedding_ft is not null
-          and exists (
-            select 1
-            from private.roles r
-            where r.user_id = effective_user_id
-              and r.team_id = p.team_id
-              and r.role::text in ('admin', 'member', 'owner')
-          )
-          and (filter_condition_jsonb = '{}'::jsonb or p.json @> private.sample_library_business_filter_v1(filter_condition_jsonb))
-        order by p.embedding_ft <=> query_embedding_vector
-        limit candidate_size
-      ),
-      filtered as (
-        select candidates.*
-        from candidates
-        where candidates.candidate_distance < threshold_distance
-      )
-      select
-        rank() over (order by filtered.candidate_distance)::bigint,
-        filtered.candidate_id,
-        filtered.candidate_distance
-      from filtered
-      order by filtered.candidate_distance
-      limit normalized_match_count;
-    return;
-  end if;
-end;
-$$;
-
-ALTER FUNCTION "private"."semantic_process_candidates"("query_embedding" "text", "filter_condition" "text", "match_threshold" double precision, "match_count" integer, "data_source" "text") OWNER TO "postgres";
-
-REVOKE ALL ON FUNCTION "private"."semantic_process_candidates"("query_embedding" "text", "filter_condition" "text", "match_threshold" double precision, "match_count" integer, "data_source" "text") FROM PUBLIC;
-
-GRANT ALL ON FUNCTION "private"."semantic_process_candidates"("query_embedding" "text", "filter_condition" "text", "match_threshold" double precision, "match_count" integer, "data_source" "text") TO "service_role";
-
-GRANT ALL ON FUNCTION "private"."semantic_process_candidates"("query_embedding" "text", "filter_condition" "text", "match_threshold" double precision, "match_count" integer, "data_source" "text") TO "api_internal_executor";
-
-CREATE OR REPLACE FUNCTION "private"."semantic_flow_candidates"("query_embedding" "text", "filter_condition" "text" DEFAULT ''::"text", "match_threshold" double precision DEFAULT 0.5, "match_count" integer DEFAULT 20, "data_source" "text" DEFAULT 'tg'::"text") RETURNS TABLE("rank" bigint, "id" "uuid", "distance" double precision)
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'private', 'api', 'public', 'util', 'extensions', 'extensions', 'pg_temp'
-    SET "statement_timeout" TO '60s'
-    SET "plan_cache_mode" TO 'force_custom_plan'
-    SET "hnsw.iterative_scan" TO 'strict_order'
-    AS $$
-declare
-  query_embedding_vector vector(1024);
-  filter_condition_jsonb jsonb;
-  normalized_data_source text;
-  normalized_match_count integer;
-  candidate_size integer;
-  threshold_distance double precision;
-  effective_user_id uuid;
-  flow_type text;
-  flow_type_array text[];
-  as_input boolean;
-begin
-  query_embedding_vector := query_embedding::vector(1024);
-  filter_condition_jsonb := coalesce(nullif(btrim(filter_condition), ''), '{}')::jsonb;
-  normalized_data_source := coalesce(nullif(lower(btrim(data_source)), ''), 'tg');
-  normalized_match_count := greatest(coalesce(match_count, 20), 1);
-  candidate_size := greatest(normalized_match_count * 10, 200);
-  threshold_distance := 1 - coalesce(match_threshold, 0.5);
-  effective_user_id := private.dataset_search_effective_user_id('');
-
-  flow_type := nullif(btrim(filter_condition_jsonb->>'flowType'), '');
-  if flow_type is not null then
-    flow_type_array := string_to_array(flow_type, ',');
-  else
-    flow_type_array := null;
-  end if;
-  filter_condition_jsonb := filter_condition_jsonb - 'flowType';
-
-  if filter_condition_jsonb ? 'asInput' then
-    as_input := nullif(btrim(filter_condition_jsonb->>'asInput'), '')::boolean;
-  else
-    as_input := null;
-  end if;
-  filter_condition_jsonb := filter_condition_jsonb - 'asInput';
-
-  if normalized_data_source in ('tg', 'sl') then
-    return query
-      with candidates as materialized (
-        select
-          f.id as candidate_id,
-          (f.embedding_ft <=> query_embedding_vector) as candidate_distance
-        from public.flows f
-        where f.embedding_ft is not null
-          and ((normalized_data_source = 'tg' and f.state_code = 100) or api.sample_library_row_matches_v1(normalized_data_source, f.state_code, f.user_id, f.id, f.version, filter_condition_jsonb, false))
-          and (filter_condition_jsonb = '{}'::jsonb or f.json @> private.sample_library_business_filter_v1(filter_condition_jsonb))
-          and (
-            flow_type is null
-            or flow_type = ''
-            or (f.json->'flowDataSet'->'modellingAndValidation'->'LCIMethod'->>'typeOfDataSet') = any(flow_type_array)
-          )
-          and (
-            as_input is null
-            or as_input = false
-            or not (
-              f.json @> '{"flowDataSet":{"flowInformation":{"dataSetInformation":{"classificationInformation":{"common:elementaryFlowCategorization":{"common:category":[{"#text":"Emissions","@level":"0"}]}}}}}}'
-            )
-          )
-        order by f.embedding_ft <=> query_embedding_vector
-        limit candidate_size
-      ),
-      filtered as (
-        select candidates.*
-        from candidates
-        where candidates.candidate_distance < threshold_distance
-      )
-      select
-        rank() over (order by filtered.candidate_distance)::bigint,
-        filtered.candidate_id,
-        filtered.candidate_distance
-      from filtered
-      order by filtered.candidate_distance
-      limit normalized_match_count;
-    return;
-  end if;
-
-  if normalized_data_source = 'ex' and auth.uid() is not null then
-    return query
-      with candidates as materialized (
-        select
-          f.id as candidate_id,
-          (f.embedding_ft <=> query_embedding_vector) as candidate_distance
-        from public.flows f
-        where f.embedding_ft is not null
-          and f.state_code = -1
-          and (filter_condition_jsonb = '{}'::jsonb or f.json @> private.sample_library_business_filter_v1(filter_condition_jsonb))
-          and (
-            flow_type is null
-            or flow_type = ''
-            or (f.json->'flowDataSet'->'modellingAndValidation'->'LCIMethod'->>'typeOfDataSet') = any(flow_type_array)
-          )
-          and (
-            as_input is null
-            or as_input = false
-            or not (
-              f.json @> '{"flowDataSet":{"flowInformation":{"dataSetInformation":{"classificationInformation":{"common:elementaryFlowCategorization":{"common:category":[{"#text":"Emissions","@level":"0"}]}}}}}}'
-            )
-          )
-        order by f.embedding_ft <=> query_embedding_vector
-        limit candidate_size
-      ),
-      filtered as (
-        select candidates.*
-        from candidates
-        where candidates.candidate_distance < threshold_distance
-      )
-      select
-        rank() over (order by filtered.candidate_distance)::bigint,
-        filtered.candidate_id,
-        filtered.candidate_distance
-      from filtered
-      order by filtered.candidate_distance
-      limit normalized_match_count;
-    return;
-  end if;
-
-  if normalized_data_source = 'co' then
-    return query
-      with candidates as materialized (
-        select
-          f.id as candidate_id,
-          (f.embedding_ft <=> query_embedding_vector) as candidate_distance
-        from public.flows f
-        where f.embedding_ft is not null
-          and f.state_code = 200
-          and (filter_condition_jsonb = '{}'::jsonb or f.json @> private.sample_library_business_filter_v1(filter_condition_jsonb))
-          and (
-            flow_type is null
-            or flow_type = ''
-            or (f.json->'flowDataSet'->'modellingAndValidation'->'LCIMethod'->>'typeOfDataSet') = any(flow_type_array)
-          )
-          and (
-            as_input is null
-            or as_input = false
-            or not (
-              f.json @> '{"flowDataSet":{"flowInformation":{"dataSetInformation":{"classificationInformation":{"common:elementaryFlowCategorization":{"common:category":[{"#text":"Emissions","@level":"0"}]}}}}}}'
-            )
-          )
-        order by f.embedding_ft <=> query_embedding_vector
-        limit candidate_size
-      ),
-      filtered as (
-        select candidates.*
-        from candidates
-        where candidates.candidate_distance < threshold_distance
-      )
-      select
-        rank() over (order by filtered.candidate_distance)::bigint,
-        filtered.candidate_id,
-        filtered.candidate_distance
-      from filtered
-      order by filtered.candidate_distance
-      limit normalized_match_count;
-    return;
-  end if;
-
-  if normalized_data_source = 'my' then
-    if effective_user_id is null then
-      return;
-    end if;
-
-    return query
-      with candidates as materialized (
-        select
-          f.id as candidate_id,
-          (f.embedding_ft <=> query_embedding_vector) as candidate_distance
-        from public.flows f
-        where f.embedding_ft is not null
-          and f.user_id = effective_user_id
-          and (filter_condition_jsonb = '{}'::jsonb or f.json @> private.sample_library_business_filter_v1(filter_condition_jsonb))
-          and (
-            flow_type is null
-            or flow_type = ''
-            or (f.json->'flowDataSet'->'modellingAndValidation'->'LCIMethod'->>'typeOfDataSet') = any(flow_type_array)
-          )
-          and (
-            as_input is null
-            or as_input = false
-            or not (
-              f.json @> '{"flowDataSet":{"flowInformation":{"dataSetInformation":{"classificationInformation":{"common:elementaryFlowCategorization":{"common:category":[{"#text":"Emissions","@level":"0"}]}}}}}}'
-            )
-          )
-        order by f.embedding_ft <=> query_embedding_vector
-        limit candidate_size
-      ),
-      filtered as (
-        select candidates.*
-        from candidates
-        where candidates.candidate_distance < threshold_distance
-      )
-      select
-        rank() over (order by filtered.candidate_distance)::bigint,
-        filtered.candidate_id,
-        filtered.candidate_distance
-      from filtered
-      order by filtered.candidate_distance
-      limit normalized_match_count;
-    return;
-  end if;
-
-  if normalized_data_source = 'te' then
-    if effective_user_id is null then
-      return;
-    end if;
-
-    return query
-      with candidates as materialized (
-        select
-          f.id as candidate_id,
-          (f.embedding_ft <=> query_embedding_vector) as candidate_distance
-        from public.flows f
-        where f.embedding_ft is not null
-          and exists (
-            select 1
-            from private.roles r
-            where r.user_id = effective_user_id
-              and r.team_id = f.team_id
-              and r.role::text in ('admin', 'member', 'owner')
-          )
-          and (filter_condition_jsonb = '{}'::jsonb or f.json @> private.sample_library_business_filter_v1(filter_condition_jsonb))
-          and (
-            flow_type is null
-            or flow_type = ''
-            or (f.json->'flowDataSet'->'modellingAndValidation'->'LCIMethod'->>'typeOfDataSet') = any(flow_type_array)
-          )
-          and (
-            as_input is null
-            or as_input = false
-            or not (
-              f.json @> '{"flowDataSet":{"flowInformation":{"dataSetInformation":{"classificationInformation":{"common:elementaryFlowCategorization":{"common:category":[{"#text":"Emissions","@level":"0"}]}}}}}}'
-            )
-          )
-        order by f.embedding_ft <=> query_embedding_vector
-        limit candidate_size
-      ),
-      filtered as (
-        select candidates.*
-        from candidates
-        where candidates.candidate_distance < threshold_distance
-      )
-      select
-        rank() over (order by filtered.candidate_distance)::bigint,
-        filtered.candidate_id,
-        filtered.candidate_distance
-      from filtered
-      order by filtered.candidate_distance
-      limit normalized_match_count;
-    return;
-  end if;
-end;
-$$;
-
-ALTER FUNCTION "private"."semantic_flow_candidates"("query_embedding" "text", "filter_condition" "text", "match_threshold" double precision, "match_count" integer, "data_source" "text") OWNER TO "postgres";
-
-REVOKE ALL ON FUNCTION "private"."semantic_flow_candidates"("query_embedding" "text", "filter_condition" "text", "match_threshold" double precision, "match_count" integer, "data_source" "text") FROM PUBLIC;
-
-GRANT ALL ON FUNCTION "private"."semantic_flow_candidates"("query_embedding" "text", "filter_condition" "text", "match_threshold" double precision, "match_count" integer, "data_source" "text") TO "service_role";
-
-GRANT ALL ON FUNCTION "private"."semantic_flow_candidates"("query_embedding" "text", "filter_condition" "text", "match_threshold" double precision, "match_count" integer, "data_source" "text") TO "api_internal_executor";
-
-CREATE OR REPLACE FUNCTION "private"."semantic_lifecyclemodel_candidates"("query_embedding" "text", "filter_condition" "text" DEFAULT ''::"text", "match_threshold" double precision DEFAULT 0.5, "match_count" integer DEFAULT 20, "data_source" "text" DEFAULT 'tg'::"text") RETURNS TABLE("rank" bigint, "id" "uuid", "distance" double precision)
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'private', 'api', 'public', 'util', 'extensions', 'extensions', 'pg_temp'
-    SET "statement_timeout" TO '60s'
-    AS $$
-declare
-  query_embedding_vector vector(1024);
-  filter_condition_jsonb jsonb;
-  normalized_data_source text;
-  normalized_match_count integer;
-  candidate_size integer;
-  threshold_distance double precision;
-  effective_user_id uuid;
-begin
-  query_embedding_vector := query_embedding::vector(1024);
-  filter_condition_jsonb := coalesce(nullif(btrim(filter_condition), ''), '{}')::jsonb;
-  normalized_data_source := coalesce(nullif(lower(btrim(data_source)), ''), 'tg');
-  normalized_match_count := greatest(coalesce(match_count, 20), 1);
-  candidate_size := greatest(normalized_match_count * 10, 200);
-  threshold_distance := 1 - coalesce(match_threshold, 0.5);
-  effective_user_id := private.dataset_search_effective_user_id('');
-
-  if normalized_data_source in ('tg', 'sl') then
-    return query
-      with candidates as materialized (
-        select
-          l.id as candidate_id,
-          (l.embedding_ft <=> query_embedding_vector) as candidate_distance
-        from public.lifecyclemodels l
-        where l.embedding_ft is not null
-          and ((normalized_data_source = 'tg' and l.state_code = 100) or api.sample_library_row_matches_v1(normalized_data_source, l.state_code, l.user_id, l.id, l.version, filter_condition_jsonb, false))
-          and l.json @> private.sample_library_business_filter_v1(filter_condition_jsonb)
-        order by l.embedding_ft <=> query_embedding_vector
-        limit candidate_size
-      ),
-      filtered as (
-        select candidates.*
-        from candidates
-        where candidates.candidate_distance < threshold_distance
-      )
-      select
-        rank() over (order by filtered.candidate_distance)::bigint,
-        filtered.candidate_id,
-        filtered.candidate_distance
-      from filtered
-      order by filtered.candidate_distance
-      limit normalized_match_count;
-    return;
-  end if;
-
-  if normalized_data_source = 'ex' and auth.uid() is not null then
-    return query
-      with candidates as materialized (
-        select
-          l.id as candidate_id,
-          (l.embedding_ft <=> query_embedding_vector) as candidate_distance
-        from public.lifecyclemodels l
-        where l.embedding_ft is not null
-          and l.state_code = -1
-          and l.json @> private.sample_library_business_filter_v1(filter_condition_jsonb)
-        order by l.embedding_ft <=> query_embedding_vector
-        limit candidate_size
-      ),
-      filtered as (
-        select candidates.*
-        from candidates
-        where candidates.candidate_distance < threshold_distance
-      )
-      select
-        rank() over (order by filtered.candidate_distance)::bigint,
-        filtered.candidate_id,
-        filtered.candidate_distance
-      from filtered
-      order by filtered.candidate_distance
-      limit normalized_match_count;
-    return;
-  end if;
-
-  if normalized_data_source = 'co' then
-    return query
-      with candidates as materialized (
-        select
-          l.id as candidate_id,
-          (l.embedding_ft <=> query_embedding_vector) as candidate_distance
-        from public.lifecyclemodels l
-        where l.embedding_ft is not null
-          and l.state_code = 200
-          and l.json @> private.sample_library_business_filter_v1(filter_condition_jsonb)
-        order by l.embedding_ft <=> query_embedding_vector
-        limit candidate_size
-      ),
-      filtered as (
-        select candidates.*
-        from candidates
-        where candidates.candidate_distance < threshold_distance
-      )
-      select
-        rank() over (order by filtered.candidate_distance)::bigint,
-        filtered.candidate_id,
-        filtered.candidate_distance
-      from filtered
-      order by filtered.candidate_distance
-      limit normalized_match_count;
-    return;
-  end if;
-
-  if normalized_data_source = 'my' then
-    if effective_user_id is null then
-      return;
-    end if;
-
-    return query
-      with candidates as materialized (
-        select
-          l.id as candidate_id,
-          (l.embedding_ft <=> query_embedding_vector) as candidate_distance
-        from public.lifecyclemodels l
-        where l.embedding_ft is not null
-          and l.user_id = effective_user_id
-          and l.json @> private.sample_library_business_filter_v1(filter_condition_jsonb)
-        order by l.embedding_ft <=> query_embedding_vector
-        limit candidate_size
-      ),
-      filtered as (
-        select candidates.*
-        from candidates
-        where candidates.candidate_distance < threshold_distance
-      )
-      select
-        rank() over (order by filtered.candidate_distance)::bigint,
-        filtered.candidate_id,
-        filtered.candidate_distance
-      from filtered
-      order by filtered.candidate_distance
-      limit normalized_match_count;
-    return;
-  end if;
-
-  if normalized_data_source = 'te' then
-    if effective_user_id is null then
-      return;
-    end if;
-
-    return query
-      with candidates as materialized (
-        select
-          l.id as candidate_id,
-          (l.embedding_ft <=> query_embedding_vector) as candidate_distance
-        from public.lifecyclemodels l
-        where l.embedding_ft is not null
-          and exists (
-            select 1
-            from private.roles r
-            where r.user_id = effective_user_id
-              and r.team_id = l.team_id
-              and r.role::text in ('admin', 'member', 'owner')
-          )
-          and l.json @> private.sample_library_business_filter_v1(filter_condition_jsonb)
-        order by l.embedding_ft <=> query_embedding_vector
-        limit candidate_size
-      ),
-      filtered as (
-        select candidates.*
-        from candidates
-        where candidates.candidate_distance < threshold_distance
-      )
-      select
-        rank() over (order by filtered.candidate_distance)::bigint,
-        filtered.candidate_id,
-        filtered.candidate_distance
-      from filtered
-      order by filtered.candidate_distance
-      limit normalized_match_count;
-    return;
-  end if;
-end;
-$$;
-
-ALTER FUNCTION "private"."semantic_lifecyclemodel_candidates"("query_embedding" "text", "filter_condition" "text", "match_threshold" double precision, "match_count" integer, "data_source" "text") OWNER TO "postgres";
-
-REVOKE ALL ON FUNCTION "private"."semantic_lifecyclemodel_candidates"("query_embedding" "text", "filter_condition" "text", "match_threshold" double precision, "match_count" integer, "data_source" "text") FROM PUBLIC;
-
-GRANT ALL ON FUNCTION "private"."semantic_lifecyclemodel_candidates"("query_embedding" "text", "filter_condition" "text", "match_threshold" double precision, "match_count" integer, "data_source" "text") TO "service_role";
-
-GRANT ALL ON FUNCTION "private"."semantic_lifecyclemodel_candidates"("query_embedding" "text", "filter_condition" "text", "match_threshold" double precision, "match_count" integer, "data_source" "text") TO "api_internal_executor";
-
-CREATE OR REPLACE FUNCTION "private"."semantic_simple_dataset_candidates"("p_table" "regclass", "query_embedding" "text", "filter_condition" "text" DEFAULT ''::"text", "match_threshold" double precision DEFAULT 0.5, "match_count" integer DEFAULT 20, "data_source" "text" DEFAULT 'tg'::"text", "state_code_filter" integer DEFAULT NULL::integer, "team_id_filter" "uuid" DEFAULT NULL::"uuid") RETURNS TABLE("rank" bigint, "id" "uuid", "distance" double precision)
-    LANGUAGE "plpgsql" SECURITY DEFINER
-    SET "search_path" TO 'private', 'api', 'public', 'util', 'extensions', 'extensions', 'pg_temp'
-    SET "statement_timeout" TO '60s'
-    SET "plan_cache_mode" TO 'force_custom_plan'
-    SET "hnsw.iterative_scan" TO 'strict_order'
-    AS $_$
+-- Sample Library semantic candidates use a separate function because the
+-- existing candidate functions carry a hosted pgvector SET option that the
+-- migration role cannot set when replacing their definitions.
+create or replace function private.semantic_sample_library_candidates_v1(
+  p_table regclass,
+  query_embedding text,
+  filter_condition text default '',
+  match_threshold double precision default 0.5,
+  match_count integer default 20
+) returns table(rank bigint, id uuid, distance double precision)
+language plpgsql
+security definer
+set search_path = 'pg_catalog', 'extensions'
+set statement_timeout = '60s'
+set plan_cache_mode = 'force_custom_plan'
+as $fn$
 declare
   query_embedding_vector extensions.vector(1024);
-  filter_condition_jsonb jsonb;
-  normalized_data_source text;
+  filter_json jsonb;
+  business_filter jsonb;
+  flow_type text;
+  flow_types text[];
+  as_input boolean;
   normalized_match_count integer;
   candidate_size integer;
   threshold_distance double precision;
-  effective_user_id uuid;
-  can_read_team_filter boolean;
-  visibility_clause text;
-  json_filter_clause text;
   candidate_sql text;
 begin
   if p_table not in (
-    'public.contacts'::regclass,
-    'public.flowproperties'::regclass,
-    'public.sources'::regclass,
+    'public.processes'::regclass, 'public.flows'::regclass,
+    'public.lifecyclemodels'::regclass, 'public.contacts'::regclass,
+    'public.flowproperties'::regclass, 'public.sources'::regclass,
     'public.unitgroups'::regclass
   ) then
-    raise exception 'unsupported semantic dataset table: %', p_table;
+    raise exception 'unsupported Sample Library semantic table: %', p_table;
   end if;
 
   query_embedding_vector := query_embedding::extensions.vector(1024);
-  filter_condition_jsonb := coalesce(nullif(btrim(filter_condition), ''), '{}')::jsonb;
-  normalized_data_source := coalesce(nullif(lower(btrim(data_source)), ''), 'tg');
-  normalized_match_count := least(greatest(coalesce(match_count, 20), 1), 200);
-  candidate_size := greatest(normalized_match_count * 10, 200);
-  threshold_distance := 1 - least(greatest(coalesce(match_threshold, 0.5), -1), 1);
-  effective_user_id := private.dataset_search_effective_user_id('');
-  can_read_team_filter := private.dataset_search_can_read_team_filter(
-    team_id_filter,
-    effective_user_id
-  );
-
-  if normalized_data_source = 'tg' then
-    visibility_clause := 'd.state_code = 100 and ($7::uuid is null or d.team_id = $7)';
-  elsif normalized_data_source = 'sl' then
-    visibility_clause := 'api.sample_library_row_matches_v1($9, d.state_code, d.user_id, d.id, d.version, ''{}''::jsonb, false)';
-  elsif normalized_data_source = 'ex' then
-    if auth.uid() is null then return; end if;
-    visibility_clause := 'd.state_code = -1 and ($7::uuid is null or d.team_id = $7)';
-  elsif normalized_data_source = 'co' then
-    visibility_clause := 'd.state_code = 200 and ($7::uuid is null or d.team_id = $7)';
-  elsif normalized_data_source = 'my' then
-    if effective_user_id is null then
-      return;
-    end if;
-    visibility_clause := 'd.user_id = $5 and ($8::integer is null or d.state_code = $8)';
-  elsif normalized_data_source = 'te' then
-    if team_id_filter is null or not can_read_team_filter then
-      return;
-    end if;
-    visibility_clause := 'd.team_id = $7 and ($8::integer is null or d.state_code = $8)';
-  else
-    return;
+  filter_json := coalesce(nullif(btrim(filter_condition), ''), '{}')::jsonb;
+  business_filter := filter_json;
+  if p_table = 'public.flows'::regclass then
+    flow_type := nullif(btrim(filter_json->>'flowType'), '');
+    flow_types := case when flow_type is null then null else string_to_array(flow_type, ',') end;
+    as_input := case when filter_json ? 'asInput'
+      then nullif(btrim(filter_json->>'asInput'), '')::boolean else null end;
+    business_filter := filter_json - 'flowType' - 'asInput';
   end if;
-
-  json_filter_clause := case
-    when private.sample_library_business_filter_v1(filter_condition_jsonb) = '{}'::jsonb then ''
-    else 'and d.json @> private.sample_library_business_filter_v1($2)'
+  normalized_match_count := case
+    when p_table in (
+      'public.contacts'::regclass, 'public.flowproperties'::regclass,
+      'public.sources'::regclass, 'public.unitgroups'::regclass
+    ) then least(greatest(coalesce(match_count, 20), 1), 200)
+    else greatest(coalesce(match_count, 20), 1)
   end;
+  candidate_size := greatest(normalized_match_count * 10, 200);
+  threshold_distance := 1 - coalesce(match_threshold, 0.5);
 
-  candidate_sql := format(
-    $sql$
-      with candidates as materialized (
-        select
-          d.id as candidate_id,
-          d.embedding_ft <=> $1 as candidate_distance
-        from %1$s d
-        where d.embedding_ft is not null
-          and %2$s
-          %3$s
-        order by d.embedding_ft <=> $1
-        limit $3
-      ),
-      deduplicated as (
-        select
-          candidates.candidate_id,
-          min(candidates.candidate_distance) as candidate_distance
-        from candidates
-        where candidates.candidate_distance < $4
-        group by candidates.candidate_id
-      )
-      select
-        rank() over (
-          order by deduplicated.candidate_distance, deduplicated.candidate_id
-        )::bigint,
-        deduplicated.candidate_id,
-        deduplicated.candidate_distance
-      from deduplicated
-      order by deduplicated.candidate_distance, deduplicated.candidate_id
-      limit $6
-    $sql$,
-    p_table,
-    visibility_clause,
-    json_filter_clause
-  );
+  candidate_sql := format($sql$
+    with candidates as materialized (
+      select d.id as candidate_id,
+             d.embedding_ft <=> $1 as candidate_distance
+      from %s d
+      where d.embedding_ft is not null
+        and api.sample_library_row_matches_v1(
+          'sl', d.state_code, d.user_id, d.id, d.version, $2, $3)
+        and d.json @> private.sample_library_business_filter_v1($4)
+        and ($5::text[] is null or
+          d.json #>> '{flowDataSet,modellingAndValidation,LCIMethod,typeOfDataSet}' = any($5))
+        and ($6::boolean is null or $6 = false or not (
+          d.json @> '{"flowDataSet":{"flowInformation":{"dataSetInformation":{"classificationInformation":{"common:elementaryFlowCategorization":{"common:category":[{"#text":"Emissions","@level":"0"}]}}}}}}'
+        ))
+      order by d.embedding_ft <=> $1
+      limit $7
+    ),
+    deduplicated as (
+      select candidate_id, min(candidate_distance) as candidate_distance
+      from candidates
+      where candidate_distance < $8
+      group by candidate_id
+    )
+    select rank() over (
+      order by candidate_distance, candidate_id)::bigint,
+      candidate_id, candidate_distance
+    from deduplicated
+    order by candidate_distance, candidate_id
+    limit $9
+  $sql$, p_table);
 
   return query execute candidate_sql
-    using query_embedding_vector, filter_condition_jsonb, candidate_size,
-          threshold_distance, effective_user_id, normalized_match_count,
-          team_id_filter, state_code_filter, normalized_data_source;
+    using query_embedding_vector, business_filter,
+          p_table = 'public.processes'::regclass, business_filter,
+          flow_types, as_input, candidate_size,
+          threshold_distance, normalized_match_count;
 end;
-$_$;
+$fn$;
 
-ALTER FUNCTION "private"."semantic_simple_dataset_candidates"("p_table" "regclass", "query_embedding" "text", "filter_condition" "text", "match_threshold" double precision, "match_count" integer, "data_source" "text", "state_code_filter" integer, "team_id_filter" "uuid") OWNER TO "postgres";
+alter function private.semantic_sample_library_candidates_v1(
+  regclass, text, text, double precision, integer) owner to postgres;
+revoke all on function private.semantic_sample_library_candidates_v1(
+  regclass, text, text, double precision, integer)
+  from public, anon, authenticated, service_role;
+grant execute on function private.semantic_sample_library_candidates_v1(
+  regclass, text, text, double precision, integer)
+  to api_internal_executor, service_role;
 
-REVOKE ALL ON FUNCTION "private"."semantic_simple_dataset_candidates"("p_table" "regclass", "query_embedding" "text", "filter_condition" "text", "match_threshold" double precision, "match_count" integer, "data_source" "text", "state_code_filter" integer, "team_id_filter" "uuid") FROM PUBLIC;
+create or replace function private.semantic_dataset_candidates_dispatch_v1(
+  p_table regclass,
+  query_embedding text,
+  filter_condition text default '',
+  match_threshold double precision default 0.5,
+  match_count integer default 20,
+  data_source text default 'tg',
+  state_code_filter integer default null,
+  team_id_filter uuid default null
+) returns table(rank bigint, id uuid, distance double precision)
+language plpgsql
+security definer
+set search_path = ''
+as $fn$
+begin
+  if lower(coalesce(data_source, 'tg')) = 'sl' then
+    return query select candidate.rank, candidate.id, candidate.distance
+    from private.semantic_sample_library_candidates_v1(
+      p_table, query_embedding, filter_condition, match_threshold, match_count
+    ) candidate;
+  elsif p_table = 'public.processes'::regclass then
+    return query select candidate.rank, candidate.id, candidate.distance
+    from private.semantic_process_candidates(
+      query_embedding, filter_condition, match_threshold, match_count, data_source
+    ) candidate;
+  elsif p_table = 'public.flows'::regclass then
+    return query select candidate.rank, candidate.id, candidate.distance
+    from private.semantic_flow_candidates(
+      query_embedding, filter_condition, match_threshold, match_count, data_source
+    ) candidate;
+  elsif p_table = 'public.lifecyclemodels'::regclass then
+    return query select candidate.rank, candidate.id, candidate.distance
+    from private.semantic_lifecyclemodel_candidates(
+      query_embedding, filter_condition, match_threshold, match_count, data_source
+    ) candidate;
+  else
+    return query select candidate.rank, candidate.id, candidate.distance
+    from private.semantic_simple_dataset_candidates(
+      p_table, query_embedding, filter_condition, match_threshold, match_count,
+      data_source, state_code_filter, team_id_filter
+    ) candidate;
+  end if;
+end;
+$fn$;
 
-GRANT ALL ON FUNCTION "private"."semantic_simple_dataset_candidates"("p_table" "regclass", "query_embedding" "text", "filter_condition" "text", "match_threshold" double precision, "match_count" integer, "data_source" "text", "state_code_filter" integer, "team_id_filter" "uuid") TO "service_role";
+alter function private.semantic_dataset_candidates_dispatch_v1(
+  regclass, text, text, double precision, integer, text, integer, uuid)
+  owner to postgres;
+revoke all on function private.semantic_dataset_candidates_dispatch_v1(
+  regclass, text, text, double precision, integer, text, integer, uuid)
+  from public, anon, authenticated, service_role;
+grant execute on function private.semantic_dataset_candidates_dispatch_v1(
+  regclass, text, text, double precision, integer, text, integer, uuid)
+  to api_internal_executor, service_role;
 
-GRANT ALL ON FUNCTION "private"."semantic_simple_dataset_candidates"("p_table" "regclass", "query_embedding" "text", "filter_condition" "text", "match_threshold" double precision, "match_count" integer, "data_source" "text", "state_code_filter" integer, "team_id_filter" "uuid") TO "api_internal_executor";
 
 CREATE OR REPLACE FUNCTION "private"."hybrid_search_processes_v2_impl"("query_text" "text", "query_embedding" "text", "filter_condition" "text" DEFAULT ''::"text", "match_threshold" double precision DEFAULT 0.5, "match_count" integer DEFAULT 20, "lexical_weight" double precision DEFAULT 0.5, "semantic_weight" double precision DEFAULT 0.5, "rrf_k" integer DEFAULT 10, "data_source" "text" DEFAULT 'tg'::"text", "page_size" integer DEFAULT 10, "page_current" integer DEFAULT 1, "query_terms" "text"[] DEFAULT NULL::"text"[]) RETURNS TABLE("id" "uuid", "json" "jsonb", "version" character, "modified_at" timestamp with time zone, "model_id" "uuid", "team_id" "uuid", "total_count" bigint)
     LANGUAGE "plpgsql"
@@ -3209,12 +2610,9 @@ begin
     ),
     semantic as (
       select ss.rank as ss_rank, ss.id as ss_id
-      from private.semantic_process_candidates(
-        query_embedding,
-        filter_condition,
-        match_threshold,
-        semantic_match_count,
-        data_source
+      from private.semantic_dataset_candidates_dispatch_v1(
+        'public.processes'::regclass, query_embedding, filter_condition,
+        match_threshold, semantic_match_count, data_source
       ) ss
     ),
     fused_raw as (
@@ -3335,12 +2733,9 @@ begin
     ),
     semantic as (
       select ss.rank as ss_rank, ss.id as ss_id
-      from private.semantic_flow_candidates(
-        query_embedding,
-        filter_condition,
-        match_threshold,
-        semantic_match_count,
-        data_source
+      from private.semantic_dataset_candidates_dispatch_v1(
+        'public.flows'::regclass, query_embedding, filter_condition,
+        match_threshold, semantic_match_count, data_source
       ) ss
     ),
     fused_raw as (
@@ -3459,12 +2854,9 @@ begin
     ),
     semantic as (
       select ss.rank as ss_rank, ss.id as ss_id
-      from private.semantic_lifecyclemodel_candidates(
-        query_embedding,
-        filter_condition,
-        match_threshold,
-        semantic_match_count,
-        data_source
+      from private.semantic_dataset_candidates_dispatch_v1(
+        'public.lifecyclemodels'::regclass, query_embedding, filter_condition,
+        match_threshold, semantic_match_count, data_source
       ) ss
     ),
     fused_raw as (
@@ -3663,7 +3055,7 @@ begin
         select
           candidate.rank as semantic_rank,
           candidate.id as semantic_id
-        from private.semantic_simple_dataset_candidates(
+        from private.semantic_dataset_candidates_dispatch_v1(
           $8, $9, $10, $11, $12, $3, $6, $5
         ) candidate
       ),

@@ -40,7 +40,7 @@ begin
   end if;
   filter_condition_jsonb := filter_condition_jsonb - 'asInput';
 
-  if normalized_data_source in ('tg', 'sl') then
+  if normalized_data_source = 'tg' then
     return query
       with candidates as materialized (
         select
@@ -48,8 +48,8 @@ begin
           (f.embedding_ft <=> query_embedding_vector) as candidate_distance
         from public.flows f
         where f.embedding_ft is not null
-          and ((normalized_data_source = 'tg' and f.state_code = 100) or api.sample_library_row_matches_v1(normalized_data_source, f.state_code, f.user_id, f.id, f.version, filter_condition_jsonb, false))
-          and (filter_condition_jsonb = '{}'::jsonb or f.json @> private.sample_library_business_filter_v1(filter_condition_jsonb))
+          and f.state_code = 100
+          and (filter_condition_jsonb = '{}'::jsonb or f.json @> filter_condition_jsonb)
           and (
             flow_type is null
             or flow_type = ''
@@ -89,7 +89,7 @@ begin
         from public.flows f
         where f.embedding_ft is not null
           and f.state_code = -1
-          and (filter_condition_jsonb = '{}'::jsonb or f.json @> private.sample_library_business_filter_v1(filter_condition_jsonb))
+          and (filter_condition_jsonb = '{}'::jsonb or f.json @> filter_condition_jsonb)
           and (
             flow_type is null
             or flow_type = ''
@@ -129,7 +129,7 @@ begin
         from public.flows f
         where f.embedding_ft is not null
           and f.state_code = 200
-          and (filter_condition_jsonb = '{}'::jsonb or f.json @> private.sample_library_business_filter_v1(filter_condition_jsonb))
+          and (filter_condition_jsonb = '{}'::jsonb or f.json @> filter_condition_jsonb)
           and (
             flow_type is null
             or flow_type = ''
@@ -173,7 +173,7 @@ begin
         from public.flows f
         where f.embedding_ft is not null
           and f.user_id = effective_user_id
-          and (filter_condition_jsonb = '{}'::jsonb or f.json @> private.sample_library_business_filter_v1(filter_condition_jsonb))
+          and (filter_condition_jsonb = '{}'::jsonb or f.json @> filter_condition_jsonb)
           and (
             flow_type is null
             or flow_type = ''
@@ -223,7 +223,7 @@ begin
               and r.team_id = f.team_id
               and r.role::text in ('admin', 'member', 'owner')
           )
-          and (filter_condition_jsonb = '{}'::jsonb or f.json @> private.sample_library_business_filter_v1(filter_condition_jsonb))
+          and (filter_condition_jsonb = '{}'::jsonb or f.json @> filter_condition_jsonb)
           and (
             flow_type is null
             or flow_type = ''

@@ -20,7 +20,7 @@ begin
   threshold_distance := 1 - coalesce(match_threshold, 0.5);
   effective_user_id := private.dataset_search_effective_user_id('');
 
-  if normalized_data_source in ('tg', 'sl') then
+  if normalized_data_source = 'tg' then
     return query
       with candidates as materialized (
         select
@@ -28,8 +28,8 @@ begin
           (l.embedding_ft <=> query_embedding_vector) as candidate_distance
         from public.lifecyclemodels l
         where l.embedding_ft is not null
-          and ((normalized_data_source = 'tg' and l.state_code = 100) or api.sample_library_row_matches_v1(normalized_data_source, l.state_code, l.user_id, l.id, l.version, filter_condition_jsonb, false))
-          and l.json @> private.sample_library_business_filter_v1(filter_condition_jsonb)
+          and l.state_code = 100
+          and l.json @> filter_condition_jsonb
         order by l.embedding_ft <=> query_embedding_vector
         limit candidate_size
       ),
@@ -57,7 +57,7 @@ begin
         from public.lifecyclemodels l
         where l.embedding_ft is not null
           and l.state_code = -1
-          and l.json @> private.sample_library_business_filter_v1(filter_condition_jsonb)
+          and l.json @> filter_condition_jsonb
         order by l.embedding_ft <=> query_embedding_vector
         limit candidate_size
       ),
@@ -85,7 +85,7 @@ begin
         from public.lifecyclemodels l
         where l.embedding_ft is not null
           and l.state_code = 200
-          and l.json @> private.sample_library_business_filter_v1(filter_condition_jsonb)
+          and l.json @> filter_condition_jsonb
         order by l.embedding_ft <=> query_embedding_vector
         limit candidate_size
       ),
@@ -117,7 +117,7 @@ begin
         from public.lifecyclemodels l
         where l.embedding_ft is not null
           and l.user_id = effective_user_id
-          and l.json @> private.sample_library_business_filter_v1(filter_condition_jsonb)
+          and l.json @> filter_condition_jsonb
         order by l.embedding_ft <=> query_embedding_vector
         limit candidate_size
       ),
@@ -155,7 +155,7 @@ begin
               and r.team_id = l.team_id
               and r.role::text in ('admin', 'member', 'owner')
           )
-          and l.json @> private.sample_library_business_filter_v1(filter_condition_jsonb)
+          and l.json @> filter_condition_jsonb
         order by l.embedding_ft <=> query_embedding_vector
         limit candidate_size
       ),

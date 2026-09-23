@@ -883,9 +883,9 @@ select extensions.ok(
 
 select extensions.is(
   (
-    -- Database #690 extends the four private raw helpers with the role-gated
-    -- Sample Library scope. Pin those reviewed definitions while retaining
-    -- every owner, security and ACL expectation.
+    -- Database #697 routes Sample Library semantic candidates through separate
+    -- private helpers. Pin the preserved legacy candidates and changed Hybrid
+    -- dispatchers with their owners, security and ACL expectations.
     with expected(
       routine_identity,
       definition_md5,
@@ -921,25 +921,25 @@ select extensions.is(
         ),
         (
           'private.hybrid_search_flows_v2_impl(text,text,text,double precision,integer,double precision,double precision,integer,text,integer,integer,text[])',
-          '9422273d4a6526204574425d4210e482', 'postgres', false,
+          'd54aa2edb42eeb40878e209c620f7d9e', 'postgres', false,
           '{statement_timeout=60s,"search_path=private, api, public, util, extensions, extensions, pg_temp"}',
           '{postgres=X/postgres,service_role=X/postgres,api_internal_executor=X/postgres}'
         ),
         (
           'private.hybrid_search_processes_v2_impl(text,text,text,double precision,integer,double precision,double precision,integer,text,integer,integer,text[])',
-          'd4ed162a77430a501dba4c55355fde57', 'postgres', false,
+          '8933b5919ef3e7001be9c5320690b57c', 'postgres', false,
           '{statement_timeout=60s,"search_path=private, api, public, util, extensions, extensions, pg_temp"}',
           '{postgres=X/postgres,service_role=X/postgres,api_internal_executor=X/postgres}'
         ),
         (
           'private.semantic_flow_candidates(text,text,double precision,integer,text)',
-          'b9d93b83cbb58b4568330dd513a0ab4c', 'postgres', true,
+          'e3d07471dd6bdb23e0eb73ce2e75c519', 'postgres', true,
           '{"search_path=private, api, public, util, extensions, extensions, pg_temp",statement_timeout=60s,plan_cache_mode=force_custom_plan,hnsw.iterative_scan=strict_order}',
           '{postgres=X/postgres,service_role=X/postgres,api_internal_executor=X/postgres}'
         ),
         (
           'private.semantic_process_candidates(text,text,double precision,integer,text)',
-          '12e152a2c3661ccdaa800646666b08f5', 'postgres', true,
+          'bcc38849cd377dc7a9ceecef818c0fdd', 'postgres', true,
           '{"search_path=private, api, public, util, extensions, extensions, pg_temp",statement_timeout=60s,plan_cache_mode=force_custom_plan,hnsw.iterative_scan=strict_order}',
           '{postgres=X/postgres,service_role=X/postgres,api_internal_executor=X/postgres}'
         )
