@@ -70,6 +70,7 @@ jobs:
           supabase test db supabase/tests/20260919_portal_navigation_v1.sql
           supabase test db supabase/tests/20260919_portal_catalog_summary_bounded.sql
           supabase test db supabase/tests/20260926_portal_catalog_bounded_v3.sql
+          supabase test db supabase/tests/20260927_portal_catalog_bounded_v2.sql
           supabase test db supabase/tests/20260910_example_dataset_scope.sql
           supabase test db supabase/tests/20260921_guarded_dataset_save_draft.sql
           supabase test db supabase/tests/20260714_guarded_dataset_derivative_rebuild.sql

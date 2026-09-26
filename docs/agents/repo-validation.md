@@ -32,9 +32,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-09-26
-lastReviewedCommit: 5b6a2508dcfbe7c602f8cce848d1430a9796ddfa
-lastReviewedNote: "Reviewed Database #723 main-hotfix narrow Portal readers, coverage cutover, real-writer/equivalence/concurrency proof and isolated fixture disposition. Public DTOs, writer/ACL contracts, 8-second budgets and main-to-dev/root delivery boundaries remain; local schema snapshots require exact reconstruction and deterministic regeneration."
+lastReviewedAt: 2026-09-27
+lastReviewedCommit: 2ded7cb93dbe4e13767481127ee99900afd99834
+lastReviewedNote: "Reviewed Database #733: bounded legacy V2 keys/ranking/page facts, public-reader ownership with retained internal EXECUTE and restored DDL prestate, writer/visibility/cursor proof and exact local regeneration preserve public contracts, budgets and Main-to-Dev/Root boundaries. Hosted publication remains a distinct gate."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -586,3 +586,11 @@ entrypoint at the shared development stack or a hosted database.
 Qualification includes a populated cutover on the selected release baseline. A
 clean install, a development-branch run and an empty hosted Preview are separate
 proofs; none substitutes for the populated cutover or exact production readback.
+
+## Legacy V2 catalog qualification
+
+After a blank candidate rebuild, run `supabase/tests/20260927_portal_catalog_bounded_v2.sql`, all Portal suites and the adjacent full-schema/API/OAuth closure. Include both previous execution principals, nonpublic source exclusion and the storage rejection of nonpublic orphan projections, retained exact/name/classification/display-reason precedence, nullable Flow reference years, all sort/cursor boundaries and real writer update/withdrawal. Preserve the separately tracked empty-query CAS metadata until its own reviewed fix.
+
+Compare the exact Main predecessor and candidate on one owned synthetic fixture, including predecessor-issued cursors. Materialize one RPC result before reading its digest, cursor, rows or payload: referencing a STABLE function through an inlined subquery can execute it repeatedly and is not a valid one-call timing collector. Record the collector hash, exact baseline/candidate source, roles, effective work_mem, fixture cardinality/card width and EXPLAIN ANALYZE/BUFFERS. The legacy qualification uses 4 MB work_mem and an unchanged eight-second request budget; its four-client profile must compare successful responses to the serial reference and report p95 wall time against the two-second controlled-fixture target. These are local measurements, not production p95 or an attribution of the original failed query arguments.
+
+The populated cutover must reject missing/drifted facts before replacing readers. Assert that temporary DDL membership/schema rights return to their prestate, that the retained internal execution principal still works and external private access stays denied. Rebuild the owned fixture before writer probes and export. Qualify real committed withdrawal with an independent reader session, regenerate all five schemas and Data API types twice without drift, then require official Preview/CI, exact Main deployment/source/functional readback, required Dev synchronization and eligible Root integration.
