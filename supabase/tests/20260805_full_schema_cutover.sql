@@ -68,8 +68,8 @@ select is(
     where namespace.nspname = 'api'
       and routine.prokind = 'f'
   ),
-  308::bigint,
-  'Four Portal navigation/V3 facades plus: api contains the active cutover and consumer facades, including the three Open Data catalog list/hybrid/publish RPCs, the reviewer Contact status and activation RPCs, eight additive Portal/Next version-search APIs, two V4 review queues, two partial-import APIs, the three manager-attested Result publication RPCs, the guarded owner-draft before-content save facade, and the five versioned v2 Time-alias protected endpoints (preflight/gate/admit/read plus the service-only execute callback)'
+  311::bigint,
+  'Four Portal navigation/V3 facades plus: api contains the active cutover and consumer facades, including the three Open Data catalog list/hybrid/publish RPCs, the reviewer Contact status and activation RPCs, eight additive Portal/Next version-search APIs, two V4 and two V5 review queues plus batch eligibility, two partial-import APIs, the three manager-attested Result publication RPCs, the guarded owner-draft before-content save facade, and the five versioned v2 Time-alias protected endpoints (preflight/gate/admit/read plus the service-only execute callback)'
 );
 
 select is(

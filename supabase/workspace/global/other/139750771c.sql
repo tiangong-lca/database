@@ -1,0 +1,1 @@
+COMMENT ON FUNCTION "api"."qry_review_batch_eligibility_v1"("p_review_ids" "uuid"[], "p_operation" "text") IS 'Read-only, actor-scoped preflight for review batch confirmations; execution commands remain authoritative and independently revalidate state.';

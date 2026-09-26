@@ -1,1 +1,0 @@
-COMMENT ON FUNCTION "api"."cmd_review_save_comment_draft"("p_review_id" "uuid", "p_json" "jsonb", "p_audit" "jsonb") IS 'Temporarily stores editable reviewer Comment JSON and audit metadata without provisioning Reference Reviews or Root candidate hints.';

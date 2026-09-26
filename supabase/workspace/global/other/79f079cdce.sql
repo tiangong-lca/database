@@ -1,0 +1,1 @@
+COMMENT ON FUNCTION "api"."cmd_review_save_comment_draft"("p_review_id" "uuid", "p_json" "jsonb", "p_audit" "jsonb") IS 'Stores an assigned reviewer draft only while the review is active; re-editing a submitted opinion resets its state to pending without provisioning references.';

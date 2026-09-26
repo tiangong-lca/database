@@ -1,0 +1,1 @@
+COMMENT ON FUNCTION "api"."qry_review_get_member_queue_items_v5"("p_status" "text", "p_page" integer, "p_page_size" integer, "p_sort_by" "text", "p_sort_order" "text", "p_display_mode" "text", "p_target_table" "text", "p_query" "text") IS 'Reviewer workspace queue: pending, submitted opinion, and terminal completed stages with actor comment and aggregate progress facts.';

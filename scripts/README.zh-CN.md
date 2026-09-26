@@ -20,8 +20,8 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-09-24
-lastReviewedCommit: af42a0e1
+lastReviewedAt: 2026-09-26
+lastReviewedCommit: 53f34eaf1d9ca6a9c890e6920910bcc2a39bf06a
 lastReviewedNote: "Reviewed Database #717 exact migration replay and reviewer Contact schema/types generation; documented script ownership and invocation remain unchanged."
 related:
   - ../AGENTS.md
