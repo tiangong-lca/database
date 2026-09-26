@@ -22,9 +22,9 @@ checkPaths:
   - .github/workflows/supabase-dev.yml
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
-lastReviewedAt: 2026-09-26
-lastReviewedCommit: 5b6a2508dcfbe7c602f8cce848d1430a9796ddfa
-lastReviewedNote: "Reviewed Database #723 main-hotfix narrow Portal readers, coverage cutover, real-writer/equivalence/concurrency proof and isolated fixture disposition. Public DTOs, writer/ACL contracts, 8-second budgets and main-to-dev/root delivery boundaries remain; local schema snapshots require exact reconstruction and deterministic regeneration."
+lastReviewedAt: 2026-09-27
+lastReviewedCommit: 3326a6701763cbf4bbcf4f61298b3f8f54a3fd16
+lastReviewedNote: "Reviewed Database #733: the legacy V2 regression joins the unchanged local/ARM64/official-Preview gates; exact Main hotfix, required Dev backmerge, credential isolation and production GitHub publication boundaries remain."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
