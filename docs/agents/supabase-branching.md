@@ -22,9 +22,9 @@ checkPaths:
   - .github/workflows/supabase-dev.yml
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
-lastReviewedAt: 2026-09-23
-lastReviewedCommit: b73b143b9631763a6a4c871b89877393fe0cb08f
-lastReviewedNote: "Reviewed for Database #703: ready derivative scheduling keeps the default five visits, caps actual visits at 25 and external transitions at five, and preserves all data fences and terminal proofs. The schema migration leaves cron unchanged; the separately reviewed REPEATABLE READ activation, one-attempt transport, regression matrix and rollback procedure are documented. Generated ownership, hosted deployment, hotfix/backmerge and workspace integration boundaries remain unchanged."
+lastReviewedAt: 2026-09-26
+lastReviewedCommit: 5b6a2508dcfbe7c602f8cce848d1430a9796ddfa
+lastReviewedNote: "Reviewed Database #723 main-hotfix narrow Portal readers, coverage cutover, real-writer/equivalence/concurrency proof and isolated fixture disposition. Public DTOs, writer/ACL contracts, 8-second budgets and main-to-dev/root delivery boundaries remain; local schema snapshots require exact reconstruction and deterministic regeneration."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -389,6 +389,11 @@ Rules:
 3. Merge back to `main`.
 4. Back-merge `main` into `dev`.
 5. Keep migration history aligned across both long-lived branches.
+
+The database validation workflow runs for PRs targeting either `dev` or `main`,
+including hotfixes. Both targets receive the local contract rebuild and exact
+disposable Preview checks. Persistent Dev deployment still requires a push to
+`refs/heads/dev`; a Main PR never deploys that persistent environment.
 
 ## Consumer repo boundaries
 

@@ -30,9 +30,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-09-23
-lastReviewedCommit: a4bc3a5f2c121b6b425a39e57f3a607a62f450e9
-lastReviewedNote: "Reviewed Database #710 main-to-Dev backmerge: production #703 ready derivative scheduling and guarded activation are retained with Dev #705 agent contract and #707 sample-library retirement. Five dispatch transitions, 25 visited requests, existing data fences, and branch/deployment ownership remain."
+lastReviewedAt: 2026-09-26
+lastReviewedCommit: 5b6a2508dcfbe7c602f8cce848d1430a9796ddfa
+lastReviewedNote: "Reviewed Database #723 main-hotfix narrow Portal readers, coverage cutover, real-writer/equivalence/concurrency proof and isolated fixture disposition. Public DTOs, writer/ACL contracts, 8-second budgets and main-to-dev/root delivery boundaries remain; local schema snapshots require exact reconstruction and deterministic regeneration."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -652,14 +652,15 @@ measurement. Existing zero-spill gates remain scoped to the
 narrow empty/exact phases that own them. These fixtures remain rollback-only test data and add no
 runtime relation, index, trigger, or writer path.
 
-The measured empty-query, geography-only Flow Search has one deliberately
+The retained V2 empty-query, geography-only Flow Search has one deliberately
 narrow query fast path. It reads the already synchronized facet child through
 the existing latest-key B-tree, applies exact geography/cursor/order/limit on
 those narrow rows, and joins at most 51 exact parent cards. It first validates
 the independent live Facet manifest on every matching request. It does not add a
 geography index—the representative filter matches the full Flow universe, so
 such an index would add writer/storage cost without selectivity—and all other
-Search filters continue through the general exhaustive card-facts path.
+V2 Search filters continue through the general exhaustive card-facts path.
+V3 query-free readers use the wider narrow-projection path described below.
 
 Multi-code-point, non-UUID, empty-filter Process relevance Search has one
 separate bounded hydration path. It preserves the existing PGroonga
@@ -890,3 +891,26 @@ TIDAS v2 import adds private immutable input/plan bindings and committed root-gr
 All seven public dataset tables accept `state_code=-1` for curated examples. The additive authenticated SELECT policies admit cross-owner reads only with a non-null actor. The `ex` list, lexical, UUID-reference, and hybrid branches fix that state before ranking, latest-version selection, counts, and pagination. Process/Flow matched-version V2 uses the existing actor candidate path with a fixed example state; public projection candidates retain their original scope. Ordinary actors cannot update or delete example originals, including through definer bundle commands; service curation with no user JWT remains available. Selected-root package export admits exact example roots for an authenticated requesting actor; global open-data package scope and Portal publication visibility remain unchanged.
 
 Database #654 adds `private.tidas_import_packages_v2` and two ACL-closed service helpers for all-record-valid imports. Worker stages bounded chunks in a definer-owned ON COMMIT DROP temporary relation without domain writes, then finalizes all records and one exact-input receipt atomically. The final lease fence runs after inserts; existing type/id/version rows are skipped without updates. Root-group APIs remain unchanged, while owner-scoped readback includes both receipt sources. No new public relation or browser RPC is exposed.
+
+## Query-free Portal catalog readers
+
+V3 query-free Search filters exact public versions through the existing narrow
+navigation projection, orders narrow keys and hydrates the final page. Facets
+aggregate the existing facet projection for the same matched key set. Node
+subtree/direct filters use set membership rather than one SQL helper invocation
+per candidate; unfiltered navigation counts do not rejoin an equivalent complete
+version set. Nonempty lexical selection, public façades, cursor fingerprints,
+writer ownership and timeout settings are unchanged. The retained filtered-empty
+match metadata also remains unchanged by this performance-only rewrite.
+
+The cutover verifies complete parent/facet/navigation coverage and equal projected
+state/timestamps before replacing readers. A full join compares both directions
+in one aggregate, avoiding an EXISTS anti-join's low-startup-cost nested loop
+over the materialized key set when proving that every row is valid.
+After cutover, the existing immutable writers and transactional withdrawal/FK
+contracts maintain those facts; no new projection or source writer is introduced.
+
+Relevance and modified-date ordering fetch full card JSON only for the selected
+page. Name ordering still reads each matched name key and therefore detoasts those
+cards; it does not have a constant-work claim. The dedicated size/width benchmark
+qualifies that remaining cost separately and checks exact response/cursor equality.

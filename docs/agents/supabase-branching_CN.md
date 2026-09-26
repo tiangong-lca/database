@@ -22,9 +22,9 @@ checkPaths:
   - .github/workflows/supabase-dev.yml
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
-lastReviewedAt: 2026-09-23
-lastReviewedCommit: b73b143b9631763a6a4c871b89877393fe0cb08f
-lastReviewedNote: "Reviewed for Database #703: ready derivative scheduling keeps the default five visits, caps actual visits at 25 and external transitions at five, and preserves all data fences and terminal proofs. The schema migration leaves cron unchanged; the separately reviewed REPEATABLE READ activation, one-attempt transport, regression matrix and rollback procedure are documented. Generated ownership, hosted deployment, hotfix/backmerge and workspace integration boundaries remain unchanged."
+lastReviewedAt: 2026-09-26
+lastReviewedCommit: 5b6a2508dcfbe7c602f8cce848d1430a9796ddfa
+lastReviewedNote: "Reviewed Database #723 main-hotfix narrow Portal readers, coverage cutover, real-writer/equivalence/concurrency proof and isolated fixture disposition. Public DTOs, writer/ACL contracts, 8-second budgets and main-to-dev/root delivery boundaries remain; local schema snapshots require exact reconstruction and deterministic regeneration."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -326,6 +326,10 @@ python3 scripts/test_check_auth_email_templates.py
 3. 合并回 `main`。
 4. 再把 `main` 回合并到 `dev`。
 5. 保持两条长期分支上的 migration 历史一致。
+
+数据库验证 workflow 覆盖目标为 `dev` 或 `main` 的 PR，包括 hotfix；两者都执行
+本地合同重建和精确的一次性 Preview 检查。持久 Dev 部署仍只接受
+`refs/heads/dev` 的 push，Main PR 不会部署该持久环境。
 
 ## 消费者仓边界
 
