@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prove the composite read graph changes only storage routing and cursor epoch."""
+"""Pin the composite graph and its explicitly reviewed legacy-reader revision."""
 import argparse
 import json
 import re
@@ -7,12 +7,29 @@ import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+LEGACY_CUTOVER = ROOT / 'supabase/migrations/20260926143000_portal_catalog_bounded_v2.sql'
+REVISED_READERS = {'catalog_portal_search_v2_impl', 'catalog_portal_facets_v2_impl'}
+
+
+def reviewed_reader_definition(name):
+    """Only these two query consumers may use the qualified V2 revision.
+
+    Stored payloads, writers, indexes, immutable manifests and the other read
+    helpers still compare against the original composite-name baseline.
+    """
+    text = LEGACY_CUTOVER.read_text()
+    pattern = rf'^CREATE OR REPLACE FUNCTION "private"\."{name}"\(.*?\bAS (\$[a-zA-Z_0-9]*\$)[\s\S]*?\1;'
+    definition = re.search(pattern, text, flags=re.M | re.S)
+    assert definition, f'{name}: reviewed cutover definition missing'
+    owner = re.search(rf'ALTER FUNCTION "private"\."{name}"\([^;]*\) OWNER TO "([a-z_]+)";', text)
+    assert owner, f'{name}: reviewed cutover owner missing'
+    return definition.group() + '\nOWNER TO "' + owner[1] + '";'
 
 parser=argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--local-container',required=True)
 parser.add_argument('--base-ref', default='0c6c00d93934c86d0059b37c3248d91449adab6b')
 a=parser.parse_args()
-if not re.fullmatch(r'supabase_db_database-engine(?:-[a-z0-9]+)?',a.local_container):
+if not re.fullmatch(r'supabase_db_database-engine(?:-[a-z0-9]+)?|supabase_db_database-engine-733-isolated',a.local_container):
     parser.error('requires a local Database container')
 q="""select json_agg(json_build_object('name',p.proname,'body',p.prosrc,'owner',pg_get_userbyid(p.proowner),'config',p.proconfig,'volatility',p.provolatile,'parallel',p.proparallel,'definer',p.prosecdef)) from pg_proc p where pronamespace='private'::regnamespace and prokind='f'"""
 rows=json.loads(subprocess.check_output(['docker','exec',a.local_container,'psql','-X','-qAt','-U','postgres','-d','postgres','-c',q],text=True))
@@ -26,7 +43,7 @@ for original in changed:
     generation=re.sub(r'_v(?=\d)','_cn',original)
     name=generation if generation in functions else original
     new=functions[name]
-    baseline=subprocess.check_output(['git','show',f'{a.base_ref}:supabase/workspace/schemas/private/functions/{original}/definition.sql'],cwd=ROOT,text=True)
+    baseline = reviewed_reader_definition(original) if original in REVISED_READERS else subprocess.check_output(['git','show',f'{a.base_ref}:supabase/workspace/schemas/private/functions/{original}/definition.sql'],cwd=ROOT,text=True)
     match=re.search(r'AS (\$[a-zA-Z_0-9]*\$)([\s\S]*?)\1',baseline)
     assert match, original
     oldbody=match[2]
@@ -47,6 +64,11 @@ for original in changed:
         configs.append(key+'='+value)
     assert sorted(new['config'] or [])==sorted(configs), f'{name}: planner/timeout config changed'
 
+    if original in REVISED_READERS:
+        assert new['body']==oldbody, f'{name}: deployed body differs from the exact reviewed V2 cutover'
+        count+=1
+        continue
+
     body=re.sub(r'_cn(?=[12](?:_|\b))','_v',new['body'])
     for kind in ['search','character']:
         body=body.replace(f'portal_catalog_{kind}_current_v2',f'portal_catalog_{kind}_rows_v1').replace(f'portal_catalog_{kind}_rows_v2',f'portal_catalog_{kind}_rows_v1')
@@ -58,4 +80,4 @@ for original in changed:
 assert count==34, count
 # The shadow generation must not retain duplicate mutable query readers.
 assert len([n for n in functions if re.search(r'_cn[12](?:_|$)',n)])==11
-print(f'PASS: {count} readers/helpers preserve baseline query bodies after explicit routing/epoch/name normalization; only 11 required generation functions remain')
+print(f'PASS: {count} readers/helpers match the immutable composite baseline or the two exact reviewed V2 readers; only 11 required generation functions remain')
