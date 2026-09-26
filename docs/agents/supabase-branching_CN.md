@@ -22,9 +22,9 @@ checkPaths:
   - .github/workflows/supabase-dev.yml
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
-lastReviewedAt: 2026-09-24
-lastReviewedCommit: 59643fea
-lastReviewedNote: "Reviewed Database #717 workflow update: the reviewer Contact pgTAP joins the existing schema/capability gate while branch, hosted deployment, and integration ownership remain unchanged."
+lastReviewedAt: 2026-09-26
+lastReviewedCommit: e1a105cdfa57708b10f6880d70bf4da5ed0d1844
+lastReviewedNote: "Reviewed Database #726 Main-to-Dev backmerge of Portal hotfix #723/#725. Preserves Dev Open Data, reviewer Contact and review-workspace V5 changes and the later 20260926100000 head, while retaining the optimized Portal readers and Main/Dev PR gates. Production/root integration continue to use the eligible Main source."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -326,6 +326,10 @@ python3 scripts/test_check_auth_email_templates.py
 3. 合并回 `main`。
 4. 再把 `main` 回合并到 `dev`。
 5. 保持两条长期分支上的 migration 历史一致。
+
+数据库验证 workflow 覆盖目标为 `dev` 或 `main` 的 PR，包括 hotfix；两者都执行
+本地合同重建和精确的一次性 Preview 检查。持久 Dev 部署仍只接受
+`refs/heads/dev` 的 push，Main PR 不会部署该持久环境。
 
 ## 消费者仓边界
 

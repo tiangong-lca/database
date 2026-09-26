@@ -20,7 +20,27 @@ begin
       and (not (p_filters ? 'referenceYearTo') or v.reference_year <= (p_filters->>'referenceYearTo')::integer)
       and (not (p_filters ? 'processSubtype') or v.process_subtype=p_filters->>'processSubtype')
       and (not (p_filters ? 'source') or v.source=p_filters->>'source')
-      and private.portal_navigation_version_matches_v3(v.dataset_kind,p_filters,v.id,v.version)
+      and (
+        not (p_filters ? 'classificationNodeId')
+        or (v.dataset_kind,v.id,v.version) in (
+          select m.dataset_kind,m.id,m.version
+          from private.portal_navigation_membership_v1 m
+          where m.dimension='classification'
+            and m.node_id=p_filters->>'classificationNodeId'
+            and (p_kind='all' or m.dataset_kind=p_kind)
+            and (coalesce(p_filters->>'classificationScope','subtree')<>'direct' or m.direct)
+        )
+      ) and (
+        not (p_filters ? 'geographyNodeId')
+        or (v.dataset_kind,v.id,v.version) in (
+          select m.dataset_kind,m.id,m.version
+          from private.portal_navigation_membership_v1 m
+          where m.dimension='geography'
+            and m.node_id=p_filters->>'geographyNodeId'
+            and (p_kind='all' or m.dataset_kind=p_kind)
+            and (coalesce(p_filters->>'geographyScope','subtree')<>'direct' or m.direct)
+        )
+      )
 ;
   else
     if p_query ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then v_exact:=p_query::uuid; end if;
@@ -38,7 +58,27 @@ begin
       and (not (p_filters ? 'referenceYearTo') or v.reference_year <= (p_filters->>'referenceYearTo')::integer)
       and (not (p_filters ? 'processSubtype') or v.process_subtype=p_filters->>'processSubtype')
       and (not (p_filters ? 'source') or v.source=p_filters->>'source')
-      and private.portal_navigation_version_matches_v3(v.dataset_kind,p_filters,v.id,v.version)
+      and (
+        not (p_filters ? 'classificationNodeId')
+        or (v.dataset_kind,v.id,v.version) in (
+          select m.dataset_kind,m.id,m.version
+          from private.portal_navigation_membership_v1 m
+          where m.dimension='classification'
+            and m.node_id=p_filters->>'classificationNodeId'
+            and (p_kind='all' or m.dataset_kind=p_kind)
+            and (coalesce(p_filters->>'classificationScope','subtree')<>'direct' or m.direct)
+        )
+      ) and (
+        not (p_filters ? 'geographyNodeId')
+        or (v.dataset_kind,v.id,v.version) in (
+          select m.dataset_kind,m.id,m.version
+          from private.portal_navigation_membership_v1 m
+          where m.dimension='geography'
+            and m.node_id=p_filters->>'geographyNodeId'
+            and (p_kind='all' or m.dataset_kind=p_kind)
+            and (coalesce(p_filters->>'geographyScope','subtree')<>'direct' or m.direct)
+        )
+      )
 ;
   end if;
 end;

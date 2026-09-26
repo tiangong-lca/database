@@ -36,8 +36,10 @@ begin
     select n.* from private.portal_navigation_node_v1 n
     where n.dimension=p_dimension and n.parent_node_id is not distinct from p_parent_node_id
       and (n.source_file is not null or n.node_id in ('class:isic','class:cpc','class:elementary','geo:unmapped') or exists (
-        select 1 from private.portal_navigation_membership_v1 m join matched v using(dataset_kind,id,version)
-        where m.node_id=n.node_id and (p_kind='all' or m.dataset_kind=p_kind)))
+        select 1 from private.portal_navigation_membership_v1 m
+        where m.node_id=n.node_id and (p_kind='all' or m.dataset_kind=p_kind)
+          and ((p_query='' and p_filters='{}'::jsonb)
+            or (m.dataset_kind,m.id,m.version) in (select dataset_kind,id,version from matched))))
       and (p_dimension<>'classification' or p_kind='all' or n.taxonomy not in ('isic','cpc','elementary')
         or (p_kind='process' and n.taxonomy='isic') or (p_kind='flow' and n.taxonomy in ('cpc','elementary')))
       and (p_cursor_node_id is null or (n.code collate "C",n.node_id collate "C")>(v_after_code collate "C",p_cursor_node_id collate "C"))
@@ -49,8 +51,9 @@ begin
   ), counted as materialized (
     select m.node_id,count(*) as count,count(*) filter(where m.direct) as direct_count
     from private.portal_navigation_membership_v1 m
-    join matched v on (v.dataset_kind,v.id,v.version)=(m.dataset_kind,m.id,m.version)
     where m.dimension=p_dimension and (p_kind='all' or m.dataset_kind=p_kind)
+      and ((p_query='' and p_filters='{}'::jsonb)
+        or (m.dataset_kind,m.id,m.version) in (select dataset_kind,id,version from matched))
       and m.node_id in(select n.node_id from targets n)
     group by m.node_id
   ), decorated as materialized (

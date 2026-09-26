@@ -56,6 +56,15 @@ def main() -> int:
         "project configuration deploy": "supabase config push",
     }
     failures = [label for label, token in forbidden.items() if token in lowered]
+    for event, expected in (("push", {"dev"}), ("pull_request", {"dev", "main"})):
+        event_block = re.search(
+            rf"(?ms)^  {event}:\n(.*?)(?=^  \w|^\w|\Z)", text
+        )
+        branches = set(re.findall(r"(?m)^      - (\S+)\s*$", event_block.group(1))) if event_block else set()
+        if branches != expected:
+            failures.append(
+                f"{event} branches must be {sorted(expected)}: validate Main hotfix PRs without deploying persistent Dev"
+            )
 
     supabase_cli_versions = re.findall(
         r"uses: supabase/setup-cli@v2\s+with:\s+version:\s*([^\s#]+)", text
