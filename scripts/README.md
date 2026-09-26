@@ -20,9 +20,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-09-26
-lastReviewedCommit: 5b6a2508dcfbe7c602f8cce848d1430a9796ddfa
-lastReviewedNote: "Reviewed Database #723 main-hotfix narrow Portal readers, coverage cutover, real-writer/equivalence/concurrency proof and isolated fixture disposition. Public DTOs, writer/ACL contracts, 8-second budgets and main-to-dev/root delivery boundaries remain; local schema snapshots require exact reconstruction and deterministic regeneration."
+lastReviewedAt: 2026-09-27
+lastReviewedCommit: 2ded7cb93dbe4e13767481127ee99900afd99834
+lastReviewedNote: "Reviewed Database #733: bounded legacy V2 keys/ranking/page facts, public-reader ownership with retained internal EXECUTE and restored DDL prestate, writer/visibility/cursor proof and exact local regeneration preserve public contracts, budgets and Main-to-Dev/Root boundaries. Hosted publication remains a distinct gate."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
