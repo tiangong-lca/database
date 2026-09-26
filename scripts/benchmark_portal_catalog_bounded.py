@@ -52,6 +52,7 @@ def fixture(processes: int, flows: int, padding: int) -> str:
     sql = r'''
 begin;
 set local statement_timeout='10min';
+set local work_mem='12MB';
 grant portal_public_executor,api_internal_executor to postgres;
 grant create on schema private to portal_public_executor;
 create function pg_temp.payload(n text,g text,c text,f boolean) returns jsonb language sql immutable as $$
@@ -217,6 +218,8 @@ end $$;
         'complete': 'select 1',
         'missing_facet': "delete from private.portal_catalog_facet_rows_v1 where (dataset_kind,id,version) in (select dataset_kind,id,version from private.portal_catalog_facet_rows_v1 limit 1)",
         'missing_navigation': "delete from private.portal_navigation_versions_v1 where (dataset_kind,id,version) in (select dataset_kind,id,version from private.portal_navigation_versions_v1 limit 1)",
+        'missing_process_projection': "delete from private.portal_catalog_search_rows_v2 where (dataset_kind,id,version) in (select dataset_kind,id,version from private.portal_catalog_search_rows_v2 limit 1)",
+        'state_drift': "update private.portal_catalog_facet_rows_v1 set state_code=case state_code when 100 then 200 else 100 end where (dataset_kind,id,version) in (select dataset_kind,id,version from private.portal_catalog_facet_rows_v1 limit 1)",
         'timestamp_drift': "update private.portal_catalog_facet_rows_v1 set modified_at=modified_at+interval '1 second' where (dataset_kind,id,version) in (select dataset_kind,id,version from private.portal_catalog_facet_rows_v1 limit 1)",
     }
     for label, mutation in mutations.items():
@@ -253,13 +256,17 @@ rollback;
     report['fixture'] = {'processVersions': 2 * args.process_datasets, 'flowVersions': 2 * args.flow_datasets, 'summaryPaddingBytes': args.card_padding, 'writerProof': 'separate real-writer SQL regression; direct public projections for read-scale only'}
     report['candidateSha256'] = candidate_sha256
     report['sqlSha256'] = hashlib.sha256(sql.encode()).hexdigest()
+    report['sessionWorkMem'] = '12MB'
     report['scope'] = 'isolated local synthetic, rollback-only; function result and cursor equality, not production p95'
     args.report.write_text(json.dumps(report, indent=2) + '\n')
     mismatches = [x for x in report['equivalence'] if x['comparable'] and not x['equal']]
     errors = [x for x in report['samples'] if x['variant'] == 'candidate' and x['error']]
-    guards_pass = report['guardChecks'] == {'complete': 'guard:P7230', 'missing_facet': 'guard:55000', 'missing_navigation': 'guard:55000', 'timestamp_drift': 'guard:55000'}
-    print(json.dumps({'report': str(args.report), 'samples': len(report['samples']), 'comparable': sum(x['comparable'] for x in report['equivalence']), 'mismatches': mismatches, 'candidateErrors': errors, 'guardChecks': report['guardChecks']}, indent=2))
-    return int(bool(mismatches or errors or not guards_pass))
+    slow = [x for x in report['samples'] if x['variant'] == 'candidate' and x['elapsedMs'] > 2000]
+    plan_errors = [x for x in report['plans'] if x['variant'] == 'candidate' and x['error']]
+    expected_guards = {label: 'guard:P7230' if label == 'complete' else 'guard:55000' for label in mutations}
+    guards_pass = report['guardChecks'] == expected_guards
+    print(json.dumps({'report': str(args.report), 'samples': len(report['samples']), 'comparable': sum(x['comparable'] for x in report['equivalence']), 'mismatches': mismatches, 'candidateErrors': errors, 'overTwoSeconds': slow, 'planErrors': plan_errors, 'guardChecks': report['guardChecks']}, indent=2))
+    return int(bool(mismatches or errors or slow or plan_errors or not guards_pass))
 
 
 if __name__ == '__main__':

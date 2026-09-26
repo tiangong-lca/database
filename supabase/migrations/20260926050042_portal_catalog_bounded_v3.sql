@@ -13,25 +13,30 @@ set local role portal_public_executor;
 -- children, but cannot prove that every public parent has its derived children.
 -- This runs once at cutover; immutable, atomic writers maintain the invariant.
 do $portal_coverage$
+declare invalid_projection boolean;
 begin
-  if exists (
-    select 1 from private.portal_catalog_search_current_v2 c
-    left join private.portal_catalog_facet_rows_v1 f
-      on (f.dataset_kind,f.id,f.version)=(c.dataset_kind,c.id,c.version)
-    left join private.portal_navigation_versions_v1 v
-      on (v.dataset_kind,v.id,v.version)=(c.dataset_kind,c.id,c.version)
-    where c.state_code in (100,200) and (
+  -- Materialize the narrow key universe once. Repeated anti-joins against the
+  -- UNION view can otherwise rescan both projection families for every child.
+  with parents as materialized (
+    select dataset_kind,id,version,state_code,modified_at
+    from private.portal_catalog_search_current_v2 where state_code in (100,200)
+  ) select coalesce(bool_or(
       f.id is null or v.id is null or f.facet_contract_version<>1
       or f.state_code is distinct from c.state_code
       or f.modified_at is distinct from c.modified_at
-    )
-  ) or exists (
-    select 1 from private.portal_catalog_facet_rows_v1 f
+    ),false) or exists (
+    select 1 from private.portal_catalog_facet_rows_v1 extra
     where not exists (
-      select 1 from private.portal_catalog_search_current_v2 c
-      where (c.dataset_kind,c.id,c.version)=(f.dataset_kind,f.id,f.version)
+      select 1 from parents c
+      where (c.dataset_kind,c.id,c.version)=(extra.dataset_kind,extra.id,extra.version)
     )
-  ) then
+  ) into invalid_projection
+  from parents c
+  left join private.portal_catalog_facet_rows_v1 f
+    on (f.dataset_kind,f.id,f.version)=(c.dataset_kind,c.id,c.version)
+  left join private.portal_navigation_versions_v1 v
+    on (v.dataset_kind,v.id,v.version)=(c.dataset_kind,c.id,c.version);
+  if invalid_projection then
     raise exception using errcode='55000',
       message='Portal narrow catalog projections are incomplete or inconsistent';
   end if;
