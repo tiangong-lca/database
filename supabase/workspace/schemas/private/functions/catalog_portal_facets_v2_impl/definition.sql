@@ -1,117 +1,111 @@
 CREATE OR REPLACE FUNCTION "private"."catalog_portal_facets_v2_impl"("p_kind" "text", "p_query" "text", "p_exact_id" "uuid", "p_like_pattern" "text", "p_filters" "jsonb", "p_query_fingerprint" "text") RETURNS "jsonb"
-    LANGUAGE "sql" STABLE SECURITY DEFINER PARALLEL RESTRICTED
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER PARALLEL RESTRICTED
     SET "search_path" TO ''
     SET "statement_timeout" TO '8s'
     SET "plan_cache_mode" TO 'force_custom_plan'
     SET "row_security" TO 'on'
-    AS $$
-  with matched as materialized (
-    select candidate.*
-    from private.catalog_portal_facet_candidate_rows_v2(
-      p_kind,
-      p_query,
-      p_exact_id,
-      p_like_pattern
-    ) as candidate
-    where (
-        not (p_filters ? 'accessLevel')
-        or candidate.card ->> 'accessLevel' = p_filters ->> 'accessLevel'
-      )
-      and (
-        not (p_filters ? 'geography')
-        or pg_catalog.lower(pg_catalog.btrim(coalesce(
-          candidate.card #>> '{geography,code}',
-          ''
-        ))) = p_filters ->> 'geography'
-      )
-      and (
-        not (p_filters ? 'classification')
-        or exists (
-          select 1
-          from pg_catalog.jsonb_array_elements(
-            candidate.card -> 'classifications'
-          ) as classification(item)
-          where pg_catalog.lower(pg_catalog.btrim(
-            classification.item ->> 'code'
-          )) = p_filters ->> 'classification'
-        )
-      )
-      and (
-        not (p_filters ? 'referenceYearFrom')
-        or (candidate.card ->> 'referenceYear')::integer
-          >= (p_filters ->> 'referenceYearFrom')::integer
-      )
-      and (
-        not (p_filters ? 'referenceYearTo')
-        or (candidate.card ->> 'referenceYear')::integer
-          <= (p_filters ->> 'referenceYearTo')::integer
-      )
-      and (
-        not (p_filters ? 'processSubtype')
-        or pg_catalog.lower(pg_catalog.btrim(coalesce(
-          candidate.card ->> 'processSubtype',
-          ''
-        ))) = p_filters ->> 'processSubtype'
-      )
-      and (
-        not (p_filters ? 'source')
-        or pg_catalog.lower(pg_catalog.btrim(coalesce(
-          candidate.card ->> 'source',
-          ''
-        ))) = p_filters ->> 'source'
-      )
-  ), facet_values as materialized (
-    select 'kind'::text as group_id,
-      1 as group_order,
-      matched.dataset_kind as value,
-      matched.dataset_kind as label
-    from matched
+    AS $_$
+begin
+    return (
+with pattern_matches as materialized (
+    select 'process'::text as dataset_kind,pattern.id,pattern.version
+    from private.catalog_portal_process_pattern_versions_v1(p_like_pattern) pattern
+    where p_kind in ('process','all') and p_query<>''
     union all
-    select 'accessLevel',
-      2,
-      matched.card ->> 'accessLevel',
-      matched.card ->> 'accessLevel'
-    from matched
-    union all
-    select 'geography',
-      3,
-      pg_catalog.lower(pg_catalog.btrim(
-        matched.card #>> '{geography,code}'
-      )),
-      matched.card #>> '{geography,code}'
-    from matched
-    union all
-    select 'referenceYear',
-      4,
-      pg_catalog.btrim(matched.card ->> 'referenceYear'),
-      pg_catalog.btrim(matched.card ->> 'referenceYear')
-    from matched
-    union all
-    select 'processSubtype',
-      5,
-      pg_catalog.lower(pg_catalog.btrim(
-        matched.card ->> 'processSubtype'
-      )),
-      matched.card ->> 'processSubtype'
-    from matched
-    where matched.dataset_kind = 'process'
-    union all
-    select 'source',
-      6,
-      pg_catalog.lower(pg_catalog.btrim(matched.card ->> 'source')),
-      matched.card ->> 'source'
-    from matched
-  ), counts as materialized (
-    select group_id,
-      group_order,
-      value,
-      pg_catalog.min(value) as label,
+    select 'flow'::text,pattern.id,pattern.version
+    from private.catalog_portal_flow_pattern_versions_v1(p_like_pattern) pattern
+    where p_kind in ('flow','all') and p_query<>'' and not private.portal_catalog_summary_valid_cas_v1(p_query)
+  ), candidate_keys as materialized (
+    select dataset_kind,id,version from pattern_matches
+    union
+    select p.dataset_kind,p.id,p.version from private.portal_catalog_search_current_v2 p
+    where (p_kind='all' or p.dataset_kind=p_kind) and p.state_code in (100,200)
+      and p.id=p_exact_id
+    union
+    select 'flow'::text,p.id,p.version from private.portal_catalog_search_rows_v1 p
+    where p_kind in ('flow','all') and p_query<>''
+      and private.portal_catalog_summary_valid_cas_v1(p_query)
+      and p.dataset_kind='flow' and p.state_code in (100,200)
+      and pg_catalog.jsonb_typeof(p.card->'casNumber')='string'
+      and p.card->>'casNumber' ~ '^[0-9]{2,7}-[0-9]{2}-[0-9]$'
+      and pg_catalog.length(p.card->>'casNumber') between 7 and 12
+      and p.card->>'casNumber'=p_query
+  ), matched as materialized (
+    select filtered.* from private.portal_navigation_matched_versions_v1(p_kind,'',p_filters) filtered
+    where p_query='' or (filtered.dataset_kind,filtered.id,filtered.version)
+      in (select dataset_kind,id,version from candidate_keys)
+  ), visible_versions as materialized (
+    select
+      facet.dataset_kind,
+      facet.id,
+      facet.version,
+      facet.facet_access_level,
+      facet.facet_geography,
+      facet.facet_reference_year,
+      facet.facet_process_subtype,
+      facet.facet_source
+    from private.portal_catalog_facet_rows_v1 as facet
+    where facet.facet_contract_version = 1 and facet.state_code in (100,200)
+      and (p_kind = 'all' or facet.dataset_kind = p_kind)
+      and (facet.dataset_kind,facet.id,facet.version) in (select dataset_kind,id,version from matched)
+  ), facts as materialized (
+    select visible_versions.dataset_kind,
+      visible_versions.facet_access_level,
+      visible_versions.facet_geography,
+      visible_versions.facet_reference_year,
+      case when visible_versions.dataset_kind = 'process' then
+        visible_versions.facet_process_subtype
+      else null::text end as facet_process_subtype,
+      visible_versions.facet_source
+    from visible_versions
+  ), counts_raw as materialized (
+    select case
+        when grouping(facts.dataset_kind) = 0 then 'kind'
+        when grouping(facts.facet_access_level) = 0 then 'accessLevel'
+        when grouping(facts.facet_geography) = 0 then 'geography'
+        when grouping(facts.facet_reference_year) = 0 then 'referenceYear'
+        when grouping(facts.facet_process_subtype) = 0 then 'processSubtype'
+        else 'source'
+      end as group_id,
+      case
+        when grouping(facts.dataset_kind) = 0 then 1
+        when grouping(facts.facet_access_level) = 0 then 2
+        when grouping(facts.facet_geography) = 0 then 3
+        when grouping(facts.facet_reference_year) = 0 then 4
+        when grouping(facts.facet_process_subtype) = 0 then 5
+        else 6
+      end as group_order,
+      case
+        when grouping(facts.dataset_kind) = 0 then facts.dataset_kind
+        when grouping(facts.facet_access_level) = 0 then
+          facts.facet_access_level
+        when grouping(facts.facet_geography) = 0 then facts.facet_geography
+        when grouping(facts.facet_reference_year) = 0 then
+          facts.facet_reference_year
+        when grouping(facts.facet_process_subtype) = 0 then
+          facts.facet_process_subtype
+        else facts.facet_source
+      end as value,
       pg_catalog.count(*) as value_count
-    from facet_values
-    where nullif(pg_catalog.btrim(value), '') is not null
-      and pg_catalog.length(value) <= 128
-      and pg_catalog.octet_length(value) <= 512
-    group by group_id, group_order, value
+    from facts
+    group by grouping sets (
+      (facts.dataset_kind),
+      (facts.facet_access_level),
+      (facts.facet_geography),
+      (facts.facet_reference_year),
+      (facts.facet_process_subtype),
+      (facts.facet_source)
+    )
+  ), counts as materialized (
+    select counts_raw.group_id,
+      counts_raw.group_order,
+      counts_raw.value,
+      counts_raw.value as label,
+      counts_raw.value_count
+    from counts_raw
+    where nullif(pg_catalog.btrim(counts_raw.value), '') is not null
+      and pg_catalog.length(counts_raw.value) <= 128
+      and pg_catalog.octet_length(counts_raw.value) <= 512
   ), ranked_counts as materialized (
     select counts.*,
       pg_catalog.row_number() over (
@@ -174,7 +168,10 @@ CREATE OR REPLACE FUNCTION "private"."catalog_portal_facets_v2_impl"("p_kind" "t
     'groups', groups.value
   )
   from groups
-$$;
+    );
+end;
+
+$_$;
 
 ALTER FUNCTION "private"."catalog_portal_facets_v2_impl"("p_kind" "text", "p_query" "text", "p_exact_id" "uuid", "p_like_pattern" "text", "p_filters" "jsonb", "p_query_fingerprint" "text") OWNER TO "portal_public_executor";
 
