@@ -20,9 +20,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-09-23
-lastReviewedCommit: a4bc3a5f2c121b6b425a39e57f3a607a62f450e9
-lastReviewedNote: "Reviewed Database #710 main-to-Dev backmerge: production #703 ready derivative scheduling and guarded activation are retained with Dev #705 agent contract and #707 sample-library retirement. Five dispatch transitions, 25 visited requests, existing data fences, and branch/deployment ownership remain."
+lastReviewedAt: 2026-09-26
+lastReviewedCommit: 5b6a2508dcfbe7c602f8cce848d1430a9796ddfa
+lastReviewedNote: "Reviewed Database #723 main-hotfix narrow Portal readers, coverage cutover, real-writer/equivalence/concurrency proof and isolated fixture disposition. Public DTOs, writer/ACL contracts, 8-second budgets and main-to-dev/root delivery boundaries remain; local schema snapshots require exact reconstruction and deterministic regeneration."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -658,3 +658,38 @@ The repository now includes a local pre-push docpact gate in `scripts/docpact-ga
 `python3 scripts/benchmark_portal_summary_bounded.py --help` 说明本地、回滚式性能夹具。它拒绝远端 Docker context 和非空公开投影。读取规模测试不能替代生产延迟或源数据写入吞吐验证。
 
 `python3 scripts/check_portal_json_schemas.py` 先注册关联文件，再以严格 Draft 2020-12 模式逐个编译 Portal schema。它沿用已固定的 AJV CLI 与格式插件版本，并将当前编译文件排除在引用注册列表外，避免依赖文件顺序和重复 ID；不会改写 schema。
+
+### `benchmark_portal_catalog_bounded.py`
+
+在同一批合成数据上，以 rollback-only 事务对比保留的旧迁移定义和候选
+Portal 读函数。只接受本机 Docker socket、空投影和
+`supabase_db_database-engine-723-*` 隔离容器；每个数据集含两个公开版本，
+支持配置摘要宽度。直接填充投影只证明读取规模，真实写入维护由 SQL suite
+另行验证。报告包含响应摘要、旧游标续页、实际切换门禁故障注入、耗时及
+EXPLAIN ANALYZE/BUFFERS。名称排序仍需读取匹配名称，不能宣称常数工作量。
+
+```bash
+python3 scripts/benchmark_portal_catalog_bounded.py \
+  --container supabase_db_database-engine-723-isolated \
+  --process-datasets 9000 --flow-datasets 55000 --card-padding 2048 \
+  --samples 5 --report /tmp/portal-catalog-serial.json
+```
+
+### `profile_portal_catalog_concurrency.py`
+
+绑定成功串行报告中的精确候选与夹具。仅接受空的本机隔离库；串行测试后先
+重建该任务隔离项目，避免回滚留下的物理页影响下一次夹具。为使独立连接
+共享同一数据集，会提交合成夹具，然后依次对旧版和候选执行有界并发请求。
+结束或失败时恢复候选读函数并输出处置记录。此工具与串行基准不同，保留
+合成行供检查；留存结果后只 reset 该任务拥有的隔离项目，再按 workspace
+资源生命周期释放容器、卷和网络。
+
+```bash
+python3 scripts/profile_portal_catalog_concurrency.py \
+  --container supabase_db_database-engine-723-isolated \
+  --reference-report /tmp/portal-catalog-serial.json \
+  --concurrency 4 --requests 24 --report /tmp/portal-catalog-concurrent.json
+```
+
+两个入口都不接受 hosted URL，也不提高公共查询预算。语义与发布证明要求见
+`docs/agents/repo-validation.md`。
