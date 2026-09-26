@@ -565,7 +565,9 @@ on an explicitly owned, isolated Database #723 project. The serial benchmark
 compares actual retained migration definitions and the candidate on the same
 synthetic data, includes continuation from a predecessor-issued cursor, injects
 missing/drifted narrow facts into the real cutover guard, and records EXPLAIN
-ANALYZE/BUFFERS. Candidate calls must succeed within two seconds in this controlled
+ANALYZE/BUFFERS. Guard probes use the actual Portal execution role and 4 MB
+work memory, independently of the reader profile's 12 MB session setting.
+Candidate calls must succeed within two seconds in this controlled
 fixture. The 8-second statement budget and public timeout configuration remain
 unchanged. Record the migration/SQL hashes, fixture size/width, platform, CPU and
 memory limits and sample counts; these observations are not hosted latency claims.

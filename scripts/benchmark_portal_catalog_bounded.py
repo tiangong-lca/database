@@ -208,6 +208,8 @@ begin
  begin
   execute mutation;
   phase:='guard';
+  perform set_config('work_mem','4MB',true);
+  set local role portal_public_executor;
   execute guard_sql;
   raise exception using errcode='P7230',message='accepted fixture; roll back test mutation';
  exception when others then return phase||':'||sqlstate;
@@ -257,6 +259,8 @@ rollback;
     report['candidateSha256'] = candidate_sha256
     report['sqlSha256'] = hashlib.sha256(sql.encode()).hexdigest()
     report['sessionWorkMem'] = '12MB'
+    report['guardWorkMem'] = '4MB'
+    report['guardRole'] = 'portal_public_executor'
     report['scope'] = 'isolated local synthetic, rollback-only; function result and cursor equality, not production p95'
     args.report.write_text(json.dumps(report, indent=2) + '\n')
     mismatches = [x for x in report['equivalence'] if x['comparable'] and not x['equal']]

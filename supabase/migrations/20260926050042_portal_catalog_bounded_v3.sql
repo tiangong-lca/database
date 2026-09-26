@@ -15,24 +15,19 @@ set local role portal_public_executor;
 do $portal_coverage$
 declare invalid_projection boolean;
 begin
-  -- Materialize the narrow key universe once. Repeated anti-joins against the
-  -- UNION view can otherwise rescan both projection families for every child.
+  -- Compare both directions in one full join. An EXISTS anti-join can favor
+  -- low startup cost and rescan this unindexed CTE once per child at 4 MB
+  -- work_mem, even though proving a healthy catalog requires the whole set.
   with parents as materialized (
     select dataset_kind,id,version,state_code,modified_at
     from private.portal_catalog_search_current_v2 where state_code in (100,200)
   ) select coalesce(bool_or(
-      f.id is null or v.id is null or f.facet_contract_version<>1
+      c.id is null or f.id is null or v.id is null or f.facet_contract_version<>1
       or f.state_code is distinct from c.state_code
       or f.modified_at is distinct from c.modified_at
-    ),false) or exists (
-    select 1 from private.portal_catalog_facet_rows_v1 extra
-    where not exists (
-      select 1 from parents c
-      where (c.dataset_kind,c.id,c.version)=(extra.dataset_kind,extra.id,extra.version)
-    )
-  ) into invalid_projection
+    ),false) into invalid_projection
   from parents c
-  left join private.portal_catalog_facet_rows_v1 f
+  full join private.portal_catalog_facet_rows_v1 f
     on (f.dataset_kind,f.id,f.version)=(c.dataset_kind,c.id,c.version)
   left join private.portal_navigation_versions_v1 v
     on (v.dataset_kind,v.id,v.version)=(c.dataset_kind,c.id,c.version);

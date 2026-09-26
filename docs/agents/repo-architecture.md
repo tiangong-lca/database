@@ -904,8 +904,9 @@ writer ownership and timeout settings are unchanged. The retained filtered-empty
 match metadata also remains unchanged by this performance-only rewrite.
 
 The cutover verifies complete parent/facet/navigation coverage and equal projected
-state/timestamps before replacing readers. Its full-set aggregate favors one-pass
-joins over an EXISTS startup plan that can be costly when all rows are valid.
+state/timestamps before replacing readers. A full join compares both directions
+in one aggregate, avoiding an EXISTS anti-join's low-startup-cost nested loop
+over the materialized key set when proving that every row is valid.
 After cutover, the existing immutable writers and transactional withdrawal/FK
 contracts maintain those facts; no new projection or source writer is introduced.
 
