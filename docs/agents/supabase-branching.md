@@ -390,6 +390,11 @@ Rules:
 4. Back-merge `main` into `dev`.
 5. Keep migration history aligned across both long-lived branches.
 
+The database validation workflow runs for PRs targeting either `dev` or `main`,
+including hotfixes. Both targets receive the local contract rebuild and exact
+disposable Preview checks. Persistent Dev deployment still requires a push to
+`refs/heads/dev`; a Main PR never deploys that persistent environment.
+
 ## Consumer repo boundaries
 
 Use `database-engine` for:

@@ -327,6 +327,10 @@ python3 scripts/test_check_auth_email_templates.py
 4. 再把 `main` 回合并到 `dev`。
 5. 保持两条长期分支上的 migration 历史一致。
 
+数据库验证 workflow 覆盖目标为 `dev` 或 `main` 的 PR，包括 hotfix；两者都执行
+本地合同重建和精确的一次性 Preview 检查。持久 Dev 部署仍只接受
+`refs/heads/dev` 的 push，Main PR 不会部署该持久环境。
+
 ## 消费者仓边界
 
 以下变更应在 `database-engine` 完成：
