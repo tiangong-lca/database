@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-09-26
-lastReviewedCommit: c139f66128586f42487b2e0cdc07507009c95013
-lastReviewedNote: "Added review-workspace V5 queue, batch-eligibility, and reopened-draft validation coverage while retaining the existing Root/Reference baseline."
+lastReviewedCommit: e1a105cdfa57708b10f6880d70bf4da5ed0d1844
+lastReviewedNote: "Reviewed Database #726 Main-to-Dev backmerge of Portal hotfix #723/#725. Preserves Dev Open Data, reviewer Contact and review-workspace V5 changes and the later 20260926100000 head, while retaining the optimized Portal readers and Main/Dev PR gates. Production/root integration continue to use the eligible Main source."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -556,3 +556,39 @@ Run the offline vocabulary generator with `--check`, generate Portal types twice
 Run `python3 scripts/test_portal_navigation_backfill.py --container supabase_db_database-engine --report /tmp/portal-navigation-backfill.json` on the empty local stack before other committed fixtures. It replays all four populated shards twice and uses a two-connection advisory barrier to prove that concurrent withdrawal and update win after the cursor snapshot. It touches only fixture projection parents, cleans them up, and never accepts hosted URLs. The backfill makes only its two parent FKs immediate so per-version savepoints catch withdrawal before commit.
 
 The local qualification at `e6c536f63a4afcc167c70bb95767b79f210f4f03` passed all 16 Portal suites and three adjacent schema/API/Hybrid suites, including 48 navigation and ten summary assertions. The exact four-shard replay and withdrawal/update barrier tests passed. Two regenerated five-schema snapshots matched across 1,705 SQL files. The 100,000-version synthetic benchmark returned identical old/new summary JSON, with new reads 43.6–58.3 ms versus 2,136–2,197 ms; a world navigation page was 40,014 bytes and 1,483–1,552 ms. These are local receipts only. Full `db lint` still reports 12 untouched historical/temp-table routines; none belong to this navigation, V3 or summary increment. Hosted Preview and subsequent Dev/Main checks remain release gates.
+
+## Bounded Portal catalog qualification
+
+For changes to the query-free Search/Facets/navigation readers, include
+`supabase/tests/20260926_portal_catalog_bounded_v3.sql` after a blank migration
+rebuild, all Portal suites and the schema/API capability closure. The real-writer
+regression covers public history, alias versus exact geography, intersecting node
+scopes, year filters, authored timestamps and withdrawal, all sort/cursor forms,
+unnamed records, and the unchanged anonymous/private boundary.
+
+Use the two catalog qualification entrypoints documented in `scripts/README.md`
+on an explicitly owned, isolated Database #723 project. The serial benchmark
+compares actual retained migration definitions and the candidate on the same
+synthetic data, includes continuation from a predecessor-issued cursor, injects
+missing/drifted narrow facts into the real cutover guard, and records EXPLAIN
+ANALYZE/BUFFERS. Guard probes use the actual Portal execution role and 4 MB
+work memory, independently of the reader profile's 12 MB session setting.
+Candidate calls must succeed within two seconds in this controlled
+fixture. The 8-second statement budget and public timeout configuration remain
+unchanged. Record the migration/SQL hashes, fixture size/width, platform, CPU and
+memory limits and sample counts; these observations are not hosted latency claims.
+
+Rebuild the owned isolated database between serial and concurrent profiles;
+rollback removes logical rows but leaves physical pages and planner statistics.
+The concurrent profile commits its synthetic fixture for independent sessions,
+runs the two reader versions sequentially at bounded concurrency, compares every
+successful response with the serial reference and restores candidate readers.
+Its local p95 wall budget is two seconds and includes Docker/psql overhead. It
+retains synthetic rows explicitly; reset only that owned isolated project before
+other suites and generated-schema export, then release the task resources through
+the workspace resource lifecycle after preserving receipts. Never point either
+entrypoint at the shared development stack or a hosted database.
+
+Qualification includes a populated cutover on the selected release baseline. A
+clean install, a development-branch run and an empty hosted Preview are separate
+proofs; none substitutes for the populated cutover or exact production readback.

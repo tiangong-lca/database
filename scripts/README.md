@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-09-26
-lastReviewedCommit: 53f34eaf1d9ca6a9c890e6920910bcc2a39bf06a
-lastReviewedNote: "Reviewed Database #717 exact migration replay and reviewer Contact schema/types generation; documented script ownership and invocation remain unchanged."
+lastReviewedCommit: e1a105cdfa57708b10f6880d70bf4da5ed0d1844
+lastReviewedNote: "Reviewed Database #726 Main-to-Dev backmerge of Portal hotfix #723/#725. Preserves Dev Open Data, reviewer Contact and review-workspace V5 changes and the later 20260926100000 head, while retaining the optimized Portal readers and Main/Dev PR gates. Production/root integration continue to use the eligible Main source."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -735,3 +735,42 @@ Later hierarchy changes must use `data/portal-navigation-revisions.json`; genera
 `python3 scripts/benchmark_portal_summary_bounded.py --help` describes the explicitly local, rollback-only performance fixture. It refuses remote Docker contexts and nonempty public projections. Read-scale results do not qualify production latency or source-writer throughput.
 
 `python3 scripts/check_portal_json_schemas.py` compiles every Portal schema in strict Draft 2020-12 mode with all sibling references registered. It uses the pinned existing AJV CLI/format versions and excludes each root from its own reference list, avoiding both filename-order dependency and duplicate IDs. It changes no schemas.
+
+### `benchmark_portal_catalog_bounded.py`
+
+Runs a rollback-only, same-fixture comparison of retained and candidate Portal
+readers. It rejects hosted Docker contexts, nonempty projections and names outside
+`supabase_db_database-engine-723-*`. The fixture has two versions per dataset and
+configurable summary width; direct projection seeding is read-scale evidence,
+while the SQL suite independently exercises real writers. Reports include exact
+response hashes, predecessor-issued continuation, cutover guard fault injection,
+timings and aggregate buffer/temporary-I/O plans. Name sorting remains a measured
+matched-name read, not a bounded-card-access claim.
+
+```bash
+python3 scripts/benchmark_portal_catalog_bounded.py \
+  --container supabase_db_database-engine-723-isolated \
+  --process-datasets 9000 --flow-datasets 55000 --card-padding 2048 \
+  --samples 5 --report /tmp/portal-catalog-serial.json
+```
+
+### `profile_portal_catalog_concurrency.py`
+
+Uses the exact candidate/fixture bound by a successful serial report. It requires
+an empty explicitly isolated local database. Rebuild that owned project after
+the serial profile so rollback-created physical pages do not affect the next
+fixture. The command commits only synthetic fixture rows
+so separate connections can share them, and runs the predecessor and candidate
+at the requested bounded concurrency. It restores candidate readers even on
+failure and writes a disposition receipt. Unlike the serial benchmark, rows are
+retained for inspection: reset that owned project after recording the result.
+
+```bash
+python3 scripts/profile_portal_catalog_concurrency.py \
+  --container supabase_db_database-engine-723-isolated \
+  --reference-report /tmp/portal-catalog-serial.json \
+  --concurrency 4 --requests 24 --report /tmp/portal-catalog-concurrent.json
+```
+
+Neither command accepts a hosted URL or raises public execution budgets. See
+`docs/agents/repo-validation.md` for required semantic and release proof.

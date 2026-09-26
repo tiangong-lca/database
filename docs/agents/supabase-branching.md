@@ -22,9 +22,9 @@ checkPaths:
   - .github/workflows/supabase-dev.yml
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
-lastReviewedAt: 2026-09-24
-lastReviewedCommit: 59643fea
-lastReviewedNote: "Reviewed Database #717 workflow update: the reviewer Contact pgTAP joins the existing schema/capability gate while branch, hosted deployment, and integration ownership remain unchanged."
+lastReviewedAt: 2026-09-26
+lastReviewedCommit: e1a105cdfa57708b10f6880d70bf4da5ed0d1844
+lastReviewedNote: "Reviewed Database #726 Main-to-Dev backmerge of Portal hotfix #723/#725. Preserves Dev Open Data, reviewer Contact and review-workspace V5 changes and the later 20260926100000 head, while retaining the optimized Portal readers and Main/Dev PR gates. Production/root integration continue to use the eligible Main source."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -389,6 +389,11 @@ Rules:
 3. Merge back to `main`.
 4. Back-merge `main` into `dev`.
 5. Keep migration history aligned across both long-lived branches.
+
+The database validation workflow runs for PRs targeting either `dev` or `main`,
+including hotfixes. Both targets receive the local contract rebuild and exact
+disposable Preview checks. Persistent Dev deployment still requires a push to
+`refs/heads/dev`; a Main PR never deploys that persistent environment.
 
 ## Consumer repo boundaries
 

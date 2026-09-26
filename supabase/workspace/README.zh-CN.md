@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-09-26
-lastReviewedCommit: 53f34eaf1d9ca6a9c890e6920910bcc2a39bf06a
-lastReviewedNote: "Reviewed Database #717 regenerated workspace for reviewer Contact status and activation RPCs after exact migration replay; generated-artifact rules remain unchanged."
+lastReviewedCommit: e1a105cdfa57708b10f6880d70bf4da5ed0d1844
+lastReviewedNote: "Reviewed Database #726 Main-to-Dev backmerge of Portal hotfix #723/#725. Preserves Dev Open Data, reviewer Contact and review-workspace V5 changes and the later 20260926100000 head, while retaining the optimized Portal readers and Main/Dev PR gates. Production/root integration continue to use the eligible Main source."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

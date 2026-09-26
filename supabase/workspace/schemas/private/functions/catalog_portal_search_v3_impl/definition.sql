@@ -28,36 +28,33 @@ begin
       pg_catalog.chr(92) || '_'
     ) || '%';
   end if;
-  -- Empty unfiltered browse pages do not require search facts for the whole
-  -- catalog.  Order/cursor reduction happens before at most limit+1
-  -- cards are hydrated.
+  -- Browse filtering and paging use synchronized narrow facts. Relevance/date
+  -- ordering reads full cards only for the page. Name ordering still detoasts
+  -- each matched card once for its name key, without materializing full cards.
   if p_query = ''
-     and p_filters = '{}'::jsonb
      and p_sort in ('relevance', 'modified_desc', 'name_asc') then
-    with portal_prefilter as materialized (
-      select p_kind as dataset_kind,
-        candidate.*,
-        case when p_sort = 'name_asc' then case
-          when nullif(candidate.card #>> '{names,0,value}', '') is not null
-            and pg_catalog.length(
-              candidate.card #>> '{names,0,value}'
-            ) <= 500
-            and pg_catalog.octet_length(
-              candidate.card #>> '{names,0,value}'
-            ) <= 2000
-            and candidate.card #>> '{names,0,value}' !~ '[[:cntrl:]]'
-            then candidate.card #>> '{names,0,value}'
-          else '~unnamed:' || candidate.id::text
+    with portal_matches as materialized (
+      select matched.id,matched.version,facet.modified_at,
+        case when p_sort='name_asc' then case p_kind
+          when 'process' then (select p.card #>> '{names,0,value}'
+            from private.portal_catalog_search_rows_v2 p
+            where p.dataset_kind='process' and p.id=matched.id and p.version=matched.version)
+          else (select p.card #>> '{names,0,value}'
+            from private.portal_catalog_search_rows_v1 p
+            where p.dataset_kind='flow' and p.id=matched.id and p.version=matched.version)
+        end end as name_value
+      from private.portal_navigation_matched_versions_v1(p_kind,p_query,p_filters) matched
+      join private.portal_catalog_facet_rows_v1 facet
+        on (facet.dataset_kind,facet.id,facet.version)=(matched.dataset_kind,matched.id,matched.version)
+      where facet.facet_contract_version=1 and facet.state_code in (100,200)
+    ), portal_prefilter as materialized (
+      select id,version,modified_at,
+        case when p_sort='name_asc' then case
+          when nullif(name_value,'') is not null and length(name_value)<=500
+            and octet_length(name_value)<=2000 and name_value !~ '[[:cntrl:]]'
+            then name_value else '~unnamed:' || id::text
         end end as name_key
-      from private.catalog_portal_candidate_rows_v3(
-        p_kind,
-        p_query,
-        v_exact_id,
-        v_like_pattern
-      ) as candidate
-      where private.portal_navigation_version_matches_v3(
-        p_kind, p_filters, candidate.id, candidate.version
-      )
+      from portal_matches
     ), portal_after_cursor as materialized (
       select portal_prefilter.*
       from portal_prefilter
@@ -123,7 +120,13 @@ begin
         portal_after_cursor.version desc
       limit p_limit + 1
     ), portal_decorated as materialized (
-      select portal_ordered.*
+      select portal_ordered.*,
+        case p_kind
+          when 'process' then (select p.card from private.portal_catalog_search_rows_v2 p
+            where p.dataset_kind='process' and p.id=portal_ordered.id and p.version=portal_ordered.version)
+          else (select p.card from private.portal_catalog_search_rows_v1 p
+            where p.dataset_kind='flow' and p.id=portal_ordered.id and p.version=portal_ordered.version)
+        end as card
       from portal_ordered
     )
     select
@@ -145,9 +148,14 @@ begin
             'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
           ),
           'match', pg_catalog.jsonb_build_object(
-            'kind', 'lexical',
+            -- Keep the retained filtered-empty-query match metadata byte-identical.
+            'kind', case when p_filters <> '{}'::jsonb
+                and coalesce(portal_decorated.card ->> 'casNumber','') = ''
+              then 'identifier' else 'lexical' end,
             'score', 0::numeric,
-            'reasonCodes', '[]'::jsonb
+            'reasonCodes', case when p_filters <> '{}'::jsonb
+                and coalesce(portal_decorated.card ->> 'casNumber','') = ''
+              then pg_catalog.jsonb_build_array('cas') else '[]'::jsonb end
           )
         ) order by portal_decorated.page_rank
       ) filter (where portal_decorated.page_rank <= p_limit), '[]'::jsonb),

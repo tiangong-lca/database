@@ -1,8 +1,8 @@
 version: 1
 layout: repo
 lastReviewedAt: "2026-09-26"
-lastReviewedCommit: "c139f66128586f42487b2e0cdc07507009c95013"
-lastReviewedNote: "Reviewed the merged Database #712 Open Data catalog baseline and Database #717 reviewer Contact profile activation; ownership, validation, API capability, branch, and deployment routing remain authoritative."
+lastReviewedCommit: "e1a105cdfa57708b10f6880d70bf4da5ed0d1844"
+lastReviewedNote: "Reviewed Database #726 Main-to-Dev backmerge of Portal hotfix #723/#725. Preserves Dev Open Data, reviewer Contact and review-workspace V5 changes and the later 20260926100000 head, while retaining the optimized Portal readers and Main/Dev PR gates. Production/root integration continue to use the eligible Main source."
 
 # Keep deterministic governance facts here.
 # AGENTS.md remains the repo contract entrypoint.

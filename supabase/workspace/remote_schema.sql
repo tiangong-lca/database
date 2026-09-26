@@ -33956,13 +33956,157 @@ ALTER FUNCTION "private"."catalog_portal_facets_v2_impl"("p_kind" "text", "p_que
 
 
 CREATE OR REPLACE FUNCTION "private"."catalog_portal_facets_v3_impl"("p_kind" "text", "p_query" "text", "p_exact_id" "uuid", "p_like_pattern" "text", "p_filters" "jsonb", "p_query_fingerprint" "text") RETURNS "jsonb"
-    LANGUAGE "sql" STABLE SECURITY DEFINER PARALLEL RESTRICTED
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER PARALLEL RESTRICTED
     SET "search_path" TO ''
     SET "statement_timeout" TO '8s'
     SET "plan_cache_mode" TO 'force_custom_plan'
     SET "row_security" TO 'on'
     AS $$
-  with matched as materialized (
+begin
+  if p_query='' then
+    return (
+with matched as materialized (
+    select * from private.portal_navigation_matched_versions_v1(p_kind,p_query,p_filters)
+  ), visible_versions as materialized (
+    select
+      facet.dataset_kind,
+      facet.id,
+      facet.version,
+      facet.facet_access_level,
+      facet.facet_geography,
+      facet.facet_reference_year,
+      facet.facet_process_subtype,
+      facet.facet_source
+    from private.portal_catalog_facet_rows_v1 as facet
+    where facet.facet_contract_version = 1 and facet.state_code in (100,200)
+      and (p_kind = 'all' or facet.dataset_kind = p_kind)
+      and (facet.dataset_kind,facet.id,facet.version) in (select dataset_kind,id,version from matched)
+  ), facts as materialized (
+    select visible_versions.dataset_kind,
+      visible_versions.facet_access_level,
+      visible_versions.facet_geography,
+      visible_versions.facet_reference_year,
+      case when visible_versions.dataset_kind = 'process' then
+        visible_versions.facet_process_subtype
+      else null::text end as facet_process_subtype,
+      visible_versions.facet_source
+    from visible_versions
+  ), counts_raw as materialized (
+    select case
+        when grouping(facts.dataset_kind) = 0 then 'kind'
+        when grouping(facts.facet_access_level) = 0 then 'accessLevel'
+        when grouping(facts.facet_geography) = 0 then 'geography'
+        when grouping(facts.facet_reference_year) = 0 then 'referenceYear'
+        when grouping(facts.facet_process_subtype) = 0 then 'processSubtype'
+        else 'source'
+      end as group_id,
+      case
+        when grouping(facts.dataset_kind) = 0 then 1
+        when grouping(facts.facet_access_level) = 0 then 2
+        when grouping(facts.facet_geography) = 0 then 3
+        when grouping(facts.facet_reference_year) = 0 then 4
+        when grouping(facts.facet_process_subtype) = 0 then 5
+        else 6
+      end as group_order,
+      case
+        when grouping(facts.dataset_kind) = 0 then facts.dataset_kind
+        when grouping(facts.facet_access_level) = 0 then
+          facts.facet_access_level
+        when grouping(facts.facet_geography) = 0 then facts.facet_geography
+        when grouping(facts.facet_reference_year) = 0 then
+          facts.facet_reference_year
+        when grouping(facts.facet_process_subtype) = 0 then
+          facts.facet_process_subtype
+        else facts.facet_source
+      end as value,
+      pg_catalog.count(*) as value_count
+    from facts
+    group by grouping sets (
+      (facts.dataset_kind),
+      (facts.facet_access_level),
+      (facts.facet_geography),
+      (facts.facet_reference_year),
+      (facts.facet_process_subtype),
+      (facts.facet_source)
+    )
+  ), counts as materialized (
+    select counts_raw.group_id,
+      counts_raw.group_order,
+      counts_raw.value,
+      counts_raw.value as label,
+      counts_raw.value_count
+    from counts_raw
+    where nullif(pg_catalog.btrim(counts_raw.value), '') is not null
+      and pg_catalog.length(counts_raw.value) <= 128
+      and pg_catalog.octet_length(counts_raw.value) <= 512
+  ), ranked_counts as materialized (
+    select counts.*,
+      pg_catalog.row_number() over (
+        partition by counts.group_id
+        order by counts.value
+      ) as value_rank
+    from counts
+  ), grouped as materialized (
+    select ranked_counts.group_id,
+      ranked_counts.group_order,
+      pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object(
+        'value', ranked_counts.value,
+        'label', pg_catalog.jsonb_build_array(
+          pg_catalog.jsonb_build_object(
+            'language', 'und', 'value', ranked_counts.label
+          )
+        ),
+        'count', ranked_counts.value_count
+      ) order by ranked_counts.value)
+        filter (where ranked_counts.value_rank <= 100) as values_json,
+      pg_catalog.bool_or(ranked_counts.value_rank > 100) as has_more
+    from ranked_counts
+    group by ranked_counts.group_id, ranked_counts.group_order
+  ), groups as (
+    select coalesce(pg_catalog.jsonb_agg(pg_catalog.jsonb_build_object(
+      'id', grouped.group_id,
+      'label', pg_catalog.jsonb_build_array(
+        pg_catalog.jsonb_build_object(
+          'language', 'en',
+          'value', case grouped.group_id
+            when 'kind' then 'Object type'
+            when 'accessLevel' then 'Access level'
+            when 'geography' then 'Geography'
+            when 'referenceYear' then 'Reference year'
+            when 'processSubtype' then 'Process subtype'
+            else 'Source'
+          end
+        ),
+        pg_catalog.jsonb_build_object(
+          'language', 'zh-CN',
+          'value', case grouped.group_id
+            when 'kind' then '对象类型'
+            when 'accessLevel' then '访问级别'
+            when 'geography' then '地区'
+            when 'referenceYear' then '参考年'
+            when 'processSubtype' then '过程类型'
+            else '数据源'
+          end
+        )
+      ),
+      'values', grouped.values_json,
+      'hasMore', grouped.has_more
+    ) order by grouped.group_order), '[]'::jsonb) as value
+    from grouped
+  )
+  select pg_catalog.jsonb_build_object(
+    'schemaVersion', 'portal.public-facets.v2',
+    'kind', p_kind,
+    'queryFingerprint', p_query_fingerprint,
+    'groups', groups.value
+  )
+  from groups
+    );
+  end if;
+
+  -- Nonempty lexical candidate and matching semantics remain unchanged.
+  return (
+with matched as materialized (
     select candidate.*
     from private.catalog_portal_facet_candidate_rows_v3(
       p_kind,
@@ -34134,6 +34278,8 @@ CREATE OR REPLACE FUNCTION "private"."catalog_portal_facets_v3_impl"("p_kind" "t
     'groups', groups.value
   )
   from groups
+  );
+end;
 $$;
 
 
@@ -35786,36 +35932,33 @@ begin
       pg_catalog.chr(92) || '_'
     ) || '%';
   end if;
-  -- Empty unfiltered browse pages do not require search facts for the whole
-  -- catalog.  Order/cursor reduction happens before at most limit+1
-  -- cards are hydrated.
+  -- Browse filtering and paging use synchronized narrow facts. Relevance/date
+  -- ordering reads full cards only for the page. Name ordering still detoasts
+  -- each matched card once for its name key, without materializing full cards.
   if p_query = ''
-     and p_filters = '{}'::jsonb
      and p_sort in ('relevance', 'modified_desc', 'name_asc') then
-    with portal_prefilter as materialized (
-      select p_kind as dataset_kind,
-        candidate.*,
-        case when p_sort = 'name_asc' then case
-          when nullif(candidate.card #>> '{names,0,value}', '') is not null
-            and pg_catalog.length(
-              candidate.card #>> '{names,0,value}'
-            ) <= 500
-            and pg_catalog.octet_length(
-              candidate.card #>> '{names,0,value}'
-            ) <= 2000
-            and candidate.card #>> '{names,0,value}' !~ '[[:cntrl:]]'
-            then candidate.card #>> '{names,0,value}'
-          else '~unnamed:' || candidate.id::text
+    with portal_matches as materialized (
+      select matched.id,matched.version,facet.modified_at,
+        case when p_sort='name_asc' then case p_kind
+          when 'process' then (select p.card #>> '{names,0,value}'
+            from private.portal_catalog_search_rows_v2 p
+            where p.dataset_kind='process' and p.id=matched.id and p.version=matched.version)
+          else (select p.card #>> '{names,0,value}'
+            from private.portal_catalog_search_rows_v1 p
+            where p.dataset_kind='flow' and p.id=matched.id and p.version=matched.version)
+        end end as name_value
+      from private.portal_navigation_matched_versions_v1(p_kind,p_query,p_filters) matched
+      join private.portal_catalog_facet_rows_v1 facet
+        on (facet.dataset_kind,facet.id,facet.version)=(matched.dataset_kind,matched.id,matched.version)
+      where facet.facet_contract_version=1 and facet.state_code in (100,200)
+    ), portal_prefilter as materialized (
+      select id,version,modified_at,
+        case when p_sort='name_asc' then case
+          when nullif(name_value,'') is not null and length(name_value)<=500
+            and octet_length(name_value)<=2000 and name_value !~ '[[:cntrl:]]'
+            then name_value else '~unnamed:' || id::text
         end end as name_key
-      from private.catalog_portal_candidate_rows_v3(
-        p_kind,
-        p_query,
-        v_exact_id,
-        v_like_pattern
-      ) as candidate
-      where private.portal_navigation_version_matches_v3(
-        p_kind, p_filters, candidate.id, candidate.version
-      )
+      from portal_matches
     ), portal_after_cursor as materialized (
       select portal_prefilter.*
       from portal_prefilter
@@ -35881,7 +36024,13 @@ begin
         portal_after_cursor.version desc
       limit p_limit + 1
     ), portal_decorated as materialized (
-      select portal_ordered.*
+      select portal_ordered.*,
+        case p_kind
+          when 'process' then (select p.card from private.portal_catalog_search_rows_v2 p
+            where p.dataset_kind='process' and p.id=portal_ordered.id and p.version=portal_ordered.version)
+          else (select p.card from private.portal_catalog_search_rows_v1 p
+            where p.dataset_kind='flow' and p.id=portal_ordered.id and p.version=portal_ordered.version)
+        end as card
       from portal_ordered
     )
     select
@@ -35903,9 +36052,14 @@ begin
             'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
           ),
           'match', pg_catalog.jsonb_build_object(
-            'kind', 'lexical',
+            -- Keep the retained filtered-empty-query match metadata byte-identical.
+            'kind', case when p_filters <> '{}'::jsonb
+                and coalesce(portal_decorated.card ->> 'casNumber','') = ''
+              then 'identifier' else 'lexical' end,
             'score', 0::numeric,
-            'reasonCodes', '[]'::jsonb
+            'reasonCodes', case when p_filters <> '{}'::jsonb
+                and coalesce(portal_decorated.card ->> 'casNumber','') = ''
+              then pg_catalog.jsonb_build_array('cas') else '[]'::jsonb end
           )
         ) order by portal_decorated.page_rank
       ) filter (where portal_decorated.page_rank <= p_limit), '[]'::jsonb),
@@ -58164,8 +58318,10 @@ begin
     select n.* from private.portal_navigation_node_v1 n
     where n.dimension=p_dimension and n.parent_node_id is not distinct from p_parent_node_id
       and (n.source_file is not null or n.node_id in ('class:isic','class:cpc','class:elementary','geo:unmapped') or exists (
-        select 1 from private.portal_navigation_membership_v1 m join matched v using(dataset_kind,id,version)
-        where m.node_id=n.node_id and (p_kind='all' or m.dataset_kind=p_kind)))
+        select 1 from private.portal_navigation_membership_v1 m
+        where m.node_id=n.node_id and (p_kind='all' or m.dataset_kind=p_kind)
+          and ((p_query='' and p_filters='{}'::jsonb)
+            or (m.dataset_kind,m.id,m.version) in (select dataset_kind,id,version from matched))))
       and (p_dimension<>'classification' or p_kind='all' or n.taxonomy not in ('isic','cpc','elementary')
         or (p_kind='process' and n.taxonomy='isic') or (p_kind='flow' and n.taxonomy in ('cpc','elementary')))
       and (p_cursor_node_id is null or (n.code collate "C",n.node_id collate "C")>(v_after_code collate "C",p_cursor_node_id collate "C"))
@@ -58177,8 +58333,9 @@ begin
   ), counted as materialized (
     select m.node_id,count(*) as count,count(*) filter(where m.direct) as direct_count
     from private.portal_navigation_membership_v1 m
-    join matched v on (v.dataset_kind,v.id,v.version)=(m.dataset_kind,m.id,m.version)
     where m.dimension=p_dimension and (p_kind='all' or m.dataset_kind=p_kind)
+      and ((p_query='' and p_filters='{}'::jsonb)
+        or (m.dataset_kind,m.id,m.version) in (select dataset_kind,id,version from matched))
       and m.node_id in(select n.node_id from targets n)
     group by m.node_id
   ), decorated as materialized (
@@ -58251,7 +58408,27 @@ begin
       and (not (p_filters ? 'referenceYearTo') or v.reference_year <= (p_filters->>'referenceYearTo')::integer)
       and (not (p_filters ? 'processSubtype') or v.process_subtype=p_filters->>'processSubtype')
       and (not (p_filters ? 'source') or v.source=p_filters->>'source')
-      and private.portal_navigation_version_matches_v3(v.dataset_kind,p_filters,v.id,v.version)
+      and (
+        not (p_filters ? 'classificationNodeId')
+        or (v.dataset_kind,v.id,v.version) in (
+          select m.dataset_kind,m.id,m.version
+          from private.portal_navigation_membership_v1 m
+          where m.dimension='classification'
+            and m.node_id=p_filters->>'classificationNodeId'
+            and (p_kind='all' or m.dataset_kind=p_kind)
+            and (coalesce(p_filters->>'classificationScope','subtree')<>'direct' or m.direct)
+        )
+      ) and (
+        not (p_filters ? 'geographyNodeId')
+        or (v.dataset_kind,v.id,v.version) in (
+          select m.dataset_kind,m.id,m.version
+          from private.portal_navigation_membership_v1 m
+          where m.dimension='geography'
+            and m.node_id=p_filters->>'geographyNodeId'
+            and (p_kind='all' or m.dataset_kind=p_kind)
+            and (coalesce(p_filters->>'geographyScope','subtree')<>'direct' or m.direct)
+        )
+      )
 ;
   else
     if p_query ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then v_exact:=p_query::uuid; end if;
@@ -58269,7 +58446,27 @@ begin
       and (not (p_filters ? 'referenceYearTo') or v.reference_year <= (p_filters->>'referenceYearTo')::integer)
       and (not (p_filters ? 'processSubtype') or v.process_subtype=p_filters->>'processSubtype')
       and (not (p_filters ? 'source') or v.source=p_filters->>'source')
-      and private.portal_navigation_version_matches_v3(v.dataset_kind,p_filters,v.id,v.version)
+      and (
+        not (p_filters ? 'classificationNodeId')
+        or (v.dataset_kind,v.id,v.version) in (
+          select m.dataset_kind,m.id,m.version
+          from private.portal_navigation_membership_v1 m
+          where m.dimension='classification'
+            and m.node_id=p_filters->>'classificationNodeId'
+            and (p_kind='all' or m.dataset_kind=p_kind)
+            and (coalesce(p_filters->>'classificationScope','subtree')<>'direct' or m.direct)
+        )
+      ) and (
+        not (p_filters ? 'geographyNodeId')
+        or (v.dataset_kind,v.id,v.version) in (
+          select m.dataset_kind,m.id,m.version
+          from private.portal_navigation_membership_v1 m
+          where m.dimension='geography'
+            and m.node_id=p_filters->>'geographyNodeId'
+            and (p_kind='all' or m.dataset_kind=p_kind)
+            and (coalesce(p_filters->>'geographyScope','subtree')<>'direct' or m.direct)
+        )
+      )
 ;
   end if;
 end;
