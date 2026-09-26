@@ -20,9 +20,9 @@ checkPaths:
   - .githooks/pre-push
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-09-26
-lastReviewedCommit: e1a105cdfa57708b10f6880d70bf4da5ed0d1844
-lastReviewedNote: "Reviewed Database #726 Main-to-Dev backmerge of Portal hotfix #723/#725. Preserves Dev Open Data, reviewer Contact and review-workspace V5 changes and the later 20260926100000 head, while retaining the optimized Portal readers and Main/Dev PR gates. Production/root integration continue to use the eligible Main source."
+lastReviewedAt: 2026-09-27
+lastReviewedCommit: 37d8ccc54dc5f4f8fb8501b82f233a24f91299a2
+lastReviewedNote: "Reviewed Database #735 exact Main-to-Dev backmerge of #733/#734 at 5935527b3564fc519549766cc65375a3eca4fd61. The combined 390-migration history retains all three existing Dev-only migrations byte-for-byte and reaches 20260926143000. Reader definitions and public contracts retain the qualified Main bytes; seven scoped suites pass 188 assertions. Generated schema/types are regenerated from the isolated combined history. CI, official Preview and persistent Dev publication remain separate gates; Root #1570 selects Main only."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

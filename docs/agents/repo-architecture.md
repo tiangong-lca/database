@@ -30,9 +30,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-09-26
-lastReviewedCommit: e1a105cdfa57708b10f6880d70bf4da5ed0d1844
-lastReviewedNote: "Reviewed Database #726 Main-to-Dev backmerge of Portal hotfix #723/#725. Preserves Dev Open Data, reviewer Contact and review-workspace V5 changes and the later 20260926100000 head, while retaining the optimized Portal readers and Main/Dev PR gates. Production/root integration continue to use the eligible Main source."
+lastReviewedAt: 2026-09-27
+lastReviewedCommit: 37d8ccc54dc5f4f8fb8501b82f233a24f91299a2
+lastReviewedNote: "Reviewed Database #735 exact Main-to-Dev backmerge of #733/#734 at 5935527b3564fc519549766cc65375a3eca4fd61. The combined 390-migration history retains all three existing Dev-only migrations byte-for-byte and reaches 20260926143000. Reader definitions and public contracts retain the qualified Main bytes; seven scoped suites pass 188 assertions. Generated schema/types are regenerated from the isolated combined history. CI, official Preview and persistent Dev publication remain separate gates; Root #1570 selects Main only."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -666,17 +666,16 @@ measurement. Existing zero-spill gates remain scoped to the
 narrow empty/exact phases that own them. These fixtures remain rollback-only test data and add no
 runtime relation, index, trigger, or writer path.
 
-The retained V2 empty-query, geography-only Flow Search has one deliberately
+The retained V1 empty-query, geography-only Flow Search has one deliberately
 narrow query fast path. It reads the already synchronized facet child through
 the existing latest-key B-tree, applies exact geography/cursor/order/limit on
 those narrow rows, and joins at most 51 exact parent cards. It first validates
 the independent live Facet manifest on every matching request. It does not add a
 geography index—the representative filter matches the full Flow universe, so
-such an index would add writer/storage cost without selectivity—and all other
-V2 Search filters continue through the general exhaustive card-facts path.
-V3 query-free readers use the wider narrow-projection path described below.
+such an index would add writer/storage cost without selectivity—and other V1 Search filters continue through their retained kernels.
+V2 and V3 query-free readers use the wider narrow-projection path described below.
 
-Multi-code-point, non-UUID, empty-filter Process relevance Search has one
+V1 multi-code-point, non-UUID, empty-filter Process relevance Search has one
 separate bounded hydration path. It preserves the existing PGroonga
 pattern-version match and exact latest-visible recheck, probes normalized exact
 name/classification keys through a partial expression GIN, merges those scores
@@ -928,3 +927,13 @@ Relevance and modified-date ordering fetch full card JSON only for the selected
 page. Name ordering still reads each matched name key and therefore detoasts those
 cards; it does not have a constant-work claim. The dedicated size/width benchmark
 qualifies that remaining cost separately and checks exact response/cursor equality.
+
+## Legacy Portal V2 bounded reads
+
+V2 Search preserves the original public version universe, normalization, lexical score ladder and V2 fingerprint/cursor wrapper. Query-free classic filters use the existing synchronized navigation/facet keys, filter/order/page before card hydration, and retain the filtered-empty CAS metadata behavior tracked separately in Database #724. Name ordering still reads matched authored names; it does not invent display names.
+
+For nonempty text, the same legacy pattern helpers, exact-id union semantics and valid Flow CAS branch select candidates. Only id/version/state/timestamp and the original exact ranking facts cross materialized stages. A record decoder reads the needed card fields once; name/classification exactness and CAS/id weights remain unchanged. Display-only contains/reason fields use the original facts helper after page selection, and exact parent cards are fetched for at most limit+1 rows. No candidate set is truncated before filtering/ranking.
+
+V2 Facets intersects authoritative legacy candidate keys with the synchronized classic-filter universe, then groups the six existing scalar facet columns. Duplicate pattern hits do not double-count an exact dataset version. Both readers remain subject to explicit public states, facet-contract identity and the complete cutover coverage/state/timestamp guard. Their public DTOs, scientific values, runtime budgets, projection/writer graph and exposed ACLs remain unchanged.
+
+The Search kernel owner aligns with the existing portal_public_executor reader; the previous api_internal_executor EXECUTE principal is explicitly retained. Temporary DDL role/schema permissions are restored before the migration commits, including after a failed transaction. These owner and grant changes require generated snapshots and role/visibility tests rather than a blanket assertion that all ownership metadata is identical.
