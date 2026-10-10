@@ -30,9 +30,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-10-10
-lastReviewedCommit: 31cd8e4ffc2899df9cf0e526667a97f33ce9656e
-lastReviewedNote: 'Database #807 sitemap follow-up: narrow synchronized projection pages preserve scope-before-latest, kind/id ordering, cursor identity and the original 8s budget; production activation remains independently gated.'
+lastReviewedAt: 2026-10-11
+lastReviewedCommit: 021b0c9b98efcae47fe0c52a38c80746b10eca3f
+lastReviewedNote: "Database #818: display-only license-independent capabilities and atomic derived policy reconciliation preserve exact settings, scope, support integrity, publication, legacy manifests and ACLs."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1133,7 +1133,8 @@ brand; inserts remain unassigned. No account/state backfill is in migration.
 The private global-visibility helper checks only the exact setting. The private
 scope helper additionally intersects a required nonempty brand set, with no
 state condition. Callers must still validate source existence, public shape,
-rollout readiness, license, reference integrity and publication evidence.
+rollout readiness, reference integrity and publication evidence. Display-mode license,
+exclusive-access and access-restriction fields are descriptive metadata only (#818).
 
 The common v2 schema owns BrandCode, AllowedBrandCodes and correlated code/name
 pairs. Browser Search v4 and Facet v4 add only `filters.brand`; Navigation input
@@ -1216,3 +1217,32 @@ projection readiness, and admits only display/unavailable destinations. It never
 restores legacy after cutover. The migration neither repairs business rows nor
 activates display. Account backfill belongs to separate Database #808 operations;
 release, promote and workspace integration remain tracked in #807 / workspace #1794.
+
+
+### Display capability policy without license gates (Database #818)
+
+The display generation uses `portal-display-capability-policy.v2`. All admitted
+rows carry `display_settings_enabled`; authored license type, exclusive-access
+references and access restrictions do not restrict display. `accessLevel=open`
+and `exchangesVisible=true` describe presentation eligibility, not a legal license
+assertion or proof that a particular Process has a complete numeric support chain.
+The original metadata remains available and no source license is synthesized.
+
+Process/Flow roots still require exact visible settings and deployment brand scope.
+Technical support still follows globally visible exact Flow/FlowProperty/UnitGroup
+references, including cross-brand and null-brand support. Missing identities,
+invalid units/decimals or incomplete support withhold numeric rows/functional units.
+LCIA still requires the exact current finalized, non-revoked publication binding;
+license removal cannot create published results. Raw/export and non-Portal grants
+and the frozen pre-display generation remain unchanged.
+
+Migration `20261010171202` fences Process/Flow/settings writers, replaces the display
+capability builders, updates only stored card policy fields and the corresponding Facet/Navigation
+access-level columns before updating the display manifest. Five redundant parent
+row-derivation triggers are transactionally suspended and restored under the parent
+write fence; unchanged character, sitemap and navigation-membership facts are
+not rebuilt. Future source/setting writes continue using the original triggers.
+Names, ranking text, source timestamps, settings and source rows are unchanged.
+A five-second lock timeout and transaction-local fifteen-minute statement budget
+bound this atomic derived-data upgrade; failure rolls back the whole migration.
+No operator backfill or display mode transition is included.

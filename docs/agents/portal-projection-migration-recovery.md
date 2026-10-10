@@ -1,7 +1,7 @@
 ---
-lastReviewedAt: 2026-10-10
-lastReviewedCommit: 489402c6d118be4202cef22f9b89266c9229ed76
-lastReviewedNote: "Reviewed Database #793 source d724b9af: 29 raw facade bounds preserve normal10x delegation; selective exact-version Flow type keys retain PGroonga scoring and broad/missing-stat fallback; five qualified indexes and four closed legacy rank routines retire under exact guards. Canonical417 local17.11 reset, 32 suites2344 assertions, 555 HTTP checks, non-superuser grant/refusal/replay proofs, independent reviews and deterministic1827-file generation pass. Hosted release/backmerge/root integration and user-authenticated production reads remain tracked delivery gates."
+lastReviewedAt: 2026-10-11
+lastReviewedCommit: 021b0c9b98efcae47fe0c52a38c80746b10eca3f
+lastReviewedNote: "Database #818: display-only license-independent capabilities and atomic derived policy reconciliation preserve exact settings, scope, support integrity, publication, legacy manifests and ACLs."
 title: Portal Projection Migration Recovery
 docType: runbook
 scope: repo

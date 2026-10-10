@@ -109,7 +109,7 @@ begin
     'process', jsonb_build_object('id', p_process_id::text, 'version', p_process_version),
     'processContext', jsonb_build_object(
       'functionalUnit', v_functional_unit,
-      'capabilityPolicyVersion', 'portal-capability-policy.v1'
+      'capabilityPolicyVersion', 'portal-display-capability-policy.v2'
     ),
     'rows', v_rows,
     'nextCursor', v_next_cursor

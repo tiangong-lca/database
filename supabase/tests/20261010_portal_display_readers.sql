@@ -716,8 +716,71 @@ reset role;
 update private.dataset_display_settings set is_visible=true where dataset_kind='unitgroup';
 update public.flows set json=jsonb_set(json,'{flowDataSet,administrativeInformation,publicationAndOwnership,common:licenseType}','"Other"') where id='80700000-0000-4000-8000-000000000103';
 set local role anon;
-select is(jsonb_array_length(api.portal_list_process_exchanges_v2(array['tiangong_lca'],'80700000-0000-4000-8000-000000000101','01.00.000')->'rows'),0,'dependency license still gates numeric exchange');
+select is(jsonb_array_length(api.portal_list_process_exchanges_v2(array['tiangong_lca'],'80700000-0000-4000-8000-000000000101','01.00.000')->'rows'),1,'dependency license is descriptive in display mode');
 reset role;
+-- #818: realistic technical schemas omit Process-style license fields.
+alter table public.flowproperties disable trigger review_dataset_content_guard_v1;
+update public.flowproperties set state_code=0 where id='80700000-0000-4000-8000-000000000105';
+alter table public.flowproperties enable trigger review_dataset_content_guard_v1;
+update public.flows set json=json #- '{flowDataSet,administrativeInformation,publicationAndOwnership,common:licenseType}' where id='80700000-0000-4000-8000-000000000103';
+update public.flowproperties set json=json #- '{flowPropertyDataSet,administrativeInformation,publicationAndOwnership,common:licenseType}' where id='80700000-0000-4000-8000-000000000105';
+update public.unitgroups set json=json #- '{unitGroupDataSet,administrativeInformation,publicationAndOwnership,common:licenseType}' where id='80700000-0000-4000-8000-000000000104';
+
+update public.processes set json=jsonb_set(json,'{processDataSet,administrativeInformation,publicationAndOwnership}',
+ (json#>'{processDataSet,administrativeInformation,publicationAndOwnership}')
+ - 'common:licenseType' - 'common:accessRestrictions' - 'common:referenceToEntitiesWithExclusiveAccess' || '{}'::jsonb)
+ where id='80700000-0000-4000-8000-000000000101' and version='01.00.000';
+set local role anon;
+select is(jsonb_array_length(api.portal_list_process_exchanges_v2(array['tiangong_lca'],'80700000-0000-4000-8000-000000000101','01.00.000')->'rows'),1,'missing Process license metadata does not hide supported exchanges');
+select is(api.portal_get_dataset_v2(array['tiangong_lca'],'process','80700000-0000-4000-8000-000000000101','01.00.000')#>>'{metadata,functionalUnit,amount}','2','missing license metadata does not hide functional unit');
+select is(api.portal_get_dataset_v2(array['tiangong_lca'],'process','80700000-0000-4000-8000-000000000101','01.00.000')#>>'{capabilities,policyVersion}','portal-display-capability-policy.v2','missing detail has display policy');
+select is(api.portal_search_processes_v4(array['tiangong_lca'],'80700000-0000-4000-8000-000000000101')#>>'{items,0,capabilities,exchangesVisible}','true','missing stored Search capability agrees');
+select is(api.portal_list_versions_v2(array['tiangong_lca'],'process','80700000-0000-4000-8000-000000000101')#>>'{items,0,capabilities,exchangesVisible}','true','missing Versions capability agrees');
+select is(jsonb_array_length(api.portal_list_process_exchanges_v1('80700000-0000-4000-8000-000000000101','01.00.000')->'rows'),1,'missing compatible display wrapper agrees');
+reset role;
+
+update public.processes set json=jsonb_set(json,'{processDataSet,administrativeInformation,publicationAndOwnership}',
+ (json#>'{processDataSet,administrativeInformation,publicationAndOwnership}')
+ - 'common:licenseType' - 'common:accessRestrictions' - 'common:referenceToEntitiesWithExclusiveAccess' || '{"common:licenseType":"Other","common:accessRestrictions":[{"@xml:lang":"en","#text":"Restricted use"}],"common:referenceToEntitiesWithExclusiveAccess":{"@refObjectId":"80700000-0000-4000-8000-000000000999"}}'::jsonb)
+ where id='80700000-0000-4000-8000-000000000101' and version='01.00.000';
+set local role anon;
+select is(jsonb_array_length(api.portal_list_process_exchanges_v2(array['tiangong_lca'],'80700000-0000-4000-8000-000000000101','01.00.000')->'rows'),1,'restricted Process license metadata does not hide supported exchanges');
+select is(api.portal_get_dataset_v2(array['tiangong_lca'],'process','80700000-0000-4000-8000-000000000101','01.00.000')#>>'{metadata,functionalUnit,amount}','2','restricted license metadata does not hide functional unit');
+select is(api.portal_get_dataset_v2(array['tiangong_lca'],'process','80700000-0000-4000-8000-000000000101','01.00.000')#>>'{capabilities,policyVersion}','portal-display-capability-policy.v2','restricted detail has display policy');
+select is(api.portal_search_processes_v4(array['tiangong_lca'],'80700000-0000-4000-8000-000000000101')#>>'{items,0,capabilities,exchangesVisible}','true','restricted stored Search capability agrees');
+select is(api.portal_list_versions_v2(array['tiangong_lca'],'process','80700000-0000-4000-8000-000000000101')#>>'{items,0,capabilities,exchangesVisible}','true','restricted Versions capability agrees');
+select is(api.portal_hybrid_search_v3(array['tiangong_lca'],'process',array['process'],'['||'1,'||repeat('0,',1022)||'0]','{}',20)#>>'{items,0,capabilities,exchangesVisible}','true','restricted Hybrid capability agrees');
+select is(jsonb_array_length(api.portal_list_process_exchanges_v1('80700000-0000-4000-8000-000000000101','01.00.000')->'rows'),1,'restricted compatible display wrapper agrees');
+reset role;
+
+update public.processes set json=jsonb_set(json,'{processDataSet,administrativeInformation,publicationAndOwnership}',
+ (json#>'{processDataSet,administrativeInformation,publicationAndOwnership}')
+ - 'common:licenseType' - 'common:accessRestrictions' - 'common:referenceToEntitiesWithExclusiveAccess' || '{"common:licenseType":{},"common:accessRestrictions":false,"common:referenceToEntitiesWithExclusiveAccess":[]}'::jsonb)
+ where id='80700000-0000-4000-8000-000000000101' and version='01.00.000';
+set local role anon;
+select is(jsonb_array_length(api.portal_list_process_exchanges_v2(array['tiangong_lca'],'80700000-0000-4000-8000-000000000101','01.00.000')->'rows'),1,'malformed Process license metadata does not hide supported exchanges');
+select is(api.portal_get_dataset_v2(array['tiangong_lca'],'process','80700000-0000-4000-8000-000000000101','01.00.000')#>>'{metadata,functionalUnit,amount}','2','malformed license metadata does not hide functional unit');
+select is(api.portal_get_dataset_v2(array['tiangong_lca'],'process','80700000-0000-4000-8000-000000000101','01.00.000')#>>'{capabilities,policyVersion}','portal-display-capability-policy.v2','malformed detail has display policy');
+select is(api.portal_search_processes_v4(array['tiangong_lca'],'80700000-0000-4000-8000-000000000101')#>>'{items,0,capabilities,exchangesVisible}','true','malformed stored Search capability agrees');
+select is(api.portal_list_versions_v2(array['tiangong_lca'],'process','80700000-0000-4000-8000-000000000101')#>>'{items,0,capabilities,exchangesVisible}','true','malformed Versions capability agrees');
+select is(jsonb_array_length(api.portal_list_process_exchanges_v1('80700000-0000-4000-8000-000000000101','01.00.000')->'rows'),1,'malformed compatible display wrapper agrees');
+reset role;
+
+-- Technical dependency restrictions are also descriptive, even if extra source fields exist.
+update public.flows set json=jsonb_set(json,'{flowDataSet,administrativeInformation,publicationAndOwnership}',
+ '{"common:licenseType":"Other","common:accessRestrictions":"No reuse","common:referenceToEntitiesWithExclusiveAccess":{}}')
+where id='80700000-0000-4000-8000-000000000103';
+set local role anon;
+select is(jsonb_array_length(api.portal_list_process_exchanges_v2(array['tiangong_lca'],'80700000-0000-4000-8000-000000000101','01.00.000')->'rows'),1,'explicit dependency restrictions do not gate display');
+select is(api.portal_get_dataset_v2(array['bafu'],'flow','80700000-0000-4000-8000-000000000103','01.00.000')#>>'{metadata,administration,licenseType}','Other','declared license is still returned as metadata');
+select is(coalesce(jsonb_array_length(api.portal_list_process_exchanges_v2(array['bafu'],'80700000-0000-4000-8000-000000000101','01.00.000')->'rows'),0),0,'scope still blocks exchanges regardless of license');
+reset role;
+update public.flowproperties set json=jsonb_set(json,'{flowPropertyDataSet,flowPropertiesInformation,quantitativeReference,referenceToReferenceUnitGroup,@version}','"09.99.999"') where id='80700000-0000-4000-8000-000000000105';
+set local role anon;
+select is(jsonb_array_length(api.portal_list_process_exchanges_v2(array['tiangong_lca'],'80700000-0000-4000-8000-000000000101','01.00.000')->'rows'),0,'missing exact support version still blocks numeric exchanges');
+reset role;
+update public.flowproperties set json=jsonb_set(json,'{flowPropertyDataSet,flowPropertiesInformation,quantitativeReference,referenceToReferenceUnitGroup,@version}','"01.00.000"') where id='80700000-0000-4000-8000-000000000105';
+
 update private.dataset_display_settings set brand='worldsteel' where dataset_kind='process' and dataset_version='01.00.000';
 set local role anon;
 select is(api.portal_get_dataset_v2(array['tiangong_lca'],'process','80700000-0000-4000-8000-000000000101','01.00.000'),null::jsonb,'brand change immediately removes old scope');

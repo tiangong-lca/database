@@ -20,9 +20,9 @@ checkPaths:
   - .githooks/pre-push
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-10-10
-lastReviewedCommit: 31cd8e4ffc2899df9cf0e526667a97f33ce9656e
-lastReviewedNote: 'Database #807 sitemap follow-up: narrow synchronized projection pages preserve scope-before-latest, kind/id ordering, cursor identity and the original 8s budget; production activation remains independently gated.'
+lastReviewedAt: 2026-10-11
+lastReviewedCommit: 021b0c9b98efcae47fe0c52a38c80746b10eca3f
+lastReviewedNote: "Database #818: reviewed exact local five-schema generation of display-only policy changes; existing generator and stable overlay boundaries remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

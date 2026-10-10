@@ -32,9 +32,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-10-10
-lastReviewedCommit: 31cd8e4ffc2899df9cf0e526667a97f33ce9656e
-lastReviewedNote: 'Database #807 sitemap follow-up: narrow synchronized projection pages preserve scope-before-latest, kind/id ordering, cursor identity and the original 8s budget; production activation remains independently gated.'
+lastReviewedAt: 2026-10-11
+lastReviewedCommit: 021b0c9b98efcae47fe0c52a38c80746b10eca3f
+lastReviewedNote: "Database #818: display-only license-independent capabilities and atomic derived policy reconciliation preserve exact settings, scope, support integrity, publication, legacy manifests and ACLs."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -972,7 +972,7 @@ publication revocation. Existing historical lexical planner instability must be
 reported with predecessor evidence, not hidden by weakening expectations.
 
 The display suite covers scope-before-latest/rank/count, version brand, facets,
-summary/navigation, cross-brand/null exact support, support license and hiding,
+summary/navigation, cross-brand/null exact support, license-independent display and hiding,
 scoped Flow links, sitemap scope cursors, legacy-shape adapters and unavailable
 cutover. Run strict schema compilation, generated-type checks and the immutable
 legacy projection-manifest checker. Add every new external API to the capability
@@ -1014,3 +1014,28 @@ responses on 140,000 matching synthetic source/projection rows for Process, Flow
 and mixed pages over four brands, their union and global legacy scope. Candidate
 statements retain the original eight-second budget. This single-sample per-shape
 comparison is local read-scale evidence, not hosted p95 or production activation.
+
+
+### Display license-independent regression (Database #818)
+
+Run the display reader and published LCIA suites with missing, restricted,
+exclusive and malformed license metadata. Technical fixtures omit Process-style
+license fields as in their real schemas. Prove positive Exchange/functional-unit,
+Search/Versions/Detail and published LCIA parity, unchanged descriptive license
+metadata, negative hidden/out-of-brand/missing-exact-support cases and publication
+revocation. Legacy suites continue testing their frozen license behavior.
+
+Qualify a populated predecessor upgrade with restricted stored cards, compare all
+non-policy card fields and source/settings, and verify no stale capability or
+access-level fact survives in either card generation, Facets or Navigation. Repeat
+migration against the candidate to prove exact idempotence; exercise an injected mid-migration failure
+rollback. Run blank history, all Portal and adjacent contract suites, strict schemas,
+manifest checks, filtered Portal db lint, and deterministic five-schema/type export.
+The rollback-only `supabase/tests/upgrade/test_portal_display_license_upgrade.py`
+requires its explicitly owned disposable local stack. Its default 1,000 added rows
+exercise real source/settings writers; optional 140,000-row synthetic capacity
+fixtures clone a consistent projection template with triggers restored and navigation
+closure checked before migration. The measured qualification block includes the
+injected-failure proof and first upgrade; it is not source-writer throughput or p95.
+Record duration and fixture size; local proof does not activate or
+qualify production-volume migration time or actual Portal browser rendering.
