@@ -4133,6 +4133,30 @@ set local role anon;
 select extensions.is(jsonb_array_length(api.portal_get_published_lcia_values_v2(array['bafu'],'process_all_impacts',
  '[{"id":"52710000-0000-4000-8000-000000000102","version":"01.00.000"}]',null,null,50)->'rows'),2,'display LCIA eligibility is independent of current review state');
 reset role;
+-- #818: license metadata is irrelevant to current finalized publication reads.
+create temp table portal_818_saved_process as select id,version,json from public.processes
+where id='52710000-0000-4000-8000-000000000102' and version='01.00.000';
+alter table public.processes disable trigger user;
+update public.processes set json=jsonb_set(json,'{processDataSet,administrativeInformation,publicationAndOwnership}',
+ (json#>'{processDataSet,administrativeInformation,publicationAndOwnership}') ||
+ '{"common:licenseType":"Other","common:accessRestrictions":"Restricted","common:referenceToEntitiesWithExclusiveAccess":{}}')
+where id='52710000-0000-4000-8000-000000000102' and version='01.00.000';
+alter table public.processes enable trigger user;
+select private.portal_display_refresh_exact_v1('process','52710000-0000-4000-8000-000000000102','01.00.000');
+set local role anon;
+select extensions.is(jsonb_array_length(api.portal_get_published_lcia_values_v2(array['bafu'],'process_all_impacts',
+ '[{"id":"52710000-0000-4000-8000-000000000102","version":"01.00.000"}]',null,null,50)->'rows'),2,'restricted/exclusive license cannot hide valid published display LCIA');
+select extensions.is(api.portal_get_dataset_v2(array['bafu'],'process','52710000-0000-4000-8000-000000000102','01.00.000')#>>'{capabilities,lciaVisible}','true','LCIA badge and numeric reader agree without license gates');
+reset role;
+alter table public.processes disable trigger user;
+update public.processes set json=json #- '{processDataSet,administrativeInformation,publicationAndOwnership,common:licenseType}'
+where id='52710000-0000-4000-8000-000000000102' and version='01.00.000';
+alter table public.processes enable trigger user;
+select private.portal_display_refresh_exact_v1('process','52710000-0000-4000-8000-000000000102','01.00.000');
+set local role anon;
+select extensions.is(jsonb_array_length(api.portal_get_published_lcia_values_v2(array['bafu'],'process_all_impacts',
+ '[{"id":"52710000-0000-4000-8000-000000000102","version":"01.00.000"}]',null,null,50)->'rows'),2,'missing license cannot hide valid published display LCIA');
+reset role;
 update private.dataset_display_settings set is_visible=false where dataset_id='52710000-0000-4000-8000-000000000102';
 set local role anon;
 select extensions.is(coalesce(jsonb_array_length(api.portal_get_published_lcia_values_v2(array['bafu'],'process_all_impacts',
@@ -4140,6 +4164,10 @@ select extensions.is(coalesce(jsonb_array_length(api.portal_get_published_lcia_v
 reset role;
 update private.portal_display_rollout set mode='legacy';
 delete from private.dataset_display_settings where dataset_id='52710000-0000-4000-8000-000000000102';
+alter table public.processes disable trigger user;
+update public.processes p set json=s.json from portal_818_saved_process s where p.id=s.id and p.version=s.version;
+alter table public.processes enable trigger user;
+
 
 -- Exact publication identity never bypasses the public Process capability
 -- check.  Reclassify one projected Process temporarily and prove both 200 and
