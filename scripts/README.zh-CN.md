@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-10-10
-lastReviewedCommit: 60407472b9ad5ec91a351f3d3b9c4c34531612a7
-lastReviewedNote: "Database #807: reviewed additive nullable brand, strict scope primitives, versioned public schemas and deterministic local snapshots; legacy Portal readers remain unchanged and cutover is pending."
+lastReviewedCommit: 1fa9efca660b9361f06e378f889b0d788f6cb74f
+lastReviewedNote: "Database #807 production qualification follow-up: reviewed set-based exact-setting RLS bridge, bounded summary examples, unchanged 2s budget, view-option contract guard and rollback-only synthetic benchmark. Hosted activation remains separately gated by #808."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -47,6 +47,12 @@ JSON/cursor 及索引存储/写成本。这些本地资格不代表 hosted 性�
 数值。逐项 source/release 决策与复审条件保存在
 `supabase/tests/fixtures/20261006_advisor_dispositions.json`；实际部署与 hosted
 资格状态以 Issue/PR receipts 为准。
+
+
+`benchmark_portal_display_scope.py` 在 14 万条合成版本上，对比 #807 私有品牌
+资格查询和有界统计与精确前序实现。它仅接受明确归属本任务的指定空本地栈、
+`--samples`（1–5）和新 `--report` 路径，交替执行前序/候选并回滚全部 fixture
+和 DDL。完整验证边界见 repo validation guide。
 
 ## 目录结构
 

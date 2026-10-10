@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-10-10
-lastReviewedCommit: 60407472b9ad5ec91a351f3d3b9c4c34531612a7
-lastReviewedNote: "Database #807: reviewed additive nullable brand, strict scope primitives, versioned public schemas and deterministic local snapshots; legacy Portal readers remain unchanged and cutover is pending."
+lastReviewedCommit: 1fa9efca660b9361f06e378f889b0d788f6cb74f
+lastReviewedNote: "Database #807 production qualification follow-up: reviewed exact-setting RLS bridge, bounded summary reads, unchanged privileges/timeouts and generated private schema; no deployment, backfill or activation semantics changed."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

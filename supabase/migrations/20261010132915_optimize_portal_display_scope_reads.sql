@@ -1,3 +1,51 @@
+-- Database #807: preserve exact settings checks without per-row definer calls.
+-- Only private read contracts change. No backfill, activation or timeout increase.
+begin;
+set local statement_timeout='60s';
+set local lock_timeout='5s';
+select private.portal_display_assert_contract_v1();
+
+-- The owner bridge exposes only already-visible exact keys to the constrained
+-- display executor. Application roles retain no settings or view access.
+-- A barrier protects scope predicates; native equality still admits key indexes.
+create view private.display_request_visible_settings_v1 with (security_barrier=true) as
+select s.dataset_kind,s.dataset_id,s.dataset_version
+from private.dataset_display_settings s
+where s.is_visible and
+ (current_setting('portal.display_global',true)='true' or
+ s.brand=any(string_to_array(current_setting('portal.display_brands',true),',')))
+and (nullif(current_setting('portal.display_filter_brand',true),'') is null or
+ s.brand=current_setting('portal.display_filter_brand',true));
+alter view private.display_request_visible_settings_v1 owner to postgres;
+revoke all on private.display_request_visible_settings_v1 from public,anon,authenticated,service_role,api_internal_executor,portal_public_executor;
+grant select on private.display_request_visible_settings_v1 to portal_display_executor;
+do $$declare rel text;begin
+ foreach rel in array array['display_catalog_search_rows_v1','display_catalog_search_rows_v2','display_catalog_facet_rows_v1','display_catalog_character_rows_v1','display_catalog_character_rows_v2','display_navigation_versions_v1','display_navigation_membership_v1','display_sitemap_rows_v1'] loop
+ execute format('alter policy display_scope on private.%I using (exists(select 1 from private.display_request_visible_settings_v1 s where s.dataset_kind=%I.dataset_kind and s.dataset_id=%I.id and s.dataset_version=%I.version))',rel,rel,rel,rel);
+ end loop;
+end$$;
+
+-- Include view options in the independent read contract, so removing the
+-- security barrier or changing invoker semantics is detected before reads.
+create or replace function private.portal_display_contract_identity_v1() returns text
+language sql stable security definer set search_path='' as $$
+ select md5(jsonb_build_object(
+ 'routines',(select jsonb_agg(jsonb_build_array(p.oid::regprocedure::text,pg_get_functiondef(p.oid),p.proowner::regrole::text,p.proacl::text) order by p.oid::regprocedure::text)
+ from pg_proc p join pg_namespace n on n.oid=p.pronamespace
+ where (n.nspname='private' and (p.proname like 'display_%' or p.proname like 'portal_display_%')) or (n.nspname='api' and p.proname like 'portal_%')),
+ 'relations',(select jsonb_agg(jsonb_build_array(c.relname,c.relrowsecurity,c.relforcerowsecurity,c.reloptions,c.relowner::regrole::text,c.relacl::text,case when c.relkind='v' then pg_get_viewdef(c.oid) else null end,
+ (select jsonb_agg(jsonb_build_array(a.attname,format_type(a.atttypid,a.atttypmod),a.attnotnull,a.attacl::text) order by a.attnum) from pg_attribute a where a.attrelid=c.oid and a.attnum>0 and not a.attisdropped),
+ (select jsonb_agg(pg_get_constraintdef(x.oid) order by x.conname) from pg_constraint x where x.conrelid=c.oid),
+ (select jsonb_agg(jsonb_build_array(pg_get_indexdef(i.indexrelid),i.indisvalid,i.indisready) order by i.indexrelid::regclass::text) from pg_index i where i.indrelid=c.oid),
+ (select jsonb_agg(jsonb_build_array(p.polname,p.polcmd,p.polpermissive,p.polroles::text,pg_get_expr(p.polqual,p.polrelid),pg_get_expr(p.polwithcheck,p.polrelid)) order by p.polname) from pg_policy p where p.polrelid=c.oid)) order by c.relname)
+ from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='private' and c.relkind in ('r','v') and (c.relname like 'display_%' or c.relname='portal_display_derivation_contract')),
+ 'writers',(select jsonb_agg(jsonb_build_array(t.tgrelid::regclass::text,pg_get_triggerdef(t.oid),t.tgenabled) order by t.tgrelid::regclass::text,t.tgname) from pg_trigger t where t.tgname like 'portal_display_%' or t.tgrelid in (select c.oid from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='private' and c.relname like 'display_%'))
+ )::text)
+$$;
+
+-- Latest contains at most one exact version per kind/id. Sort these narrow keys
+-- before hydrating a UUID example; an OFFSET fence preserves bounded LATERAL
+-- lookup. Validate a CAS checksum once per unique group, after its row count.
 CREATE OR REPLACE FUNCTION "private"."display_api_catalog_summary_v1"() RETURNS "jsonb"
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER PARALLEL RESTRICTED
     SET "search_path" TO ''
@@ -349,4 +397,15 @@ ALTER FUNCTION "private"."display_api_catalog_summary_v1"() OWNER TO "portal_dis
 
 REVOKE ALL ON FUNCTION "private"."display_api_catalog_summary_v1"() FROM PUBLIC;
 
-GRANT ALL ON FUNCTION "private"."display_api_catalog_summary_v1"() TO "portal_public_executor";
+
+
+
+grant execute on function private.display_api_catalog_summary_v1() to portal_display_executor;
+
+
+
+update private.portal_display_contract_manifest
+set identity=private.portal_display_contract_identity_v1() where singleton;
+select private.portal_display_assert_contract_v1();
+notify pgrst,'reload schema';
+commit;

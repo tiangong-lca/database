@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-10-10
-lastReviewedCommit: 60407472b9ad5ec91a351f3d3b9c4c34531612a7
-lastReviewedNote: "Database #807: reviewed additive nullable brand, strict scope primitives, versioned public schemas and deterministic local snapshots; legacy Portal readers remain unchanged and cutover is pending."
+lastReviewedCommit: 1fa9efca660b9361f06e378f889b0d788f6cb74f
+lastReviewedNote: "Database #807 production qualification follow-up: reviewed set-based exact-setting RLS bridge, bounded summary examples, unchanged 2s budget, view-option contract guard and rollback-only synthetic benchmark. Hosted activation remains separately gated by #808."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -49,6 +49,13 @@ Its optional `--snapshot <private-cli-advisor.json>` checks baseline corresponde
 without printing or copying live operating values. Release/source decisions and
 future review conditions live in `supabase/tests/fixtures/20261006_advisor_dispositions.json`;
 actual deployment/hosted qualification state remains in Issue/PR receipts.
+
+
+`benchmark_portal_display_scope.py` qualifies the #807 private scope bridge and
+bounded summary against their exact predecessor on 140,000 synthetic versions.
+It requires the named task-owned empty local stack, accepts `--samples` (1–5)
+and a new `--report` path, alternates baseline/candidate order and rolls back all
+fixtures and DDL. See the repo validation guide for the complete proof boundary.
 
 ## Layout
 

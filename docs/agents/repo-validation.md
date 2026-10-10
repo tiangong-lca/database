@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-10-10
-lastReviewedCommit: 60407472b9ad5ec91a351f3d3b9c4c34531612a7
-lastReviewedNote: "Database #807: reviewed isolated display projection and executor, guarded legacy/display/unavailable rollout, scoped readers, exact dependency licensing, immutable legacy preservation and local upgrade proof; hosted qualification and account backfill remain separate."
+lastReviewedCommit: 1fa9efca660b9361f06e378f889b0d788f6cb74f
+lastReviewedNote: "Database #807 production qualification follow-up: reviewed set-based exact-setting RLS bridge, bounded summary examples, unchanged 2s budget, view-option contract guard and rollback-only synthetic benchmark. Hosted activation remains separately gated by #808."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -992,3 +992,16 @@ Local correctness does not qualify hosted latency, near-production capacity,
 actual account backfill, traffic draining, cache purge or deployment activation.
 Those receipts, Dev/Main promotion and root integration remain explicit release
 gates in the approved workspace Plan and Database #808.
+
+
+For the display read-scope hotfix, run the expanded display reader suite, all
+Portal suites and adjacent API/OAuth/display-manager/publication isolation suites.
+The new assertions cover the private key bridge ACLs, exact scoped/global/filter
+parity, stale projection hiding and security-barrier option drift. Rebuild blank
+history and compare the predecessor upgrade without source/settings mutation.
+Run `python3 scripts/benchmark_portal_display_scope.py --container supabase_db_portal-display-807-1010 --samples 3 --report <new-private-json>` only on the explicitly
+owned empty local #807 stack. It uses 140,000 synthetic versions, alternates
+baseline/candidate order, compares complete response digests across all four
+single-brand scopes and their union, enforces the candidate's original two-second
+summary budget, and verifies rollback cleanup. This is local read-scale evidence;
+production activation still requires actual scoped runtime qualification.

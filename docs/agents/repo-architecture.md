@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-10-10
-lastReviewedCommit: 60407472b9ad5ec91a351f3d3b9c4c34531612a7
-lastReviewedNote: "Database #807: reviewed isolated display projection and executor, guarded legacy/display/unavailable rollout, scoped readers, exact dependency licensing, immutable legacy preservation and local upgrade proof; hosted qualification and account backfill remain separate."
+lastReviewedCommit: 1fa9efca660b9361f06e378f889b0d788f6cb74f
+lastReviewedNote: "Database #807 production qualification follow-up: reviewed set-based exact-setting RLS bridge, bounded summary examples, unchanged 2s budget, view-option contract guard and rollback-only synthetic benchmark. Hosted activation remains separately gated by #808."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1188,6 +1188,13 @@ reader closure atomically. Its narrow `portal_display_executor` has no inherited
 legacy source policy. Source and setting triggers synchronize exact keys, preserve
 actual state values, and serialize each key with a transaction advisory lock.
 Reads recheck authoritative settings; source deletion clears exact settings.
+Migration `20261010132915` uses a private security-barrier view of scoped visible
+exact keys for projection RLS, allowing set-based checks and native key lookups.
+Only `portal_display_executor` receives SELECT on that bridge; application roles
+and raw-settings grants remain unchanged. The display identity also pins relation
+options. Summary UUID examples sort latest narrow keys before bounded card
+hydration, and CAS checksum validation runs after the unique-value count. Neither
+response ordering nor the two-second summary budget changes.
 Projection/version/facet/navigation/sitemap rows have an independent derivation
 contract and a read-time identity guard over readers, relation definitions,
 indexes, RLS and writer triggers. Original frozen extraction/rank contracts remain

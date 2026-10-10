@@ -717,5 +717,54 @@ select throws_ok($q$select api.portal_search_processes_v4(array['worldsteel'],''
 reset role;
 alter table public.flows enable trigger portal_display_source_sync;
 
+
+-- Summary examples retain checksum and uniqueness semantics after grouping.
+insert into public.flows(id,version,state_code,json) values
+ ('80700000-0000-4000-8000-000000000110','01.00.000',0,pg_temp.portal_versions_flow_payload('Duplicate CAS','01.00.000')),
+ ('80700000-0000-4000-8000-000000000111','01.00.000',0,jsonb_set(pg_temp.portal_versions_flow_payload('Unique CAS','01.00.000'),'{flowDataSet,flowInformation,dataSetInformation,CASNumber}','"64-17-5"')),
+ ('80700000-0000-4000-8000-000000000112','01.00.000',0,jsonb_set(pg_temp.portal_versions_flow_payload('Invalid CAS','01.00.000'),'{flowDataSet,flowInformation,dataSetInformation,CASNumber}','"12-34-5"'));
+insert into private.dataset_display_settings(dataset_kind,dataset_id,dataset_version,is_visible,brand)
+select 'flow',id,version,true,'bafu' from public.flows where id in
+ ('80700000-0000-4000-8000-000000000110','80700000-0000-4000-8000-000000000111','80700000-0000-4000-8000-000000000112');
+set local role anon;
+select is((select x->>'query' from jsonb_array_elements(api.portal_catalog_summary_v2(array['bafu'])->'examples') x where x->>'queryKind'='cas'),'64-17-5','summary skips invalid checksums and duplicate visible CAS values');
+reset role;
+update private.dataset_display_settings set brand='uslci' where dataset_id='80700000-0000-4000-8000-000000000110';
+set local role anon;
+select is((select x->>'query' from jsonb_array_elements(api.portal_catalog_summary_v2(array['bafu'])->'examples') x where x->>'queryKind'='cas'),'50-00-0','out-of-scope duplicate does not disqualify a scoped CAS example');
+reset role;
+
+-- The set-based scope bridge remains private and reads live exact settings.
+set local role anon;
+select throws_ok($q$select * from private.display_request_visible_settings_v1$q$,'42501',null,'anonymous callers cannot read the private scope bridge');
+reset role;
+select ok(not has_table_privilege('authenticated','private.display_request_visible_settings_v1','select'),'authenticated cannot read scope bridge');
+select ok(not has_table_privilege('service_role','private.display_request_visible_settings_v1','select'),'service role cannot read scope bridge');
+select ok(not has_table_privilege('portal_display_executor','private.dataset_display_settings','select'),'display executor does not gain raw settings access');
+select ok(not has_table_privilege('portal_display_executor','private.display_request_visible_settings_v1','update'),'display executor cannot write the bridge');
+create temporary table scope_keys as select dataset_kind,dataset_id,dataset_version from private.dataset_display_settings;
+grant select on scope_keys to portal_display_executor;
+set local role portal_display_executor;
+select set_config('portal.display_brands','worldsteel,tiangong_lca',true),set_config('portal.display_global','false',true),set_config('portal.display_filter_brand','',true);
+select is((select count(*) from scope_keys k where private.portal_display_request_visible_v1(k.dataset_kind,k.dataset_id,k.dataset_version::text)),(select count(*) from private.display_request_visible_settings_v1),'bridge matches exact scoped predicate');
+select set_config('portal.display_global','true',true);
+select is((select count(*) from scope_keys k where private.portal_display_request_visible_v1(k.dataset_kind,k.dataset_id,k.dataset_version::text)),(select count(*) from private.display_request_visible_settings_v1),'global bridge includes visible null-brand support like original predicate');
+select set_config('portal.display_filter_brand','uslci',true);
+select is((select count(*) from scope_keys k where private.portal_display_request_visible_v1(k.dataset_kind,k.dataset_id,k.dataset_version::text)),(select count(*) from private.display_request_visible_settings_v1),'brand filter still narrows global bridge');
+reset role;
+-- Preserve a stale projection deliberately: authorization must still recheck
+-- settings, rather than trusting copied brand or projection existence.
+alter table private.dataset_display_settings disable trigger user;
+update private.dataset_display_settings set is_visible=false where dataset_kind='process' and dataset_version='01.00.000';
+alter table private.dataset_display_settings enable trigger user;
+set local role anon;
+select is(jsonb_array_length(api.portal_search_processes_v4(array['worldsteel'],'')->'items'),0,'stale projection cannot expose an exact key hidden in settings');
+select is(api.portal_catalog_summary_v2(array['worldsteel'])#>>'{counts,process}','0','summary excludes hidden stale projections');
+reset role;
+alter view private.display_request_visible_settings_v1 set (security_barrier=false);
+select throws_ok($q$select private.portal_display_assert_contract_v1()$q$,'P0001','portal catalog unavailable','scope view option drift fails closed');
+alter view private.display_request_visible_settings_v1 set (security_barrier=true);
+select lives_ok($q$select private.portal_display_assert_contract_v1()$q$,'restored barrier restores exact contract');
+
 select * from finish();
 rollback;

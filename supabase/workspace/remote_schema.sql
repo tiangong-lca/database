@@ -51467,52 +51467,46 @@ begin
     from latest
   ), uuid_candidates as materialized (
     (
-      select 0 as preference,
-        candidate.dataset_kind,
-        candidate.id,
-        candidate.version,
+      select 0 as preference, 'process'::text as dataset_kind,
+        selected.id, selected.version,
         private.display_catalog_summary_label_v1(candidate.card) as label
-      from private.display_catalog_search_rows_v2 as candidate
-      where candidate.dataset_kind = 'process'
-        and exists (
-          select 1
-          from latest
-          where latest.dataset_kind = candidate.dataset_kind
-            and latest.id = candidate.id
-            and latest.version = candidate.version
-        )
-        and pg_catalog.jsonb_array_length(
-          private.display_catalog_summary_label_v1(candidate.card)
-        ) > 0
-      order by candidate.id,
-        candidate.version desc,
-        candidate.modified_at desc,
-        candidate.state_code desc
+      from (
+        select id, version from latest where dataset_kind = 'process'
+        order by id
+        offset 0
+      ) as selected
+      cross join lateral (
+        select card from private.display_catalog_search_rows_v2 as row
+        where row.dataset_kind = 'process'
+          and row.id = selected.id and row.version = selected.version
+        offset 0
+      ) as candidate
+      where pg_catalog.jsonb_array_length(
+        private.display_catalog_summary_label_v1(candidate.card)
+      ) > 0
+      order by selected.id
       limit 1
     )
     union all
     (
-      select 1 as preference,
-        candidate.dataset_kind,
-        candidate.id,
-        candidate.version,
+      select 1 as preference, 'flow'::text as dataset_kind,
+        selected.id, selected.version,
         private.display_catalog_summary_label_v1(candidate.card) as label
-      from private.display_catalog_search_rows_v1 as candidate
-      where candidate.dataset_kind = 'flow'
-        and exists (
-          select 1
-          from latest
-          where latest.dataset_kind = candidate.dataset_kind
-            and latest.id = candidate.id
-            and latest.version = candidate.version
-        )
-        and pg_catalog.jsonb_array_length(
-          private.display_catalog_summary_label_v1(candidate.card)
-        ) > 0
-      order by candidate.id,
-        candidate.version desc,
-        candidate.modified_at desc,
-        candidate.state_code desc
+      from (
+        select id, version from latest where dataset_kind = 'flow'
+        order by id
+        offset 0
+      ) as selected
+      cross join lateral (
+        select card from private.display_catalog_search_rows_v1 as row
+        where row.dataset_kind = 'flow'
+          and row.id = selected.id and row.version = selected.version
+        offset 0
+      ) as candidate
+      where pg_catalog.jsonb_array_length(
+        private.display_catalog_summary_label_v1(candidate.card)
+      ) > 0
+      order by selected.id
       limit 1
     )
   ), uuid_example as (
@@ -51536,11 +51530,10 @@ begin
       and pg_catalog.length(
         candidate.card ->> 'casNumber'
       ) between 7 and 12
-      and private.display_catalog_summary_valid_cas_v1(
-        candidate.card ->> 'casNumber'
-      )
     group by candidate.card ->> 'casNumber'
-    having pg_catalog.count(*) = 1
+    having case when pg_catalog.count(*) = 1 then
+      private.display_catalog_summary_valid_cas_v1(candidate.card ->> 'casNumber')
+      else false end
     order by candidate.card ->> 'casNumber'
     limit 64
   ), cas_candidates as materialized (
@@ -70078,7 +70071,7 @@ CREATE OR REPLACE FUNCTION "private"."portal_display_contract_identity_v1"() RET
  'routines',(select jsonb_agg(jsonb_build_array(p.oid::regprocedure::text,pg_get_functiondef(p.oid),p.proowner::regrole::text,p.proacl::text) order by p.oid::regprocedure::text)
  from pg_proc p join pg_namespace n on n.oid=p.pronamespace
  where (n.nspname='private' and (p.proname like 'display_%' or p.proname like 'portal_display_%')) or (n.nspname='api' and p.proname like 'portal_%')),
- 'relations',(select jsonb_agg(jsonb_build_array(c.relname,c.relrowsecurity,c.relforcerowsecurity,c.relowner::regrole::text,c.relacl::text,case when c.relkind='v' then pg_get_viewdef(c.oid) else null end,
+ 'relations',(select jsonb_agg(jsonb_build_array(c.relname,c.relrowsecurity,c.relforcerowsecurity,c.reloptions,c.relowner::regrole::text,c.relacl::text,case when c.relkind='v' then pg_get_viewdef(c.oid) else null end,
  (select jsonb_agg(jsonb_build_array(a.attname,format_type(a.atttypid,a.atttypmod),a.attnotnull,a.attacl::text) order by a.attnum) from pg_attribute a where a.attrelid=c.oid and a.attnum>0 and not a.attisdropped),
  (select jsonb_agg(pg_get_constraintdef(x.oid) order by x.conname) from pg_constraint x where x.conrelid=c.oid),
  (select jsonb_agg(jsonb_build_array(pg_get_indexdef(i.indexrelid),i.indisvalid,i.indisready) order by i.indexrelid::regclass::text) from pg_index i where i.indrelid=c.oid),
@@ -97839,6 +97832,17 @@ CREATE OR REPLACE VIEW "private"."display_read_navigation_projection_contract_v1
 ALTER VIEW "private"."display_read_navigation_projection_contract_v1" OWNER TO "portal_public_executor";
 
 
+CREATE OR REPLACE VIEW "private"."display_request_visible_settings_v1" WITH ("security_barrier"='true') AS
+ SELECT "dataset_kind",
+    "dataset_id",
+    "dataset_version"
+   FROM "private"."dataset_display_settings" "s"
+  WHERE ("is_visible" AND (("current_setting"('portal.display_global'::"text", true) = 'true'::"text") OR ("brand" = ANY ("string_to_array"("current_setting"('portal.display_brands'::"text", true), ','::"text")))) AND ((NULLIF("current_setting"('portal.display_filter_brand'::"text", true), ''::"text") IS NULL) OR ("brand" = "current_setting"('portal.display_filter_brand'::"text", true))));
+
+
+ALTER VIEW "private"."display_request_visible_settings_v1" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "private"."display_sitemap_rows_v1" (
     "dataset_kind" "text" NOT NULL,
     "id" "uuid" NOT NULL,
@@ -104144,35 +104148,51 @@ ALTER TABLE "private"."display_navigation_membership_v1" ENABLE ROW LEVEL SECURI
 ALTER TABLE "private"."display_navigation_versions_v1" ENABLE ROW LEVEL SECURITY;
 
 
-CREATE POLICY "display_scope" ON "private"."display_catalog_character_rows_v1" FOR SELECT TO "portal_display_executor" USING ("private"."portal_display_request_visible_v1"("dataset_kind", "id", "version"));
+CREATE POLICY "display_scope" ON "private"."display_catalog_character_rows_v1" FOR SELECT TO "portal_display_executor" USING ((EXISTS ( SELECT 1
+   FROM "private"."display_request_visible_settings_v1" "s"
+  WHERE (("s"."dataset_kind" = "display_catalog_character_rows_v1"."dataset_kind") AND ("s"."dataset_id" = "display_catalog_character_rows_v1"."id") AND (("s"."dataset_version")::"text" = "display_catalog_character_rows_v1"."version")))));
 
 
 
-CREATE POLICY "display_scope" ON "private"."display_catalog_character_rows_v2" FOR SELECT TO "portal_display_executor" USING ("private"."portal_display_request_visible_v1"("dataset_kind", "id", "version"));
+CREATE POLICY "display_scope" ON "private"."display_catalog_character_rows_v2" FOR SELECT TO "portal_display_executor" USING ((EXISTS ( SELECT 1
+   FROM "private"."display_request_visible_settings_v1" "s"
+  WHERE (("s"."dataset_kind" = "display_catalog_character_rows_v2"."dataset_kind") AND ("s"."dataset_id" = "display_catalog_character_rows_v2"."id") AND (("s"."dataset_version")::"text" = "display_catalog_character_rows_v2"."version")))));
 
 
 
-CREATE POLICY "display_scope" ON "private"."display_catalog_facet_rows_v1" FOR SELECT TO "portal_display_executor" USING ("private"."portal_display_request_visible_v1"("dataset_kind", "id", "version"));
+CREATE POLICY "display_scope" ON "private"."display_catalog_facet_rows_v1" FOR SELECT TO "portal_display_executor" USING ((EXISTS ( SELECT 1
+   FROM "private"."display_request_visible_settings_v1" "s"
+  WHERE (("s"."dataset_kind" = "display_catalog_facet_rows_v1"."dataset_kind") AND ("s"."dataset_id" = "display_catalog_facet_rows_v1"."id") AND (("s"."dataset_version")::"text" = "display_catalog_facet_rows_v1"."version")))));
 
 
 
-CREATE POLICY "display_scope" ON "private"."display_catalog_search_rows_v1" FOR SELECT TO "portal_display_executor" USING ("private"."portal_display_request_visible_v1"("dataset_kind", "id", "version"));
+CREATE POLICY "display_scope" ON "private"."display_catalog_search_rows_v1" FOR SELECT TO "portal_display_executor" USING ((EXISTS ( SELECT 1
+   FROM "private"."display_request_visible_settings_v1" "s"
+  WHERE (("s"."dataset_kind" = "display_catalog_search_rows_v1"."dataset_kind") AND ("s"."dataset_id" = "display_catalog_search_rows_v1"."id") AND (("s"."dataset_version")::"text" = "display_catalog_search_rows_v1"."version")))));
 
 
 
-CREATE POLICY "display_scope" ON "private"."display_catalog_search_rows_v2" FOR SELECT TO "portal_display_executor" USING ("private"."portal_display_request_visible_v1"("dataset_kind", "id", "version"));
+CREATE POLICY "display_scope" ON "private"."display_catalog_search_rows_v2" FOR SELECT TO "portal_display_executor" USING ((EXISTS ( SELECT 1
+   FROM "private"."display_request_visible_settings_v1" "s"
+  WHERE (("s"."dataset_kind" = "display_catalog_search_rows_v2"."dataset_kind") AND ("s"."dataset_id" = "display_catalog_search_rows_v2"."id") AND (("s"."dataset_version")::"text" = "display_catalog_search_rows_v2"."version")))));
 
 
 
-CREATE POLICY "display_scope" ON "private"."display_navigation_membership_v1" FOR SELECT TO "portal_display_executor" USING ("private"."portal_display_request_visible_v1"("dataset_kind", "id", "version"));
+CREATE POLICY "display_scope" ON "private"."display_navigation_membership_v1" FOR SELECT TO "portal_display_executor" USING ((EXISTS ( SELECT 1
+   FROM "private"."display_request_visible_settings_v1" "s"
+  WHERE (("s"."dataset_kind" = "display_navigation_membership_v1"."dataset_kind") AND ("s"."dataset_id" = "display_navigation_membership_v1"."id") AND (("s"."dataset_version")::"text" = "display_navigation_membership_v1"."version")))));
 
 
 
-CREATE POLICY "display_scope" ON "private"."display_navigation_versions_v1" FOR SELECT TO "portal_display_executor" USING ("private"."portal_display_request_visible_v1"("dataset_kind", "id", "version"));
+CREATE POLICY "display_scope" ON "private"."display_navigation_versions_v1" FOR SELECT TO "portal_display_executor" USING ((EXISTS ( SELECT 1
+   FROM "private"."display_request_visible_settings_v1" "s"
+  WHERE (("s"."dataset_kind" = "display_navigation_versions_v1"."dataset_kind") AND ("s"."dataset_id" = "display_navigation_versions_v1"."id") AND (("s"."dataset_version")::"text" = "display_navigation_versions_v1"."version")))));
 
 
 
-CREATE POLICY "display_scope" ON "private"."display_sitemap_rows_v1" FOR SELECT TO "portal_display_executor" USING ("private"."portal_display_request_visible_v1"("dataset_kind", "id", "version"));
+CREATE POLICY "display_scope" ON "private"."display_sitemap_rows_v1" FOR SELECT TO "portal_display_executor" USING ((EXISTS ( SELECT 1
+   FROM "private"."display_request_visible_settings_v1" "s"
+  WHERE (("s"."dataset_kind" = "display_sitemap_rows_v1"."dataset_kind") AND ("s"."dataset_id" = "display_sitemap_rows_v1"."id") AND (("s"."dataset_version")::"text" = "display_sitemap_rows_v1"."version")))));
 
 
 
@@ -110449,6 +110469,10 @@ GRANT SELECT("owner_name") ON TABLE "private"."portal_navigation_projection_cont
 
 
 GRANT SELECT ON TABLE "private"."display_read_navigation_projection_contract_v1" TO "portal_display_executor";
+
+
+
+GRANT SELECT ON TABLE "private"."display_request_visible_settings_v1" TO "portal_display_executor";
 
 
 
