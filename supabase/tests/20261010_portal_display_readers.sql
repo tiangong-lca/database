@@ -185,6 +185,25 @@ select lives_ok(format('select api.portal_sitemap_shard_v2(array[''tiangong_lca'
 select throws_ok(format('select api.portal_sitemap_shard_v2(array[''bafu''],%L)',(select value#>>'{shards,0,shardCursor}' from display_cursor_probe)),'22023','invalid portal request','sitemap cursor cannot cross deployment scope');
 reset role;
 
+-- Sitemap pagination uses the same scoped latest set as standalone readers.
+create temporary table display_sitemap_page_probe(value jsonb);
+grant select,insert on display_sitemap_page_probe to anon;
+set local role anon;
+select is(api.portal_sitemap_entries_v2(array['tiangong_lca'],'process',null,1)#>>'{items,0,key,version}','01.00.000','sitemap scope precedes latest version selection');
+select is(jsonb_array_length(api.portal_sitemap_entries_v2(array['tiangong_lca'],'flow',null,1)->'items'),0,'sitemap excludes out-of-scope Flow');
+select is(api.portal_sitemap_entries_v2(array['bafu'],'process',null,1)#>>'{items,0,key,version}','02.00.000','sitemap selects visible version in second brand');
+insert into display_sitemap_page_probe select api.portal_sitemap_entries_v2(array['bafu','tiangong_lca'],'all',null,1);
+select is((select value#>>'{items,0,key,kind}' from display_sitemap_page_probe),'flow','mixed sitemap page orders Flow before Process');
+select ok((select value->>'nextCursor' is not null from display_sitemap_page_probe),'bounded sitemap emits continuation');
+select is(api.portal_sitemap_entries_v2(array['tiangong_lca','bafu'],'all',(select value->>'nextCursor' from display_sitemap_page_probe),1)#>>'{items,0,key,kind}','process','sitemap continuation has no repeated first item');
+select is(api.portal_sitemap_entries_v2(array['tiangong_lca','bafu'],'all',(select value->>'nextCursor' from display_sitemap_page_probe),1)#>>'{items,0,key,version}','02.00.000','mixed scope continuation uses latest visible Process');
+select is(api.portal_sitemap_entries_v2(array['bafu','tiangong_lca'],'all',(select value->>'nextCursor' from display_sitemap_page_probe),1)->'nextCursor','null'::jsonb,'last sitemap page has no continuation');
+select throws_ok(format('select api.portal_sitemap_entries_v2(array[''tiangong_lca''],''all'',%L,1)',(select value->>'nextCursor' from display_sitemap_page_probe)),'22023','invalid portal request','sitemap page cursor rejects narrower deployment');
+select throws_ok(format('select api.portal_sitemap_entries_v2(array[''bafu'',''tiangong_lca''],''flow'',%L,1)',(select value->>'nextCursor' from display_sitemap_page_probe)),'22023','invalid portal request','sitemap page cursor rejects changed kind');
+select is(jsonb_array_length(api.portal_sitemap_entries_v1('all',null,1000)->'items'),2,'old sitemap facade uses global visible latest roots only');
+select is(jsonb_array_length(api.portal_sitemap_entries_v2(array['worldsteel'],'all',null,1000)->'items'),0,'empty sitemap scope stays empty');
+reset role;
+
 -- Exact support chains remain readable across brands; standalone eligibility is scoped.
 create or replace function pg_temp.portal_localized(p_text text)
 returns jsonb

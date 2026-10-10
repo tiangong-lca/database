@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-10-10
-lastReviewedCommit: 1fa9efca660b9361f06e378f889b0d788f6cb74f
-lastReviewedNote: "Database #807 production qualification follow-up: reviewed set-based exact-setting RLS bridge, bounded summary examples, unchanged 2s budget, view-option contract guard and rollback-only synthetic benchmark. Hosted activation remains separately gated by #808."
+lastReviewedCommit: 31cd8e4ffc2899df9cf0e526667a97f33ce9656e
+lastReviewedNote: 'Database #807 sitemap follow-up: narrow synchronized projection pages preserve scope-before-latest, kind/id ordering, cursor identity and the original 8s budget; production activation remains independently gated.'
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1195,6 +1195,10 @@ and raw-settings grants remain unchanged. The display identity also pins relatio
 options. Summary UUID examples sort latest narrow keys before bounded card
 hydration, and CAS checksum validation runs after the unique-value count. Neither
 response ordering nor the two-second summary budget changes.
+Migration `20261010154811` pages sitemap entries from the same narrow, scoped
+sitemap projection as shards. Latest versions are selected after RLS; kind/id
+ordering, continuation identity and the eight-second page budget are unchanged.
+The page reader no longer materializes full source JSON for every visible row.
 Projection/version/facet/navigation/sitemap rows have an independent derivation
 contract and a read-time identity guard over readers, relation definitions,
 indexes, RLS and writer triggers. Original frozen extraction/rank contracts remain

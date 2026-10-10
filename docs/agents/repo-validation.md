@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-10-10
-lastReviewedCommit: 1fa9efca660b9361f06e378f889b0d788f6cb74f
-lastReviewedNote: "Database #807 production qualification follow-up: reviewed set-based exact-setting RLS bridge, bounded summary examples, unchanged 2s budget, view-option contract guard and rollback-only synthetic benchmark. Hosted activation remains separately gated by #808."
+lastReviewedCommit: 31cd8e4ffc2899df9cf0e526667a97f33ce9656e
+lastReviewedNote: 'Database #807 sitemap follow-up: narrow synchronized projection pages preserve scope-before-latest, kind/id ordering, cursor identity and the original 8s budget; production activation remains independently gated.'
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1005,3 +1005,12 @@ baseline/candidate order, compares complete response digests across all four
 single-brand scopes and their union, enforces the candidate's original two-second
 summary budget, and verifies rollback cleanup. This is local read-scale evidence;
 production activation still requires actual scoped runtime qualification.
+
+For display sitemap page changes, run the display reader suite's scoped latest,
+mixed-kind pagination, cursor-scope/kind rejection, empty-scope and global legacy
+facade assertions. Run `python3 scripts/benchmark_portal_display_sitemap.py
+--container supabase_db_portal-display-807-1010 --report <new-private-json>` on the empty task-owned local stack. It compares full predecessor/candidate page
+responses on 140,000 matching synthetic source/projection rows for Process, Flow
+and mixed pages over four brands, their union and global legacy scope. Candidate
+statements retain the original eight-second budget. This single-sample per-shape
+comparison is local read-scale evidence, not hosted p95 or production activation.

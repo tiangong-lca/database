@@ -53047,22 +53047,22 @@ begin
     v_cursor_id := (v_cursor ->> 'id')::uuid;
   end if;
 
-  with source_rows as materialized (
-    select kinds.kind, source.*
-    from (values ('process'::text), ('flow'::text)) as kinds(kind)
-    cross join lateral private.display_catalog_rows_v1(kinds.kind) as source
-    where v_filter_kind = 'all' or kinds.kind = v_filter_kind
-  ), latest as materialized (
-    select candidate.*
-    from (
-      select source_rows.*,
-        row_number() over (
-          partition by source_rows.kind, source_rows.id
-          order by source_rows.version desc
-        ) as version_rank
-      from source_rows
-    ) as candidate
-    where candidate.version_rank = 1
+  perform private.display_assert_catalog_projection_contract_v1();
+  perform private.display_assert_catalog_facet_contract_v1();
+  perform private.display_assert_sitemap_projection_v1();
+
+  -- Forced RLS applies exact visibility and brand scope before choosing latest.
+  -- Sitemap pages need only these keys; do not materialize source JSON here.
+  with latest as materialized (
+    select distinct on (projection.dataset_kind, projection.id)
+      projection.dataset_kind as kind,
+      projection.id,
+      projection.version,
+      projection.modified_at
+    from private.display_sitemap_rows_v1 as projection
+    where (v_filter_kind = 'all' or projection.dataset_kind = v_filter_kind)
+      and projection.contract_version = 1
+    order by projection.dataset_kind, projection.id, projection.version desc
   ), ordered as materialized (
     select latest.*,
       row_number() over (order by latest.kind, latest.id) as page_rank

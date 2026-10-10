@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-10-10
-lastReviewedCommit: 1fa9efca660b9361f06e378f889b0d788f6cb74f
-lastReviewedNote: "Database #807 production qualification follow-up: reviewed set-based exact-setting RLS bridge, bounded summary examples, unchanged 2s budget, view-option contract guard and rollback-only synthetic benchmark. Hosted activation remains separately gated by #808."
+lastReviewedCommit: 31cd8e4ffc2899df9cf0e526667a97f33ce9656e
+lastReviewedNote: 'Database #807 sitemap follow-up: narrow synchronized projection pages preserve scope-before-latest, kind/id ordering, cursor identity and the original 8s budget; production activation remains independently gated.'
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -806,3 +806,12 @@ the existing 15-second budget and hydrate only ten page names; output is private
 and an existing output path is refused. These are synthetic local measurements.
 
 展示迁移 #807 仅在 `check_portal_projection_manifest.py` 中放行该迁移的两个公共 sitemap 分发入口，旧 private 派生函数和后续迁移仍受冻结检查。`supabase/tests/upgrade/test_portal_display_upgrade.py` 在显式归属本任务的可丢弃数据库中验证旧函数体、owner、ACL 和配置保持不变。
+
+### `benchmark_portal_display_sitemap.py`
+
+Database #807 的本地 sitemap 对比工具，仅使用可回滚的合成测试事务。
+在 140,000 条一一对应的源数据和投影记录上，比较六种范围与三种类型过滤的
+完整响应及游标。要求使用明确归属本任务的固定本地容器和新的报告路径；
+候选查询保留原有 8 秒预算。该结果仅证明本地读取规模，不代表生产 p95。
+执行方式及上线验证边界见 `docs/agents/repo-validation.md` 的 Portal display
+qualification 小节。

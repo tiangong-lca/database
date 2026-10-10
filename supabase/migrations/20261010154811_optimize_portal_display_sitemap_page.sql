@@ -1,3 +1,9 @@
+-- Bound display sitemap pages to their synchronized narrow projection.
+begin;
+set local statement_timeout='60s';
+set local lock_timeout='5s';
+select private.portal_display_assert_contract_v1();
+
 CREATE OR REPLACE FUNCTION "private"."display_api_sitemap_entries_v1"("p_kind" "text", "p_cursor" "text" DEFAULT NULL::"text", "p_limit" integer DEFAULT 1000) RETURNS "jsonb"
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -101,3 +107,8 @@ ALTER FUNCTION "private"."display_api_sitemap_entries_v1"("p_kind" "text", "p_cu
 REVOKE ALL ON FUNCTION "private"."display_api_sitemap_entries_v1"("p_kind" "text", "p_cursor" "text", "p_limit" integer) FROM PUBLIC;
 
 GRANT ALL ON FUNCTION "private"."display_api_sitemap_entries_v1"("p_kind" "text", "p_cursor" "text", "p_limit" integer) TO "portal_public_executor";
+
+update private.portal_display_contract_manifest set identity=private.portal_display_contract_identity_v1() where singleton;
+select private.portal_display_assert_contract_v1();
+notify pgrst,'reload schema';
+commit;
