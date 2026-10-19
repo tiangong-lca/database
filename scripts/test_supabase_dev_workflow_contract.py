@@ -303,7 +303,7 @@ def main() -> int:
             )
 
     supabase_cli_versions = re.findall(
-        r"uses: supabase/setup-cli@v2\s+with:\s+version:\s*([^\s#]+)", text
+        r"uses: supabase/setup-cli@v3\s+with:\s+version:\s*([^\s#]+)", text
     )
     if supabase_cli_versions != ["2.117.0"] * 4:
         failures.append(
@@ -380,7 +380,7 @@ def main() -> int:
         "runs-on: ubuntu-24.04-arm",
         "timeout-minutes: 25",
         "uses: actions/checkout@v7",
-        "uses: supabase/setup-cli@v2",
+        "uses: supabase/setup-cli@v3",
         "run: supabase start && supabase db reset --no-seed",
         "supabase test db supabase/tests/20260923_derivative_scheduler_benchmark.sql",
         "supabase test db supabase/tests/20260923_derivative_scheduler_history_profile.sql",
@@ -547,7 +547,7 @@ def main() -> int:
         "steps.preview_authority.outputs.available == 'true'",
         "Supabase Preview runtime verification requires SUPABASE_ACCESS_TOKEN, SUPABASE_MAIN_PROJECT_ID, and SUPABASE_DEV_PROJECT_ID",
         "exit 1",
-        "uses: supabase/setup-cli@v2",
+        "uses: supabase/setup-cli@v3",
         "version: 2.117.0",
         "Wait for exact Supabase Preview check",
         "check_name=Supabase%20Preview&filter=latest",

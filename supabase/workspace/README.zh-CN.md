@@ -20,9 +20,9 @@ checkPaths:
   - .githooks/pre-push
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-10-16
-lastReviewedCommit: a84fcd60be87bec5bea3f54ff2d494a09a51e1a4
-lastReviewedNote: "Reviewed Database #845 Actions-only monitoring and exact persistent-Dev push scope guard; existing local/ARM64 checks, Preview authority, generated-workspace ownership and production boundaries remain required."
+lastReviewedAt: 2026-10-19
+lastReviewedCommit: dfca000480e54723fabc5fc30fae22e874d40c4b
+lastReviewedNote: "Reviewed Database #854 at dfca0004: four setup-cli v3 uses retain fixed CLI 2.117.0 and all deployment guards. Offline contract and negative controls pass; hosted x64/ARM, provider-event safety, source delivery and integration remain unproved. Schema, generated paths, ownership and branch policy are unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
