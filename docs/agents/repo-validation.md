@@ -33,7 +33,7 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-10-21
-lastReviewedCommit: 69d7f9892fcf778c619b26e68c19c92a83648f73
+lastReviewedCommit: a3695fd39b44fa825fe48e7215d4c18ae4f9b0de
 lastReviewedNote: "Reviewed the portable local Docker concurrency adapter and its 34 passing real-overlap checks; retained populated upgrade, focused/neighboring SQL and pinned generation evidence with unchanged production bytes."
 related:
   - ../../AGENTS.md

@@ -182,7 +182,8 @@ select is(api.cmd_dataset_prepare_stable_draft('85500000-0000-4000-8000-00000000
 reset role;
 select is((select count(*) from private.command_audit_log where command='cmd_dataset_create_version'
  and target_id='85500000-0000-4000-8000-000000000101'),1::bigint,'native version writer dispatched exactly once');
-select is((select count(*) from private.command_audit_log where command='cmd_dataset_prepare_stable_draft'),2::bigint,
+select is((select count(*) from private.command_audit_log where command='cmd_dataset_prepare_stable_draft'
+ and actor_user_id='85500000-0000-4000-8000-000000000001'),2::bigint,
  'one receipt each for successful create/reuse; readback and failures append nothing');
 
 -- Source and census admission are checked afresh, even when a reusable draft is present.

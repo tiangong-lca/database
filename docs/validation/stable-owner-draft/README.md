@@ -15,7 +15,9 @@ Database [#855](https://github.com/tiangong-lca/database/issues/855) adds source
 
 ## Evidence and interpretation
 
-[evidence.json](evidence.json) preserves the final aggregate, including suite hashes, process exits, empty failure lists, runtime versions and type-generation checks. [sql/](sql/) contains the complete final SQL output with trailing whitespace and final blank lines removed for Git; all result lines and values are retained. Fixtures use deliberately synthetic identities already present in the checked-in tests. These logs contain no original operational cases, credentials, real account identifiers or local filesystem paths. [artifact-sha256.json](artifact-sha256.json) hashes the published result artifacts.
+[evidence.json](evidence.json) preserves the final aggregate, including suite hashes, process exits, empty failure lists, runtime versions and type-generation checks. [sql/](sql/) contains the complete final SQL output with trailing whitespace and final blank lines removed for Git; all result lines and values are retained. Fixtures use deliberately synthetic identities already present in the checked-in tests. A final submission rerun on the retained integration fixture exposed one test-isolation issue: assertion 31 counted every stable receipt, including a previously retained integration receipt. The test now limits that count to its exact synthetic actor; expected writes and all 93 assertions remain unchanged. The historical output and source hash below still describe the recorded checkpoint; the final PR gate separately records the current-test rerun.
+
+These logs contain no original operational cases, credentials, real account identifiers or local filesystem paths. [artifact-sha256.json](artifact-sha256.json) hashes the published result artifacts.
 
 | SQL suite under `supabase/tests/` | Assertions |
 | --- | ---: |
