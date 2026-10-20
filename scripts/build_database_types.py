@@ -42,7 +42,10 @@ def main() -> int:
         stdout=subprocess.PIPE,
         text=True,
     )
-    OUTPUT.write_text(result.stdout.rstrip() + "\n", encoding="utf-8")
+    # CLI 2.121 emits unformatted templates, including whitespace-only lines.
+    # Preserve its type structure; canonicalize only trailing whitespace and EOF.
+    normalized = "\n".join(line.rstrip() for line in result.stdout.splitlines()).rstrip() + "\n"
+    OUTPUT.write_text(normalized, encoding="utf-8")
     print(f"Wrote {OUTPUT}")
     return 0
 

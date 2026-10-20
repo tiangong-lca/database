@@ -679,12 +679,17 @@ Use `--environment linked` only when the linked Supabase target is intentionally
 
 This script resolves the repository's own Supabase target and accepts no workdir or database-URL
 override. To regenerate the same contract from an isolated task workdir, use the equivalent CLI
-form and install its output mechanically, preserving the generator's `rstrip()` + trailing
-newline handling:
+form and install its output mechanically, applying the generator's per-line `rstrip()`
+and one final newline:
 
 ```bash
 supabase gen types typescript --local --workdir <isolated-workdir> --schema public --schema api
 ```
+
+CLI 2.121 emits unformatted TypeScript templates. The generator preserves that
+native type structure and normalizes only trailing whitespace; it adds no formatter
+dependency. Empty `ComputedFields` metadata, equivalent row `Omit` expressions and
+the CLI's zero-argument representation are generated tool output, not new SQL APIs.
 
 ### `build_portal_contract_types.py`
 

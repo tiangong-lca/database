@@ -91,6 +91,54 @@ do not replace them.
 
 ## Proof Matrix
 
+For Database #855, run `supabase/tests/20261021_stable_owner_draft.sql`, the existing
+create-version, guarded-save, dataset-command, Process-model-version, Model-bundle,
+Result lifecycle, API closure and full-schema suites. Keep the exact Result guard
+last; do not relax its trigger-order assertion. The older create-version fixture's
+other version is under review instead of another active owner draft, so allocation
+coverage remains valid under the intentional legacy admission conflict.
+Prove all four supported types, complete 0/1/many semantics, source and draft
+preimages, explicit reviewed selection, owner/table isolation, stale census,
+fake-modelId cross-scope refusal, reference-only Flow refusal without writer/audit,
+model/Flow scope changes after a receipt, exhausted-version refusal without a
+second allocator, and injected post-insert delegate failures with zero residual
+draft/native audit/receipt. Verify source true/new-clone false rule flags and
+unchanged existing-draft flags: identity preparation is not scientific save-ready
+acceptance. Verify owner review blocks with zero drafts and complete existing
+review return points, another-owner isolation, structured legacy errors and
+read-only receipt recovery after a review transition. Native model-bound-only and
+reference-only Flow-only duplicates are explicit exclusions, not global guarantees.
+READ COMMITTED admission also applies to these otherwise excluded scopes;
+repeatable-read/serializable admission is a documented compatibility refusal,
+while same-identity content saves retain their existing contract.
+
+Use an owned disposable canonical-base database for the populated upgrade:
+`supabase/tests/upgrade/20261021_stable_owner_draft_base.sql`, actual migration
+`20261020164514_stable_owner_draft.sql`, then
+`supabase/tests/upgrade/20261021_stable_owner_draft_head.sql`. The base fixture must
+run before the migration; never disable the new guard to synthesize historical
+duplicates. Compare whole rows, preserve published and never-published histories
+and mixed model groups, and prove conflicts/explicit selection perform zero
+version creates or deletions. The base fixture disables only its external Process
+AFTER webhook during synthetic seeding and restores it before commit.
+
+Run `python3 -B supabase/tests/regression/20261021_stable_owner_draft_concurrency.py
+--runtime-root /Users/huimin/projets/workspace/.codex-tmp/engineering-372-runtime
+--report <absolute-private-report>` only against its exact task-owned local
+`supabase_db_cli372-local` container. The runner uses the local runtime's sanitized
+wrapper; it accepts no remote URL/credentials, refuses existing fixture identities,
+observes a live barrier wait before the peer verdict, settles only its unique
+session names and cleans only its own rows. Prove stable/stable, stable/legacy-create,
+legacy-create-version/stable and owner-transition/stable races, original-request
+lost-response lookup with no new writer, plus a `0 -> 20` review-entry race whose
+exact table/UUID family lock is observed in `pg_locks` before the peer verdict;
+the committed review must block all new drafts and return its existing version.
+Prove rejection under repeatable-read snapshots,
+and actual writer/receipt counts. If another environment is needed, give its
+runner an equally exact owned-local binding rather than relaxing the guard.
+These SQL/local results do not prove a deployed backend, original-data acceptance,
+runtime adoption, or authorization for Elementary Flow/LCIA/model data writes.
+
 For Database #842, the local-contract job runs `20261014_snapshot_build_terminal_guard.sql`: terminal failures survive repeated polling without additional jobs or draft snapshots, while explicit service retry and completed-request refresh remain available. The API closure assertion must track the exact new migration head.
 
 For the Database #834 / Worker #318 scanner r5 admission migration, run

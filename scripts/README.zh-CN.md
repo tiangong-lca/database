@@ -579,12 +579,16 @@ python scripts/build_database_types.py --environment local
 只有在刻意以已链接的 Supabase 项目为来源时才使用 `--environment linked`。CI 会从本地完整 migration 状态重新生成，并在 `supabase/workspace/database.types.ts` 漂移时失败。
 
 该脚本只解析本仓库自身的 Supabase 目标，不接受 workdir 或数据库 URL 覆盖参数。若要从隔离的
-任务 workdir 生成同一份合同，请使用等价 CLI 形式，并按生成器的 `rstrip()` 加末尾换行方式
+任务 workdir 生成同一份合同，请使用等价 CLI 形式，并按生成器逐行 `rstrip()`、末尾保留单个换行的方式
 机械安装其输出：
 
 ```bash
 supabase gen types typescript --local --workdir <isolated-workdir> --schema public --schema api
 ```
+
+CLI 2.121 输出未格式化的 TypeScript 模板。生成器保留其原生类型结构，仅规范化行尾空白，
+不增加 formatter 依赖。空 `ComputedFields` 元数据、等价的行类型 `Omit` 以及无参数类型表达，
+属于工具生成表示，不代表新增 SQL API。
 
 ### `build_portal_contract_types.py`
 

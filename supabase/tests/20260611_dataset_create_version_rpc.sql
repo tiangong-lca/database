@@ -108,8 +108,10 @@ values
         }
       }
     }'::json,
-    'a1000000-0000-0000-0000-000000000001',
-    0,
+    -- A different owner's review version still participates in server
+    -- allocation; the caller itself must have no draft or in-progress review.
+    'a1000000-0000-0000-0000-000000000002',
+    20,
     true
   ),
   (
@@ -224,7 +226,7 @@ select is(
     '{"command":"dataset_create_version","source":"open-data"}'::jsonb
   )->'data'->>'version',
   '01.01.003',
-  'cmd_dataset_create_version allocates after private, commercial, and under-review versions'
+  'cmd_dataset_create_version allocates after visible, commercial, and under-review versions when no owner draft exists'
 );
 
 select is(

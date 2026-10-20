@@ -250,6 +250,92 @@ CLI commands retain `CLI-RPC-01`. The exact
 `EDGE-BUNDLE-01`; a forward repair and exact-signature regression prevent
 either from falling back to `CLI-RPC-01`.
 
+Database #855 adds the authenticated `api.cmd_dataset_prepare_stable_draft(uuid,jsonb)`
+under `CLI-RPC-01` and read-only `api.get_dataset_stable_draft_request(uuid,jsonb)`
+under `DB-CORE-READ-01`. CLI read-only selection still uses its existing complete
+typed-UUID/owner/state-0 census and persists nothing. Explicit preparation binds
+`expectedActorId`, the complete `expectedDrafts` version/full-JSON set, optional
+`selectedVersion`, and an exact public `source` version/owner/state/full JSON.
+The request object also carries `table` and `id`; the outer UUID is the original
+persisted `requestId`. Object fields are strict. PostgreSQL JSONB equality binds
+before images; no JavaScript hash is compared with PostgreSQL text hashing.
+The source must remain state 100/200 even on draft reuse, and foreign private
+sources remain indistinguishable from absent sources.
+
+Any current-owner version in the existing review range `20 <= state_code < 100`
+blocks preparation with `DATASET_REVIEW_IN_PROGRESS`/409, even if the state-0
+census is empty or an original prepare request is replayed. The complete
+`details.reviews` list carries existing table/id/version/userId/stateCode/reviewId
+return points, never a replacement queue. First-party legacy create/create-version
+commands retain the same structured review conflict. The admission trigger also
+locks review entry/exit, including `0 -> 20`, in the same family lock domain;
+the preparer's fresh review query cannot be invalidated by a conversion hidden
+behind its later draft-row lock wait. Another owner's review remains outside this
+actor's admission scope. Read-only original-request lookup preserves a successful
+receipt but reports a now-reviewed target as changed.
+
+The first slice supports Contacts, Sources, Product/Waste Flows and standalone
+Processes. Flow source and selected draft types must be exactly `Product flow`
+or `Waste flow`; Elementary/unknown/missing types fail with
+`DATASET_REFERENCE_ONLY`. Multiple drafts return the complete conflict set before
+any explicit choice, including unselected reference-only siblings. LifecycleModels,
+model-bound Process sources/censuses and Result sources retain their native owners.
+Nonnull `model_id` is an excluded scope, not proof of native authorization.
+Initial creation without a public source is explicitly unsupported; this slice
+does not close every CLI #372 case or establish a global uniqueness invariant.
+
+Zero owner drafts delegates a clone of the locked public source to the existing
+server-owned `cmd_dataset_create_version`; its only body changes are native
+version/URI allocation. New clones always pass `rule_verification=false` rather
+than inheriting an old public source's flag. Cloning supplies no new scientific
+or completeness verification; a prepared target is not a save-ready claim.
+Source flags stay unchanged, and reuse/explicit selection never rewrite existing
+draft flags. One draft reuses the exact version without saving content;
+multiple drafts require a reviewed explicit selection, with no cleanup or merge.
+Successful preparations persist one original-request receipt in the existing private
+`command_audit_log`, atomically with any delegated creation. Same-request replay
+returns that fixed result, while changed request content conflicts. Lost-response
+recovery is read-only and returns the original result plus current target status;
+missing receipts do not authorize redispatch. Later model binding or a move to a
+reference-only Flow type reports a changed target without reading the excluded body.
+The receipt is not a lock on a later sibling census: subsequent content changes
+still use the unchanged exact-row before-image guarded save.
+
+The four mutable tables enforce draft admission after body/version synchronization
+and before the final Result immutability guard. New standalone drafts and entry
+through owner/state/identity/version changes share the allocator's table/UUID
+transaction advisory lock, so legacy creates cannot append ordinary duplicates.
+READ COMMITTED is required because a repeatable-read snapshot cannot be refreshed
+after an advisory lock; volatile SPI queries see fresh committed rows at READ
+COMMITTED. Trigger try-lock failure is explicit busy, without hidden retry or
+new native-bundle lock ordering. Existing in-place historical duplicate edits are
+not consolidation. Model-bound-only and reference-only Flow-only multiple versions
+remain outside this slice; any crossing into a standalone/Product/Waste draft family
+conflicts. Existing raw table DML ACLs, native bundle ownership, support readers and
+scientific interpretation remain unchanged.
+
+The isolation restriction is a deliberate compatibility change for every new
+draft admission on these four tables, including otherwise excluded model-only
+and reference-only Flow-only scopes. Such inserts/owner/state/identity changes and review transitions
+must run at READ COMMITTED; repeatable-read/serializable admission fails clearly.
+The normal PostgREST default remains READ COMMITTED, and same-identity in-place
+content saves return before the isolation check. Exclusion preserves the existing
+model/Flow multiplicity semantics; it does not promise every execution context
+remains unchanged.
+
+The generic allocator's `lpad(...,2)` major rollover can map an exhausted
+`99.99.999` family to `10.00.000`. This slice does not replace that allocator:
+only a new stable preparation requiring allocation refuses the exhausted family
+with `DATASET_VERSION_EXHAUSTED`; existing-draft reuse remains available. After
+delegation, the facade verifies the actual inserted identity/owner/state/body,
+native version/URI fields and preservation of all other source content. Invalid,
+missing or rejected delegated results raise inside the transaction before a
+structured error is returned, rolling back any delegate insert and both audits.
+
+PostgreSQL owns the relevant semantics: [volatile SPI snapshots](https://www.postgresql.org/docs/17/spi-spi-execute.html),
+[transaction isolation](https://www.postgresql.org/docs/17/transaction-iso.html), and
+[alphabetical same-event trigger order](https://www.postgresql.org/docs/17/sql-createtrigger.html).
+
 The ten exact actor RPCs consumed by the public CLI `release` commands use
 `CLI-RPC-01`: manager assertion, prepare/approve/publish/readback/unpublish,
 current/run lookup, artifact-download lookup, and Calculation Bundle projection.

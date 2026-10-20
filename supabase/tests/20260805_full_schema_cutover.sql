@@ -71,7 +71,8 @@ select is(
   -- Database #807 adds 14 brand-scoped Portal public facades; legacy inventory remains included.
   -- Database #838 adds five additive filtered catalog/UUID/display/model-Hybrid facades.
   -- Database #846 adds one service-only export facade.
-  338::bigint,
+  -- Database #855 adds the stable owner-draft prepare and readonly request receipt.
+  340::bigint,
   'Four Portal navigation/V3 facades plus: api contains the active cutover and consumer facades, including the two Open Data catalog readers and three dataset display RPCs, the reviewer Contact status and activation RPCs, eight additive Portal/Next version-search APIs, two V4, two V5 and two V6 review queues plus batch eligibility, the rejection-detail RPC, the actor-bound rejected-review report download descriptor RPC and the reviewer workload drill-down RPC, two partial-import APIs, the three manager-attested Result publication RPCs, the guarded owner-draft before-content save facade, and the five versioned v2 Time-alias protected endpoints (preflight/gate/admit/read plus the service-only execute callback)'
 );
 
@@ -88,7 +89,8 @@ select is(
   -- Database #828 adds the owner-only bounded AI deadline expiry helper.
   -- Database #838 adds six pure matcher/validation and private display reader helpers.
   -- Two Model-only invoker kernels preserve the existing raw RLS boundary.
-  608::bigint,
+  -- Database #855 adds one draft-admission trigger and one pure request validator.
+  610::bigint,
   'Twenty-five navigation helpers plus: private contains the active helpers, including the Open Data filter and three dataset display helpers, the reviewer Contact reference-readiness helper, the review rejection-reason extractor, rejected-report exact-reference matcher, submitted-decision sync helper and shared reviewer workload classifier, the twenty-five exact-version, thirteen composite-name and one review-search internals, two partial-import helpers, two whole-package helpers, the example write guard, the two state-120 candidate-cache helpers, the state-120 lifecycle guard, the seven manager-attested Result publication helpers, the nineteen versioned v2 Time-alias helpers (four exact-numeric, ten leaf/derivation helpers, the guarded v2 batch executor, the plan key set, the six-key derivative-target checker, the guarded v2 plan executor and the deterministic derivative-chunk partition), and the eight closed Length*time profile helpers (the closed discriminator, the plan key set, the factor constant, the exact multiply, the instance rewrite, the guarded Length*time executor, the null-safe required-scalar check and the null-safe required-count check), the two Database #689 batch queue-cache helpers (the dispatch-body candidate-id extractor and the per-batch queue cache builder), the Database #703 internal derivative scheduler picker, and the Database #828 owner-only AI deadline expiry helper'
 );
 
@@ -131,7 +133,8 @@ select is(
       and namespace.nspname in ('api', 'private', 'public', 'util')
   ),
   -- Database #807 adds 15 display synchronization triggers; legacy inventory remains included.
-  146::bigint,
+  -- Database #855 adds four ordinary typed owner-draft admission guards.
+  150::bigint,
   'Two private navigation writers and one seed guard plus: all active application triggers and two Process composite-name sync triggers plus seven example write guards remain present, including the review submitted-decision sync trigger, the Result lifecycle guard and the append-only Result guard and seven dataset display source-cleanup triggers'
 );
 
