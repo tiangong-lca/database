@@ -1,0 +1,40 @@
+ok 1 - scope view retains its security barrier
+ok 2 - anonymous role cannot read the scope bridge
+ok 3 - authenticated role cannot read the scope bridge
+ok 4 - navigation keeps its public budget
+ok 5 - facets keeps its public budget
+bafu
+bafu
+false
+ok 6 - prepared facets admits the requested exact brand
+ok 7 - same prepared facets reads the next brand scope
+ok 8 - prepared facets can broaden only to its explicit scope
+ok 9 - prepared facets does not retain prior matches
+ok 10 - prepared navigation counts the exact first scope
+ok 11 - prepared navigation refreshes the scope
+ok 12 - prepared navigation does not retain earlier totals
+ok 13 - multiple differently scoped RPCs in one SQL statement remain isolated
+ok 14 - multiple navigation RPCs in one statement use their own scope
+ok 15 - brand filter cannot expand the deployment scope
+ok 16 - brand filter narrows an allowed multi-brand scope
+ok 17 - successful calls restore the outer brand setting
+ok 18 - successful calls restore the outer brand filter
+ok 19 - successful calls restore the outer global setting
+ok 20 - invalid kind fails after request scope entry
+ok 21 - failed facets call does not leak its scope
+ok 22 - invalid navigation parent fails closed
+ok 23 - failed navigation does not leak scope
+ok 24 - next successful request survives failed-scope rollback
+true
+
+ok 25 - global private support sees the exact visible settings
+ok 26 - public RPC overrides an outer global-support scope
+ok 27 - public RPC restores the outer global-support setting
+false
+tiangong_lca
+ok 28 - narrow private support scope follows changed GUCs
+worldsteel
+ok 29 - empty private support scope does not retain prior matches
+ok 30 - integrity assertion refuses security-barrier drift
+ok 31 - restored view passes the unchanged manifest guard
+1..31

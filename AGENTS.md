@@ -38,8 +38,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: "2026-10-21"
-lastReviewedCommit: "55fd698ed60b97e429556f9240d1fe2e8e6d3f4c"
-lastReviewedNote: "Reviewed additive exact-key INSERT compatibility; native uniqueness, runtime ownership and existing draft/review/scientific boundaries remain unchanged."
+lastReviewedCommit: "c1663f9ac1f909581969adee2c04d11ffbc90b9c"
+lastReviewedNote: "Reviewed display hydration test-only fixture correction; runtime SQL, migration, API and scientific boundaries unchanged."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-validation.md

@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: "2026-10-21"
-lastReviewedCommit: "55fd698ed60b97e429556f9240d1fe2e8e6d3f4c"
-lastReviewedNote: "Reviewed pinned exact-key INSERT compatibility and retained nonblocking admission, native UPDATE ownership and scope boundaries."
+lastReviewedCommit: "c1663f9ac1f909581969adee2c04d11ffbc90b9c"
+lastReviewedNote: "Reviewed display hydration fixture correction against the unchanged stable owner-draft runtime, native conflict and reader ownership boundaries."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

@@ -1,0 +1,5 @@
+ERROR:  DATASET_DRAFT_CONFLICT
+DETAIL:  {"drafts": [{"userId": "71200000-0000-4000-8000-000000000002", "version": "01.00.000", "stateCode": 0}]}
+CONTEXT:  PL/pgSQL function private.guard_stable_owner_draft() line 125 at RAISE
+SQL statement "insert into public.processes(id,version,state_code,user_id,json) values($1,$2,$3,$4,$5)"
+PL/pgSQL function inline_code_block line 17 at EXECUTE

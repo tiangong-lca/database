@@ -51,6 +51,14 @@ The new [exact-key proof](exact-key/evidence.json) records 477 passing SQL asser
 
 Earlier evidence in this directory remains immutable historical proof. It does not claim the additive compatibility migration was included in those earlier runs. The prior 22-assertion canonical-base populated-upgrade checkpoint has not been freshly rerun for this follow-up; the retained integration database was not reset. Final native transport acceptance, online checks and deployment status remain separate from this local proof.
 
+## Display hydration fixture follow-up
+
+On `c1663f9ac1f909581969adee2c04d11ffbc90b9c`, [CI passed both import suites and the 151-assertion stable-draft suite](https://github.com/tiangong-lca/database/actions/runs/39495928956/job/118880836762), then stopped during display hydration fixture setup: two distinct versions were both active drafts for one owner. The guard correctly rejected new admission. This follow-up changes only that fixture's state CASE and explanatory comments: odd families have older published state `100` and latest draft state `0`; even families retain state `20`. Every identity, version, name, visibility value and all 797 assertions are unchanged. Production SQL, migrations, generated snapshots and API types remain byte-identical to `c1663f9a`.
+
+The [fixture proof](hydration-fixture/evidence.json) records the original RED setup error (exit `3`, zero assertions) and corrected GREEN (797 assertions), plus unchanged display settings (40), public readers (93), and scoped settings readers (31): **961 assertions pass**. The corrected source SHA-256 is `273481107d0a3f6af54cc6f1a3c94b8b7dd5e2b161cf7a0ea111ea3623216fbe`.
+
+The local database retained synthetic E2E rows, so the local harness injected `TRUNCATE ... CASCADE` for the seven fixture tables immediately after BEGIN and restored everything through suite ROLLBACK or connection exit on RED failure. Cascade inspection found only those seven tables. All 160 local user-table counts matched before and after RED and each GREEN suite. No guard/trigger was disabled and no projection, persistent cleanup or reset was introduced. Clean CI runs the checked-in suite directly, without this harness isolation. The prior accepted 477 SQL/65 concurrency results are reused explicitly; this fixture-only follow-up does not claim they were rerun.
+
 ## Reproduce with synthetic local fixtures
 
 From a checkout of the recorded code, start an owned disposable local Supabase stack and apply its migrations using the repository's [local validation procedure](../../agents/repo-validation.md). The ordinary suites can then run as written:

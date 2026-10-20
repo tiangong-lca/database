@@ -1,8 +1,8 @@
 version: 1
 layout: repo
 lastReviewedAt: "2026-10-21"
-lastReviewedCommit: "55fd698ed60b97e429556f9240d1fe2e8e6d3f4c"
-lastReviewedNote: "Reviewed additive exact-key compatibility, unchanged RPC ownership and required SQL/concurrency proof routes."
+lastReviewedCommit: "c1663f9ac1f909581969adee2c04d11ffbc90b9c"
+lastReviewedNote: "Reviewed test-only display hydration fixture state correction under the existing owner-draft contract; runtime schema and ownership unchanged."
 
 # Keep deterministic governance facts here.
 # AGENTS.md remains the repo contract entrypoint.

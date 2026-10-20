@@ -1,0 +1,97 @@
+ok 1 - display projection contains two explicit Process versions
+ok 2 - projection preserves real draft state
+ok 3 - legacy phase closes new readers
+ok 4 - state zero visible exact detail
+ok 5 - other brand exact detail unavailable
+ok 6 - unlisted state 100 detail unavailable
+ok 7 - scope applies before latest version
+ok 8 - out-of-scope filter yields empty set
+ok 9 - version brand
+ok 10 - draft Flow search
+ok 11 - scoped summary
+ok 12 - scoped facets
+ok 13 - scoped navigation
+ok 14 - Hybrid V3 uses scoped candidates
+ok 15 - Hybrid V3 decorates exact brand
+ok 16 - Hybrid brand filter cannot widen S
+ok 17 - Hybrid fingerprint binds scope before ranking
+ok 18 - sitemap shard accepts its own scope
+ok 19 - sitemap cursor cannot cross deployment scope
+ok 20 - sitemap scope precedes latest version selection
+ok 21 - sitemap excludes out-of-scope Flow
+ok 22 - sitemap selects visible version in second brand
+ok 23 - mixed sitemap page orders Flow before Process
+ok 24 - bounded sitemap emits continuation
+ok 25 - sitemap continuation has no repeated first item
+ok 26 - mixed scope continuation uses latest visible Process
+ok 27 - last sitemap page has no continuation
+ok 28 - sitemap page cursor rejects narrower deployment
+ok 29 - sitemap page cursor rejects changed kind
+ok 30 - old sitemap facade uses global visible latest roots only
+ok 31 - empty sitemap scope stays empty
+ok 32 - draft numeric functional unit follows visible cross-brand/null support
+ok 33 - draft exchanges retain globally visible dependencies
+ok 34 - cross-brand support has no standalone link
+ok 35 - in-scope Flow is linkable
+ok 36 - old detail keeps its DTO in display mode
+ok 37 - old URL cannot bypass display settings
+ok 38 - old unscoped API does not change shape
+ok 39 - scoped sitemap manifest
+ok 40 - sitemap excludes outside-scope Flow and later Process version
+ok 41 - query fingerprint binds canonical deployment scope
+ok 42 - empty scope has no fallback
+ok 43 - wildcard scope rejected
+ok 44 - anonymous settings remain private
+ok 45 - anonymous callers cannot activate or switch modes
+ok 46 - hidden dependency removes numeric functional unit immediately
+ok 47 - hidden dependency removes exchanges
+ok 48 - dependency license is descriptive in display mode
+ok 49 - missing Process license metadata does not hide supported exchanges
+ok 50 - missing license metadata does not hide functional unit
+ok 51 - missing detail has display policy
+ok 52 - missing stored Search capability agrees
+ok 53 - missing Versions capability agrees
+ok 54 - missing compatible display wrapper agrees
+ok 55 - restricted Process license metadata does not hide supported exchanges
+ok 56 - restricted license metadata does not hide functional unit
+ok 57 - restricted detail has display policy
+ok 58 - restricted stored Search capability agrees
+ok 59 - restricted Versions capability agrees
+ok 60 - restricted Hybrid capability agrees
+ok 61 - restricted compatible display wrapper agrees
+ok 62 - malformed Process license metadata does not hide supported exchanges
+ok 63 - malformed license metadata does not hide functional unit
+ok 64 - malformed detail has display policy
+ok 65 - malformed stored Search capability agrees
+ok 66 - malformed Versions capability agrees
+ok 67 - malformed compatible display wrapper agrees
+ok 68 - explicit dependency restrictions do not gate display
+ok 69 - declared license is still returned as metadata
+ok 70 - scope still blocks exchanges regardless of license
+ok 71 - missing exact support version still blocks numeric exchanges
+ok 72 - brand change immediately removes old scope
+ok 73 - brand change updates projection and DTO
+ok 74 - operator can disable all Portal readers
+ok 75 - old reader fails closed in unavailable mode
+ok 76 - new reader fails closed in unavailable mode
+ok 77 - cutover cannot restore legacy state bypass
+ok 78 - complete projection passes readiness
+ok 79 - writer drift is refused by independent display manifest
+ok 80 - summary skips invalid checksums and duplicate visible CAS values
+ok 81 - out-of-scope duplicate does not disqualify a scoped CAS example
+ok 82 - anonymous callers cannot read the private scope bridge
+ok 83 - authenticated cannot read scope bridge
+ok 84 - service role cannot read scope bridge
+ok 85 - display executor does not gain raw settings access
+ok 86 - display executor cannot write the bridge
+worldsteel,tiangong_lca|false|
+ok 87 - bridge matches exact scoped predicate
+true
+ok 88 - global bridge includes visible null-brand support like original predicate
+uslci
+ok 89 - brand filter still narrows global bridge
+ok 90 - stale projection cannot expose an exact key hidden in settings
+ok 91 - summary excludes hidden stale projections
+ok 92 - scope view option drift fails closed
+ok 93 - restored barrier restores exact contract
+1..93
