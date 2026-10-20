@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: "2026-10-21"
-lastReviewedCommit: "c1663f9ac1f909581969adee2c04d11ffbc90b9c"
-lastReviewedNote: "Reviewed display hydration fixture correction against the unchanged stable owner-draft runtime, native conflict and reader ownership boundaries."
+lastReviewedCommit: "45d2de4e50169613ecca293e570e6a9e91c22a89"
+lastReviewedNote: "Reviewed the unchanged any-state alias closure inventory and owner-draft guard while adapting only its test fixture."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

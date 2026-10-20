@@ -1,0 +1,122 @@
+1..119
+40a1401f-7d4b-4f8b-b575-68aa969e3516
+15f5b274-669d-474c-b7f4-6d2f087e18fa
+ok 1 - a stale optional timestamp refuses the whole batch as a drift
+ok 2 - an omitted consumer is refused as a closure mismatch
+ok 3 - the closure refusal names the unclaimed live occurrence
+ok 4 - a flow without the typeOfDataSet eligibility field is refused
+ok 5 - an Elementary flow is refused
+ok 6 - a Waste flow is refused
+ok 7 - a claimed before digest that is not the canonical digest of its payload is refused
+ok 8 - a text action whose after text is not the claimed desired leaf is refused
+ok 9 - a text action naming a process the batch does not claim is refused
+ok 10 - a text action with an unknown key is refused
+ok 11 - a moved functional-unit leaf that the block does not name is refused
+ok 12 - a source number contradicting the stored reviewed source comment is refused
+ok 13 - the fixture binds the TIDAS internal id and the original source number as distinct namespaces
+ok 14 - a flow mutation naming another reference is refused
+ok 15 - a target flow-property digest that does not match the locked row is refused
+ok 16 - a source unit-group digest that does not match the locked row is refused
+ok 17 - a source unit group the alias flow property does not reference is refused
+ok 18 - a plan-supplied factor is refused
+ok 19 - counts that differ from the derived live counts are refused
+ok 20 - an amount-field count that is not two fields per bound exchange is refused
+ok 21 - a source evidence exchange count that differs from the batch exchange count is refused
+ok 22 - a duplicate action identity is refused
+ok 23 - an unknown batch key is refused
+ok 24 - a foreign consumer of the alias property is refused
+ok 25 - the closure refusal names the foreign live consumer
+ok 26 - a same-id second-version consumer is refused
+ok 27 - the closure refusal retains both exact owner versions, including the published consumer
+ok 28 - a stored absolute uncertainty bound fails the closed exchange key set
+ok 29 - a functional-unit quantity that is not the reference exchange quantity is refused
+ok 30 - a foreign owner-draft occurrence of a claimed Flow is refused
+ok 31 - the closure refusal names the foreign live occurrence
+ok 32 - a published occurrence from another owner is refused
+ok 33 - an unclaimed owner-draft occurrence of the same actor is refused
+ok 34 - a claimed Flow id at another version and a malformed unrelated collection are not occurrences
+ok 35 - a write-pass failure is reported as an internal failure
+ok 36 - the already-updated flow row is rolled back by the write-pass failure
+ok 37 - the flow modified_at is untouched by the write-pass failure
+ok 38 - the process row is untouched by the write-pass failure
+ok 39 - no audit row survives the write-pass failure
+ok 40 - a real small batch applies
+ok 41 - the applied code is returned
+ok 42 - one flow action is counted
+ok 43 - both bound exchange occurrences are counted
+ok 44 - two amount fields per bound exchange are counted
+ok 45 - the unrelated complement is inside the selected process
+ok 46 - one text action is counted
+ok 47 - the flow now references the target property
+ok 48 - the derived reference carries the target version
+ok 49 - the derived reference keeps the deployed @type
+ok 50 - the derived reference keeps the .json uri convention with the target id
+ok 51 - the derived reference description is a single language object
+ok 52 - the description is the target flow property's own common:name text
+ok 53 - the internal quantitative-reference pointer never moves
+ok 54 - the reference output exchange (internal id 1, source 730045, quantity 1) moved by the fixed factor
+ok 55 - the reviewed source tuple of the reference output survives the amount move
+ok 56 - the bound input exchange (internal id 2, source 730046) moved by the fixed factor
+ok 57 - the second source tuple survives independently of the first
+ok 58 - the unrelated exchange amount is untouched
+ok 59 - the reviewed functional-unit leaf moved under the anchored rule
+ok 60 - the TIDAS internal reference-flow pointer never moves
+ok 61 - the applied row carries a fresh modified_at
+ok 62 - two row audit entries and one plan summary are written
+ok 63 - the plan summary durably binds the source evidence digest
+ok 64 - an exact resubmission reports the stored replay proof
+ok 65 - the replay is flagged idempotent
+ok 66 - an exact replay writes no further audit row
+ok 67 - an exact replay leaves the applied rows untouched
+ok 68 - a resubmission carrying different source evidence is refused as a replay conflict
+ok 69 - the applied plan wrote exactly one row audit per action
+ok 70 - the flow row audit records the canonical digest of its claimed before payload
+ok 71 - the flow row audit records the canonical digest of the payload actually written
+ok 72 - the process row audit records the canonical digest of its claimed before payload
+ok 73 - the process row audit records the canonical digest of the payload actually written
+ok 74 - a well-formed before digest belonging to another action is refused as a parity mismatch
+ok 75 - a well-formed desired digest belonging to another action is refused as a parity mismatch
+ok 76 - a tampered claimed digest writes no audit row
+ok 77 - a tampered claimed digest leaves the flow row unchanged
+ok 78 - a tampered claimed digest leaves the process row unchanged
+ok 79 - a foreign owner-draft target flow property is refused even though its payload is unchanged
+ok 80 - a foreign owner-draft target unit group is refused
+ok 81 - a foreign owner-draft source unit group is refused
+ok 82 - a foreign owner-draft source flow property is refused
+ok 83 - published support rows stay readable: the batch applies over a fully public support set
+ok 84 - the owner-draft support set is readable again after the public case
+ok 85 - a derivative sub-batch whose targets do not match the live rows is refused as a whole
+ok 86 - no derivative child survives a refused orchestration
+ok 87 - the reviewed form moves the unit token and keeps the suffix
+ok 88 - a one-space suffix survives byte for byte
+ok 89 - a suffix may start with several spaces as long as one character is not a space
+ok 90 - trailing spaces inside the suffix survive
+ok 91 - an empty suffix is refused
+ok 92 - a whitespace-only suffix is refused
+ok 93 - a glued unit token is refused
+ok 94 - a tab separator is refused
+ok 95 - a suffix spanning lines is refused
+ok 96 - a trailing carriage return is refused
+ok 97 - an empty plan is refused with the frozen stable code
+ok 98 - a plan bound to another actor is refused
+ok 99 - a plan with an unknown key is refused
+ok 100 - a plan claiming flow-property actions is refused
+ok 101 - an audit count that is not the written row+batch+plan topology is refused
+ok 102 - a declared derivative-target count that is not the unique changed identities is refused
+ok 103 - an expected block without the versioned text-action count is refused
+ok 104 - a quoted expected count is refused because the external plan emits JSON numbers
+ok 105 - a quoted source-evidence exchange count is refused as a different wire shape
+ok 106 - a claimed cohort digest that is not the declared expected cohort digest is refused
+ok 107 - a malformed source alias identity is refused
+ok 108 - an alias payload digest is refused: the producer binds the identity tuple, not the row payload
+ok 109 - a plan without the original source unit semantics is refused
+ok 110 - the single-dimension plan with zero flow-property actions applies
+ok 111 - the plan echoes its action and text-action counts
+ok 112 - the plan moved the flow reference to the locked target
+ok 113 - an exact plan resubmission returns the stored proof
+ok 114 - an exact plan resubmission writes nothing
+ok 115 - the plan summary is bound to the server digest of the submitted plan text
+ok 116 - a plan leaf refusal passes through with the batch code unchanged
+ok 117 - a plan resubmitted under an identity whose rows were applied without its audit chain is refused, never re-attested
+ok 118 - a target property pointing at another unit-group version refuses before any write
+ok 119 - a target property whose reference kind is not a unit group data set refuses before any write

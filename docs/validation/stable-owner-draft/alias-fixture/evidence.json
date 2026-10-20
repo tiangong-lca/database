@@ -1,0 +1,199 @@
+{
+  "schema": "stable-owner-draft-alias-fixture-proof.v1",
+  "parentHead": "45d2de4e50169613ecca293e570e6a9e91c22a89",
+  "acceptedRuntimeHead": "c1663f9ac1f909581969adee2c04d11ffbc90b9c",
+  "productionInputsUnchanged": true,
+  "source": "supabase/tests/20260921_foundry60_time_alias_v2_batch.sql",
+  "sourceChange": "extra same-id version02 state0 -> published100; existing second-version assertion strengthened to exact two-row id/version/user/state inventory; plan119 retained",
+  "coverageBoundary": "published100 is inventoried as live and independently violates draft scope; this is exact-version inventory coverage, not a claim that the original all-draft negative precondition is unchanged",
+  "closureSource": {
+    "path": "supabase/workspace/schemas/private/functions/cmd_dataset_alias_batch_v2_guarded/definition.sql",
+    "inventoryLines": [
+      694,
+      703
+    ],
+    "exactComparisonAndScopeLines": [
+      705,
+      717
+    ],
+    "sha256": "0cdf57c78e5f6553d51b678046de45751a69256e8c9794e25b0c642f961e31b7"
+  },
+  "red": {
+    "suite": "20260921_foundry60_time_alias_v2_batch.sql",
+    "sourceSHA256": "b732ef5c4e080f1d369b3813608a5bcae2457b85b2488397e5fcae0cdb32921d",
+    "exit": 3,
+    "assertions": 25,
+    "failures": [
+      "ERROR:  DATASET_DRAFT_CONFLICT"
+    ],
+    "rowCountTablesChecked": 160,
+    "allTableCountsRestored": true
+  },
+  "green": {
+    "suiteCount": 11,
+    "assertions": 490,
+    "suites": [
+      {
+        "suite": "20260921_foundry60_time_alias_v2_batch.sql",
+        "sourceSHA256": "848a9df905475770bd96064f68bb06aba2e10f61160789ef780beb2a0fb85198",
+        "exit": 0,
+        "assertions": 119,
+        "failures": [],
+        "rowCountTablesChecked": 160,
+        "allTableCountsRestored": true,
+        "expectedAssertions": 119,
+        "passed": true
+      },
+      {
+        "suite": "20260921_foundry60_time_alias_v2_math.sql",
+        "sourceSHA256": "a36077cb3eecd426fa4df0bac3fd28698b22cbb0992f73f937a1f61aefccde8e",
+        "exit": 0,
+        "assertions": 18,
+        "failures": [],
+        "rowCountTablesChecked": 160,
+        "allTableCountsRestored": true,
+        "expectedAssertions": 18,
+        "passed": true
+      },
+      {
+        "suite": "20260921_foundry60_time_alias_v2_vectors.sql",
+        "sourceSHA256": "5c1fd760e6404fbcb1f33ef894fc8215d6a9c6948e9c7de5e0e4afa390e51ce0",
+        "exit": 0,
+        "assertions": 4,
+        "failures": [],
+        "rowCountTablesChecked": 160,
+        "allTableCountsRestored": true,
+        "expectedAssertions": 4,
+        "passed": true
+      },
+      {
+        "suite": "20260921_foundry60_time_alias_v2.sql",
+        "sourceSHA256": "6df220951415e8b6baf493e8b9009e826339de607b09db419395ffe7d6dff751",
+        "exit": 0,
+        "assertions": 14,
+        "failures": [],
+        "rowCountTablesChecked": 160,
+        "allTableCountsRestored": true,
+        "expectedAssertions": 14,
+        "passed": true
+      },
+      {
+        "suite": "20260922_foundry60_time_alias_v2_protected.sql",
+        "sourceSHA256": "adfb95ffe8285bc1f0d2cc2d7b22fabcf1b5d9b135aad72988b82af1d7dd2675",
+        "exit": 0,
+        "assertions": 75,
+        "failures": [],
+        "rowCountTablesChecked": 160,
+        "allTableCountsRestored": true,
+        "expectedAssertions": 75,
+        "passed": true
+      },
+      {
+        "suite": "20260923_foundry60_time_alias_v2_rollback.sql",
+        "sourceSHA256": "4a3392949c0bbe46efe11a31153d41e33e6989990eb871916217049db977c874",
+        "exit": 0,
+        "assertions": 10,
+        "failures": [],
+        "rowCountTablesChecked": 160,
+        "allTableCountsRestored": true,
+        "expectedAssertions": 10,
+        "passed": true
+      },
+      {
+        "suite": "20260924_foundry60_time_alias_v2_terminal.sql",
+        "sourceSHA256": "c9d1b76b1dd82b614fbe6c30d676202d5c22def70281d1a800cf054d087b1ff3",
+        "exit": 0,
+        "assertions": 29,
+        "failures": [],
+        "rowCountTablesChecked": 160,
+        "allTableCountsRestored": true,
+        "expectedAssertions": 29,
+        "passed": true
+      },
+      {
+        "suite": "20260925_foundry186_length_time_v1.sql",
+        "sourceSHA256": "21cdc34659d902de62e60ccd398dfad7e05c7fbdc2bf5be88056b8728ce6c053",
+        "exit": 0,
+        "assertions": 121,
+        "failures": [],
+        "rowCountTablesChecked": 160,
+        "allTableCountsRestored": true,
+        "expectedAssertions": 121,
+        "passed": true
+      },
+      {
+        "suite": "20260926_foundry60_time_alias_v2_current_closure.sql",
+        "sourceSHA256": "f756b1067207dc500313991cb112cd61920d12622f7a959b0cc1baaee362b0c1",
+        "exit": 0,
+        "assertions": 29,
+        "failures": [],
+        "rowCountTablesChecked": 160,
+        "allTableCountsRestored": true,
+        "expectedAssertions": 29,
+        "passed": true
+      },
+      {
+        "suite": "20260927_hotfix694_canonical_key_hash.sql",
+        "sourceSHA256": "9e7424983335a0d59f90fd93f80f313683456026cb1c979df836c8cc53690308",
+        "exit": 0,
+        "assertions": 45,
+        "failures": [],
+        "rowCountTablesChecked": 160,
+        "allTableCountsRestored": true,
+        "expectedAssertions": 45,
+        "passed": true
+      },
+      {
+        "suite": "20260925_foundry60_cli_alias_oauth_capability.sql",
+        "sourceSHA256": "2c0fe3bf4a715d673e1c278de4a225db04992500f91d32b9bc131f637fe2169f",
+        "exit": 0,
+        "assertions": 26,
+        "failures": [],
+        "rowCountTablesChecked": 160,
+        "allTableCountsRestored": true,
+        "expectedAssertions": 26,
+        "passed": true
+      }
+    ]
+  },
+  "localHarness": {
+    "operation": "transaction-local TRUNCATE seven public fixture tables CASCADE after BEGIN; restored by suite ROLLBACK/connection exit",
+    "cascadeTargets": [
+      "public.contacts",
+      "public.flowproperties",
+      "public.flows",
+      "public.lifecyclemodels",
+      "public.processes",
+      "public.sources",
+      "public.unitgroups"
+    ],
+    "affectedBeforeAndAfterRowCounts": {
+      "public.contacts": 0,
+      "public.flowproperties": 0,
+      "public.flows": 0,
+      "public.lifecyclemodels": 0,
+      "public.processes": 16,
+      "public.sources": 0,
+      "public.unitgroups": 0
+    },
+    "all160UserTableCountsRestoredAfterEveryRun": true,
+    "fullRowCountSnapshotSHA256": "3f792de8a3402b4b29f2ac318e53d081549e25235913726e21894a760e7b025d",
+    "privateRunnerSHA256": "ad1ac4d049bdfdf35d511934b7b7d7b37b789f9973428607b8b61a97c9e99dc6",
+    "addedTriggerBypass": false,
+    "resetOrPersistentCleanup": false
+  },
+  "reuse": {
+    "priorAcceptedSqlAssertions": 477,
+    "priorAcceptedConcurrencyAssertions": 65,
+    "priorHydrationFollowupAssertions": 961,
+    "rerunInThisFollowup": false
+  },
+  "remainingCiStaticTriage": "no second same-owner draft version found in the other alias-family fixtures; existing national-carbon replica history and Portal trigger-bypassed read-projection fixtures remain unchanged",
+  "deploymentOrDataAcceptance": false,
+  "publishedLogNormalization": {
+    "trailingWhitespaceRemoved": true,
+    "placeholderTestHeaderRowsRedacted": 3,
+    "rawLogsRetainedPrivately": true,
+    "tapResultsUnchanged": true
+  }
+}

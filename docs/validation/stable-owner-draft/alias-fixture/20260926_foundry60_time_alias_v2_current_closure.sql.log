@@ -1,0 +1,32 @@
+1..29
+be39777b-b3c8-4c9e-a6ab-2abc37182a27
+6fb485f5-8219-4ce5-9ac3-aa55391d07a1
+ok 1 - current closure: the unchanged bound support and claimed sets pass
+ok 2 - current closure: live_closure_proof is true for the exact applied state
+ok 3 - current closure: the three claimed rows are observed at their desired images
+ok 4 - current closure: the claimed exchange count is echoed unchanged
+ok 5 - current closure: the returned receipt key set is unchanged
+ok 6 - support: a source-alias identity digest that is not the canonical identity digest refuses
+ok 7 - support: a changed canonical target unit-group factor turns the current closure false
+ok 8 - support: the false closure is not a claimed-row count (the rows are still at their desired images)
+ok 9 - support: restoring the exact snapshot restores the pass
+ok 10 - support: a changed canonical target flow-property payload turns the current closure false
+ok 11 - support: restoring the canonical property restores the pass
+ok 12 - support: a changed source-alias flow-property payload turns the current closure false
+ok 13 - support: restoring the source alias restores the pass
+ok 14 - support: a source alias pointing at another unit-group version turns the current closure false
+ok 15 - support: restoring the alias pointer restores the pass
+ok 16 - support: a changed declared source unit-group payload turns the current closure false
+ok 17 - support: restoring the declared source unit group restores the pass
+ok 18 - consumers: a remaining source-alias flow outside the completed plan turns the current closure false
+ok 19 - consumers: removing the extra source-alias flow restores the pass
+ok 20 - consumers: a foreign live occurrence of a changed flow turns the current closure false
+ok 21 - consumers: the closure diagnostics never carry a foreign row payload
+ok 22 - consumers: the drifted receipt keeps the same key set
+ok 23 - consumers: removing the foreign consumer restores the pass
+ok 24 - consumers: a claimed-occurrence set that no longer covers the live occurrences refuses
+ok 25 - shape: a plan without its source evidence fails closed
+ok 26 - target identity: a canonical property pointing at another unit-group version turns the current closure false
+ok 27 - target identity: restoring the exact pointer restores the pass
+ok 28 - target identity: a canonical property whose reference kind is not a unit group data set turns the current closure false
+ok 29 - target identity: an absent reference kind is the canonical unit-group default and still passes

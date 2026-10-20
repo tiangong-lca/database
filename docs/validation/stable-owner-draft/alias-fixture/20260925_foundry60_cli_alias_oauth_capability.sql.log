@@ -1,0 +1,51 @@
+1..26
+ok 1 - all five protected v2 routes carry exactly one capability manifest row
+ok 2 - the four actor-facing protected routes are CLI-ALIAS-02 authenticated-only
+ok 3 - the service-only executor callback stays service-role-only with no actor reach
+ok 4 - no other capability maps onto the protected v2 routes
+ok 5 - no enabled CLI client matches the drift-repair precondition, so it is a no-op here
+{"role":"service_role"}
+ok 6 - the synthetic official client holds the documented prior five-capability class
+{"role":"authenticated","sub":"56600000-0000-4000-8000-000000000677","client_id":"issue-677-official-cli"}
+/rpc/cmd_dataset_alias_execution_read_v2
+POST
+ok 7 - the prior official class is refused on the protected read route (hosted RED denial)
+/rpc/cmd_dataset_alias_execution_preflight_v2_guarded
+ok 8 - the prior official class is refused on the protected preflight route
+/rpc/cmd_dataset_alias_execution_gate_v2_guarded
+ok 9 - the prior official class is refused on the protected gate route
+/rpc/cmd_dataset_alias_execution_admit_v2_guarded
+ok 10 - the prior official class is refused on the protected admit route
+/rpc/cmd_dataset_alias_execution_execute_v2
+ok 11 - the service-only executor callback is unreachable to the OAuth actor
+{"role":"authenticated","sub":"56600000-0000-4000-8000-000000000677","client_id":"issue-677-unrelated-mcp"}
+/rpc/cmd_dataset_alias_execution_read_v2
+ok 12 - an unrelated MCP-class client is refused on the protected read route
+/processes
+GET
+{"accept-profile":"public"}
+ok 13 - the unrelated MCP-class client keeps its granted public relation read
+{"role":"authenticated","sub":"56600000-0000-4000-8000-000000000677"}
+/rpc/cmd_dataset_alias_execution_read_v2
+POST
+ok 14 - a first-party session without client_id bypasses the OAuth capability hook
+{"role":"service_role"}
+ok 15 - the additive repair grants exactly CLI-ALIAS-02 on top of the prior class
+ok 16 - the repair records exactly one replace audit event with exact before/after state
+{"role":"authenticated","sub":"56600000-0000-4000-8000-000000000677","client_id":"issue-677-official-cli"}
+/rpc/cmd_dataset_alias_execution_read_v2
+POST
+ok 17 - the repaired official client passes the hook on the protected read route
+/rpc/cmd_dataset_alias_execution_preflight_v2_guarded
+ok 18 - the repaired official client passes the hook on the protected preflight route
+/rpc/cmd_dataset_alias_execution_gate_v2_guarded
+ok 19 - the repaired official client passes the hook on the protected gate route
+/rpc/cmd_dataset_alias_execution_admit_v2_guarded
+ok 20 - the repaired official client passes the hook on the protected admit route
+/rpc/cmd_dataset_alias_execution_execute_v2
+ok 21 - the service-only executor callback stays unreachable after the repair
+ok 22 - the admitted null read reaches the application null-request refusal
+ok 23 - the application null-request refusal is a client error, not a transport denial
+ok 24 - the admitted null read writes no protected request rows
+ok 25 - the unrelated MCP-class client keeps its exact three-capability class
+ok 26 - the official repair appends no audit event to the unrelated client

@@ -1,0 +1,31 @@
+1..119
+67e65ce1-cc0b-4b82-b3bf-4d5ad6f86de7
+ef3e4152-59e8-4739-a5a4-91ac16fa4c8d
+ok 1 - a stale optional timestamp refuses the whole batch as a drift
+ok 2 - an omitted consumer is refused as a closure mismatch
+ok 3 - the closure refusal names the unclaimed live occurrence
+ok 4 - a flow without the typeOfDataSet eligibility field is refused
+ok 5 - an Elementary flow is refused
+ok 6 - a Waste flow is refused
+ok 7 - a claimed before digest that is not the canonical digest of its payload is refused
+ok 8 - a text action whose after text is not the claimed desired leaf is refused
+ok 9 - a text action naming a process the batch does not claim is refused
+ok 10 - a text action with an unknown key is refused
+ok 11 - a moved functional-unit leaf that the block does not name is refused
+ok 12 - a source number contradicting the stored reviewed source comment is refused
+ok 13 - the fixture binds the TIDAS internal id and the original source number as distinct namespaces
+ok 14 - a flow mutation naming another reference is refused
+ok 15 - a target flow-property digest that does not match the locked row is refused
+ok 16 - a source unit-group digest that does not match the locked row is refused
+ok 17 - a source unit group the alias flow property does not reference is refused
+ok 18 - a plan-supplied factor is refused
+ok 19 - counts that differ from the derived live counts are refused
+ok 20 - an amount-field count that is not two fields per bound exchange is refused
+ok 21 - a source evidence exchange count that differs from the batch exchange count is refused
+ok 22 - a duplicate action identity is refused
+ok 23 - an unknown batch key is refused
+ok 24 - a foreign consumer of the alias property is refused
+ok 25 - the closure refusal names the foreign live consumer
+ERROR:  DATASET_DRAFT_CONFLICT
+DETAIL:  {"drafts": [{"userId": "11111111-1111-4111-8111-111111111111", "version": "01.00.000", "stateCode": 0}]}
+CONTEXT:  PL/pgSQL function private.guard_stable_owner_draft() line 125 at RAISE

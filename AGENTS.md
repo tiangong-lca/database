@@ -38,8 +38,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: "2026-10-21"
-lastReviewedCommit: "c1663f9ac1f909581969adee2c04d11ffbc90b9c"
-lastReviewedNote: "Reviewed display hydration test-only fixture correction; runtime SQL, migration, API and scientific boundaries unchanged."
+lastReviewedCommit: "45d2de4e50169613ecca293e570e6a9e91c22a89"
+lastReviewedNote: "Reviewed alias fixture follow-up against unchanged production SQL, native admission and scientific boundaries."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-validation.md

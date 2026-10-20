@@ -1,0 +1,34 @@
+1..29
+e4790256-c4f3-4455-be65-2d79a77d98e6
+38f12ff3-fea4-4fd0-b015-ccb9ce6bd9cb
+
+ok 1 - the reviewed request is admitted once
+{"apikey": "[REDACTED TEST HEADER]", "authorization": "[REDACTED TEST HEADER]"}
+ok 2 - the executor commits the primary and the derivative closure
+ok 3 - the read is pending before the worker completes
+ok 4 - a pending execution carries a JSON null terminal proof, never a fabricated observation
+ok 5 - a fully proved execution reads back as passed
+ok 6 - the stored lifecycle reaches completed through the child proofs
+ok 7 - the terminal proof carries exactly its five keys
+ok 8 - the terminal proof reports applied
+ok 9 - the terminal proof is bound to the reviewed plan digest
+ok 10 - the terminal proof counts are exactly the plan expected block
+ok 11 - the audit block reports the plan batch count, not a per-table or per-chunk split
+ok 12 - the audit block counts one real ledger row audit per action
+ok 13 - every audit entry binds a real ledger identifier
+ok 14 - every audit entry names a ledger row of exactly this plan and actor
+ok 15 - every readback row carries a canonical digest recomputed from the live row
+ok 16 - every live row observation equals the plan desired digest it claims
+ok 17 - every process observation carries the functional-unit text read from the live row
+ok 18 - the readback counts the live rows it observed
+ok 19 - drift: a changed canonical unit-group factor cannot read back passed
+ok 20 - drift: the public read reports the failed live closure
+ok 21 - drift: no terminal proof is emitted for a drifted run
+ok 22 - drift: the drifted read reports no primary row count
+ok 23 - drift: restoring the exact snapshot restores the passed readback
+ok 24 - drift: the restored readback proves the live closure again
+ok 25 - consumers: a remaining source-alias flow cannot read back passed
+ok 26 - consumers: the remaining source-alias flow fails the live closure
+ok 27 - consumers: removing the extra source-alias flow restores the passed readback
+ok 28 - consumers: a foreign live occurrence of a changed flow cannot read back passed
+ok 29 - consumers: removing the foreign occurrence restores the passed readback

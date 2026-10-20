@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: "2026-10-21"
-lastReviewedCommit: "c1663f9ac1f909581969adee2c04d11ffbc90b9c"
-lastReviewedNote: "Reviewed original setup RED and corrected display-reader fixture proof requirements; identities, versions, names, visibility and all hydration assertions remain intact."
+lastReviewedCommit: "45d2de4e50169613ecca293e570e6a9e91c22a89"
+lastReviewedNote: "Reviewed RED original alias batch and all eleven alias-family GREEN suites with transactional restoration; prior accepted runtime proof explicitly reused."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

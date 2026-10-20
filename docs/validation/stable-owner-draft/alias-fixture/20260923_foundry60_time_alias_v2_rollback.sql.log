@@ -1,0 +1,15 @@
+1..10
+a842eada-6660-4eb9-a8ec-b214339eee53
+88674643-f8b6-4765-be6f-804e5e3eb827
+
+ok 1 - the reviewed request still passes the protected preflight
+ok 2 - the three gates pass before the induced failure
+ok 3 - the execution is admitted once
+{"apikey": "[REDACTED TEST HEADER]", "authorization": "[REDACTED TEST HEADER]"}
+ok 4 - the executor reports the induced failure
+ok 5 - the execution is classified failed
+ok 6 - the executor reports the primary as rolled back
+ok 7 - no derivative child survives the induced failure
+ok 8 - no audit row survives the induced failure, so the whole alias topology rolled back
+ok 9 - every primary row holds exactly its before image again
+ok 10 - the execution carries no commit mark
