@@ -32,9 +32,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-10-16
-lastReviewedCommit: a84fcd60be87bec5bea3f54ff2d494a09a51e1a4
-lastReviewedNote: "Reviewed Database #845 Actions-only monitoring and exact persistent-Dev push scope guard; existing local/ARM64 checks, Preview authority, generated-workspace ownership and production boundaries remain required."
+lastReviewedAt: 2026-10-21
+lastReviewedCommit: 21a32bcf1af8c2011181c60cf8a3768670d6ca02
+lastReviewedNote: "Reviewed Database #855 populated upgrade, 93 focused assertions, 34 real overlap checks, neighboring legacy suites and deterministic pinned-CLI generation; deployed/data acceptance remains separate."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

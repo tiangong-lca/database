@@ -22,9 +22,9 @@ checkPaths:
   - .github/workflows/supabase-dev.yml
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
-lastReviewedAt: 2026-10-16
-lastReviewedCommit: a84fcd60be87bec5bea3f54ff2d494a09a51e1a4
-lastReviewedNote: "Reviewed Database #845 Actions-only monitoring and exact persistent-Dev push scope guard; existing local/ARM64 checks, Preview authority, generated-workspace ownership and production boundaries remain required."
+lastReviewedAt: 2026-10-21
+lastReviewedCommit: 21a32bcf1af8c2011181c60cf8a3768670d6ca02
+lastReviewedNote: "Reviewed Database #855 local-contract test addition against unchanged dev/main/Preview authority and promotion boundaries."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
