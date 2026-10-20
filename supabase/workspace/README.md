@@ -20,9 +20,9 @@ checkPaths:
   - .githooks/pre-push
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-10-21
-lastReviewedCommit: 14dd4de0289206f9f6e995d26c10a9220d785a60
-lastReviewedNote: "Reviewed PR #856 CI-pinned 2.117 type snapshot and unchanged schema ownership; existing exact-local and hosted provenance boundaries remain required."
+lastReviewedAt: "2026-10-21"
+lastReviewedCommit: "55fd698ed60b97e429556f9240d1fe2e8e6d3f4c"
+lastReviewedNote: "Reviewed Database CI 2.117 generation of the additive exact-key guard; generated workspace remains inspection output, not schema source."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

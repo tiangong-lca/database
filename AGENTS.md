@@ -37,9 +37,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-10-21
-lastReviewedCommit: 14dd4de0289206f9f6e995d26c10a9220d785a60
-lastReviewedNote: "Reviewed the Database CI 2.117.0 generated-type correction and aligned source documentation; runtime ownership, stable-draft SQL and guarded-save boundaries remain unchanged."
+lastReviewedAt: "2026-10-21"
+lastReviewedCommit: "55fd698ed60b97e429556f9240d1fe2e8e6d3f4c"
+lastReviewedNote: "Reviewed additive exact-key INSERT compatibility; native uniqueness, runtime ownership and existing draft/review/scientific boundaries remain unchanged."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-validation.md

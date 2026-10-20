@@ -421,6 +421,69 @@ select is((select count(*) from public.contacts where id='85500000-0000-4000-800
 select is((select count(*) from private.command_audit_log where target_id='85500000-0000-4000-8000-000000000107'),0::bigint,
  'all post-insert failures leave zero native audit and stable receipts');
 
+-- Exact-key INSERTs are not new draft admission. The BEFORE guard must leave
+-- native unique/ON CONFLICT handling intact, including the separate UPDATE
+-- guard when DO UPDATE actually changes ownership, state or synchronized keys.
+create function pg_temp.check_stable_upsert(p_table text,p_root text,p_suffix text)
+returns setof text language plpgsql as $$
+declare
+ v_id uuid:=('85500000-0000-4000-8000-'||p_suffix)::uuid;
+ v_owner uuid:='85500000-0000-4000-8000-000000000001';
+ v_foreign uuid:='85500000-0000-4000-8000-000000000002';
+ v_before jsonb:=pg_temp.stable_body(p_root,'01.00.001','upsert-before');
+ v_incoming jsonb:=pg_temp.stable_body(p_root,'01.00.001','incoming-must-not-overwrite');
+ v_changed jsonb:=pg_temp.stable_body(p_root,'01.00.001','upsert-content');
+ v_insert text;
+ v_foreign_insert text;
+ v_public_insert text;
+ v_actual jsonb;
+ v_actual_text text;
+begin
+ execute format('insert into public.%I(id,json_ordered,user_id,state_code) values ($1,$2::json,$3,0),($1,$4::json,$5,0),($1,$6::json,$3,100)',p_table)
+ using v_id,v_before,v_owner,pg_temp.stable_body(p_root,'01.00.002'),v_foreign,pg_temp.stable_body(p_root,'01.00.003');
+ -- Deliberately supply a different version: arbitration must use the final
+ -- synchronized JSON key, not the caller's pre-trigger version column.
+ v_insert:=format('insert into public.%I(id,version,json_ordered,user_id,state_code) values (%L,''99.00.000'',%L::json,%L,0)',p_table,v_id,v_incoming,v_owner);
+ return next throws_ok(v_insert,'23505',null,p_table||': plain exact duplicate retains native unique violation');
+ return next lives_ok(v_insert||' on conflict(id,version) do nothing',p_table||': exact duplicate DO NOTHING remains a no-op');
+ execute format('select json_ordered::jsonb from public.%I where id=$1 and version=''01.00.001''',p_table) into v_actual using v_id;
+ return next is(v_actual,v_before,p_table||': DO NOTHING never overwrites the original body');
+ execute format('select count(*)::text from public.%I where id=$1',p_table) into v_actual_text using v_id;
+ return next is(v_actual_text,'3',p_table||': exact duplicate handling creates no extra row');
+ return next lives_ok(v_insert||format(' on conflict(id,version) do update set json_ordered=%L::json',v_changed),p_table||': same-identity DO UPDATE content save retains its contract');
+ execute format('select json_ordered::jsonb from public.%I where id=$1 and version=''01.00.001''',p_table) into v_actual using v_id;
+ return next is(v_actual,v_changed,p_table||': legitimate DO UPDATE applies its requested content');
+ v_foreign_insert:=format('insert into public.%I(id,json_ordered,user_id,state_code) values (%L,%L::json,%L,0)',p_table,v_id,pg_temp.stable_body(p_root,'01.00.002'),v_foreign);
+ return next throws_ok(v_foreign_insert||format(' on conflict(id,version) do update set user_id=%L',v_owner),'23514','DATASET_DRAFT_CONFLICT',p_table||': DO UPDATE owner admission still rejects an occupied family');
+ execute format('select user_id::text from public.%I where id=$1 and version=''01.00.002''',p_table) into v_actual_text using v_id;
+ return next is(v_actual_text,v_foreign::text,p_table||': rejected owner admission preserves its owner');
+ v_public_insert:=format('insert into public.%I(id,json_ordered,user_id,state_code) values (%L,%L::json,%L,100)',p_table,v_id,pg_temp.stable_body(p_root,'01.00.003'),v_owner);
+ -- Enter through the existing controlled lifecycle owner, so this assertion
+ -- reaches draft admission rather than stopping at approved-content protection.
+ perform set_config('app.review_controlled_write','on',true);
+ return next throws_ok(v_public_insert||' on conflict(id,version) do update set state_code=0','23514','DATASET_DRAFT_CONFLICT',p_table||': DO UPDATE state admission still rejects an occupied family');
+ perform set_config('app.review_controlled_write','off',true);
+ execute format('select state_code::text from public.%I where id=$1 and version=''01.00.003''',p_table) into v_actual_text using v_id;
+ return next is(v_actual_text,'100',p_table||': rejected state admission preserves publication');
+ return next throws_ok(v_foreign_insert||format(' on conflict(id,version) do update set user_id=%L,json_ordered=%L::json',v_owner,pg_temp.stable_body(p_root,'01.00.005')),'23514','DATASET_DRAFT_CONFLICT',p_table||': DO UPDATE checks the actual post-sync version and owner admission');
+ execute format('select count(*)::text from public.%I where id=$1 and version=''01.00.005''',p_table) into v_actual_text using v_id;
+ return next is(v_actual_text,'0',p_table||': rejected synchronized admission leaves no new version');
+ if p_table='processes' then
+  return next throws_ok(v_foreign_insert||format(' on conflict(id,version) do update set user_id=%L,model_id=''85500000-0000-4000-8000-00000000f000''',v_owner),'23514','LIFECYCLEMODEL_BUNDLE_REQUIRED','processes: DO UPDATE model binding cannot bypass standalone admission');
+ elsif p_table='flows' then
+  return next throws_ok(v_foreign_insert||format(' on conflict(id,version) do update set user_id=%L,json_ordered=%L::json',v_owner,pg_temp.flow_body('01.00.002','Elementary flow')),'23514','DATASET_DRAFT_CONFLICT','flows: DO UPDATE reference-only type cannot bypass an existing Product draft');
+ end if;
+ execute format('insert into public.%I(id,json_ordered,user_id,state_code) values ($1,$2::json,$3,20)',p_table)
+ using v_id,pg_temp.stable_body(p_root,'01.00.004'),v_owner;
+ return next lives_ok(v_insert||' on conflict(id,version) do nothing',p_table||': exact no-op remains possible while its family has a historical review');
+ return next throws_ok(format('insert into public.%I(id,json_ordered,user_id,state_code) values (%L,%L::json,%L,0)',p_table,v_id,pg_temp.stable_body(p_root,'01.00.006'),v_owner),'23514','DATASET_REVIEW_IN_PROGRESS',p_table||': genuinely new version remains review-fenced');
+end;
+$$;
+select * from pg_temp.check_stable_upsert('contacts','contactDataSet','00000000f101');
+select * from pg_temp.check_stable_upsert('sources','sourceDataSet','00000000f102');
+select * from pg_temp.check_stable_upsert('flows','flowDataSet','00000000f103');
+select * from pg_temp.check_stable_upsert('processes','processDataSet','00000000f104');
+
 select set_config('request.jwt.claim.sub','',true);
 select is(api.cmd_dataset_prepare_stable_draft('85500000-0000-4000-8000-000000001020',(select request from stable_cases where name='one'))->>'code',
  'AUTH_REQUIRED','no authenticated actor cannot select or create');

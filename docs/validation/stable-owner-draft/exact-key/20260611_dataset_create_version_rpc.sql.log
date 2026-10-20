@@ -1,0 +1,137 @@
+BEGIN
+CREATE EXTENSION
+SET
+CREATE FUNCTION
+ plan
+-------
+ 1..19
+(1 row)
+
+  set_config
+---------------
+ authenticated
+(1 row)
+
+INSERT 0 2
+INSERT 0 2
+ALTER TABLE
+ disable_trigger_if_exists
+---------------------------
+
+(1 row)
+
+INSERT 0 4
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+SET
+              set_config
+--------------------------------------
+ a1000000-0000-0000-0000-000000000001
+(1 row)
+
+                                                             is
+-----------------------------------------------------------------------------------------------------------------------------
+ ok 1 - cmd_dataset_create_version allocates after visible, commercial, and under-review versions when no owner draft exists
+(1 row)
+
+                          is
+------------------------------------------------------
+ ok 2 - created version is owned by the current actor
+(1 row)
+
+                        is
+---------------------------------------------------
+ ok 3 - created version persists rule verification
+(1 row)
+
+                                    is
+--------------------------------------------------------------------------
+ ok 4 - created json_ordered dataSetVersion matches the allocated version
+(1 row)
+
+                                      is
+-------------------------------------------------------------------------------
+ ok 5 - created json_ordered permanentDataSetURI matches the allocated version
+(1 row)
+
+RESET
+                              is
+---------------------------------------------------------------
+ ok 6 - command audit log records the allocated target version
+(1 row)
+
+SET
+                                  is
+----------------------------------------------------------------------
+ ok 7 - cmd_dataset_create_version carries version overflow correctly
+(1 row)
+
+                                is
+-------------------------------------------------------------------
+ ok 8 - contact permanentDataSetURI uses the contact dataset route
+(1 row)
+
+                      is
+-----------------------------------------------
+ ok 9 - sourceVersion is checked when provided
+(1 row)
+
+                              is
+---------------------------------------------------------------
+ ok 10 - sourceVersion is required for create-version commands
+(1 row)
+
+                              is
+--------------------------------------------------------------
+ ok 11 - modelId is rejected outside process version creation
+(1 row)
+
+                                    is
+--------------------------------------------------------------------------
+ ok 12 - lifecycle model create-version stays on bundle-specific commands
+(1 row)
+
+                   is
+-----------------------------------------
+ ok 13 - unsupported tables are rejected
+(1 row)
+
+               is
+---------------------------------
+ ok 14 - jsonOrdered is required
+(1 row)
+
+RESET
+SET
+                                              is
+-----------------------------------------------------------------------------------------------
+ ok 15 - save_lifecycle_model_bundle allocates the next lifecycle model version when requested
+(1 row)
+
+SET
+                             is
+-------------------------------------------------------------
+ ok 16 - allocated lifecycle model JSON version is persisted
+(1 row)
+
+                                   is
+-------------------------------------------------------------------------
+ ok 17 - allocated lifecycle model json_tg submodel version is persisted
+(1 row)
+
+                                         is
+------------------------------------------------------------------------------------
+ ok 18 - allocated lifecycle model resulting-process reference version is persisted
+(1 row)
+
+                                     is
+----------------------------------------------------------------------------
+ ok 19 - allocated lifecycle bundle child process JSON version is persisted
+(1 row)
+
+ finish
+--------
+(0 rows)
+
+ROLLBACK

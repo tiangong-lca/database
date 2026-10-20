@@ -30,9 +30,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-10-21
-lastReviewedCommit: 14dd4de0289206f9f6e995d26c10a9220d785a60
-lastReviewedNote: "Reviewed PR #856 generation-only correction against unchanged stable-draft RPC, review fence and scientific-acceptance boundaries."
+lastReviewedAt: "2026-10-21"
+lastReviewedCommit: "55fd698ed60b97e429556f9240d1fe2e8e6d3f4c"
+lastReviewedNote: "Reviewed pinned exact-key INSERT compatibility and retained nonblocking admission, native UPDATE ownership and scope boundaries."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -313,6 +313,16 @@ not consolidation. Model-bound-only and reference-only Flow-only multiple versio
 remain outside this slice; any crossing into a standalone/Product/Waste draft family
 conflicts. Existing raw table DML ACLs, native bundle ownership, support readers and
 scientific interpretation remain unchanged.
+
+Exact-key INSERT retries preserve native unique/`ON CONFLICT` semantics. After
+JSON/version synchronization and the family try-lock, the guard pins an existing
+exact `(id, version)` with `FOR KEY SHARE NOWAIT` before returning `NEW`. The pin
+prevents concurrent deletion or key changes from turning a presumed conflict into
+new admission. Plain duplicates still raise `23505`; `DO NOTHING` preserves stored
+content; `DO UPDATE` runs UPDATE admission separately against its actual final row.
+The existing nonblocking busy contract remains: family or exact-key lock contention
+returns `DATASET_STABLE_DRAFT_BUSY`, even for an otherwise exact no-op. No hidden
+retry, importer-specific bypass or old-family/DELETE advisory expansion is added.
 
 The isolation restriction is a deliberate compatibility change for every new
 draft admission on these four tables, including otherwise excluded model-only

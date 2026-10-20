@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-10-21
-lastReviewedCommit: 14dd4de0289206f9f6e995d26c10a9220d785a60
-lastReviewedNote: "Reviewed PR #856 canonical generator restoration and Database workflow CLI selection; sibling Edge toolchains do not own Database snapshots."
+lastReviewedCommit: "55fd698ed60b97e429556f9240d1fe2e8e6d3f4c"
+lastReviewedNote: "Reviewed unchanged canonical CLI 2.117 schema/type generation for the additive exact-key guard; no helper or ownership changes."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml

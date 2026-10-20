@@ -1,0 +1,274 @@
+BEGIN
+CREATE EXTENSION
+SET
+ no_plan
+---------
+(0 rows)
+
+  set_config
+--------------
+ service_role
+(1 row)
+
+       set_config
+-------------------------
+ {"role":"service_role"}
+(1 row)
+
+CREATE TABLE
+CREATE FUNCTION
+INSERT 0 1
+CREATE TABLE
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE TABLE
+ new_package
+-------------
+
+(1 row)
+
+ stage_package
+---------------
+
+(1 row)
+
+ stage_package
+---------------
+
+(1 row)
+
+                   is
+-----------------------------------------
+ ok 1 - staging never writes domain data
+(1 row)
+
+             throws_ok
+------------------------------------
+ ok 2 - missing chunk cannot commit
+(1 row)
+
+INSERT 0 1
+                              is
+---------------------------------------------------------------
+ ok 3 - orphan-only package imports all records without a root
+(1 row)
+
+                      is
+----------------------------------------------
+ ok 4 - receipt identifies whole-package mode
+(1 row)
+
+                      is
+----------------------------------------------
+ ok 5 - exact replay returns original receipt
+(1 row)
+
+                  is
+---------------------------------------
+ ok 6 - one atomic receipt per package
+(1 row)
+
+UPDATE 1
+                   throws_ok
+------------------------------------------------
+ ok 7 - replay with changed records is rejected
+(1 row)
+
+                              is
+--------------------------------------------------------------
+ ok 8 - owner readback recovers whole-package committed count
+(1 row)
+
+                        is
+--------------------------------------------------
+ ok 9 - foreign actor cannot read receipt summary
+(1 row)
+
+ new_package
+-------------
+
+(1 row)
+
+ stage_package
+---------------
+
+(1 row)
+
+INSERT 0 1
+                       is
+-------------------------------------------------
+ ok 10 - all-existing package skips every record
+(1 row)
+
+                              is
+---------------------------------------------------------------
+ ok 11 - all-existing package is a successful reused execution
+(1 row)
+
+                               is
+----------------------------------------------------------------
+ ok 12 - every skip is present in receipt for report generation
+(1 row)
+
+                         is
+----------------------------------------------------
+ ok 13 - skipping never overwrites existing content
+(1 row)
+
+ new_package
+-------------
+
+(1 row)
+
+ stage_package
+---------------
+
+(1 row)
+
+ stage_package
+---------------
+
+(1 row)
+
+                    throws_ok
+-------------------------------------------------
+ ok 14 - late invalid record fails whole package
+(1 row)
+
+                                is
+-------------------------------------------------------------------
+ ok 15 - late failure rolls back earlier insert from another chunk
+(1 row)
+
+                       is
+-------------------------------------------------
+ ok 16 - failed package has no committed receipt
+(1 row)
+
+                       is
+------------------------------------------------
+ ok 17 - failed package rolls back plan binding
+(1 row)
+
+                             is
+------------------------------------------------------------
+ ok 18 - unrelated earlier committed package remains intact
+(1 row)
+
+ new_package
+-------------
+
+(1 row)
+
+              throws_ok
+--------------------------------------
+ ok 19 - empty package cannot succeed
+(1 row)
+
+ stage_package
+---------------
+
+(1 row)
+
+UPDATE 1
+                     throws_ok
+----------------------------------------------------
+ ok 20 - expired lease cannot commit staged package
+(1 row)
+
+                   is
+----------------------------------------
+ ok 21 - expired lease leaves no writes
+(1 row)
+
+                   ok
+----------------------------------------
+ ok 22 - browser cannot stage a package
+(1 row)
+
+                       ok
+-------------------------------------------------
+ ok 23 - anonymous caller cannot apply a package
+(1 row)
+
+                 ok
+-------------------------------------
+ ok 24 - receipt table is ACL closed
+(1 row)
+
+ new_package
+-------------
+
+(1 row)
+
+ stage_package
+---------------
+
+(1 row)
+
+INSERT 0 1
+                           is
+---------------------------------------------------------
+ ok 25 - same id/version in a different type is inserted
+(1 row)
+
+                      is
+----------------------------------------------
+ ok 26 - skip identity includes the data type
+(1 row)
+
+ new_package
+-------------
+
+(1 row)
+
+CREATE FUNCTION
+CREATE TRIGGER
+ stage_package
+---------------
+
+(1 row)
+
+                          throws_ok
+--------------------------------------------------------------
+ ok 27 - final fence rejects lease lost during domain inserts
+(1 row)
+
+                        is
+--------------------------------------------------
+ ok 28 - final fence rolls back all domain writes
+(1 row)
+
+                         is
+----------------------------------------------------
+ ok 29 - final fence rolls back receipt publication
+(1 row)
+
+ new_package
+-------------
+
+(1 row)
+
+ stage_package
+---------------
+
+(1 row)
+
+INSERT 0 1
+                                   is
+-------------------------------------------------------------------------
+ ok 30 - whole package receipt records real roots without requiring them
+(1 row)
+
+                             is
+-------------------------------------------------------------
+ ok 31 - recovered whole-package root counts remain accurate
+(1 row)
+
+ finish
+--------
+ 1..31
+(1 row)
+
+ROLLBACK

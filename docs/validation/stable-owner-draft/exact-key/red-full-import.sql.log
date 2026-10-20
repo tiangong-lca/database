@@ -1,0 +1,104 @@
+BEGIN
+CREATE EXTENSION
+SET
+ no_plan
+---------
+(0 rows)
+
+  set_config
+--------------
+ service_role
+(1 row)
+
+       set_config
+-------------------------
+ {"role":"service_role"}
+(1 row)
+
+CREATE TABLE
+CREATE FUNCTION
+INSERT 0 1
+CREATE TABLE
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE FUNCTION
+CREATE TABLE
+ new_package
+-------------
+
+(1 row)
+
+ stage_package
+---------------
+
+(1 row)
+
+ stage_package
+---------------
+
+(1 row)
+
+                   is
+-----------------------------------------
+ ok 1 - staging never writes domain data
+(1 row)
+
+             throws_ok
+------------------------------------
+ ok 2 - missing chunk cannot commit
+(1 row)
+
+INSERT 0 1
+                              is
+---------------------------------------------------------------
+ ok 3 - orphan-only package imports all records without a root
+(1 row)
+
+                      is
+----------------------------------------------
+ ok 4 - receipt identifies whole-package mode
+(1 row)
+
+                      is
+----------------------------------------------
+ ok 5 - exact replay returns original receipt
+(1 row)
+
+                  is
+---------------------------------------
+ ok 6 - one atomic receipt per package
+(1 row)
+
+UPDATE 1
+                   throws_ok
+------------------------------------------------
+ ok 7 - replay with changed records is rejected
+(1 row)
+
+                              is
+--------------------------------------------------------------
+ ok 8 - owner readback recovers whole-package committed count
+(1 row)
+
+                        is
+--------------------------------------------------
+ ok 9 - foreign actor cannot read receipt summary
+(1 row)
+
+ new_package
+-------------
+
+(1 row)
+
+ stage_package
+---------------
+
+(1 row)
+
+ERROR:  DATASET_DRAFT_CONFLICT
+DETAIL:  {"drafts": [{"userId": "65400000-0000-4000-8000-000000000001", "version": "         ", "stateCode": 0}]}
+CONTEXT:  PL/pgSQL function private.guard_stable_owner_draft() line 107 at RAISE
+SQL statement "insert into public.contacts(id, version, json_ordered, rule_verification, user_id)
+        values ($1,$2,$3,$4,$5) on conflict (id, version) do nothing"
+PL/pgSQL function private.tidas_import_package_apply_v2(uuid,uuid,uuid,text,integer) line 78 at EXECUTE
+SQL function "apply_package" statement 1

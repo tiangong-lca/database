@@ -32,9 +32,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-10-21
-lastReviewedCommit: 14dd4de0289206f9f6e995d26c10a9220d785a60
-lastReviewedNote: "Reviewed PR #856 Database CI 2.117 type generation and unchanged SQL/source evidence; prior 2.121 generation remains historical, not current pinned proof."
+lastReviewedAt: "2026-10-21"
+lastReviewedCommit: "55fd698ed60b97e429556f9240d1fe2e8e6d3f4c"
+lastReviewedNote: "Reviewed exact-key RED/GREEN, unchanged full/partial import fixtures and actual overlapping delete/key-change proof requirements."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -95,8 +95,16 @@ For Database #855, run `supabase/tests/20261021_stable_owner_draft.sql`, the exi
 create-version, guarded-save, dataset-command, Process-model-version, Model-bundle,
 Result lifecycle, API closure and full-schema suites. Keep the exact Result guard
 last; do not relax its trigger-order assertion. The older create-version fixture's
-other version is under review instead of another active owner draft, so allocation
-coverage remains valid under the intentional legacy admission conflict.
+other version belongs to a different owner's review instead of another active
+caller-owned draft, so allocation coverage does not bypass the caller's review fence.
+Run the unchanged `20260909_tidas_partial_import.sql` and
+`20260918_tidas_full_package_import.sql` suites for exact-key import compatibility.
+The stable-draft suite must preserve native duplicate `23505`, `DO NOTHING` body
+preservation and legitimate `DO UPDATE` content saves across all four types, while
+actual owner/state/post-sync version/model admission remains fenced. Use deliberately
+mismatched supplied/JSON versions to prove the final synchronized PK is pinned.
+Real overlapping sessions must prove delete/key-change contention both before and
+after pin acquisition, plus normal retry after the competing commit or rollback.
 Prove all four supported types, complete 0/1/many semantics, source and draft
 preimages, explicit reviewed selection, owner/table isolation, stale census,
 fake-modelId cross-scope refusal, reference-only Flow refusal without writer/audit,

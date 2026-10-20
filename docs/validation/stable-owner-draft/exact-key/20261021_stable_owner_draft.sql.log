@@ -1,0 +1,649 @@
+BEGIN
+CREATE EXTENSION
+SET
+ no_plan
+---------
+(0 rows)
+
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+INSERT 0 2
+CREATE FUNCTION
+GRANT
+CREATE FUNCTION
+GRANT
+INSERT 0 14
+INSERT 0 2
+UPDATE 1
+INSERT 0 2
+INSERT 0 4
+INSERT 0 5
+INSERT 0 1
+INSERT 0 3
+CREATE FUNCTION
+CREATE TABLE
+INSERT 0 11
+INSERT 0 6
+INSERT 0 2
+SELECT 1
+GRANT
+GRANT
+                             ok
+-------------------------------------------------------------
+ ok 1 - prepare is actor-only, not anonymous or service-role
+(1 row)
+
+                          is
+-------------------------------------------------------
+ ok 2 - prepare retains the version-command capability
+(1 row)
+
+                        is
+---------------------------------------------------
+ ok 3 - readonly recovery uses the read capability
+(1 row)
+
+                       ok
+------------------------------------------------
+ ok 4 - RLS does not reopen direct actor INSERT
+(1 row)
+
+                   ok
+----------------------------------------
+ ok 5 - receipt storage remains private
+(1 row)
+
+                     is
+---------------------------------------------
+ ok 6 - request recovery is read-only STABLE
+(1 row)
+
+                            is
+-----------------------------------------------------------
+ ok 7 - all four mutable types enforce the common boundary
+(1 row)
+
+                                             ok
+---------------------------------------------------------------------------------------------
+ ok 8 - draft guard follows transforming BEFORE triggers and precedes the final Result guard
+(1 row)
+
+              set_config
+--------------------------------------
+ 85500000-0000-4000-8000-000000000001
+(1 row)
+
+SET
+UPDATE 1
+                       is
+------------------------------------------------
+ ok 9 - zero owner drafts creates one successor
+(1 row)
+
+                          is
+------------------------------------------------------
+ ok 10 - server allocates past foreign-owner versions
+(1 row)
+
+                          is
+------------------------------------------------------
+ ok 11 - successor belongs to the authenticated actor
+(1 row)
+
+                               is
+-----------------------------------------------------------------
+ ok 12 - scientific/source content remains byte-value equivalent
+(1 row)
+
+                     is
+---------------------------------------------
+ ok 13 - native allocator owns permanent URI
+(1 row)
+
+                          is
+------------------------------------------------------
+ ok 14 - published source whole row remains unchanged
+(1 row)
+
+                                    is
+---------------------------------------------------------------------------
+ ok 15 - cloning never inherits a public source scientific/rule-ready flag
+(1 row)
+
+                            is
+-----------------------------------------------------------
+ ok 16 - original public rule verification stays unchanged
+(1 row)
+
+                       is
+------------------------------------------------
+ ok 17 - exactly one current-owner draft exists
+(1 row)
+
+                                   is
+-------------------------------------------------------------------------
+ ok 18 - exact original prepare request cannot allocate a second version
+(1 row)
+
+                                  is
+-----------------------------------------------------------------------
+ ok 19 - lost-response readback recovers the original unchanged target
+(1 row)
+
+                               is
+----------------------------------------------------------------
+ ok 20 - unknown outcome is not converted into another dispatch
+(1 row)
+
+                             is
+------------------------------------------------------------
+ ok 21 - same request ID cannot bind changed request fields
+(1 row)
+
+UPDATE 1
+             is
+-----------------------------
+ ok 22 - one draft is reused
+(1 row)
+
+                         is
+----------------------------------------------------
+ ok 23 - reuse preserves the exact existing version
+(1 row)
+
+                                 is
+---------------------------------------------------------------------
+ ok 24 - reuse does not rewrite the existing draft verification flag
+(1 row)
+
+                     is
+---------------------------------------------
+ ok 25 - cannot substitute an absent version
+(1 row)
+
+                        is
+---------------------------------------------------
+ ok 26 - actor binding is checked before selection
+(1 row)
+
+                            is
+-----------------------------------------------------------
+ ok 27 - initial creation is an explicit unsupported slice
+(1 row)
+
+                        is
+---------------------------------------------------
+ ok 28 - extra request fields fail before mutation
+(1 row)
+
+                        is
+---------------------------------------------------
+ ok 29 - duplicate expected versions are malformed
+(1 row)
+
+RESET
+                          is
+-------------------------------------------------------
+ ok 30 - native version writer dispatched exactly once
+(1 row)
+
+                                             is
+--------------------------------------------------------------------------------------------
+ ok 31 - one receipt each for successful create/reuse; readback and failures append nothing
+(1 row)
+
+INSERT 0 1
+ set_config
+------------
+ on
+(1 row)
+
+UPDATE 1
+UPDATE 1
+UPDATE 1
+ set_config
+------------
+ off
+(1 row)
+
+SET
+                                  is
+----------------------------------------------------------------------
+ ok 32 - stale empty census cannot create after a competing insertion
+(1 row)
+
+                      is
+----------------------------------------------
+ ok 33 - changed full source body is rejected
+(1 row)
+
+                    is
+------------------------------------------
+ ok 34 - source owner is an exact binding
+(1 row)
+
+                                  is
+----------------------------------------------------------------------
+ ok 35 - even another public state invalidates a stale source binding
+(1 row)
+
+                        is
+--------------------------------------------------
+ ok 36 - reuse still binds the full public source
+(1 row)
+
+                              is
+--------------------------------------------------------------
+ ok 37 - same version with stale draft before body is refused
+(1 row)
+
+                              is
+---------------------------------------------------------------
+ ok 38 - legacy create cannot add another ordinary owner draft
+(1 row)
+
+                               is
+-----------------------------------------------------------------
+ ok 39 - legacy create-version cannot bypass stable target reuse
+(1 row)
+
+                              is
+---------------------------------------------------------------
+ ok 40 - the existing exact before-image writer remains usable
+(1 row)
+
+                                       is
+--------------------------------------------------------------------------------
+ ok 41 - readback preserves the original receipt and reports later target edits
+(1 row)
+
+RESET
+INSERT 0 2
+                            throws_ok
+-----------------------------------------------------------------
+ ok 42 - owner transfer into an occupied draft family is refused
+(1 row)
+
+INSERT 0 1
+ set_config
+------------
+ on
+(1 row)
+
+                               throws_ok
+-----------------------------------------------------------------------
+ ok 43 - review/withdrawal cannot enter an occupied owner draft family
+(1 row)
+
+UPDATE 1
+ set_config
+------------
+ off
+(1 row)
+
+                                lives_ok
+-------------------------------------------------------------------------
+ ok 44 - implicit JSON-sync version change checks the actual new version
+(1 row)
+
+                          is
+-------------------------------------------------------
+ ok 45 - guard runs after JSON/version synchronization
+(1 row)
+
+SET
+UPDATE 1
+                                   is
+------------------------------------------------------------------------
+ ok 46 - standalone Process successor uses the native version allocator
+(1 row)
+
+                                  is
+-----------------------------------------------------------------------
+ ok 47 - fabricated modelId cannot insert alongside a standalone draft
+(1 row)
+
+                                       is
+--------------------------------------------------------------------------------
+ ok 48 - existing model-bound-only creation semantics remain outside this slice
+(1 row)
+
+                                   is
+------------------------------------------------------------------------
+ ok 49 - no false global-uniqueness claim is made for model-only drafts
+(1 row)
+
+                                     is
+-----------------------------------------------------------------------------
+ ok 50 - model-bound drafts appearing first close generic stable preparation
+(1 row)
+
+                         is
+----------------------------------------------------
+ ok 51 - owner Result source is explicitly rejected
+(1 row)
+
+                              is
+---------------------------------------------------------------
+ ok 52 - foreign private source existence/state remains hidden
+(1 row)
+
+                                   is
+-------------------------------------------------------------------------
+ ok 53 - legacy model relinking is not silently redesigned by this slice
+(1 row)
+
+                                     is
+-----------------------------------------------------------------------------
+ ok 54 - model relinking changes recovery status even when JSON is identical
+(1 row)
+
+RESET
+SET
+                                   is
+-------------------------------------------------------------------------
+ ok 55 - Elementary Flow source cannot use the new generic creation path
+(1 row)
+
+                   is
+----------------------------------------
+ ok 56 - unknown Flow type fails closed
+(1 row)
+
+                   is
+----------------------------------------
+ ok 57 - missing Flow type fails closed
+(1 row)
+
+UPDATE 1
+                     is
+---------------------------------------------
+ ok 58 - Product Flow successor is supported
+(1 row)
+
+UPDATE 1
+                    is
+-------------------------------------------
+ ok 59 - Waste Flow successor is supported
+(1 row)
+
+UPDATE 1
+                          is
+-------------------------------------------------------
+ ok 60 - Source successor retains the existing creator
+(1 row)
+
+                                      is
+-------------------------------------------------------------------------------
+ ok 61 - reference-only insertion cannot mix with an active Product Flow draft
+(1 row)
+
+                                        is
+-----------------------------------------------------------------------------------
+ ok 62 - legacy Elementary-only creation is explicitly outside the stable contract
+(1 row)
+
+                                is
+------------------------------------------------------------------
+ ok 63 - legacy Elementary-only duplicate semantics are preserved
+(1 row)
+
+                                        is
+----------------------------------------------------------------------------------
+ ok 64 - new Product Flow cannot mix into an existing reference-only draft family
+(1 row)
+
+RESET
+                             is
+-------------------------------------------------------------
+ ok 65 - reference-only failures append zero stable receipts
+(1 row)
+
+                                 is
+---------------------------------------------------------------------
+ ok 66 - reference-only failures dispatch zero native version writes
+(1 row)
+
+INSERT 0 2
+INSERT 0 1
+SET
+                                is
+-------------------------------------------------------------------
+ ok 67 - Product source does not admit a selected Elementary draft
+(1 row)
+
+                                    is
+--------------------------------------------------------------------------
+ ok 68 - this slice does not redefine the old exact-row scientific writer
+(1 row)
+
+                                    is
+---------------------------------------------------------------------------
+ ok 69 - reference-only type relinking invalidates stable receipt recovery
+(1 row)
+
+RESET
+SET
+UPDATE 1
+                         is
+----------------------------------------------------
+ ok 70 - owner review blocks zero-draft preparation
+(1 row)
+
+                            is
+----------------------------------------------------------
+ ok 71 - review conflict has a specific structured status
+(1 row)
+
+                       is
+------------------------------------------------
+ ok 72 - every owner review version is returned
+(1 row)
+
+                                          is
+---------------------------------------------------------------------------------------
+ ok 73 - return point names the exact existing dataset review with no fabricated queue
+(1 row)
+
+                             is
+-------------------------------------------------------------
+ ok 74 - legacy generic create cannot bypass an owner review
+(1 row)
+
+                                    is
+--------------------------------------------------------------------------
+ ok 75 - legacy create-version retains complete structured review targets
+(1 row)
+
+                               is
+----------------------------------------------------------------
+ ok 76 - another owner review does not become this actor review
+(1 row)
+
+RESET
+                    is
+------------------------------------------
+ ok 77 - review conflicts create no draft
+(1 row)
+
+                                   is
+-------------------------------------------------------------------------
+ ok 78 - review conflicts append no native write audit or stable receipt
+(1 row)
+
+UPDATE 1
+SET
+                                           is
+----------------------------------------------------------------------------------------
+ ok 79 - even original-request prepare replay cannot claim an in-review family prepared
+(1 row)
+
+                                             is
+--------------------------------------------------------------------------------------------
+ ok 80 - read-only lost-response recovery retains the receipt but exposes review transition
+(1 row)
+
+                                is
+-------------------------------------------------------------------
+ ok 81 - current readback returns the original target review state
+(1 row)
+
+RESET
+INSERT 0 1
+INSERT 0 1
+SET
+                            is
+-----------------------------------------------------------
+ ok 82 - an exhausted family is rejected before delegation
+(1 row)
+
+RESET
+                               is
+----------------------------------------------------------------
+ ok 83 - version exhaustion performs no native write or receipt
+(1 row)
+
+INSERT 0 1
+UPDATE 1
+SET
+                                       is
+--------------------------------------------------------------------------------
+ ok 84 - exhausted allocation does not prevent reuse of an existing exact draft
+(1 row)
+
+RESET
+CREATE FUNCTION
+SET
+                      is
+-----------------------------------------------
+ ok 85 - wrong delegated target is rolled back
+(1 row)
+
+                              is
+--------------------------------------------------------------
+ ok 86 - a delegated scientific content change is rolled back
+(1 row)
+
+                                  is
+----------------------------------------------------------------------
+ ok 87 - even an explicit delegated failure rolls back a prior insert
+(1 row)
+
+                               is
+-----------------------------------------------------------------
+ ok 88 - missing delegated data cannot produce a success receipt
+(1 row)
+
+                               is
+----------------------------------------------------------------
+ ok 89 - wrong delegated state cannot produce a success receipt
+(1 row)
+
+                                        is
+----------------------------------------------------------------------------------
+ ok 90 - a plausible response without a real target fails exact database readback
+(1 row)
+
+RESET
+                           is
+--------------------------------------------------------
+ ok 91 - all post-insert failures leave zero draft rows
+(1 row)
+
+                                      is
+------------------------------------------------------------------------------
+ ok 92 - all post-insert failures leave zero native audit and stable receipts
+(1 row)
+
+CREATE FUNCTION
+                                   check_stable_upsert
+------------------------------------------------------------------------------------------
+ ok 93 - contacts: plain exact duplicate retains native unique violation
+ ok 94 - contacts: exact duplicate DO NOTHING remains a no-op
+ ok 95 - contacts: DO NOTHING never overwrites the original body
+ ok 96 - contacts: exact duplicate handling creates no extra row
+ ok 97 - contacts: same-identity DO UPDATE content save retains its contract
+ ok 98 - contacts: legitimate DO UPDATE applies its requested content
+ ok 99 - contacts: DO UPDATE owner admission still rejects an occupied family
+ ok 100 - contacts: rejected owner admission preserves its owner
+ ok 101 - contacts: DO UPDATE state admission still rejects an occupied family
+ ok 102 - contacts: rejected state admission preserves publication
+ ok 103 - contacts: DO UPDATE checks the actual post-sync version and owner admission
+ ok 104 - contacts: rejected synchronized admission leaves no new version
+ ok 105 - contacts: exact no-op remains possible while its family has a historical review
+ ok 106 - contacts: genuinely new version remains review-fenced
+(14 rows)
+
+                                   check_stable_upsert
+-----------------------------------------------------------------------------------------
+ ok 107 - sources: plain exact duplicate retains native unique violation
+ ok 108 - sources: exact duplicate DO NOTHING remains a no-op
+ ok 109 - sources: DO NOTHING never overwrites the original body
+ ok 110 - sources: exact duplicate handling creates no extra row
+ ok 111 - sources: same-identity DO UPDATE content save retains its contract
+ ok 112 - sources: legitimate DO UPDATE applies its requested content
+ ok 113 - sources: DO UPDATE owner admission still rejects an occupied family
+ ok 114 - sources: rejected owner admission preserves its owner
+ ok 115 - sources: DO UPDATE state admission still rejects an occupied family
+ ok 116 - sources: rejected state admission preserves publication
+ ok 117 - sources: DO UPDATE checks the actual post-sync version and owner admission
+ ok 118 - sources: rejected synchronized admission leaves no new version
+ ok 119 - sources: exact no-op remains possible while its family has a historical review
+ ok 120 - sources: genuinely new version remains review-fenced
+(14 rows)
+
+                                  check_stable_upsert
+---------------------------------------------------------------------------------------
+ ok 121 - flows: plain exact duplicate retains native unique violation
+ ok 122 - flows: exact duplicate DO NOTHING remains a no-op
+ ok 123 - flows: DO NOTHING never overwrites the original body
+ ok 124 - flows: exact duplicate handling creates no extra row
+ ok 125 - flows: same-identity DO UPDATE content save retains its contract
+ ok 126 - flows: legitimate DO UPDATE applies its requested content
+ ok 127 - flows: DO UPDATE owner admission still rejects an occupied family
+ ok 128 - flows: rejected owner admission preserves its owner
+ ok 129 - flows: DO UPDATE state admission still rejects an occupied family
+ ok 130 - flows: rejected state admission preserves publication
+ ok 131 - flows: DO UPDATE checks the actual post-sync version and owner admission
+ ok 132 - flows: rejected synchronized admission leaves no new version
+ ok 133 - flows: DO UPDATE reference-only type cannot bypass an existing Product draft
+ ok 134 - flows: exact no-op remains possible while its family has a historical review
+ ok 135 - flows: genuinely new version remains review-fenced
+(15 rows)
+
+                                    check_stable_upsert
+-------------------------------------------------------------------------------------------
+ ok 136 - processes: plain exact duplicate retains native unique violation
+ ok 137 - processes: exact duplicate DO NOTHING remains a no-op
+ ok 138 - processes: DO NOTHING never overwrites the original body
+ ok 139 - processes: exact duplicate handling creates no extra row
+ ok 140 - processes: same-identity DO UPDATE content save retains its contract
+ ok 141 - processes: legitimate DO UPDATE applies its requested content
+ ok 142 - processes: DO UPDATE owner admission still rejects an occupied family
+ ok 143 - processes: rejected owner admission preserves its owner
+ ok 144 - processes: DO UPDATE state admission still rejects an occupied family
+ ok 145 - processes: rejected state admission preserves publication
+ ok 146 - processes: DO UPDATE checks the actual post-sync version and owner admission
+ ok 147 - processes: rejected synchronized admission leaves no new version
+ ok 148 - processes: DO UPDATE model binding cannot bypass standalone admission
+ ok 149 - processes: exact no-op remains possible while its family has a historical review
+ ok 150 - processes: genuinely new version remains review-fenced
+(15 rows)
+
+ set_config
+------------
+
+(1 row)
+
+                           is
+---------------------------------------------------------
+ ok 151 - no authenticated actor cannot select or create
+(1 row)
+
+ finish
+--------
+ 1..151
+(1 row)
+
+ROLLBACK

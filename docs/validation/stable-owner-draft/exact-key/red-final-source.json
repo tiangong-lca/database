@@ -1,0 +1,30 @@
+{
+  "method": "original guard substituted only inside final test transaction and restored by ROLLBACK; original migration not replayed",
+  "suiteSHA256": "3f4eb3c8eed70ee60ad54fd3945b09057f51199249d851a1b2543ee98eb87029",
+  "exit": 0,
+  "passing": 129,
+  "failing": 21,
+  "failures": [
+    "not ok 93 - contacts: plain exact duplicate retains native unique violation",
+    "not ok 94 - contacts: exact duplicate DO NOTHING remains a no-op",
+    "not ok 97 - contacts: same-identity DO UPDATE content save retains its contract",
+    "not ok 98 - contacts: legitimate DO UPDATE applies its requested content",
+    "not ok 105 - contacts: exact no-op remains possible while its family has a historical review",
+    "not ok 107 - sources: plain exact duplicate retains native unique violation",
+    "not ok 108 - sources: exact duplicate DO NOTHING remains a no-op",
+    "not ok 111 - sources: same-identity DO UPDATE content save retains its contract",
+    "not ok 112 - sources: legitimate DO UPDATE applies its requested content",
+    "not ok 119 - sources: exact no-op remains possible while its family has a historical review",
+    "not ok 121 - flows: plain exact duplicate retains native unique violation",
+    "not ok 122 - flows: exact duplicate DO NOTHING remains a no-op",
+    "not ok 125 - flows: same-identity DO UPDATE content save retains its contract",
+    "not ok 126 - flows: legitimate DO UPDATE applies its requested content",
+    "not ok 133 - flows: exact no-op remains possible while its family has a historical review",
+    "not ok 135 - processes: plain exact duplicate retains native unique violation",
+    "not ok 136 - processes: exact duplicate DO NOTHING remains a no-op",
+    "not ok 139 - processes: same-identity DO UPDATE content save retains its contract",
+    "not ok 140 - processes: legitimate DO UPDATE applies its requested content",
+    "not ok 147 - processes: DO UPDATE model binding cannot bypass standalone admission",
+    "not ok 148 - processes: exact no-op remains possible while its family has a historical review"
+  ]
+}

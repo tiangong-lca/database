@@ -65214,6 +65214,7 @@ declare
   v_new_flow_type text;
   v_old_flow_type text;
   v_conflicts jsonb;
+  v_exact_key_exists boolean;
   v_reviews jsonb;
   v_old_review boolean := false;
   v_new_review boolean := coalesce(new.state_code >= 20 and new.state_code < 100,false);
@@ -65271,6 +65272,23 @@ begin
   ) then
     raise exception using errcode = '55P03',
       message = 'DATASET_STABLE_DRAFT_BUSY';
+  end if;
+
+  -- BEFORE INSERT runs before native uniqueness/ON CONFLICT arbitration.
+  -- An existing exact post-sync PK is not new admission. Pin that key so a
+  -- concurrent DELETE/key change cannot remove the conflict after this check.
+  -- DO UPDATE runs the UPDATE guard separately against its actual final row.
+  if tg_op = 'INSERT' then
+    begin
+      execute pg_catalog.format(
+        'select true from public.%I d where d.id=$1 and d.version=$2 for key share nowait',
+        tg_table_name)
+        into v_exact_key_exists using new.id,new.version;
+    exception when lock_not_available then
+      raise exception using errcode='55P03',message='DATASET_STABLE_DRAFT_BUSY';
+    end;
+    -- EXECUTE does not set FOUND; the explicit result distinguishes no row.
+    if v_exact_key_exists is true then return new;end if;
   end if;
 
   -- Review entry/exit shares this exact family lock. In particular a 0 -> 20

@@ -1,8 +1,8 @@
 version: 1
 layout: repo
 lastReviewedAt: "2026-10-21"
-lastReviewedCommit: "14dd4de0289206f9f6e995d26c10a9220d785a60"
-lastReviewedNote: "Reviewed PR #856 CI-pinned type-generation correction against unchanged migration, API ownership and existing governance routes."
+lastReviewedCommit: "55fd698ed60b97e429556f9240d1fe2e8e6d3f4c"
+lastReviewedNote: "Reviewed additive exact-key compatibility, unchanged RPC ownership and required SQL/concurrency proof routes."
 
 # Keep deterministic governance facts here.
 # AGENTS.md remains the repo contract entrypoint.

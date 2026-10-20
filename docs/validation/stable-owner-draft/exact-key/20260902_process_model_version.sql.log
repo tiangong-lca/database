@@ -1,0 +1,209 @@
+BEGIN
+CREATE EXTENSION
+SET
+ plan
+-------
+ 1..32
+(1 row)
+
+                        has_column
+-----------------------------------------------------------
+ ok 1 - processes exposes the exact LifecycleModel version
+(1 row)
+
+                                   ok
+------------------------------------------------------------------------
+ ok 2 - processes.model_version stays nullable for legacy fallback rows
+(1 row)
+
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+                          throws_like
+---------------------------------------------------------------
+ ok 3 - an exact model version cannot exist without a model id
+(1 row)
+
+                          throws_like
+----------------------------------------------------------------
+ ok 4 - an exact model version must use the ILCD version format
+(1 row)
+
+INSERT 0 1
+SET
+  set_config
+---------------
+ authenticated
+(1 row)
+
+              set_config
+--------------------------------------
+ b9200000-0000-0000-0000-000000000001
+(1 row)
+
+                                 is
+--------------------------------------------------------------------
+ ok 5 - dataset create accepts an exact model version for a Process
+(1 row)
+
+                           is
+--------------------------------------------------------
+ ok 6 - dataset create persists the exact model version
+(1 row)
+
+                                is
+------------------------------------------------------------------
+ ok 7 - dataset create rejects a model version without a model id
+(1 row)
+
+                                    is
+---------------------------------------------------------------------------
+ ok 8 - legacy draft save remains compatible when model fields are omitted
+(1 row)
+
+                                   is
+------------------------------------------------------------------------
+ ok 9 - omitting model fields preserves an existing exact model version
+(1 row)
+
+                                        is
+-----------------------------------------------------------------------------------
+ ok 10 - an old writer may still move a Process to legacy model fallback semantics
+(1 row)
+
+                                     ok
+----------------------------------------------------------------------------
+ ok 11 - changing modelId without modelVersion clears a stale exact version
+(1 row)
+
+                              is
+---------------------------------------------------------------
+ ok 12 - draft save restores an explicit exact model reference
+(1 row)
+
+                              is
+--------------------------------------------------------------
+ ok 13 - draft save persists the restored exact model version
+(1 row)
+
+                              is
+---------------------------------------------------------------
+ ok 14 - dataset create-version accepts an exact model version
+(1 row)
+
+                               is
+-----------------------------------------------------------------
+ ok 15 - dataset create-version persists the exact model version
+(1 row)
+
+RESET
+SET
+                                        is
+-----------------------------------------------------------------------------------
+ ok 16 - bundle save accepts a Process version that differs from its Model version
+(1 row)
+
+                                         is
+-------------------------------------------------------------------------------------
+ ok 17 - bundle save records the parent Model version instead of the Process version
+(1 row)
+
+INSERT 0 1
+INSERT 0 2
+                                 throws_like
+------------------------------------------------------------------------------
+ ok 18 - bundle update cannot mutate a Process owned by another Model version
+(1 row)
+
+                                      throws_like
+---------------------------------------------------------------------------------------
+ ok 19 - bundle delete mutation cannot remove a Process owned by another Model version
+(1 row)
+
+RESET
+                                           is
+-----------------------------------------------------------------------------------------
+ ok 20 - review target collection follows an exact cross-version Process owner reference
+(1 row)
+
+                                      ok
+------------------------------------------------------------------------------
+ ok 21 - all current review ownership paths use exact Model version semantics
+(1 row)
+
+SET
+                                    is
+--------------------------------------------------------------------------
+ ok 22 - bundle delete resolves both exact and legacy ownership semantics
+(1 row)
+
+                                      is
+------------------------------------------------------------------------------
+ ok 23 - bundle delete removes an exact cross-version Process owner reference
+(1 row)
+
+                                     is
+-----------------------------------------------------------------------------
+ ok 24 - bundle delete keeps legacy fallback behavior for null model_version
+(1 row)
+
+                                    is
+--------------------------------------------------------------------------
+ ok 25 - bundle delete preserves Processes owned by another Model version
+(1 row)
+
+RESET
+SET
+  set_config
+---------------
+ authenticated
+(1 row)
+
+              set_config
+--------------------------------------
+ b9200000-0000-0000-0000-000000000001
+(1 row)
+
+                        is
+---------------------------------------------------
+ ok 26 - latest Process list returns model_version
+(1 row)
+
+                                       is
+---------------------------------------------------------------------------------
+ ok 27 - Process search returns model_version from the selected Process revision
+(1 row)
+
+RESET
+                                 lives_ok
+---------------------------------------------------------------------------
+ ok 28 - legacy PGroonga Process search keeps its established result shape
+(1 row)
+
+RESET
+                                is
+-------------------------------------------------------------------
+ ok 29 - dataset create capability follows the new exact signature
+(1 row)
+
+                                  is
+-----------------------------------------------------------------------
+ ok 30 - dataset save-draft capability follows the new exact signature
+(1 row)
+
+                                    is
+---------------------------------------------------------------------------
+ ok 31 - dataset create-version capability follows the new exact signature
+(1 row)
+
+                                     is
+-----------------------------------------------------------------------------
+ ok 32 - retired command signatures do not remain in the capability manifest
+(1 row)
+
+ finish
+--------
+(0 rows)
+
+ROLLBACK

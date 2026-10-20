@@ -20,7 +20,7 @@ from urllib.parse import urlsplit
 
 ACTOR = "85520000-0000-4000-8000-000000000001"
 OTHER = "85520000-0000-4000-8000-000000000002"
-IDS = [f"85520000-0000-4000-8000-{n:012x}" for n in range(257, 262)]
+IDS = [f"85520000-0000-4000-8000-{n:012x}" for n in range(257, 264)]
 CONTAINER = "supabase_db_cli372-local"
 NETWORK = "cli372-local"
 BARRIER = 855372
@@ -158,14 +158,15 @@ def main():
             time.sleep(0.05)
         raise AssertionError(f"did not observe {description}")
 
-    def overlap(label, a_statement, b_call, family_id=None):
+    def overlap(label, a_statement, b_call, family_id=None, rollback_a=False):
         app_control = f"stable855_{run_token}_{label}_control"
         app_a = f"stable855_{run_token}_{label}_a"
         controller = spawn(app_control, f"select pg_advisory_lock({BARRIER});\n")
         wait_for(f"select exists(select 1 from pg_locks l join pg_stat_activity a on a.pid=l.pid where a.application_name={literal(app_control)} and l.locktype='advisory' and l.granted);", "t", "controller barrier ownership")
         writer_a = spawn(app_a, "begin;\n" +
                          f"select set_config('request.jwt.claim.sub',{literal(ACTOR)},true) as actor \\gset\n" +
-                         a_statement + f";\nselect pg_advisory_xact_lock({BARRIER});\ncommit;\n\\q\n")
+                         a_statement + f";\nselect pg_advisory_xact_lock({BARRIER});\n" +
+                         ("rollback" if rollback_a else "commit") + ";\n\\q\n")
         wait_for(f"select exists(select 1 from pg_stat_activity where application_name={literal(app_a)} and wait_event_type='Lock' and lower(wait_event)='advisory');", "t", "writer A parked with its admission lock")
         if family_id is not None:
             check(f"{label}: review transition holds the exact family advisory lock", scalar(
@@ -184,7 +185,7 @@ def main():
         stderr = writer_a.stderr.read()
         if writer_a.returncode:
             raise AssertionError(f"writer A failed: {stderr}")
-        checks.append(f"{label}: real overlap observed before A commit")
+        checks.append(f"{label}: real overlap observed before A " + ("rollback" if rollback_a else "commit"))
         return result_b
 
     try:
@@ -247,6 +248,66 @@ def main():
         legacy_review = command_result(f"api.cmd_dataset_create('contacts',{literal(IDS[4])},{literal(json.dumps(body('01.00.002')))}::jsonb)")
         check("legacy create cannot fork around the committed review", legacy_review.get("code"), "DATASET_REVIEW_IN_PROGRESS")
         check("reviewed family has zero new drafts", scalar(f"select count(*) from public.contacts where id={literal(IDS[4])} and user_id={literal(ACTOR)} and state_code=0;"), "0")
+
+        # A successful exact-key DO NOTHING must pin the existing key until
+        # transaction end. Otherwise DELETE/key-change could remove the key
+        # after an EXISTS shortcut and turn a presumed no-op into admission.
+        exact_id, moved_id = IDS[5:7]
+        duplicate = ("insert into public.contacts(id,json_ordered,user_id,state_code) values ("
+                     f"{literal(exact_id)},{literal(json.dumps(body('01.00.001','exact')))}::json,{literal(ACTOR)},0)")
+        sql(duplicate + ";")
+        noop = duplicate + " on conflict(id,version) do nothing"
+
+        def locked_sql(statement):
+            return sql("\\set VERBOSITY verbose\nbegin;set local lock_timeout='500ms';" + statement + ";commit;", fail=False)
+
+        def check_lock_failure(label, result, message=None):
+            check(label + ": SQL safely refuses the overlapping operation", result.returncode != 0, True)
+            check(label + ": SQLSTATE identifies lock contention", "55P03" in result.stderr, True)
+            if message:
+                check(label + ": stable admission reports its existing busy code", message in result.stderr, True)
+
+        result_b = overlap("exact_pin_delete", noop, lambda: locked_sql(
+            f"delete from public.contacts where id={literal(exact_id)} and version='01.00.001'"))
+        check_lock_failure("exact pin/delete", result_b)
+        check("failed concurrent delete preserves the no-op target", scalar(
+            f"select count(*) from public.contacts where id={literal(exact_id)} and version='01.00.001';"), "1")
+
+        result_b = overlap("exact_pin_keychange", noop, lambda: locked_sql(
+            f"update public.contacts set id={literal(moved_id)} where id={literal(exact_id)} and version='01.00.001'"))
+        check_lock_failure("exact pin/key change", result_b)
+        check("failed concurrent key change preserves the no-op target", scalar(
+            f"select count(*) from public.contacts where id={literal(exact_id)} and version='01.00.001';"), "1")
+
+        result_b = overlap("delete_exact_pin",
+                           f"delete from public.contacts where id={literal(exact_id)} and version='01.00.001'",
+                           lambda: locked_sql(noop))
+        check_lock_failure("delete/exact pin", result_b, "DATASET_STABLE_DRAFT_BUSY")
+        check("delete winner leaves no speculative insertion", scalar(
+            f"select count(*) from public.contacts where id={literal(exact_id)} and version='01.00.001';"), "0")
+        sql(duplicate + ";")
+        check("a fresh retry after committed deletion performs normal admission", scalar(
+            f"select count(*) from public.contacts where id={literal(exact_id)} and version='01.00.001';"), "1")
+
+        result_b = overlap("delete_rollback_exact_pin",
+                           f"delete from public.contacts where id={literal(exact_id)} and version='01.00.001'",
+                           lambda: locked_sql(noop), rollback_a=True)
+        check_lock_failure("delete rollback/exact pin", result_b, "DATASET_STABLE_DRAFT_BUSY")
+        sql(noop + ";")
+        check("an exact no-op retry after rollback preserves the original row", scalar(
+            f"select count(*) from public.contacts where id={literal(exact_id)} and version='01.00.001';"), "1")
+
+        result_b = overlap("keychange_exact_pin",
+                           f"update public.contacts set id={literal(moved_id)} where id={literal(exact_id)} and version='01.00.001'",
+                           lambda: locked_sql(noop))
+        check_lock_failure("key change/exact pin", result_b, "DATASET_STABLE_DRAFT_BUSY")
+        check("key-change winner leaves no speculative old-key insertion", scalar(
+            f"select count(*) from public.contacts where id={literal(exact_id)} and version='01.00.001';"), "0")
+        check("key-change winner preserves exactly one moved draft", scalar(
+            f"select count(*) from public.contacts where id={literal(moved_id)} and version='01.00.001';"), "1")
+        sql(duplicate + ";")
+        check("a fresh retry after committed key change performs normal admission", scalar(
+            f"select count(*) from public.contacts where id={literal(exact_id)} and version='01.00.001';"), "1")
 
         rr = sql("begin isolation level repeatable read;" +
                  f"select set_config('request.jwt.claim.sub',{literal(ACTOR)},true) as actor \\gset\n" +
