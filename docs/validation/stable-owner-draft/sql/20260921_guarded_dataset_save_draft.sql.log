@@ -1,0 +1,356 @@
+BEGIN
+CREATE EXTENSION
+SET
+ plan
+-------
+ 1..53
+(1 row)
+
+INSERT 0 2
+INSERT 0 13
+                                   has_function
+----------------------------------------------------------------------------------
+ ok 1 - guarded draft-save facade exists with the exact expected-before signature
+(1 row)
+
+                             is
+-------------------------------------------------------------
+ ok 2 - the guarded facade has no default-overload ambiguity
+(1 row)
+
+                                                 ok
+----------------------------------------------------------------------------------------------------
+ ok 3 - the guarded facade is SECURITY DEFINER, postgres-owned, with the writer's fixed search path
+(1 row)
+
+                                       is
+--------------------------------------------------------------------------------
+ ok 4 - the guarded facade is not executable through the PostgreSQL PUBLIC role
+(1 row)
+
+                                      ok
+------------------------------------------------------------------------------
+ ok 5 - only the authenticated actor role receives the guarded draft-save ACL
+(1 row)
+
+                                       is
+---------------------------------------------------------------------------------
+ ok 6 - the guarded facade reuses only the existing owner-draft write capability
+(1 row)
+
+                                    is
+--------------------------------------------------------------------------
+ ok 7 - the manifest routine identity matches the exact catalog signature
+(1 row)
+
+                                 is
+---------------------------------------------------------------------
+ ok 8 - the guarded facade has exactly one capability manifest entry
+(1 row)
+
+SET
+  set_config
+---------------
+ authenticated
+(1 row)
+
+                              set_config
+-----------------------------------------------------------------------
+ {"role":"authenticated","sub":"67000000-0000-4000-8000-000000000001"}
+(1 row)
+
+              set_config
+--------------------------------------
+ 67000000-0000-4000-8000-000000000001
+(1 row)
+
+                                          is
+--------------------------------------------------------------------------------------
+ ok 9 - the owner can save exactly matching before content through the guarded facade
+(1 row)
+
+RESET
+                                        is
+-----------------------------------------------------------------------------------
+ ok 10 - the guarded facade writes the desired content through the existing writer
+(1 row)
+
+                                    is
+--------------------------------------------------------------------------
+ ok 11 - the guarded facade forwards the existing rule-verification field
+(1 row)
+
+                                   is
+-------------------------------------------------------------------------
+ ok 12 - a guarded save produces exactly one existing writer audit entry
+(1 row)
+
+                                  is
+----------------------------------------------------------------------
+ ok 13 - the guarded save forwards the caller audit payload unchanged
+(1 row)
+
+SET
+              set_config
+--------------------------------------
+ 67000000-0000-4000-8000-000000000001
+(1 row)
+
+                                 is
+---------------------------------------------------------------------
+ ok 14 - a stale before image is refused with a stable conflict code
+(1 row)
+
+                            is
+----------------------------------------------------------
+ ok 15 - the stale before image conflict reports HTTP 409
+(1 row)
+
+                                ok
+-------------------------------------------------------------------
+ ok 16 - the conflict response discloses no stored payload details
+(1 row)
+
+RESET
+                                  is
+-----------------------------------------------------------------------
+ ok 17 - a refused stale before image leaves the primary row unchanged
+(1 row)
+
+                                  is
+-----------------------------------------------------------------------
+ ok 18 - a refused stale before image writes no successful write audit
+(1 row)
+
+SET
+              set_config
+--------------------------------------
+ 67000000-0000-4000-8000-000000000001
+(1 row)
+
+                                             is
+---------------------------------------------------------------------------------------------
+ ok 19 - a reordered JSON array is not an equal before image under PostgreSQL JSON semantics
+(1 row)
+
+                                       is
+--------------------------------------------------------------------------------
+ ok 20 - an expected before image with an extra key is not equal and is refused
+(1 row)
+
+                                            is
+------------------------------------------------------------------------------------------
+ ok 21 - numeric scale, object key order and whitespace do not change JSON value equality
+(1 row)
+
+                                         is
+------------------------------------------------------------------------------------
+ ok 22 - a before image that is a strict subset of the stored content stays unequal
+(1 row)
+
+                                         is
+-------------------------------------------------------------------------------------
+ ok 23 - a non-owner cannot use the guard even with an exactly matching before image
+(1 row)
+
+                               is
+-----------------------------------------------------------------
+ ok 24 - ownership is decided before any before-image comparison
+(1 row)
+
+                              is
+---------------------------------------------------------------
+ ok 25 - a review-state draft stays closed to the guarded path
+(1 row)
+
+                             is
+------------------------------------------------------------
+ ok 26 - a published draft stays closed to the guarded path
+(1 row)
+
+                                 is
+---------------------------------------------------------------------
+ ok 27 - an example dataset is refused as a non-editable owner draft
+(1 row)
+
+                         is
+----------------------------------------------------
+ ok 28 - the guarded path is strictly owner state-0
+(1 row)
+
+                            is
+-----------------------------------------------------------
+ ok 29 - a nonexistent target fails closed without a write
+(1 row)
+
+                                 is
+--------------------------------------------------------------------
+ ok 30 - an unsupported table name is refused before any row access
+(1 row)
+
+                       is
+-------------------------------------------------
+ ok 31 - a null expected before image is refused
+(1 row)
+
+                          is
+-------------------------------------------------------
+ ok 32 - a non-object expected before image is refused
+(1 row)
+
+                        is
+---------------------------------------------------
+ ok 33 - a scalar expected before image is refused
+(1 row)
+
+                                     throws_ok
+-----------------------------------------------------------------------------------
+ ok 34 - an omitted expected before image cannot resolve the guarded facade at all
+(1 row)
+
+RESET
+                           is
+---------------------------------------------------------
+ ok 35 - no rejected guarded call produced a write audit
+(1 row)
+
+SET
+              set_config
+--------------------------------------
+ 67000000-0000-4000-8000-000000000001
+(1 row)
+
+                                          is
+---------------------------------------------------------------------------------------
+ ok 36 - the guarded facade delegates existing writer validation instead of copying it
+(1 row)
+
+ set_config
+------------
+
+(1 row)
+
+ set_config
+------------
+
+(1 row)
+
+                           is
+---------------------------------------------------------
+ ok 37 - a session without a verified actor fails closed
+(1 row)
+
+SET
+  set_config
+---------------
+ authenticated
+(1 row)
+
+                              set_config
+-----------------------------------------------------------------------
+ {"role":"authenticated","sub":"67000000-0000-4000-8000-000000000001"}
+(1 row)
+
+              set_config
+--------------------------------------
+ 67000000-0000-4000-8000-000000000001
+(1 row)
+
+                                   is
+-------------------------------------------------------------------------
+ ok 38 - a NULL table name is refused with the stable invalid-table code
+(1 row)
+
+                     is
+--------------------------------------------
+ ok 39 - a NULL table name reports HTTP 400
+(1 row)
+
+                         is
+----------------------------------------------------
+ ok 40 - a NULL target id fails closed as not found
+(1 row)
+
+                           is
+---------------------------------------------------------
+ ok 41 - a NULL target version fails closed as not found
+(1 row)
+
+                            is
+-----------------------------------------------------------
+ ok 42 - an empty target version fails closed as not found
+(1 row)
+
+                                            is
+------------------------------------------------------------------------------------------
+ ok 43 - a row whose state_code is unknown is refused instead of being treated as a draft
+(1 row)
+
+                       is
+-------------------------------------------------
+ ok 44 - an unknown draft state reports HTTP 403
+(1 row)
+
+RESET
+                                            is
+------------------------------------------------------------------------------------------
+ ok 45 - the guarded capability manifest identity resolves to the exact catalog signature
+(1 row)
+
+                             is
+-------------------------------------------------------------
+ ok 46 - invalid-input calls leave the primary row untouched
+(1 row)
+
+                        is
+--------------------------------------------------
+ ok 47 - invalid-input calls write no audit entry
+(1 row)
+
+                           is
+---------------------------------------------------------
+ ok 48 - an unknown-state row keeps its original content
+(1 row)
+
+                           is
+--------------------------------------------------------
+ ok 49 - an unknown-state refusal writes no audit entry
+(1 row)
+
+SET
+              set_config
+--------------------------------------
+ 67000000-0000-4000-8000-000000000001
+(1 row)
+
+                              set_config
+-----------------------------------------------------------------------
+ {"role":"authenticated","sub":"67000000-0000-4000-8000-000000000001"}
+(1 row)
+
+                                 is
+--------------------------------------------------------------------
+ ok 50 - the legacy unguarded save keeps its compatibility contract
+(1 row)
+
+RESET
+                         has_function
+--------------------------------------------------------------
+ ok 51 - the legacy writer keeps its exact existing signature
+(1 row)
+
+                                  is
+----------------------------------------------------------------------
+ ok 52 - the legacy writer keeps its existing capability registration
+(1 row)
+
+                                   is
+------------------------------------------------------------------------
+ ok 53 - the legacy unguarded save still writes exactly one audit entry
+(1 row)
+
+ finish
+--------
+(0 rows)
+
+ROLLBACK

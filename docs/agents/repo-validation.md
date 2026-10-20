@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-10-21
-lastReviewedCommit: 21a32bcf1af8c2011181c60cf8a3768670d6ca02
-lastReviewedNote: "Reviewed Database #855 populated upgrade, 93 focused assertions, 34 real overlap checks, neighboring legacy suites and deterministic pinned-CLI generation; deployed/data acceptance remains separate."
+lastReviewedCommit: 69d7f9892fcf778c619b26e68c19c92a83648f73
+lastReviewedNote: "Reviewed the portable local Docker concurrency adapter and its 34 passing real-overlap checks; retained populated upgrade, focused/neighboring SQL and pinned generation evidence with unchanged production bytes."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -123,10 +123,12 @@ version creates or deletions. The base fixture disables only its external Proces
 AFTER webhook during synthetic seeding and restores it before commit.
 
 Run `python3 -B supabase/tests/regression/20261021_stable_owner_draft_concurrency.py
---runtime-root /Users/huimin/projets/workspace/.codex-tmp/engineering-372-runtime
---report <absolute-private-report>` only against its exact task-owned local
-`supabase_db_cli372-local` container. The runner uses the local runtime's sanitized
-wrapper; it accepts no remote URL/credentials, refuses existing fixture identities,
+--docker-host unix:///absolute/path/to/local/docker.sock
+--report /tmp/stable-owner-draft-concurrency.json` only against an owned local
+`supabase_db_cli372-local` container. The public Docker adapter validates the
+explicit local Unix socket, exact container/project label and sole internal
+`cli372-local` network with `codex.task=cli372`. It accepts no remote URL/credentials,
+refuses existing fixture identities,
 observes a live barrier wait before the peer verdict, settles only its unique
 session names and cleans only its own rows. Prove stable/stable, stable/legacy-create,
 legacy-create-version/stable and owner-transition/stable races, original-request

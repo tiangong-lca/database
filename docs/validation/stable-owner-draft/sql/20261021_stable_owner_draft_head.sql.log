@@ -1,0 +1,139 @@
+BEGIN
+CREATE EXTENSION
+SET
+ no_plan
+---------
+(0 rows)
+
+SELECT 13
+                                           is
+----------------------------------------------------------------------------------------
+ ok 1 - additive migration preserves whole historical rows, duplicates and mixed groups
+(1 row)
+
+                          is
+------------------------------------------------------
+ ok 2 - historical owner duplicate set remains intact
+(1 row)
+
+                                           is
+-----------------------------------------------------------------------------------------
+ ok 3 - never-published historical draft family is not assigned a fictitious publication
+(1 row)
+
+              set_config
+--------------------------------------
+ 85510000-0000-4000-8000-000000000001
+(1 row)
+
+CREATE TABLE
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+GRANT
+SET
+UPDATE 1
+                       is
+-------------------------------------------------
+ ok 4 - many drafts returns an explicit conflict
+(1 row)
+
+                                is
+------------------------------------------------------------------
+ ok 5 - conflict contains the complete ordered draft identity set
+(1 row)
+
+                              is
+---------------------------------------------------------------
+ ok 6 - conflict includes the full eligible before-content set
+(1 row)
+
+UPDATE 1
+                                 is
+--------------------------------------------------------------------
+ ok 7 - reviewed explicit selection is distinct from ordinary reuse
+(1 row)
+
+                              is
+--------------------------------------------------------------
+ ok 8 - explicit selection retains the fixed reviewed version
+(1 row)
+
+                                         is
+-------------------------------------------------------------------------------------
+ ok 9 - explicit selection leaves both historical draft verification flags untouched
+(1 row)
+
+                                      is
+-------------------------------------------------------------------------------
+ ok 10 - selected version cannot hide a sibling from the complete expected set
+(1 row)
+
+                               is
+----------------------------------------------------------------
+ ok 11 - selection outside the actual conflict set fails closed
+(1 row)
+
+                                   is
+-------------------------------------------------------------------------
+ ok 12 - historical mixed model-bound family is not claimed as supported
+(1 row)
+
+                                         is
+-------------------------------------------------------------------------------------
+ ok 13 - Flow conflicts retain the unselected Elementary sibling in the complete set
+(1 row)
+
+                                                is
+---------------------------------------------------------------------------------------------------
+ ok 14 - reviewed Product draft can be explicitly selected without touching its Elementary sibling
+(1 row)
+
+                                     is
+----------------------------------------------------------------------------
+ ok 15 - Elementary sibling cannot itself become the selected generic draft
+(1 row)
+
+                                 is
+--------------------------------------------------------------------
+ ok 16 - pre-existing review blocks creation after additive upgrade
+(1 row)
+
+                               is
+-----------------------------------------------------------------
+ ok 17 - historical duplicates cannot grow through legacy create
+(1 row)
+
+                                          is
+--------------------------------------------------------------------------------------
+ ok 18 - existing exact-row guarded saves are not silently changed into consolidation
+(1 row)
+
+RESET
+                                     is
+-----------------------------------------------------------------------------
+ ok 19 - explicit selection and every conflict dispatch zero version creates
+(1 row)
+
+                       is
+-------------------------------------------------
+ ok 20 - no hidden creation or deletion occurred
+(1 row)
+
+                                               is
+-------------------------------------------------------------------------------------------------
+ ok 21 - explicit Product selection leaves every Product/Elementary sibling byte-value unchanged
+(1 row)
+
+                                    is
+---------------------------------------------------------------------------
+ ok 22 - historical in-progress review cannot acquire a post-upgrade draft
+(1 row)
+
+ finish
+--------
+ 1..22
+(1 row)
+
+ROLLBACK

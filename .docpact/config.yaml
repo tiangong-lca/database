@@ -1,7 +1,7 @@
 version: 1
 layout: repo
 lastReviewedAt: "2026-10-21"
-lastReviewedCommit: "21a32bcf1af8c2011181c60cf8a3768670d6ca02"
+lastReviewedCommit: "69d7f9892fcf778c619b26e68c19c92a83648f73"
 lastReviewedNote: "Reviewed Database #855 migration/test/generated-workspace routing and the nonmutating CI suite addition; existing ownership and hosted permissions remain unchanged."
 
 # Keep deterministic governance facts here.

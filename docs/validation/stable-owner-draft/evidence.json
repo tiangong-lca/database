@@ -1,0 +1,162 @@
+{
+  "migration": {
+    "path": "supabase/migrations/20261020164514_stable_owner_draft.sql",
+    "sha256": "e328f5ff68145abbff246ab9de0db80382c2d8750806b1698d3865b99301cbec",
+    "sha256Current": "e328f5ff68145abbff246ab9de0db80382c2d8750806b1698d3865b99301cbec"
+  },
+  "sqlSuites": [
+    {
+      "file": "upgrade/20261021_stable_owner_draft_head.sql",
+      "sha256": "8b8ecc00e7b849b0ea2b1ab5e515d3aa11f82ac8dc45abff7dfa53d89611e89e",
+      "exit": 0,
+      "assertions": 22,
+      "failures": []
+    },
+    {
+      "file": "20261021_stable_owner_draft.sql",
+      "sha256": "f48f3ae230d6d788401e90c15e560d27de1318896ba3b3a99422bb51b8535540",
+      "exit": 0,
+      "assertions": 93,
+      "failures": []
+    },
+    {
+      "file": "20260921_guarded_dataset_save_draft.sql",
+      "sha256": "65009582f9bcb12122a7e2eb8e472c0ebfe12404d701a1eb2a82ff4910a2dd19",
+      "exit": 0,
+      "assertions": 53,
+      "failures": []
+    },
+    {
+      "file": "20260404_dataset_command_rpcs.sql",
+      "sha256": "ea1be9b2558d5241384e138249ce754347dd7cbd9decc25ad861eef79297a3f9",
+      "exit": 0,
+      "assertions": 15,
+      "failures": []
+    },
+    {
+      "file": "20260611_dataset_create_version_rpc.sql",
+      "sha256": "a77e43b8e2e67f24ffc844081beb75a50d3a036266acdbba5be677491c21ea53",
+      "exit": 0,
+      "assertions": 19,
+      "failures": []
+    },
+    {
+      "file": "20260902_process_model_version.sql",
+      "sha256": "5547ba38ae1ad58515ea44d03da9da983c3fb7a470d0dccc625ec117c590e719",
+      "exit": 0,
+      "assertions": 32,
+      "failures": []
+    },
+    {
+      "file": "20261009_model_bundle_process_references.sql",
+      "sha256": "475c8eeb49bbb0abe88c357c4d1f407404dbac1bf8176ac46565f4abdbdbb65c",
+      "exit": 0,
+      "assertions": 16,
+      "failures": []
+    },
+    {
+      "file": "20260915_result_process_lifecycle_protection.sql",
+      "sha256": "db79c96c94aa808ab981e23dbdcff2ac304af59621bc25046fe54caf80837985",
+      "exit": 0,
+      "assertions": 69,
+      "failures": []
+    },
+    {
+      "file": "20260805_full_schema_cutover.sql",
+      "sha256": "04cfaed6fc43637ef17255a6b61d562a31cc2f5b132bbe4b7bccbb31e0c3d606",
+      "exit": 0,
+      "assertions": 26,
+      "failures": []
+    },
+    {
+      "file": "20260806_api_contract_closure.sql",
+      "sha256": "7ee4506637a7b3f51ee62829dc900bcf1f79c6ce90a23f8ae98bb32579bdcfb4",
+      "exit": 0,
+      "assertions": 46,
+      "failures": []
+    }
+  ],
+  "concurrency": {
+    "schema": "stable-owner-draft-concurrency.v1",
+    "container": "supabase_db_cli372-local",
+    "passed": true,
+    "assertionCount": 34,
+    "checks": [
+      "fixture identities are initially absent",
+      "candidate RPC is present",
+      "stable_stable: A is still uncommitted while B returns",
+      "stable_stable: real overlap observed before A commit",
+      "concurrent second prepare safely reports busy",
+      "losing request has no receipt",
+      "lost response recovers the fixed allocated version",
+      "lost response target is unchanged",
+      "stale empty census after the winner commits is rejected",
+      "same original request is idempotent",
+      "stable_legacy: A is still uncommitted while B returns",
+      "stable_legacy: real overlap observed before A commit",
+      "legacy insert competes in the same family lock",
+      "legacy insert cannot append after the stable draft commits",
+      "legacy_stable: A is still uncommitted while B returns",
+      "legacy_stable: real overlap observed before A commit",
+      "prepare cannot race a legacy version allocation",
+      "legacy winner invalidates stale empty census",
+      "owner_transfer: A is still uncommitted while B returns",
+      "owner_transfer: real overlap observed before A commit",
+      "owner transfer into draft participates in the family lock",
+      "committed owner transfer invalidates old owner census",
+      "review_entry: review transition holds the exact family advisory lock",
+      "review_entry: A is still uncommitted while B returns",
+      "review_entry: real overlap observed before A commit",
+      "prepare cannot slip through an uncommitted 0-to-20 transition",
+      "committed review blocks a zero-draft census",
+      "review return point retains the existing exact version",
+      "legacy create cannot fork around the committed review",
+      "reviewed family has zero new drafts",
+      "stale-snapshot transaction cannot claim uniqueness",
+      "one current-owner draft per active raced family",
+      "real native writer executes once per created family",
+      "receipt count records only the two successful stable winners"
+    ]
+  },
+  "cleanupExit": 0,
+  "postgres": "17.11",
+  "supabaseCli": "2.121.0",
+  "implementationCommit": "21a32bcf1af8c2011181c60cf8a3768670d6ca02",
+  "finalHead": "69d7f9892fcf778c619b26e68c19c92a83648f73",
+  "base": "96d042679810e8df0427d4d4ecd34e2c1b6a5d61",
+  "normalizedTypes": {
+    "ordinaryLocal": true,
+    "hashes": [
+      "1991cc41d021230856efbcf75ed3424c9900fc871e2879e7d7f641d43265ef1b",
+      "1991cc41d021230856efbcf75ed3424c9900fc871e2879e7d7f641d43265ef1b"
+    ],
+    "deterministic": true,
+    "generatorSHA256": "de6de03f3bd2b8ea8c00007b830b6b5f13f55f62e6e351838de6142cd26cc3ee"
+  },
+  "typeCatalogComparison": {
+    "parser": "existing Prettier TypeScript ESTree parser; temporary analysis only",
+    "equivalences": [
+      "No SQL arguments: never and Record<PropertyKey, never>",
+      "ComputedFields: never adds no row fields",
+      "Omit<Row, ComputedFields> resolves to Row only for verified never metadata"
+    ],
+    "computedNeverSlots": 10,
+    "omittedNever": 7,
+    "noArgs": 32,
+    "added": [
+      {
+        "schema": "api",
+        "group": "functions",
+        "name": "cmd_dataset_prepare_stable_draft"
+      },
+      {
+        "schema": "api",
+        "group": "functions",
+        "name": "get_dataset_stable_draft_request"
+      }
+    ],
+    "removed": [],
+    "changed": []
+  },
+  "docpactStatus": "ok"
+}

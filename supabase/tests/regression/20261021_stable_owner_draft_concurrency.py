@@ -1,24 +1,86 @@
 #!/usr/bin/env python3
 """Real overlapping-session admission/receipt proof on one exact owned local DB.
 
-No credentials/URLs or remote targets are accepted. Writer A parks behind a
+No database URLs or remote Docker targets are accepted. Writer A parks behind a
 controller-owned advisory barrier after its mutation, so B's busy verdict is
 accepted only while A is observed waiting and still holds its transaction.
 Synthetic fixture identities and sessions are exclusively owned by this runner.
 """
 import argparse
 import json
+import os
 from pathlib import Path
+import re
+import shutil
+import stat
 import subprocess
-import sys
 import time
+from urllib.parse import urlsplit
 
 
 ACTOR = "85520000-0000-4000-8000-000000000001"
 OTHER = "85520000-0000-4000-8000-000000000002"
 IDS = [f"85520000-0000-4000-8000-{n:012x}" for n in range(257, 262)]
 CONTAINER = "supabase_db_cli372-local"
+NETWORK = "cli372-local"
 BARRIER = 855372
+
+
+def local_docker(parser, args):
+    """Bind the public runner to the one explicitly owned, isolated fixture."""
+    try:
+        target = urlsplit(args.docker_host)
+    except ValueError:
+        parser.error("--docker-host must be unix:///absolute/path/to/a/local/socket")
+    if (not args.docker_host.startswith("unix:///") or target.scheme != "unix"
+            or target.netloc or target.query or target.fragment
+            or not Path(target.path).is_absolute()):
+        parser.error("--docker-host must be unix:///absolute/path/to/a/local/socket")
+    try:
+        socket = Path(target.path).resolve(strict=True)
+        if not stat.S_ISSOCK(socket.stat().st_mode):
+            parser.error("--docker-host must identify a local Unix socket")
+    except (OSError, ValueError) as exc:
+        parser.error(f"cannot use the local Docker socket: {exc}")
+    executable = shutil.which(args.docker_bin)
+    if executable is None:
+        parser.error("--docker-bin must identify an executable Docker CLI")
+    # Context, TLS, config and API-version overrides must not redirect this run.
+    env = {key: value for key, value in os.environ.items() if not key.startswith("DOCKER_")}
+    docker = [executable, "--host", f"unix://{socket}"]
+
+    def inspect(*command):
+        result = subprocess.run(docker + list(command), env=env, text=True,
+                                capture_output=True, timeout=15)
+        if result.returncode:
+            parser.error("cannot inspect the exact owned local Docker fixture")
+        try:
+            objects = json.loads(result.stdout)
+            if not isinstance(objects, list) or len(objects) != 1 or not isinstance(objects[0], dict):
+                raise ValueError("expected exactly one Docker object")
+            return objects[0]
+        except (ValueError, TypeError):
+            parser.error("invalid Docker inspect response for the owned fixture")
+
+    container = inspect("container", "inspect", CONTAINER)
+    network = inspect("network", "inspect", NETWORK)
+    container_id = container.get("Id", "")
+    network_id = network.get("Id", "")
+    networks = container.get("NetworkSettings", {}).get("Networks", {})
+    member = network.get("Containers", {}).get(container_id, {})
+    if (not re.fullmatch(r"[0-9a-f]{64}", container_id)
+            or not re.fullmatch(r"[0-9a-f]{64}", network_id)
+            or container.get("Name") != f"/{CONTAINER}"
+            or container.get("State", {}).get("Running") is not True
+            or (container.get("Config", {}).get("Labels") or {}).get("com.supabase.cli.project") != NETWORK
+            or set(networks) != {NETWORK}
+            or networks[NETWORK].get("NetworkID") != network_id
+            or network.get("Name") != NETWORK
+            or network.get("Internal") is not True
+            or (network.get("Labels") or {}).get("codex.task") != "cli372"
+            or member.get("Name") != CONTAINER):
+        parser.error("refusing a fixture without the exact running container, labels and isolated network membership")
+    return docker + ["exec", "-i"], env
 
 
 def literal(value):
@@ -39,14 +101,12 @@ def request(dataset_id):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--runtime-root", type=Path, required=True)
+    parser.add_argument("--docker-host", required=True,
+                        help="explicit unix:///absolute/path/to/local/docker.sock")
+    parser.add_argument("--docker-bin", default="docker", help="Docker CLI executable (default: docker)")
     parser.add_argument("--report", type=Path, required=True)
     args = parser.parse_args()
-    runtime = args.runtime_root.resolve()
-    expected = Path("/Users/huimin/projets/workspace/.codex-tmp/engineering-372-runtime")
-    if runtime != expected or not (runtime / "run.py").is_file():
-        raise SystemExit("refusing a runtime other than the exact task-owned local fixture")
-    docker = [sys.executable, str(runtime / "run.py"), "docker", "exec", "-i"]
+    docker, docker_env = local_docker(parser, args)
     suffix = [CONTAINER, "psql", "-X", "-q", "-t", "-A", "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1"]
     checks = []
     processes = []
@@ -55,7 +115,8 @@ def main():
     armed = False
 
     def sql(statement, *, fail=True):
-        result = subprocess.run(docker + suffix, input=statement, text=True, capture_output=True, timeout=30)
+        result = subprocess.run(docker + suffix, env=docker_env, input=statement,
+                                text=True, capture_output=True, timeout=30)
         if fail and result.returncode:
             raise AssertionError(result.stderr.strip())
         return result
@@ -81,7 +142,8 @@ def main():
 
     def spawn(app, statement):
         proc = subprocess.Popen(docker + ["-e", f"PGAPPNAME={app}"] + suffix,
-                                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                                env=docker_env, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE, text=True)
         processes.append(proc)
         session_apps.append(app)
         proc.stdin.write(statement)

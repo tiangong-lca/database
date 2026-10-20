@@ -1,0 +1,351 @@
+BEGIN
+CREATE EXTENSION
+SET
+ plan
+-------
+ 1..46
+(1 row)
+
+                                    is
+--------------------------------------------------------------------------
+ ok 1 - api has no function executable through the PostgreSQL PUBLIC role
+(1 row)
+
+                                         is
+------------------------------------------------------------------------------------
+ ok 2 - every external API execute grant maps to an exact capability manifest entry
+(1 row)
+
+                                          is
+--------------------------------------------------------------------------------------
+ ok 3 - the catalog contains every exact role grant frozen by the capability manifest
+(1 row)
+
+                                     is
+-----------------------------------------------------------------------------
+ ok 4 - all new facades are SECURITY DEFINER with an empty fixed search_path
+(1 row)
+
+                                         is
+-------------------------------------------------------------------------------------
+ ok 5 - simple-search facades traverse their helper through the constrained executor
+(1 row)
+
+                               ok
+----------------------------------------------------------------
+ ok 6 - authenticated receives the actor-derived read contracts
+(1 row)
+
+                                      ok
+------------------------------------------------------------------------------
+ ok 7 - actor-derived contracts are not callable by anon or bare service role
+(1 row)
+
+                           ok
+--------------------------------------------------------
+ ok 8 - service role receives the service facade family
+(1 row)
+
+                               ok
+-----------------------------------------------------------------
+ ok 9 - service facades reject browser roles at the ACL boundary
+(1 row)
+
+CREATE FUNCTION
+                                  ok
+-----------------------------------------------------------------------
+ ok 10 - future postgres-owned functions do not inherit PUBLIC execute
+(1 row)
+
+INSERT 0 5
+UPDATE 0
+INSERT 0 5
+INSERT 0 3
+INSERT 0 5
+SET
+  set_config
+---------------
+ authenticated
+(1 row)
+
+        set_config
+--------------------------
+ {"role":"authenticated"}
+(1 row)
+
+              set_config
+--------------------------------------
+ 42200000-0000-4000-8000-000000000001
+(1 row)
+
+                             is
+------------------------------------------------------------
+ ok 11 - membership mine returns only the actor memberships
+(1 row)
+
+                           is
+---------------------------------------------------------
+ ok 12 - membership mine derives the actor from auth.uid
+(1 row)
+
+                         is
+----------------------------------------------------
+ ok 13 - ranked team mode returns only ranked teams
+(1 row)
+
+                          is
+------------------------------------------------------
+ ok 14 - team list embeds only the owner relationship
+(1 row)
+
+                           is
+--------------------------------------------------------
+ ok 15 - team list exposes the explicit owner email DTO
+(1 row)
+
+                                is
+-------------------------------------------------------------------
+ ok 16 - team keyword percent and underscore are matched literally
+(1 row)
+
+                          is
+------------------------------------------------------
+ ok 17 - team pagination carries an exact total count
+(1 row)
+
+                              is
+--------------------------------------------------------------
+ ok 18 - actor cannot read an unrelated private unranked team
+(1 row)
+
+                      is
+-----------------------------------------------
+ ok 19 - identity mine returns the actor email
+(1 row)
+
+                             is
+------------------------------------------------------------
+ ok 20 - identity mine returns contact without raw metadata
+(1 row)
+
+                                         is
+------------------------------------------------------------------------------------
+ ok 21 - visible identity lookup includes self and active teammate but not outsider
+(1 row)
+
+                         throws_ok
+-----------------------------------------------------------
+ ok 22 - visible identity lookup enforces the 100-id bound
+(1 row)
+
+                         throws_ok
+-----------------------------------------------------------
+ ok 23 - unranked team directory requires a system manager
+(1 row)
+
+                         throws_ok
+-----------------------------------------------------------
+ ok 24 - ordinary actor cannot use system candidate lookup
+(1 row)
+
+                         throws_ok
+-----------------------------------------------------------
+ ok 25 - ordinary actor cannot use review candidate lookup
+(1 row)
+
+RESET
+SET
+              set_config
+--------------------------------------
+ 42200000-0000-4000-8000-000000000004
+(1 row)
+
+  set_config
+---------------
+ authenticated
+(1 row)
+
+        set_config
+--------------------------
+ {"role":"authenticated"}
+(1 row)
+
+                           is
+--------------------------------------------------------
+ ok 26 - system manager can read the unranked directory
+(1 row)
+
+                                  is
+----------------------------------------------------------------------
+ ok 27 - system candidate lookup normalizes email case and whitespace
+(1 row)
+
+RESET
+SET
+              set_config
+--------------------------------------
+ 42200000-0000-4000-8000-000000000005
+(1 row)
+
+  set_config
+---------------
+ authenticated
+(1 row)
+
+        set_config
+--------------------------
+ {"role":"authenticated"}
+(1 row)
+
+                            is
+----------------------------------------------------------
+ ok 28 - review admin can use the review candidate lookup
+(1 row)
+
+                             throws_ok
+--------------------------------------------------------------------
+ ok 29 - review admin cannot cross into the system candidate lookup
+(1 row)
+
+RESET
+SET
+ set_config
+------------
+
+(1 row)
+
+ set_config
+------------
+ anon
+(1 row)
+
+   set_config
+-----------------
+ {"role":"anon"}
+(1 row)
+
+                             ok
+-------------------------------------------------------------
+ ok 30 - anon cannot execute actor-derived membership facade
+(1 row)
+
+                        ok
+---------------------------------------------------
+ ok 31 - anon cannot execute service worker facade
+(1 row)
+
+                              lives_ok
+---------------------------------------------------------------------
+ ok 32 - anon can execute the retained contacts simple-search facade
+(1 row)
+
+                                  lives_ok
+----------------------------------------------------------------------------
+ ok 33 - anon can execute the retained flow-properties simple-search facade
+(1 row)
+
+                              lives_ok
+--------------------------------------------------------------------
+ ok 34 - anon can execute the retained sources simple-search facade
+(1 row)
+
+                                lives_ok
+------------------------------------------------------------------------
+ ok 35 - anon can execute the retained unit-groups simple-search facade
+(1 row)
+
+RESET
+SET
+              set_config
+--------------------------------------
+ 42200000-0000-4000-8000-000000000001
+(1 row)
+
+  set_config
+---------------
+ authenticated
+(1 row)
+
+        set_config
+--------------------------
+ {"role":"authenticated"}
+(1 row)
+
+                           ok
+---------------------------------------------------------
+ ok 36 - authenticated cannot execute service LCA facade
+(1 row)
+
+                                   lives_ok
+------------------------------------------------------------------------------
+ ok 37 - authenticated can execute the retained contacts simple-search facade
+(1 row)
+
+                                      lives_ok
+-------------------------------------------------------------------------------------
+ ok 38 - authenticated can execute the retained flow-properties simple-search facade
+(1 row)
+
+                                  lives_ok
+-----------------------------------------------------------------------------
+ ok 39 - authenticated can execute the retained sources simple-search facade
+(1 row)
+
+                                    lives_ok
+---------------------------------------------------------------------------------
+ ok 40 - authenticated can execute the retained unit-groups simple-search facade
+(1 row)
+
+RESET
+SET
+ set_config
+------------
+
+(1 row)
+
+  set_config
+--------------
+ service_role
+(1 row)
+
+       set_config
+-------------------------
+ {"role":"service_role"}
+(1 row)
+
+                                     is
+-----------------------------------------------------------------------------
+ ok 41 - service worker facade traverses the private implementation boundary
+(1 row)
+
+                                   is
+-------------------------------------------------------------------------
+ ok 42 - service LCA projection returns the stable empty result contract
+(1 row)
+
+                                  is
+-----------------------------------------------------------------------
+ ok 43 - service-only schema readback reports the exact migration head
+(1 row)
+
+RESET
+                                       is
+--------------------------------------------------------------------------------
+ ok 44 - new read facades contain no stale public qualification for moved state
+(1 row)
+
+                                     matches
+---------------------------------------------------------------------------------
+ ok 45 - bundle save overwrites actorUserId from auth.uid inside the transaction
+(1 row)
+
+                                matches
+------------------------------------------------------------------------
+ ok 46 - bundle delete locks the target before authorizing and mutating
+(1 row)
+
+ finish
+--------
+(0 rows)
+
+ROLLBACK

@@ -1,0 +1,25 @@
+{
+  "parser": "existing Prettier TypeScript ESTree parser; temporary analysis only",
+  "equivalences": [
+    "No SQL arguments: never and Record<PropertyKey, never>",
+    "ComputedFields: never adds no row fields",
+    "Omit<Row, ComputedFields> resolves to Row only for verified never metadata"
+  ],
+  "computedNeverSlots": 10,
+  "omittedNever": 7,
+  "noArgs": 32,
+  "added": [
+    {
+      "schema": "api",
+      "group": "functions",
+      "name": "cmd_dataset_prepare_stable_draft"
+    },
+    {
+      "schema": "api",
+      "group": "functions",
+      "name": "get_dataset_stable_draft_request"
+    }
+  ],
+  "removed": [],
+  "changed": []
+}

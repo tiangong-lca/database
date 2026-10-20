@@ -1,0 +1,415 @@
+BEGIN
+CREATE EXTENSION
+SET
+ no_plan
+---------
+(0 rows)
+
+CREATE TABLE
+CREATE FUNCTION
+INSERT 0 2
+INSERT 0 2
+INSERT 0 1
+INSERT 0 1
+INSERT 0 4
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+                                             ok
+--------------------------------------------------------------------------------------------
+ ok 1 - the lifecycle guard is exactly an enabled row-level BEFORE UPDATE OR DELETE trigger
+(1 row)
+
+                                   is
+-------------------------------------------------------------------------
+ ok 2 - no other BEFORE trigger on public.processes runs after the guard
+(1 row)
+
+                          ok
+------------------------------------------------------
+ ok 3 - the guard consults no caller-settable setting
+(1 row)
+
+                              ok
+--------------------------------------------------------------
+ ok 4 - the guard has no schema-qualified setting read either
+(1 row)
+
+                         ok
+----------------------------------------------------
+ ok 5 - the guard depends on no publication receipt
+(1 row)
+
+                      is
+----------------------------------------------
+ ok 6 - the guard helper is owned by postgres
+(1 row)
+
+                               ok
+-----------------------------------------------------------------
+ ok 7 - the guard helper pins an exactly empty fixed search_path
+(1 row)
+
+                                 ok
+---------------------------------------------------------------------
+ ok 8 - the guard helper is executable by no browser or service role
+(1 row)
+
+                      throws_ok
+-----------------------------------------------------
+ ok 9 - a Result cannot be downgraded to draft state
+(1 row)
+
+                              throws_ok
+---------------------------------------------------------------------
+ ok 10 - a Result cannot be moved back to numeric-eligible state 100
+(1 row)
+
+                  throws_ok
+----------------------------------------------
+ ok 11 - a Result version cannot be rewritten
+(1 row)
+
+                  throws_ok
+---------------------------------------------
+ ok 12 - a Result owner cannot be reassigned
+(1 row)
+
+                    throws_ok
+--------------------------------------------------
+ ok 13 - a Result model binding cannot be changed
+(1 row)
+
+                    throws_ok
+--------------------------------------------------
+ ok 14 - a Result model version cannot be changed
+(1 row)
+
+                      throws_ok
+------------------------------------------------------
+ ok 15 - Result review verification cannot be changed
+(1 row)
+
+                        throws_ok
+---------------------------------------------------------
+ ok 16 - Result review team assignment cannot be changed
+(1 row)
+
+                    throws_ok
+-------------------------------------------------
+ ok 17 - Result review binding cannot be changed
+(1 row)
+
+                    throws_ok
+-------------------------------------------------
+ ok 18 - Result review payload cannot be changed
+(1 row)
+
+                     throws_ok
+---------------------------------------------------
+ ok 19 - Result authored content cannot be changed
+(1 row)
+
+                                      is
+-------------------------------------------------------------------------------
+ ok 20 - the whitespace-variant document is jsonb-equal to the stored document
+(1 row)
+
+                                        isnt
+------------------------------------------------------------------------------------
+ ok 21 - the whitespace-variant document differs from the stored document byte-wise
+(1 row)
+
+                                  throws_ok
+-----------------------------------------------------------------------------
+ ok 22 - a jsonb-equal but byte-different ordered document is still rejected
+(1 row)
+
+SET
+                                  is
+-----------------------------------------------------------------------
+ ok 23 - the Result row is reachable in the service context under test
+(1 row)
+
+                         throws_ok
+-----------------------------------------------------------
+ ok 24 - service_role direct UPDATE of a Result is refused
+(1 row)
+
+                         throws_ok
+-----------------------------------------------------------
+ ok 25 - service_role direct DELETE of a Result is refused
+(1 row)
+
+RESET
+                                       is
+--------------------------------------------------------------------------------
+ ok 26 - both Results are intact immediately after the service-context attempts
+(1 row)
+
+SELECT 1
+ set_config
+------------
+ on
+(1 row)
+
+                                   throws_ok
+-------------------------------------------------------------------------------
+ ok 27 - the review-controlled write context does not bypass Result protection
+(1 row)
+
+                                    throws_ok
+---------------------------------------------------------------------------------
+ ok 28 - the review-controlled write context cannot edit Result authored content
+(1 row)
+
+                             throws_ok
+--------------------------------------------------------------------
+ ok 29 - the review-controlled write context cannot delete a Result
+(1 row)
+
+ set_config
+------------
+ off
+(1 row)
+
+                                        is
+-----------------------------------------------------------------------------------
+ ok 30 - the Result is byte-for-byte unchanged after the controlled-write attempts
+(1 row)
+
+                              throws_ok
+---------------------------------------------------------------------
+ ok 31 - even a superuser DELETE of a Result is refused by the guard
+(1 row)
+
+                              is
+---------------------------------------------------------------
+ ok 32 - both Results survived every blocked attempt unchanged
+(1 row)
+
+SELECT 1
+                    lives_ok
+------------------------------------------------
+ ok 33 - a no-op derivative update is permitted
+(1 row)
+
+                  lives_ok
+---------------------------------------------
+ ok 34 - extracted_md may change on a Result
+(1 row)
+
+                  lives_ok
+--------------------------------------------
+ ok 35 - search_text may change on a Result
+(1 row)
+
+                  lives_ok
+---------------------------------------------
+ ok 36 - embedding_ft may change on a Result
+(1 row)
+
+                    lives_ok
+------------------------------------------------
+ ok 37 - embedding_ft_at may change on a Result
+(1 row)
+
+                                          is
+--------------------------------------------------------------------------------------
+ ok 38 - permitted derivative writes leave authored modified_at and content at parity
+(1 row)
+
+                     isnt
+----------------------------------------------
+ ok 39 - the derivative write actually landed
+(1 row)
+
+                     is
+--------------------------------------------
+ ok 40 - the fixture has no current release
+(1 row)
+
+                                         is
+------------------------------------------------------------------------------------
+ ok 41 - no publication receipt relation exists, so protection cannot depend on one
+(1 row)
+
+SET
+  set_config
+---------------
+ authenticated
+(1 row)
+
+              set_config
+--------------------------------------
+ 64700000-0000-4000-8000-000000000001
+(1 row)
+
+                                          is
+--------------------------------------------------------------------------------------
+ ok 42 - the owner cannot withdraw a Result, even with no publication receipt present
+(1 row)
+
+                        is
+--------------------------------------------------
+ ok 43 - the Result withdrawal rejection is a 403
+(1 row)
+
+                                            throws_ok
+--------------------------------------------------------------------------------------------------
+ ok 44 - baseline: withdrawing a state-100 process already raises the existing immutability guard
+(1 row)
+
+                                      throws_ok
+--------------------------------------------------------------------------------------
+ ok 45 - baseline: withdrawing a state-100 support flow already raises the same guard
+(1 row)
+
+                                           is
+-----------------------------------------------------------------------------------------
+ ok 46 - a state-200 process is still refused by the preserved published-state condition
+(1 row)
+
+                                  is
+-----------------------------------------------------------------------
+ ok 47 - the state-200 process withdrawal refusal keeps its 403 status
+(1 row)
+
+                                              is
+----------------------------------------------------------------------------------------------
+ ok 48 - a state-200 support flow is still refused by the preserved published-state condition
+(1 row)
+
+                                     is
+----------------------------------------------------------------------------
+ ok 49 - the state-200 support flow withdrawal refusal keeps its 403 status
+(1 row)
+
+RESET
+SET
+              set_config
+--------------------------------------
+ 64700000-0000-4000-8000-000000000002
+(1 row)
+
+                            ok
+----------------------------------------------------------
+ ok 50 - the manager fixture holds the live platform role
+(1 row)
+
+                                   is
+------------------------------------------------------------------------
+ ok 51 - the Data Product Manager cannot withdraw even a Result it owns
+(1 row)
+
+RESET
+                          is
+------------------------------------------------------
+ ok 52 - no withdrawal attempt changed a Result state
+(1 row)
+
+SET
+              set_config
+--------------------------------------
+ 64700000-0000-4000-8000-000000000001
+(1 row)
+
+                         is
+-----------------------------------------------------
+ ok 53 - a Result cannot be used as a version source
+(1 row)
+
+                            is
+----------------------------------------------------------
+ ok 54 - the Result version-derivation rejection is a 403
+(1 row)
+
+RESET
+                         is
+-----------------------------------------------------
+ ok 55 - the blocked derivation created no draft row
+(1 row)
+
+SET
+              set_config
+--------------------------------------
+ 64700000-0000-4000-8000-000000000001
+(1 row)
+
+                             is
+-------------------------------------------------------------
+ ok 56 - an ordinary process is still a valid version source
+(1 row)
+
+                                 is
+---------------------------------------------------------------------
+ ok 57 - the derived version is created as an ordinary state-0 draft
+(1 row)
+
+                            is
+----------------------------------------------------------
+ ok 58 - a support flow still supports version derivation
+(1 row)
+
+RESET
+                     lives_ok
+--------------------------------------------------
+ ok 59 - a state-200 row is still freely editable
+(1 row)
+
+                      lives_ok
+----------------------------------------------------
+ ok 60 - an ordinary state-0 row is still deletable
+(1 row)
+
+                             lives_ok
+------------------------------------------------------------------
+ ok 61 - the newly created support draft is still freely editable
+(1 row)
+
+                ok
+----------------------------------
+ ok 62 - withdraw keeps its owner
+(1 row)
+
+                   ok
+----------------------------------------
+ ok 63 - create_version keeps its owner
+(1 row)
+
+                         ok
+----------------------------------------------------
+ ok 64 - withdraw keeps its exact fixed search_path
+(1 row)
+
+                            ok
+----------------------------------------------------------
+ ok 65 - create_version keeps its exact fixed search_path
+(1 row)
+
+                    ok
+------------------------------------------
+ ok 66 - withdraw keeps its exact ACL set
+(1 row)
+
+                       ok
+------------------------------------------------
+ ok 67 - create_version keeps its exact ACL set
+(1 row)
+
+                                 ok
+--------------------------------------------------------------------
+ ok 68 - no raw table write privilege was widened for browser roles
+(1 row)
+
+                         ok
+-----------------------------------------------------
+ ok 69 - service_role table privileges are unchanged
+(1 row)
+
+ finish
+--------
+ 1..69
+(1 row)
+
+ROLLBACK
