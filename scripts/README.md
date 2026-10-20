@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-10-21
-lastReviewedCommit: 21a32bcf1af8c2011181c60cf8a3768670d6ca02
-lastReviewedNote: "Reviewed Database #855 exact-local schema/type generation and CLI 2.121 per-line whitespace normalization; no new formatter dependency."
+lastReviewedCommit: 14dd4de0289206f9f6e995d26c10a9220d785a60
+lastReviewedNote: "Reviewed PR #856 canonical generator restoration and Database workflow CLI selection; sibling Edge toolchains do not own Database snapshots."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -679,17 +679,15 @@ Use `--environment linked` only when the linked Supabase target is intentionally
 
 This script resolves the repository's own Supabase target and accepts no workdir or database-URL
 override. To regenerate the same contract from an isolated task workdir, use the equivalent CLI
-form and install its output mechanically, applying the generator's per-line `rstrip()`
-and one final newline:
+form and install its output mechanically, preserving the generator's `rstrip()` + trailing
+newline handling:
 
 ```bash
 supabase gen types typescript --local --workdir <isolated-workdir> --schema public --schema api
 ```
 
-CLI 2.121 emits unformatted TypeScript templates. The generator preserves that
-native type structure and normalizes only trailing whitespace; it adds no formatter
-dependency. Empty `ComputedFields` metadata, equivalent row `Omit` expressions and
-the CLI's zero-argument representation are generated tool output, not new SQL APIs.
+Use the Supabase CLI pinned in `.github/workflows/supabase-dev.yml` for this
+generation. A sibling repository's CLI is not the Database generation toolchain.
 
 ### `build_portal_contract_types.py`
 

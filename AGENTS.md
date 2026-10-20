@@ -38,8 +38,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-10-21
-lastReviewedCommit: 21a32bcf1af8c2011181c60cf8a3768670d6ca02
-lastReviewedNote: "Reviewed Database #855 stable owner-draft preparation, current-owner review fence, Product/Waste/standalone scope and unchanged guarded-save ownership."
+lastReviewedCommit: 14dd4de0289206f9f6e995d26c10a9220d785a60
+lastReviewedNote: "Reviewed the Database CI 2.117.0 generated-type correction and aligned source documentation; runtime ownership, stable-draft SQL and guarded-save boundaries remain unchanged."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-validation.md

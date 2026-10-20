@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-10-21
-lastReviewedCommit: 21a32bcf1af8c2011181c60cf8a3768670d6ca02
-lastReviewedNote: "Reviewed Database #855 source/owner/census binding, review transition locks, private audit recovery, scientific-readiness exclusions and delegated-result rollback."
+lastReviewedCommit: 14dd4de0289206f9f6e995d26c10a9220d785a60
+lastReviewedNote: "Reviewed PR #856 generation-only correction against unchanged stable-draft RPC, review fence and scientific-acceptance boundaries."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

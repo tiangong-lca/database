@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-10-21
-lastReviewedCommit: 21a32bcf1af8c2011181c60cf8a3768670d6ca02
-lastReviewedNote: "Reviewed Database #855 deterministic exact-local schema/type snapshots against unchanged generated ownership and future hosted provenance requirements."
+lastReviewedCommit: 14dd4de0289206f9f6e995d26c10a9220d785a60
+lastReviewedNote: "Reviewed PR #856 CI-pinned 2.117 type snapshot and unchanged schema ownership; existing exact-local and hosted provenance boundaries remain required."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

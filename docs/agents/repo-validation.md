@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-10-21
-lastReviewedCommit: a3695fd39b44fa825fe48e7215d4c18ae4f9b0de
-lastReviewedNote: "Reviewed the portable local Docker concurrency adapter and its 34 passing real-overlap checks; retained populated upgrade, focused/neighboring SQL and pinned generation evidence with unchanged production bytes."
+lastReviewedCommit: 14dd4de0289206f9f6e995d26c10a9220d785a60
+lastReviewedNote: "Reviewed PR #856 Database CI 2.117 type generation and unchanged SQL/source evidence; prior 2.121 generation remains historical, not current pinned proof."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -108,6 +108,10 @@ acceptance. Verify owner review blocks with zero drafts and complete existing
 review return points, another-owner isolation, structured legacy errors and
 read-only receipt recovery after a review transition. Native model-bound-only and
 reference-only Flow-only duplicates are explicit exclusions, not global guarantees.
+Generate the schema and Data API type snapshots with the Supabase CLI selected by
+this repository's workflow, not a sibling Edge CLI. The PR #856 failure at the
+generated-types gate exposed a local `2.121.0` versus CI `2.117.0` mismatch;
+the correction restores canonical generation and leaves SQL/business bytes intact.
 READ COMMITTED admission also applies to these otherwise excluded scopes;
 repeatable-read/serializable admission is a documented compatibility refusal,
 while same-identity content saves retain their existing contract.

@@ -1,8 +1,8 @@
 version: 1
 layout: repo
 lastReviewedAt: "2026-10-21"
-lastReviewedCommit: "a3695fd39b44fa825fe48e7215d4c18ae4f9b0de"
-lastReviewedNote: "Reviewed Database #855 migration/test/generated-workspace routing and the nonmutating CI suite addition; existing ownership and hosted permissions remain unchanged."
+lastReviewedCommit: "14dd4de0289206f9f6e995d26c10a9220d785a60"
+lastReviewedNote: "Reviewed PR #856 CI-pinned type-generation correction against unchanged migration, API ownership and existing governance routes."
 
 # Keep deterministic governance facts here.
 # AGENTS.md remains the repo contract entrypoint.
