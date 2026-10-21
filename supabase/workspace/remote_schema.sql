@@ -14944,7 +14944,7 @@ begin
   end if;
 
   begin
-    perform private.review_assert_all_reviewers_completed_v1(v_review);
+    perform private.review_assert_current_approval_v1(v_review);
   exception
     when sqlstate '55000' then
       return jsonb_build_object(
@@ -27488,7 +27488,7 @@ begin
       when v_operation = 'admin-approve' then
         facts.state_code = 1
         and facts.reviewer_count > 0
-        and facts.submitted_opinion_count = facts.reviewer_count
+        and facts.approve_opinion_count > 0
       when v_operation = 'admin-reject' then facts.state_code in (0, 1)
       else facts.state_code = 1
         and facts.actor_is_assigned
@@ -27503,8 +27503,8 @@ begin
       when v_operation = 'admin-approve' and facts.reviewer_count = 0
         then 'REVIEWER_REQUIRED'
       when v_operation = 'admin-approve'
-        and facts.submitted_opinion_count <> facts.reviewer_count
-        then 'REVIEWER_OPINIONS_PENDING'
+        and facts.approve_opinion_count = 0
+        then 'REVIEWER_APPROVAL_REQUIRED'
       when v_operation = 'admin-reject' and facts.state_code not in (0, 1)
         then 'REVIEW_ALREADY_COMPLETED'
       when v_operation like 'reviewer-%' and facts.state_code <> 1
@@ -77422,7 +77422,7 @@ COMMENT ON CONSTRAINT "reviews_kind_target_v3_chk" ON "private"."reviews" IS 'Ro
 
 
 
-CREATE OR REPLACE FUNCTION "private"."review_assert_all_reviewers_completed_v1"("p_review" "private"."reviews") RETURNS "void"
+CREATE OR REPLACE FUNCTION "private"."review_assert_current_approval_v1"("p_review" "private"."reviews") RETURNS "void"
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
     AS $$
@@ -77435,27 +77435,23 @@ begin
       message = 'REVIEWER_REQUIRED';
   end if;
 
-  if exists (
+  if not exists (
     select 1
-    from pg_catalog.jsonb_array_elements_text(
-      coalesce(p_review.reviewer_id, '[]'::jsonb)
-    ) as reviewer(value)
-    left join private.comments as comment_row
-      on comment_row.review_id = p_review.id
-      and comment_row.reviewer_id = reviewer.value::uuid
-      and comment_row.state_code <> -2
-    where comment_row.reviewer_id is null
-      or comment_row.state_code not in (1, -3)
+    from private.comments as comment_row
+    where comment_row.review_id = p_review.id
+      and comment_row.state_code = 1
+      and coalesce(p_review.reviewer_id, '[]'::jsonb)
+        @> pg_catalog.jsonb_build_array(comment_row.reviewer_id::text)
   ) then
     raise exception using
       errcode = '55000',
-      message = 'REVIEWERS_NOT_COMPLETED';
+      message = 'REVIEWER_APPROVAL_REQUIRED';
   end if;
 end;
 $$;
 
 
-ALTER FUNCTION "private"."review_assert_all_reviewers_completed_v1"("p_review" "private"."reviews") OWNER TO "postgres";
+ALTER FUNCTION "private"."review_assert_current_approval_v1"("p_review" "private"."reviews") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "private"."review_build_json_v1"("p_target_table" "text", "p_target_row" "jsonb", "p_owner_id" "uuid", "p_action" "text", "p_actor" "uuid") RETURNS "jsonb"
@@ -111078,8 +111074,8 @@ GRANT SELECT ON TABLE "private"."reviews" TO "authenticated";
 
 
 
-REVOKE ALL ON FUNCTION "private"."review_assert_all_reviewers_completed_v1"("p_review" "private"."reviews") FROM PUBLIC;
-GRANT ALL ON FUNCTION "private"."review_assert_all_reviewers_completed_v1"("p_review" "private"."reviews") TO "api_internal_executor";
+REVOKE ALL ON FUNCTION "private"."review_assert_current_approval_v1"("p_review" "private"."reviews") FROM PUBLIC;
+GRANT ALL ON FUNCTION "private"."review_assert_current_approval_v1"("p_review" "private"."reviews") TO "api_internal_executor";
 
 
 

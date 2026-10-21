@@ -37,9 +37,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: "2026-10-21"
-lastReviewedCommit: "45d2de4e50169613ecca293e570e6a9e91c22a89"
-lastReviewedNote: "Reviewed alias fixture follow-up against unchanged production SQL, native admission and scientific boundaries."
+lastReviewedAt: 2026-10-21
+lastReviewedCommit: "51a0b3e81287c691b18b885af8767d4a8f8fd47d"
+lastReviewedNote: "Reviewed fresh-base merge of upstream #857 one-current-approval policy with unchanged stable-owner-draft admission/recovery; both ownership and validation contracts retained."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-validation.md

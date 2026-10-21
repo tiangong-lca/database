@@ -78,7 +78,7 @@ begin
       when v_operation = 'admin-approve' then
         facts.state_code = 1
         and facts.reviewer_count > 0
-        and facts.submitted_opinion_count = facts.reviewer_count
+        and facts.approve_opinion_count > 0
       when v_operation = 'admin-reject' then facts.state_code in (0, 1)
       else facts.state_code = 1
         and facts.actor_is_assigned
@@ -93,8 +93,8 @@ begin
       when v_operation = 'admin-approve' and facts.reviewer_count = 0
         then 'REVIEWER_REQUIRED'
       when v_operation = 'admin-approve'
-        and facts.submitted_opinion_count <> facts.reviewer_count
-        then 'REVIEWER_OPINIONS_PENDING'
+        and facts.approve_opinion_count = 0
+        then 'REVIEWER_APPROVAL_REQUIRED'
       when v_operation = 'admin-reject' and facts.state_code not in (0, 1)
         then 'REVIEW_ALREADY_COMPLETED'
       when v_operation like 'reviewer-%' and facts.state_code <> 1

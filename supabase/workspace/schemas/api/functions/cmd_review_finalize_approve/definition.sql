@@ -42,7 +42,7 @@ begin
   end if;
 
   begin
-    perform private.review_assert_all_reviewers_completed_v1(v_review);
+    perform private.review_assert_current_approval_v1(v_review);
   exception
     when sqlstate '55000' then
       return jsonb_build_object(

@@ -20,9 +20,9 @@ checkPaths:
   - .githooks/pre-push
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: "2026-10-21"
-lastReviewedCommit: "55fd698ed60b97e429556f9240d1fe2e8e6d3f4c"
-lastReviewedNote: "Reviewed Database CI 2.117 generation of the additive exact-key guard; generated workspace remains inspection output, not schema source."
+lastReviewedAt: 2026-10-21
+lastReviewedCommit: "51a0b3e81287c691b18b885af8767d4a8f8fd47d"
+lastReviewedNote: "Reviewed fresh-base merge of upstream #857 one-current-approval policy with unchanged stable-owner-draft admission/recovery; both ownership and validation contracts retained."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

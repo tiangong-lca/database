@@ -132,6 +132,8 @@ unchanged; a definer's `current_user` is not evidence of the caller's identity.
 
 ## Review opinion dependency scope
 
+Final approval requires at least one currently assigned Comment in state `1`; other reviewers may still be pending or rejected. Single finalization and batch eligibility apply the same rule. No assigned reviewers, revoked/unassigned approvals, and missing approval remain blocked. Admin rejection remains available for active state `0`/`1` tasks without waiting for opinions. The exact target/revision, authority, metadata and final-state guards remain unchanged.
+
 Current Root/Reference derivation reads actual Root JSON, approving submissions
 (`1`), and retained finalized-Comment compatibility (`2`). A current reviewer
 rejection (`-3`) is an opinion awaiting final administrator action: submission

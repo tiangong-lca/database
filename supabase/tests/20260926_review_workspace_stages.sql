@@ -129,8 +129,8 @@ select is(
 );
 select is(
   (select reason_code from api.qry_review_batch_eligibility_v1(array['59626000-0000-0000-0000-000000000002'::uuid], 'admin-approve')),
-  'REVIEWER_OPINIONS_PENDING',
-  'admin approval preflight explains pending opinions'
+  'REVIEWER_APPROVAL_REQUIRED',
+  'admin approval preflight requires an approving opinion'
 );
 
 select set_config('request.jwt.claim.sub', '19626000-0000-0000-0000-000000000002', true);
