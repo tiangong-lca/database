@@ -1,0 +1,19 @@
+1..14
+ok 1 - v1 protected preflight remains exposed
+ok 2 - v1 protected gate remains exposed
+ok 3 - v1 protected admit remains exposed
+ok 4 - v1 protected read remains exposed
+ok 5 - v1 plan executor still pins the plan schema version
+ok 6 - v1 batch executor still pins its exact-count failure code
+ok 7 - v1 batch executor still pins the reviewed hour-to-year factor
+ok 8 - v1 batch executor still pins its exact three-table lock statement
+authenticated
+00000000-0000-4000-8000-000000000001
+fixture@example.invalid
+authenticated
+ok 9 - v1 refuses a v2-shaped plan with its stable code and no writes
+ok 10 - v2 plan executor exists
+ok 11 - v2 batch executor exists
+ok 12 - v2 protected preflight is exposed
+ok 13 - v2 refuses an empty plan with its stable code
+ok 14 - a plan without identity, evidence and actions is refused as an invalid envelope

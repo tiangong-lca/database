@@ -1,0 +1,799 @@
+71200000-0000-4000-8000-000000000001
+ok 1 - candidate parity: all/all//page1
+ok 2 - candidate parity: all/all//page2
+ok 3 - candidate parity: all/all//page10
+ok 4 - candidate parity: all/all//page1000000
+ok 5 - candidate parity: all/all/测试/page1
+ok 6 - candidate parity: all/all/测试/page2
+ok 7 - candidate parity: all/all/测试/page10
+ok 8 - candidate parity: all/all/测试/page1000000
+ok 9 - candidate parity: all/all/100% _ '/page1
+ok 10 - candidate parity: all/all/100% _ '/page2
+ok 11 - candidate parity: all/all/100% _ '/page10
+ok 12 - candidate parity: all/all/100% _ '/page1000000
+ok 13 - candidate parity: all/all/80100000/page1
+ok 14 - candidate parity: all/all/80100000/page2
+ok 15 - candidate parity: all/all/80100000/page10
+ok 16 - candidate parity: all/all/80100000/page1000000
+ok 17 - candidate parity: all/all/长/page1
+ok 18 - candidate parity: all/all/长/page2
+ok 19 - candidate parity: all/all/长/page10
+ok 20 - candidate parity: all/all/长/page1000000
+ok 21 - candidate parity: all/all/no-such-name/page1
+ok 22 - candidate parity: all/all/no-such-name/page2
+ok 23 - candidate parity: all/all/no-such-name/page10
+ok 24 - candidate parity: all/all/no-such-name/page1000000
+ok 25 - candidate parity: all/all/'); select 1; --/page1
+ok 26 - candidate parity: all/all/'); select 1; --/page2
+ok 27 - candidate parity: all/all/'); select 1; --/page10
+ok 28 - candidate parity: all/all/'); select 1; --/page1000000
+ok 29 - candidate parity: all/visible//page1
+ok 30 - candidate parity: all/visible//page2
+ok 31 - candidate parity: all/visible//page10
+ok 32 - candidate parity: all/visible//page1000000
+ok 33 - candidate parity: all/visible/测试/page1
+ok 34 - candidate parity: all/visible/测试/page2
+ok 35 - candidate parity: all/visible/测试/page10
+ok 36 - candidate parity: all/visible/测试/page1000000
+ok 37 - candidate parity: all/visible/100% _ '/page1
+ok 38 - candidate parity: all/visible/100% _ '/page2
+ok 39 - candidate parity: all/visible/100% _ '/page10
+ok 40 - candidate parity: all/visible/100% _ '/page1000000
+ok 41 - candidate parity: all/visible/80100000/page1
+ok 42 - candidate parity: all/visible/80100000/page2
+ok 43 - candidate parity: all/visible/80100000/page10
+ok 44 - candidate parity: all/visible/80100000/page1000000
+ok 45 - candidate parity: all/visible/长/page1
+ok 46 - candidate parity: all/visible/长/page2
+ok 47 - candidate parity: all/visible/长/page10
+ok 48 - candidate parity: all/visible/长/page1000000
+ok 49 - candidate parity: all/visible/no-such-name/page1
+ok 50 - candidate parity: all/visible/no-such-name/page2
+ok 51 - candidate parity: all/visible/no-such-name/page10
+ok 52 - candidate parity: all/visible/no-such-name/page1000000
+ok 53 - candidate parity: all/visible/'); select 1; --/page1
+ok 54 - candidate parity: all/visible/'); select 1; --/page2
+ok 55 - candidate parity: all/visible/'); select 1; --/page10
+ok 56 - candidate parity: all/visible/'); select 1; --/page1000000
+ok 57 - candidate parity: all/hidden//page1
+ok 58 - candidate parity: all/hidden//page2
+ok 59 - candidate parity: all/hidden//page10
+ok 60 - candidate parity: all/hidden//page1000000
+ok 61 - candidate parity: all/hidden/测试/page1
+ok 62 - candidate parity: all/hidden/测试/page2
+ok 63 - candidate parity: all/hidden/测试/page10
+ok 64 - candidate parity: all/hidden/测试/page1000000
+ok 65 - candidate parity: all/hidden/100% _ '/page1
+ok 66 - candidate parity: all/hidden/100% _ '/page2
+ok 67 - candidate parity: all/hidden/100% _ '/page10
+ok 68 - candidate parity: all/hidden/100% _ '/page1000000
+ok 69 - candidate parity: all/hidden/80100000/page1
+ok 70 - candidate parity: all/hidden/80100000/page2
+ok 71 - candidate parity: all/hidden/80100000/page10
+ok 72 - candidate parity: all/hidden/80100000/page1000000
+ok 73 - candidate parity: all/hidden/长/page1
+ok 74 - candidate parity: all/hidden/长/page2
+ok 75 - candidate parity: all/hidden/长/page10
+ok 76 - candidate parity: all/hidden/长/page1000000
+ok 77 - candidate parity: all/hidden/no-such-name/page1
+ok 78 - candidate parity: all/hidden/no-such-name/page2
+ok 79 - candidate parity: all/hidden/no-such-name/page10
+ok 80 - candidate parity: all/hidden/no-such-name/page1000000
+ok 81 - candidate parity: all/hidden/'); select 1; --/page1
+ok 82 - candidate parity: all/hidden/'); select 1; --/page2
+ok 83 - candidate parity: all/hidden/'); select 1; --/page10
+ok 84 - candidate parity: all/hidden/'); select 1; --/page1000000
+ok 85 - display parity: all//page1
+ok 86 - display parity: all//page2
+ok 87 - display parity: all//page10
+ok 88 - display parity: all/测试/page1
+ok 89 - display parity: all/测试/page2
+ok 90 - display parity: all/测试/page10
+ok 91 - display parity: all/80100000/page1
+ok 92 - display parity: all/80100000/page2
+ok 93 - display parity: all/80100000/page10
+ok 94 - display parity: all/长/page1
+ok 95 - display parity: all/长/page2
+ok 96 - display parity: all/长/page10
+ok 97 - display parity: all/no-such-name/page1
+ok 98 - display parity: all/no-such-name/page2
+ok 99 - display parity: all/no-such-name/page10
+ok 100 - candidate parity: lifecyclemodel/all//page1
+ok 101 - candidate parity: lifecyclemodel/all//page2
+ok 102 - candidate parity: lifecyclemodel/all//page10
+ok 103 - candidate parity: lifecyclemodel/all//page1000000
+ok 104 - candidate parity: lifecyclemodel/all/测试/page1
+ok 105 - candidate parity: lifecyclemodel/all/测试/page2
+ok 106 - candidate parity: lifecyclemodel/all/测试/page10
+ok 107 - candidate parity: lifecyclemodel/all/测试/page1000000
+ok 108 - candidate parity: lifecyclemodel/all/100% _ '/page1
+ok 109 - candidate parity: lifecyclemodel/all/100% _ '/page2
+ok 110 - candidate parity: lifecyclemodel/all/100% _ '/page10
+ok 111 - candidate parity: lifecyclemodel/all/100% _ '/page1000000
+ok 112 - candidate parity: lifecyclemodel/all/80100000/page1
+ok 113 - candidate parity: lifecyclemodel/all/80100000/page2
+ok 114 - candidate parity: lifecyclemodel/all/80100000/page10
+ok 115 - candidate parity: lifecyclemodel/all/80100000/page1000000
+ok 116 - candidate parity: lifecyclemodel/all/长/page1
+ok 117 - candidate parity: lifecyclemodel/all/长/page2
+ok 118 - candidate parity: lifecyclemodel/all/长/page10
+ok 119 - candidate parity: lifecyclemodel/all/长/page1000000
+ok 120 - candidate parity: lifecyclemodel/all/no-such-name/page1
+ok 121 - candidate parity: lifecyclemodel/all/no-such-name/page2
+ok 122 - candidate parity: lifecyclemodel/all/no-such-name/page10
+ok 123 - candidate parity: lifecyclemodel/all/no-such-name/page1000000
+ok 124 - candidate parity: lifecyclemodel/all/'); select 1; --/page1
+ok 125 - candidate parity: lifecyclemodel/all/'); select 1; --/page2
+ok 126 - candidate parity: lifecyclemodel/all/'); select 1; --/page10
+ok 127 - candidate parity: lifecyclemodel/all/'); select 1; --/page1000000
+ok 128 - candidate parity: lifecyclemodel/visible//page1
+ok 129 - candidate parity: lifecyclemodel/visible//page2
+ok 130 - candidate parity: lifecyclemodel/visible//page10
+ok 131 - candidate parity: lifecyclemodel/visible//page1000000
+ok 132 - candidate parity: lifecyclemodel/visible/测试/page1
+ok 133 - candidate parity: lifecyclemodel/visible/测试/page2
+ok 134 - candidate parity: lifecyclemodel/visible/测试/page10
+ok 135 - candidate parity: lifecyclemodel/visible/测试/page1000000
+ok 136 - candidate parity: lifecyclemodel/visible/100% _ '/page1
+ok 137 - candidate parity: lifecyclemodel/visible/100% _ '/page2
+ok 138 - candidate parity: lifecyclemodel/visible/100% _ '/page10
+ok 139 - candidate parity: lifecyclemodel/visible/100% _ '/page1000000
+ok 140 - candidate parity: lifecyclemodel/visible/80100000/page1
+ok 141 - candidate parity: lifecyclemodel/visible/80100000/page2
+ok 142 - candidate parity: lifecyclemodel/visible/80100000/page10
+ok 143 - candidate parity: lifecyclemodel/visible/80100000/page1000000
+ok 144 - candidate parity: lifecyclemodel/visible/长/page1
+ok 145 - candidate parity: lifecyclemodel/visible/长/page2
+ok 146 - candidate parity: lifecyclemodel/visible/长/page10
+ok 147 - candidate parity: lifecyclemodel/visible/长/page1000000
+ok 148 - candidate parity: lifecyclemodel/visible/no-such-name/page1
+ok 149 - candidate parity: lifecyclemodel/visible/no-such-name/page2
+ok 150 - candidate parity: lifecyclemodel/visible/no-such-name/page10
+ok 151 - candidate parity: lifecyclemodel/visible/no-such-name/page1000000
+ok 152 - candidate parity: lifecyclemodel/visible/'); select 1; --/page1
+ok 153 - candidate parity: lifecyclemodel/visible/'); select 1; --/page2
+ok 154 - candidate parity: lifecyclemodel/visible/'); select 1; --/page10
+ok 155 - candidate parity: lifecyclemodel/visible/'); select 1; --/page1000000
+ok 156 - candidate parity: lifecyclemodel/hidden//page1
+ok 157 - candidate parity: lifecyclemodel/hidden//page2
+ok 158 - candidate parity: lifecyclemodel/hidden//page10
+ok 159 - candidate parity: lifecyclemodel/hidden//page1000000
+ok 160 - candidate parity: lifecyclemodel/hidden/测试/page1
+ok 161 - candidate parity: lifecyclemodel/hidden/测试/page2
+ok 162 - candidate parity: lifecyclemodel/hidden/测试/page10
+ok 163 - candidate parity: lifecyclemodel/hidden/测试/page1000000
+ok 164 - candidate parity: lifecyclemodel/hidden/100% _ '/page1
+ok 165 - candidate parity: lifecyclemodel/hidden/100% _ '/page2
+ok 166 - candidate parity: lifecyclemodel/hidden/100% _ '/page10
+ok 167 - candidate parity: lifecyclemodel/hidden/100% _ '/page1000000
+ok 168 - candidate parity: lifecyclemodel/hidden/80100000/page1
+ok 169 - candidate parity: lifecyclemodel/hidden/80100000/page2
+ok 170 - candidate parity: lifecyclemodel/hidden/80100000/page10
+ok 171 - candidate parity: lifecyclemodel/hidden/80100000/page1000000
+ok 172 - candidate parity: lifecyclemodel/hidden/长/page1
+ok 173 - candidate parity: lifecyclemodel/hidden/长/page2
+ok 174 - candidate parity: lifecyclemodel/hidden/长/page10
+ok 175 - candidate parity: lifecyclemodel/hidden/长/page1000000
+ok 176 - candidate parity: lifecyclemodel/hidden/no-such-name/page1
+ok 177 - candidate parity: lifecyclemodel/hidden/no-such-name/page2
+ok 178 - candidate parity: lifecyclemodel/hidden/no-such-name/page10
+ok 179 - candidate parity: lifecyclemodel/hidden/no-such-name/page1000000
+ok 180 - candidate parity: lifecyclemodel/hidden/'); select 1; --/page1
+ok 181 - candidate parity: lifecyclemodel/hidden/'); select 1; --/page2
+ok 182 - candidate parity: lifecyclemodel/hidden/'); select 1; --/page10
+ok 183 - candidate parity: lifecyclemodel/hidden/'); select 1; --/page1000000
+ok 184 - display parity: lifecyclemodel//page1
+ok 185 - display parity: lifecyclemodel//page2
+ok 186 - display parity: lifecyclemodel//page10
+ok 187 - display parity: lifecyclemodel/测试/page1
+ok 188 - display parity: lifecyclemodel/测试/page2
+ok 189 - display parity: lifecyclemodel/测试/page10
+ok 190 - display parity: lifecyclemodel/80100000/page1
+ok 191 - display parity: lifecyclemodel/80100000/page2
+ok 192 - display parity: lifecyclemodel/80100000/page10
+ok 193 - display parity: lifecyclemodel/长/page1
+ok 194 - display parity: lifecyclemodel/长/page2
+ok 195 - display parity: lifecyclemodel/长/page10
+ok 196 - display parity: lifecyclemodel/no-such-name/page1
+ok 197 - display parity: lifecyclemodel/no-such-name/page2
+ok 198 - display parity: lifecyclemodel/no-such-name/page10
+ok 199 - candidate parity: process/all//page1
+ok 200 - candidate parity: process/all//page2
+ok 201 - candidate parity: process/all//page10
+ok 202 - candidate parity: process/all//page1000000
+ok 203 - candidate parity: process/all/测试/page1
+ok 204 - candidate parity: process/all/测试/page2
+ok 205 - candidate parity: process/all/测试/page10
+ok 206 - candidate parity: process/all/测试/page1000000
+ok 207 - candidate parity: process/all/100% _ '/page1
+ok 208 - candidate parity: process/all/100% _ '/page2
+ok 209 - candidate parity: process/all/100% _ '/page10
+ok 210 - candidate parity: process/all/100% _ '/page1000000
+ok 211 - candidate parity: process/all/80100000/page1
+ok 212 - candidate parity: process/all/80100000/page2
+ok 213 - candidate parity: process/all/80100000/page10
+ok 214 - candidate parity: process/all/80100000/page1000000
+ok 215 - candidate parity: process/all/长/page1
+ok 216 - candidate parity: process/all/长/page2
+ok 217 - candidate parity: process/all/长/page10
+ok 218 - candidate parity: process/all/长/page1000000
+ok 219 - candidate parity: process/all/no-such-name/page1
+ok 220 - candidate parity: process/all/no-such-name/page2
+ok 221 - candidate parity: process/all/no-such-name/page10
+ok 222 - candidate parity: process/all/no-such-name/page1000000
+ok 223 - candidate parity: process/all/'); select 1; --/page1
+ok 224 - candidate parity: process/all/'); select 1; --/page2
+ok 225 - candidate parity: process/all/'); select 1; --/page10
+ok 226 - candidate parity: process/all/'); select 1; --/page1000000
+ok 227 - candidate parity: process/visible//page1
+ok 228 - candidate parity: process/visible//page2
+ok 229 - candidate parity: process/visible//page10
+ok 230 - candidate parity: process/visible//page1000000
+ok 231 - candidate parity: process/visible/测试/page1
+ok 232 - candidate parity: process/visible/测试/page2
+ok 233 - candidate parity: process/visible/测试/page10
+ok 234 - candidate parity: process/visible/测试/page1000000
+ok 235 - candidate parity: process/visible/100% _ '/page1
+ok 236 - candidate parity: process/visible/100% _ '/page2
+ok 237 - candidate parity: process/visible/100% _ '/page10
+ok 238 - candidate parity: process/visible/100% _ '/page1000000
+ok 239 - candidate parity: process/visible/80100000/page1
+ok 240 - candidate parity: process/visible/80100000/page2
+ok 241 - candidate parity: process/visible/80100000/page10
+ok 242 - candidate parity: process/visible/80100000/page1000000
+ok 243 - candidate parity: process/visible/长/page1
+ok 244 - candidate parity: process/visible/长/page2
+ok 245 - candidate parity: process/visible/长/page10
+ok 246 - candidate parity: process/visible/长/page1000000
+ok 247 - candidate parity: process/visible/no-such-name/page1
+ok 248 - candidate parity: process/visible/no-such-name/page2
+ok 249 - candidate parity: process/visible/no-such-name/page10
+ok 250 - candidate parity: process/visible/no-such-name/page1000000
+ok 251 - candidate parity: process/visible/'); select 1; --/page1
+ok 252 - candidate parity: process/visible/'); select 1; --/page2
+ok 253 - candidate parity: process/visible/'); select 1; --/page10
+ok 254 - candidate parity: process/visible/'); select 1; --/page1000000
+ok 255 - candidate parity: process/hidden//page1
+ok 256 - candidate parity: process/hidden//page2
+ok 257 - candidate parity: process/hidden//page10
+ok 258 - candidate parity: process/hidden//page1000000
+ok 259 - candidate parity: process/hidden/测试/page1
+ok 260 - candidate parity: process/hidden/测试/page2
+ok 261 - candidate parity: process/hidden/测试/page10
+ok 262 - candidate parity: process/hidden/测试/page1000000
+ok 263 - candidate parity: process/hidden/100% _ '/page1
+ok 264 - candidate parity: process/hidden/100% _ '/page2
+ok 265 - candidate parity: process/hidden/100% _ '/page10
+ok 266 - candidate parity: process/hidden/100% _ '/page1000000
+ok 267 - candidate parity: process/hidden/80100000/page1
+ok 268 - candidate parity: process/hidden/80100000/page2
+ok 269 - candidate parity: process/hidden/80100000/page10
+ok 270 - candidate parity: process/hidden/80100000/page1000000
+ok 271 - candidate parity: process/hidden/长/page1
+ok 272 - candidate parity: process/hidden/长/page2
+ok 273 - candidate parity: process/hidden/长/page10
+ok 274 - candidate parity: process/hidden/长/page1000000
+ok 275 - candidate parity: process/hidden/no-such-name/page1
+ok 276 - candidate parity: process/hidden/no-such-name/page2
+ok 277 - candidate parity: process/hidden/no-such-name/page10
+ok 278 - candidate parity: process/hidden/no-such-name/page1000000
+ok 279 - candidate parity: process/hidden/'); select 1; --/page1
+ok 280 - candidate parity: process/hidden/'); select 1; --/page2
+ok 281 - candidate parity: process/hidden/'); select 1; --/page10
+ok 282 - candidate parity: process/hidden/'); select 1; --/page1000000
+ok 283 - display parity: process//page1
+ok 284 - display parity: process//page2
+ok 285 - display parity: process//page10
+ok 286 - display parity: process/测试/page1
+ok 287 - display parity: process/测试/page2
+ok 288 - display parity: process/测试/page10
+ok 289 - display parity: process/80100000/page1
+ok 290 - display parity: process/80100000/page2
+ok 291 - display parity: process/80100000/page10
+ok 292 - display parity: process/长/page1
+ok 293 - display parity: process/长/page2
+ok 294 - display parity: process/长/page10
+ok 295 - display parity: process/no-such-name/page1
+ok 296 - display parity: process/no-such-name/page2
+ok 297 - display parity: process/no-such-name/page10
+ok 298 - candidate parity: flow/all//page1
+ok 299 - candidate parity: flow/all//page2
+ok 300 - candidate parity: flow/all//page10
+ok 301 - candidate parity: flow/all//page1000000
+ok 302 - candidate parity: flow/all/测试/page1
+ok 303 - candidate parity: flow/all/测试/page2
+ok 304 - candidate parity: flow/all/测试/page10
+ok 305 - candidate parity: flow/all/测试/page1000000
+ok 306 - candidate parity: flow/all/100% _ '/page1
+ok 307 - candidate parity: flow/all/100% _ '/page2
+ok 308 - candidate parity: flow/all/100% _ '/page10
+ok 309 - candidate parity: flow/all/100% _ '/page1000000
+ok 310 - candidate parity: flow/all/80100000/page1
+ok 311 - candidate parity: flow/all/80100000/page2
+ok 312 - candidate parity: flow/all/80100000/page10
+ok 313 - candidate parity: flow/all/80100000/page1000000
+ok 314 - candidate parity: flow/all/长/page1
+ok 315 - candidate parity: flow/all/长/page2
+ok 316 - candidate parity: flow/all/长/page10
+ok 317 - candidate parity: flow/all/长/page1000000
+ok 318 - candidate parity: flow/all/no-such-name/page1
+ok 319 - candidate parity: flow/all/no-such-name/page2
+ok 320 - candidate parity: flow/all/no-such-name/page10
+ok 321 - candidate parity: flow/all/no-such-name/page1000000
+ok 322 - candidate parity: flow/all/'); select 1; --/page1
+ok 323 - candidate parity: flow/all/'); select 1; --/page2
+ok 324 - candidate parity: flow/all/'); select 1; --/page10
+ok 325 - candidate parity: flow/all/'); select 1; --/page1000000
+ok 326 - candidate parity: flow/visible//page1
+ok 327 - candidate parity: flow/visible//page2
+ok 328 - candidate parity: flow/visible//page10
+ok 329 - candidate parity: flow/visible//page1000000
+ok 330 - candidate parity: flow/visible/测试/page1
+ok 331 - candidate parity: flow/visible/测试/page2
+ok 332 - candidate parity: flow/visible/测试/page10
+ok 333 - candidate parity: flow/visible/测试/page1000000
+ok 334 - candidate parity: flow/visible/100% _ '/page1
+ok 335 - candidate parity: flow/visible/100% _ '/page2
+ok 336 - candidate parity: flow/visible/100% _ '/page10
+ok 337 - candidate parity: flow/visible/100% _ '/page1000000
+ok 338 - candidate parity: flow/visible/80100000/page1
+ok 339 - candidate parity: flow/visible/80100000/page2
+ok 340 - candidate parity: flow/visible/80100000/page10
+ok 341 - candidate parity: flow/visible/80100000/page1000000
+ok 342 - candidate parity: flow/visible/长/page1
+ok 343 - candidate parity: flow/visible/长/page2
+ok 344 - candidate parity: flow/visible/长/page10
+ok 345 - candidate parity: flow/visible/长/page1000000
+ok 346 - candidate parity: flow/visible/no-such-name/page1
+ok 347 - candidate parity: flow/visible/no-such-name/page2
+ok 348 - candidate parity: flow/visible/no-such-name/page10
+ok 349 - candidate parity: flow/visible/no-such-name/page1000000
+ok 350 - candidate parity: flow/visible/'); select 1; --/page1
+ok 351 - candidate parity: flow/visible/'); select 1; --/page2
+ok 352 - candidate parity: flow/visible/'); select 1; --/page10
+ok 353 - candidate parity: flow/visible/'); select 1; --/page1000000
+ok 354 - candidate parity: flow/hidden//page1
+ok 355 - candidate parity: flow/hidden//page2
+ok 356 - candidate parity: flow/hidden//page10
+ok 357 - candidate parity: flow/hidden//page1000000
+ok 358 - candidate parity: flow/hidden/测试/page1
+ok 359 - candidate parity: flow/hidden/测试/page2
+ok 360 - candidate parity: flow/hidden/测试/page10
+ok 361 - candidate parity: flow/hidden/测试/page1000000
+ok 362 - candidate parity: flow/hidden/100% _ '/page1
+ok 363 - candidate parity: flow/hidden/100% _ '/page2
+ok 364 - candidate parity: flow/hidden/100% _ '/page10
+ok 365 - candidate parity: flow/hidden/100% _ '/page1000000
+ok 366 - candidate parity: flow/hidden/80100000/page1
+ok 367 - candidate parity: flow/hidden/80100000/page2
+ok 368 - candidate parity: flow/hidden/80100000/page10
+ok 369 - candidate parity: flow/hidden/80100000/page1000000
+ok 370 - candidate parity: flow/hidden/长/page1
+ok 371 - candidate parity: flow/hidden/长/page2
+ok 372 - candidate parity: flow/hidden/长/page10
+ok 373 - candidate parity: flow/hidden/长/page1000000
+ok 374 - candidate parity: flow/hidden/no-such-name/page1
+ok 375 - candidate parity: flow/hidden/no-such-name/page2
+ok 376 - candidate parity: flow/hidden/no-such-name/page10
+ok 377 - candidate parity: flow/hidden/no-such-name/page1000000
+ok 378 - candidate parity: flow/hidden/'); select 1; --/page1
+ok 379 - candidate parity: flow/hidden/'); select 1; --/page2
+ok 380 - candidate parity: flow/hidden/'); select 1; --/page10
+ok 381 - candidate parity: flow/hidden/'); select 1; --/page1000000
+ok 382 - display parity: flow//page1
+ok 383 - display parity: flow//page2
+ok 384 - display parity: flow//page10
+ok 385 - display parity: flow/测试/page1
+ok 386 - display parity: flow/测试/page2
+ok 387 - display parity: flow/测试/page10
+ok 388 - display parity: flow/80100000/page1
+ok 389 - display parity: flow/80100000/page2
+ok 390 - display parity: flow/80100000/page10
+ok 391 - display parity: flow/长/page1
+ok 392 - display parity: flow/长/page2
+ok 393 - display parity: flow/长/page10
+ok 394 - display parity: flow/no-such-name/page1
+ok 395 - display parity: flow/no-such-name/page2
+ok 396 - display parity: flow/no-such-name/page10
+ok 397 - candidate parity: flowproperty/all//page1
+ok 398 - candidate parity: flowproperty/all//page2
+ok 399 - candidate parity: flowproperty/all//page10
+ok 400 - candidate parity: flowproperty/all//page1000000
+ok 401 - candidate parity: flowproperty/all/测试/page1
+ok 402 - candidate parity: flowproperty/all/测试/page2
+ok 403 - candidate parity: flowproperty/all/测试/page10
+ok 404 - candidate parity: flowproperty/all/测试/page1000000
+ok 405 - candidate parity: flowproperty/all/100% _ '/page1
+ok 406 - candidate parity: flowproperty/all/100% _ '/page2
+ok 407 - candidate parity: flowproperty/all/100% _ '/page10
+ok 408 - candidate parity: flowproperty/all/100% _ '/page1000000
+ok 409 - candidate parity: flowproperty/all/80100000/page1
+ok 410 - candidate parity: flowproperty/all/80100000/page2
+ok 411 - candidate parity: flowproperty/all/80100000/page10
+ok 412 - candidate parity: flowproperty/all/80100000/page1000000
+ok 413 - candidate parity: flowproperty/all/长/page1
+ok 414 - candidate parity: flowproperty/all/长/page2
+ok 415 - candidate parity: flowproperty/all/长/page10
+ok 416 - candidate parity: flowproperty/all/长/page1000000
+ok 417 - candidate parity: flowproperty/all/no-such-name/page1
+ok 418 - candidate parity: flowproperty/all/no-such-name/page2
+ok 419 - candidate parity: flowproperty/all/no-such-name/page10
+ok 420 - candidate parity: flowproperty/all/no-such-name/page1000000
+ok 421 - candidate parity: flowproperty/all/'); select 1; --/page1
+ok 422 - candidate parity: flowproperty/all/'); select 1; --/page2
+ok 423 - candidate parity: flowproperty/all/'); select 1; --/page10
+ok 424 - candidate parity: flowproperty/all/'); select 1; --/page1000000
+ok 425 - candidate parity: flowproperty/visible//page1
+ok 426 - candidate parity: flowproperty/visible//page2
+ok 427 - candidate parity: flowproperty/visible//page10
+ok 428 - candidate parity: flowproperty/visible//page1000000
+ok 429 - candidate parity: flowproperty/visible/测试/page1
+ok 430 - candidate parity: flowproperty/visible/测试/page2
+ok 431 - candidate parity: flowproperty/visible/测试/page10
+ok 432 - candidate parity: flowproperty/visible/测试/page1000000
+ok 433 - candidate parity: flowproperty/visible/100% _ '/page1
+ok 434 - candidate parity: flowproperty/visible/100% _ '/page2
+ok 435 - candidate parity: flowproperty/visible/100% _ '/page10
+ok 436 - candidate parity: flowproperty/visible/100% _ '/page1000000
+ok 437 - candidate parity: flowproperty/visible/80100000/page1
+ok 438 - candidate parity: flowproperty/visible/80100000/page2
+ok 439 - candidate parity: flowproperty/visible/80100000/page10
+ok 440 - candidate parity: flowproperty/visible/80100000/page1000000
+ok 441 - candidate parity: flowproperty/visible/长/page1
+ok 442 - candidate parity: flowproperty/visible/长/page2
+ok 443 - candidate parity: flowproperty/visible/长/page10
+ok 444 - candidate parity: flowproperty/visible/长/page1000000
+ok 445 - candidate parity: flowproperty/visible/no-such-name/page1
+ok 446 - candidate parity: flowproperty/visible/no-such-name/page2
+ok 447 - candidate parity: flowproperty/visible/no-such-name/page10
+ok 448 - candidate parity: flowproperty/visible/no-such-name/page1000000
+ok 449 - candidate parity: flowproperty/visible/'); select 1; --/page1
+ok 450 - candidate parity: flowproperty/visible/'); select 1; --/page2
+ok 451 - candidate parity: flowproperty/visible/'); select 1; --/page10
+ok 452 - candidate parity: flowproperty/visible/'); select 1; --/page1000000
+ok 453 - candidate parity: flowproperty/hidden//page1
+ok 454 - candidate parity: flowproperty/hidden//page2
+ok 455 - candidate parity: flowproperty/hidden//page10
+ok 456 - candidate parity: flowproperty/hidden//page1000000
+ok 457 - candidate parity: flowproperty/hidden/测试/page1
+ok 458 - candidate parity: flowproperty/hidden/测试/page2
+ok 459 - candidate parity: flowproperty/hidden/测试/page10
+ok 460 - candidate parity: flowproperty/hidden/测试/page1000000
+ok 461 - candidate parity: flowproperty/hidden/100% _ '/page1
+ok 462 - candidate parity: flowproperty/hidden/100% _ '/page2
+ok 463 - candidate parity: flowproperty/hidden/100% _ '/page10
+ok 464 - candidate parity: flowproperty/hidden/100% _ '/page1000000
+ok 465 - candidate parity: flowproperty/hidden/80100000/page1
+ok 466 - candidate parity: flowproperty/hidden/80100000/page2
+ok 467 - candidate parity: flowproperty/hidden/80100000/page10
+ok 468 - candidate parity: flowproperty/hidden/80100000/page1000000
+ok 469 - candidate parity: flowproperty/hidden/长/page1
+ok 470 - candidate parity: flowproperty/hidden/长/page2
+ok 471 - candidate parity: flowproperty/hidden/长/page10
+ok 472 - candidate parity: flowproperty/hidden/长/page1000000
+ok 473 - candidate parity: flowproperty/hidden/no-such-name/page1
+ok 474 - candidate parity: flowproperty/hidden/no-such-name/page2
+ok 475 - candidate parity: flowproperty/hidden/no-such-name/page10
+ok 476 - candidate parity: flowproperty/hidden/no-such-name/page1000000
+ok 477 - candidate parity: flowproperty/hidden/'); select 1; --/page1
+ok 478 - candidate parity: flowproperty/hidden/'); select 1; --/page2
+ok 479 - candidate parity: flowproperty/hidden/'); select 1; --/page10
+ok 480 - candidate parity: flowproperty/hidden/'); select 1; --/page1000000
+ok 481 - display parity: flowproperty//page1
+ok 482 - display parity: flowproperty//page2
+ok 483 - display parity: flowproperty//page10
+ok 484 - display parity: flowproperty/测试/page1
+ok 485 - display parity: flowproperty/测试/page2
+ok 486 - display parity: flowproperty/测试/page10
+ok 487 - display parity: flowproperty/80100000/page1
+ok 488 - display parity: flowproperty/80100000/page2
+ok 489 - display parity: flowproperty/80100000/page10
+ok 490 - display parity: flowproperty/长/page1
+ok 491 - display parity: flowproperty/长/page2
+ok 492 - display parity: flowproperty/长/page10
+ok 493 - display parity: flowproperty/no-such-name/page1
+ok 494 - display parity: flowproperty/no-such-name/page2
+ok 495 - display parity: flowproperty/no-such-name/page10
+ok 496 - candidate parity: unitgroup/all//page1
+ok 497 - candidate parity: unitgroup/all//page2
+ok 498 - candidate parity: unitgroup/all//page10
+ok 499 - candidate parity: unitgroup/all//page1000000
+ok 500 - candidate parity: unitgroup/all/测试/page1
+ok 501 - candidate parity: unitgroup/all/测试/page2
+ok 502 - candidate parity: unitgroup/all/测试/page10
+ok 503 - candidate parity: unitgroup/all/测试/page1000000
+ok 504 - candidate parity: unitgroup/all/100% _ '/page1
+ok 505 - candidate parity: unitgroup/all/100% _ '/page2
+ok 506 - candidate parity: unitgroup/all/100% _ '/page10
+ok 507 - candidate parity: unitgroup/all/100% _ '/page1000000
+ok 508 - candidate parity: unitgroup/all/80100000/page1
+ok 509 - candidate parity: unitgroup/all/80100000/page2
+ok 510 - candidate parity: unitgroup/all/80100000/page10
+ok 511 - candidate parity: unitgroup/all/80100000/page1000000
+ok 512 - candidate parity: unitgroup/all/长/page1
+ok 513 - candidate parity: unitgroup/all/长/page2
+ok 514 - candidate parity: unitgroup/all/长/page10
+ok 515 - candidate parity: unitgroup/all/长/page1000000
+ok 516 - candidate parity: unitgroup/all/no-such-name/page1
+ok 517 - candidate parity: unitgroup/all/no-such-name/page2
+ok 518 - candidate parity: unitgroup/all/no-such-name/page10
+ok 519 - candidate parity: unitgroup/all/no-such-name/page1000000
+ok 520 - candidate parity: unitgroup/all/'); select 1; --/page1
+ok 521 - candidate parity: unitgroup/all/'); select 1; --/page2
+ok 522 - candidate parity: unitgroup/all/'); select 1; --/page10
+ok 523 - candidate parity: unitgroup/all/'); select 1; --/page1000000
+ok 524 - candidate parity: unitgroup/visible//page1
+ok 525 - candidate parity: unitgroup/visible//page2
+ok 526 - candidate parity: unitgroup/visible//page10
+ok 527 - candidate parity: unitgroup/visible//page1000000
+ok 528 - candidate parity: unitgroup/visible/测试/page1
+ok 529 - candidate parity: unitgroup/visible/测试/page2
+ok 530 - candidate parity: unitgroup/visible/测试/page10
+ok 531 - candidate parity: unitgroup/visible/测试/page1000000
+ok 532 - candidate parity: unitgroup/visible/100% _ '/page1
+ok 533 - candidate parity: unitgroup/visible/100% _ '/page2
+ok 534 - candidate parity: unitgroup/visible/100% _ '/page10
+ok 535 - candidate parity: unitgroup/visible/100% _ '/page1000000
+ok 536 - candidate parity: unitgroup/visible/80100000/page1
+ok 537 - candidate parity: unitgroup/visible/80100000/page2
+ok 538 - candidate parity: unitgroup/visible/80100000/page10
+ok 539 - candidate parity: unitgroup/visible/80100000/page1000000
+ok 540 - candidate parity: unitgroup/visible/长/page1
+ok 541 - candidate parity: unitgroup/visible/长/page2
+ok 542 - candidate parity: unitgroup/visible/长/page10
+ok 543 - candidate parity: unitgroup/visible/长/page1000000
+ok 544 - candidate parity: unitgroup/visible/no-such-name/page1
+ok 545 - candidate parity: unitgroup/visible/no-such-name/page2
+ok 546 - candidate parity: unitgroup/visible/no-such-name/page10
+ok 547 - candidate parity: unitgroup/visible/no-such-name/page1000000
+ok 548 - candidate parity: unitgroup/visible/'); select 1; --/page1
+ok 549 - candidate parity: unitgroup/visible/'); select 1; --/page2
+ok 550 - candidate parity: unitgroup/visible/'); select 1; --/page10
+ok 551 - candidate parity: unitgroup/visible/'); select 1; --/page1000000
+ok 552 - candidate parity: unitgroup/hidden//page1
+ok 553 - candidate parity: unitgroup/hidden//page2
+ok 554 - candidate parity: unitgroup/hidden//page10
+ok 555 - candidate parity: unitgroup/hidden//page1000000
+ok 556 - candidate parity: unitgroup/hidden/测试/page1
+ok 557 - candidate parity: unitgroup/hidden/测试/page2
+ok 558 - candidate parity: unitgroup/hidden/测试/page10
+ok 559 - candidate parity: unitgroup/hidden/测试/page1000000
+ok 560 - candidate parity: unitgroup/hidden/100% _ '/page1
+ok 561 - candidate parity: unitgroup/hidden/100% _ '/page2
+ok 562 - candidate parity: unitgroup/hidden/100% _ '/page10
+ok 563 - candidate parity: unitgroup/hidden/100% _ '/page1000000
+ok 564 - candidate parity: unitgroup/hidden/80100000/page1
+ok 565 - candidate parity: unitgroup/hidden/80100000/page2
+ok 566 - candidate parity: unitgroup/hidden/80100000/page10
+ok 567 - candidate parity: unitgroup/hidden/80100000/page1000000
+ok 568 - candidate parity: unitgroup/hidden/长/page1
+ok 569 - candidate parity: unitgroup/hidden/长/page2
+ok 570 - candidate parity: unitgroup/hidden/长/page10
+ok 571 - candidate parity: unitgroup/hidden/长/page1000000
+ok 572 - candidate parity: unitgroup/hidden/no-such-name/page1
+ok 573 - candidate parity: unitgroup/hidden/no-such-name/page2
+ok 574 - candidate parity: unitgroup/hidden/no-such-name/page10
+ok 575 - candidate parity: unitgroup/hidden/no-such-name/page1000000
+ok 576 - candidate parity: unitgroup/hidden/'); select 1; --/page1
+ok 577 - candidate parity: unitgroup/hidden/'); select 1; --/page2
+ok 578 - candidate parity: unitgroup/hidden/'); select 1; --/page10
+ok 579 - candidate parity: unitgroup/hidden/'); select 1; --/page1000000
+ok 580 - display parity: unitgroup//page1
+ok 581 - display parity: unitgroup//page2
+ok 582 - display parity: unitgroup//page10
+ok 583 - display parity: unitgroup/测试/page1
+ok 584 - display parity: unitgroup/测试/page2
+ok 585 - display parity: unitgroup/测试/page10
+ok 586 - display parity: unitgroup/80100000/page1
+ok 587 - display parity: unitgroup/80100000/page2
+ok 588 - display parity: unitgroup/80100000/page10
+ok 589 - display parity: unitgroup/长/page1
+ok 590 - display parity: unitgroup/长/page2
+ok 591 - display parity: unitgroup/长/page10
+ok 592 - display parity: unitgroup/no-such-name/page1
+ok 593 - display parity: unitgroup/no-such-name/page2
+ok 594 - display parity: unitgroup/no-such-name/page10
+ok 595 - candidate parity: source/all//page1
+ok 596 - candidate parity: source/all//page2
+ok 597 - candidate parity: source/all//page10
+ok 598 - candidate parity: source/all//page1000000
+ok 599 - candidate parity: source/all/测试/page1
+ok 600 - candidate parity: source/all/测试/page2
+ok 601 - candidate parity: source/all/测试/page10
+ok 602 - candidate parity: source/all/测试/page1000000
+ok 603 - candidate parity: source/all/100% _ '/page1
+ok 604 - candidate parity: source/all/100% _ '/page2
+ok 605 - candidate parity: source/all/100% _ '/page10
+ok 606 - candidate parity: source/all/100% _ '/page1000000
+ok 607 - candidate parity: source/all/80100000/page1
+ok 608 - candidate parity: source/all/80100000/page2
+ok 609 - candidate parity: source/all/80100000/page10
+ok 610 - candidate parity: source/all/80100000/page1000000
+ok 611 - candidate parity: source/all/长/page1
+ok 612 - candidate parity: source/all/长/page2
+ok 613 - candidate parity: source/all/长/page10
+ok 614 - candidate parity: source/all/长/page1000000
+ok 615 - candidate parity: source/all/no-such-name/page1
+ok 616 - candidate parity: source/all/no-such-name/page2
+ok 617 - candidate parity: source/all/no-such-name/page10
+ok 618 - candidate parity: source/all/no-such-name/page1000000
+ok 619 - candidate parity: source/all/'); select 1; --/page1
+ok 620 - candidate parity: source/all/'); select 1; --/page2
+ok 621 - candidate parity: source/all/'); select 1; --/page10
+ok 622 - candidate parity: source/all/'); select 1; --/page1000000
+ok 623 - candidate parity: source/visible//page1
+ok 624 - candidate parity: source/visible//page2
+ok 625 - candidate parity: source/visible//page10
+ok 626 - candidate parity: source/visible//page1000000
+ok 627 - candidate parity: source/visible/测试/page1
+ok 628 - candidate parity: source/visible/测试/page2
+ok 629 - candidate parity: source/visible/测试/page10
+ok 630 - candidate parity: source/visible/测试/page1000000
+ok 631 - candidate parity: source/visible/100% _ '/page1
+ok 632 - candidate parity: source/visible/100% _ '/page2
+ok 633 - candidate parity: source/visible/100% _ '/page10
+ok 634 - candidate parity: source/visible/100% _ '/page1000000
+ok 635 - candidate parity: source/visible/80100000/page1
+ok 636 - candidate parity: source/visible/80100000/page2
+ok 637 - candidate parity: source/visible/80100000/page10
+ok 638 - candidate parity: source/visible/80100000/page1000000
+ok 639 - candidate parity: source/visible/长/page1
+ok 640 - candidate parity: source/visible/长/page2
+ok 641 - candidate parity: source/visible/长/page10
+ok 642 - candidate parity: source/visible/长/page1000000
+ok 643 - candidate parity: source/visible/no-such-name/page1
+ok 644 - candidate parity: source/visible/no-such-name/page2
+ok 645 - candidate parity: source/visible/no-such-name/page10
+ok 646 - candidate parity: source/visible/no-such-name/page1000000
+ok 647 - candidate parity: source/visible/'); select 1; --/page1
+ok 648 - candidate parity: source/visible/'); select 1; --/page2
+ok 649 - candidate parity: source/visible/'); select 1; --/page10
+ok 650 - candidate parity: source/visible/'); select 1; --/page1000000
+ok 651 - candidate parity: source/hidden//page1
+ok 652 - candidate parity: source/hidden//page2
+ok 653 - candidate parity: source/hidden//page10
+ok 654 - candidate parity: source/hidden//page1000000
+ok 655 - candidate parity: source/hidden/测试/page1
+ok 656 - candidate parity: source/hidden/测试/page2
+ok 657 - candidate parity: source/hidden/测试/page10
+ok 658 - candidate parity: source/hidden/测试/page1000000
+ok 659 - candidate parity: source/hidden/100% _ '/page1
+ok 660 - candidate parity: source/hidden/100% _ '/page2
+ok 661 - candidate parity: source/hidden/100% _ '/page10
+ok 662 - candidate parity: source/hidden/100% _ '/page1000000
+ok 663 - candidate parity: source/hidden/80100000/page1
+ok 664 - candidate parity: source/hidden/80100000/page2
+ok 665 - candidate parity: source/hidden/80100000/page10
+ok 666 - candidate parity: source/hidden/80100000/page1000000
+ok 667 - candidate parity: source/hidden/长/page1
+ok 668 - candidate parity: source/hidden/长/page2
+ok 669 - candidate parity: source/hidden/长/page10
+ok 670 - candidate parity: source/hidden/长/page1000000
+ok 671 - candidate parity: source/hidden/no-such-name/page1
+ok 672 - candidate parity: source/hidden/no-such-name/page2
+ok 673 - candidate parity: source/hidden/no-such-name/page10
+ok 674 - candidate parity: source/hidden/no-such-name/page1000000
+ok 675 - candidate parity: source/hidden/'); select 1; --/page1
+ok 676 - candidate parity: source/hidden/'); select 1; --/page2
+ok 677 - candidate parity: source/hidden/'); select 1; --/page10
+ok 678 - candidate parity: source/hidden/'); select 1; --/page1000000
+ok 679 - display parity: source//page1
+ok 680 - display parity: source//page2
+ok 681 - display parity: source//page10
+ok 682 - display parity: source/测试/page1
+ok 683 - display parity: source/测试/page2
+ok 684 - display parity: source/测试/page10
+ok 685 - display parity: source/80100000/page1
+ok 686 - display parity: source/80100000/page2
+ok 687 - display parity: source/80100000/page10
+ok 688 - display parity: source/长/page1
+ok 689 - display parity: source/长/page2
+ok 690 - display parity: source/长/page10
+ok 691 - display parity: source/no-such-name/page1
+ok 692 - display parity: source/no-such-name/page2
+ok 693 - display parity: source/no-such-name/page10
+ok 694 - candidate parity: contact/all//page1
+ok 695 - candidate parity: contact/all//page2
+ok 696 - candidate parity: contact/all//page10
+ok 697 - candidate parity: contact/all//page1000000
+ok 698 - candidate parity: contact/all/测试/page1
+ok 699 - candidate parity: contact/all/测试/page2
+ok 700 - candidate parity: contact/all/测试/page10
+ok 701 - candidate parity: contact/all/测试/page1000000
+ok 702 - candidate parity: contact/all/100% _ '/page1
+ok 703 - candidate parity: contact/all/100% _ '/page2
+ok 704 - candidate parity: contact/all/100% _ '/page10
+ok 705 - candidate parity: contact/all/100% _ '/page1000000
+ok 706 - candidate parity: contact/all/80100000/page1
+ok 707 - candidate parity: contact/all/80100000/page2
+ok 708 - candidate parity: contact/all/80100000/page10
+ok 709 - candidate parity: contact/all/80100000/page1000000
+ok 710 - candidate parity: contact/all/长/page1
+ok 711 - candidate parity: contact/all/长/page2
+ok 712 - candidate parity: contact/all/长/page10
+ok 713 - candidate parity: contact/all/长/page1000000
+ok 714 - candidate parity: contact/all/no-such-name/page1
+ok 715 - candidate parity: contact/all/no-such-name/page2
+ok 716 - candidate parity: contact/all/no-such-name/page10
+ok 717 - candidate parity: contact/all/no-such-name/page1000000
+ok 718 - candidate parity: contact/all/'); select 1; --/page1
+ok 719 - candidate parity: contact/all/'); select 1; --/page2
+ok 720 - candidate parity: contact/all/'); select 1; --/page10
+ok 721 - candidate parity: contact/all/'); select 1; --/page1000000
+ok 722 - candidate parity: contact/visible//page1
+ok 723 - candidate parity: contact/visible//page2
+ok 724 - candidate parity: contact/visible//page10
+ok 725 - candidate parity: contact/visible//page1000000
+ok 726 - candidate parity: contact/visible/测试/page1
+ok 727 - candidate parity: contact/visible/测试/page2
+ok 728 - candidate parity: contact/visible/测试/page10
+ok 729 - candidate parity: contact/visible/测试/page1000000
+ok 730 - candidate parity: contact/visible/100% _ '/page1
+ok 731 - candidate parity: contact/visible/100% _ '/page2
+ok 732 - candidate parity: contact/visible/100% _ '/page10
+ok 733 - candidate parity: contact/visible/100% _ '/page1000000
+ok 734 - candidate parity: contact/visible/80100000/page1
+ok 735 - candidate parity: contact/visible/80100000/page2
+ok 736 - candidate parity: contact/visible/80100000/page10
+ok 737 - candidate parity: contact/visible/80100000/page1000000
+ok 738 - candidate parity: contact/visible/长/page1
+ok 739 - candidate parity: contact/visible/长/page2
+ok 740 - candidate parity: contact/visible/长/page10
+ok 741 - candidate parity: contact/visible/长/page1000000
+ok 742 - candidate parity: contact/visible/no-such-name/page1
+ok 743 - candidate parity: contact/visible/no-such-name/page2
+ok 744 - candidate parity: contact/visible/no-such-name/page10
+ok 745 - candidate parity: contact/visible/no-such-name/page1000000
+ok 746 - candidate parity: contact/visible/'); select 1; --/page1
+ok 747 - candidate parity: contact/visible/'); select 1; --/page2
+ok 748 - candidate parity: contact/visible/'); select 1; --/page10
+ok 749 - candidate parity: contact/visible/'); select 1; --/page1000000
+ok 750 - candidate parity: contact/hidden//page1
+ok 751 - candidate parity: contact/hidden//page2
+ok 752 - candidate parity: contact/hidden//page10
+ok 753 - candidate parity: contact/hidden//page1000000
+ok 754 - candidate parity: contact/hidden/测试/page1
+ok 755 - candidate parity: contact/hidden/测试/page2
+ok 756 - candidate parity: contact/hidden/测试/page10
+ok 757 - candidate parity: contact/hidden/测试/page1000000
+ok 758 - candidate parity: contact/hidden/100% _ '/page1
+ok 759 - candidate parity: contact/hidden/100% _ '/page2
+ok 760 - candidate parity: contact/hidden/100% _ '/page10
+ok 761 - candidate parity: contact/hidden/100% _ '/page1000000
+ok 762 - candidate parity: contact/hidden/80100000/page1
+ok 763 - candidate parity: contact/hidden/80100000/page2
+ok 764 - candidate parity: contact/hidden/80100000/page10
+ok 765 - candidate parity: contact/hidden/80100000/page1000000
+ok 766 - candidate parity: contact/hidden/长/page1
+ok 767 - candidate parity: contact/hidden/长/page2
+ok 768 - candidate parity: contact/hidden/长/page10
+ok 769 - candidate parity: contact/hidden/长/page1000000
+ok 770 - candidate parity: contact/hidden/no-such-name/page1
+ok 771 - candidate parity: contact/hidden/no-such-name/page2
+ok 772 - candidate parity: contact/hidden/no-such-name/page10
+ok 773 - candidate parity: contact/hidden/no-such-name/page1000000
+ok 774 - candidate parity: contact/hidden/'); select 1; --/page1
+ok 775 - candidate parity: contact/hidden/'); select 1; --/page2
+ok 776 - candidate parity: contact/hidden/'); select 1; --/page10
+ok 777 - candidate parity: contact/hidden/'); select 1; --/page1000000
+ok 778 - display parity: contact//page1
+ok 779 - display parity: contact//page2
+ok 780 - display parity: contact//page10
+ok 781 - display parity: contact/测试/page1
+ok 782 - display parity: contact/测试/page2
+ok 783 - display parity: contact/测试/page10
+ok 784 - display parity: contact/80100000/page1
+ok 785 - display parity: contact/80100000/page2
+ok 786 - display parity: contact/80100000/page10
+ok 787 - display parity: contact/长/page1
+ok 788 - display parity: contact/长/page2
+ok 789 - display parity: contact/长/page10
+ok 790 - display parity: contact/no-such-name/page1
+ok 791 - display parity: contact/no-such-name/page2
+ok 792 - display parity: contact/no-such-name/page10
+ok 793 - first page hydrates only its three names
+ok 794 - exact count does not evaluate off-page names
+ok 795 - empty deep page hydrates no name
+ok 796 - displayed page hydrates only its two names
+ok 797 - deep displayed page preserves exact total without names
+1..797

@@ -517,17 +517,28 @@ select ok(exists (
 ), 'the closure refusal names the foreign live consumer');
 delete from public.flows where id = (select foreign_flow_id from v2_fixture);
 
--- 1.10 a same-id different-version consumer is a distinct live consumer
+-- 1.10 a same-id published version remains a distinct live consumer. The closure
+-- inventories every state; keep one current draft and prove both exact versions
+-- remain in that inventory, even though the published row also fails draft scope.
 insert into public.flows (id, version, user_id, state_code, json_ordered, modified_at)
-select flow_id, '02.00.000', actor, 0,
+select flow_id, '02.00.000', actor, 100,
   to_json(pg_temp.v2_flow(flow_id, '02.00.000', alias_fp, '00.00.001', 'Alias property')), timestamp '2026-09-21 00:00:00'
 from v2_fixture;
 create temp table v2_neg_version as select pg_temp.v2_call(pg_temp.v2_batch()) as result;
 select is((select result->>'code' from v2_neg_version), 'ALIAS_V2_CLOSURE_MISMATCH', 'a same-id second-version consumer is refused');
-select ok(exists (
+select ok(jsonb_array_length((select result#>'{details,live_flows}' from v2_neg_version)) = 2 and exists (
   select 1 from jsonb_array_elements((select result->'details' from v2_neg_version) -> 'live_flows') as live
-  where live->>'version' = '02.00.000'
-), 'the closure refusal names the second-version consumer');
+  where live->>'id' = (select flow_id::text from v2_fixture)
+    and live->>'version' = '02.00.000'
+    and live->>'user_id' = (select actor::text from v2_fixture)
+    and live->>'state_code' = '100'
+) and exists (
+  select 1 from jsonb_array_elements((select result->'details' from v2_neg_version) -> 'live_flows') as live
+  where live->>'id' = (select flow_id::text from v2_fixture)
+    and live->>'version' = '01.00.000'
+    and live->>'user_id' = (select actor::text from v2_fixture)
+    and live->>'state_code' = '0'
+), 'the closure refusal retains both exact owner versions, including the published consumer');
 delete from public.flows where id = (select flow_id from v2_fixture) and version = '02.00.000';
 
 -- 1.11 a stored absolute uncertainty bound has no reviewed scaling and fails the closed key set

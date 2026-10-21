@@ -1,0 +1,94 @@
+{
+  "schema": "stable-owner-draft-hydration-fixture-proof.v1",
+  "acceptedRuntimeHead": "c1663f9ac1f909581969adee2c04d11ffbc90b9c",
+  "source": "supabase/tests/20261009_dataset_display_list_page_hydration.sql",
+  "sourceChange": "two explanatory comments and fixture state CASE only; all assertions and identities/versions/names/visibility unchanged",
+  "productionInputsUnchanged": true,
+  "red": {
+    "sourceSHA256": "8b1ce57f40959744e21ad50851aa29c861da039da3bd2b17eb4b600f867ce9c8",
+    "exit": 3,
+    "assertions": 0,
+    "error": [
+      "ERROR:  DATASET_DRAFT_CONFLICT"
+    ],
+    "rowCountTablesChecked": 160,
+    "allTableCountsRestored": true,
+    "isolation": "transaction-local TRUNCATE CASCADE of seven fixture tables, rollback on connection exit; no trigger disabling"
+  },
+  "green": {
+    "suiteCount": 4,
+    "assertions": 961,
+    "suites": [
+      {
+        "suite": "20261009_dataset_display_list_page_hydration.sql",
+        "sourceSHA256": "273481107d0a3f6af54cc6f1a3c94b8b7dd5e2b161cf7a0ea111ea3623216fbe",
+        "exit": 0,
+        "assertions": 797,
+        "failures": [],
+        "rowCountTablesChecked": 160,
+        "allTableCountsRestored": true
+      },
+      {
+        "suite": "20261009_dataset_display_settings.sql",
+        "sourceSHA256": "02b14c62a546865638726982c4edc06b7776eeeda44636aded66bf307e2ccb49",
+        "exit": 0,
+        "assertions": 40,
+        "failures": [],
+        "rowCountTablesChecked": 160,
+        "allTableCountsRestored": true
+      },
+      {
+        "suite": "20261010_portal_display_readers.sql",
+        "sourceSHA256": "7ed6791899223aa1eb6c6de22dfe8793c1e0cb79d12c01e01f25dcfd2f1ee96f",
+        "exit": 0,
+        "assertions": 93,
+        "failures": [],
+        "rowCountTablesChecked": 160,
+        "allTableCountsRestored": true
+      },
+      {
+        "suite": "20261011_portal_scoped_settings_reads.sql",
+        "sourceSHA256": "02925777b301266bed282a506fa0838b6bc4e41802c184c5b911b9004d6562d7",
+        "exit": 0,
+        "assertions": 31,
+        "failures": [],
+        "rowCountTablesChecked": 160,
+        "allTableCountsRestored": true
+      }
+    ]
+  },
+  "localHarness": {
+    "why": "retained synthetic E2E records; clean CI runs the checked-in test directly",
+    "operation": "TRUNCATE seven public fixture tables CASCADE after initial BEGIN, suite ROLLBACK or connection exit on setup error",
+    "cascadeTargets": [
+      "public.contacts",
+      "public.flowproperties",
+      "public.flows",
+      "public.lifecyclemodels",
+      "public.processes",
+      "public.sources",
+      "public.unitgroups"
+    ],
+    "affectedBeforeAndAfterRowCounts": {
+      "public.sources": 0,
+      "public.flows": 0,
+      "public.contacts": 0,
+      "public.processes": 16,
+      "public.lifecyclemodels": 0,
+      "public.unitgroups": 0,
+      "public.flowproperties": 0
+    },
+    "all160UserTableCountsRestoredAfterEveryRun": true,
+    "fullRowCountSnapshotSHA256": "7a5dc98c259fe8d0716ce400c8574e6bb857a76649f25d44234f408c4fa1a593",
+    "triggersDisabled": false,
+    "projectionChanged": false,
+    "resetOrPersistentCleanup": false,
+    "privateRunnerSHA256": "72777be3f5c062852bb41429eb41a49cb469919acf0e79e9a996efbcc3b7372e"
+  },
+  "reuse": {
+    "priorAcceptedSqlAssertions": 477,
+    "priorAcceptedConcurrencyAssertions": 65,
+    "rerunInThisFollowup": false
+  },
+  "deploymentOrDataAcceptance": false
+}

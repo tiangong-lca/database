@@ -209,6 +209,10 @@ export type Database = {
         Args: { p_request: Json; p_scope_id: string }
         Returns: Json
       }
+      cmd_dataset_prepare_stable_draft: {
+        Args: { p_request: Json; p_request_id: string }
+        Returns: Json
+      }
       cmd_dataset_publish: {
         Args: {
           p_audit?: Json
@@ -748,6 +752,10 @@ export type Database = {
       get_current_lca_release: { Args: never; Returns: Json }
       get_current_lca_release_process: {
         Args: { p_process_uuid: string; p_process_version: string }
+        Returns: Json
+      }
+      get_dataset_stable_draft_request: {
+        Args: { p_request: Json; p_request_id: string }
         Returns: Json
       }
       get_latest_contact_versions: {

@@ -1,0 +1,33 @@
+1..32
+ok 1 - processes exposes the exact LifecycleModel version
+ok 2 - processes.model_version stays nullable for legacy fallback rows
+ok 3 - an exact model version cannot exist without a model id
+ok 4 - an exact model version must use the ILCD version format
+ok 5 - dataset create accepts an exact model version for a Process
+ok 6 - dataset create persists the exact model version
+ok 7 - dataset create rejects a model version without a model id
+ok 8 - legacy draft save remains compatible when model fields are omitted
+ok 9 - omitting model fields preserves an existing exact model version
+ok 10 - an old writer may still move a Process to legacy model fallback semantics
+ok 11 - changing modelId without modelVersion clears a stale exact version
+ok 12 - draft save restores an explicit exact model reference
+ok 13 - draft save persists the restored exact model version
+ok 14 - dataset create-version accepts an exact model version
+ok 15 - dataset create-version persists the exact model version
+ok 16 - bundle save accepts a Process version that differs from its Model version
+ok 17 - bundle save records the parent Model version instead of the Process version
+ok 18 - bundle update cannot mutate a Process owned by another Model version
+ok 19 - bundle delete mutation cannot remove a Process owned by another Model version
+ok 20 - review target collection follows an exact cross-version Process owner reference
+ok 21 - all current review ownership paths use exact Model version semantics
+ok 22 - bundle delete resolves both exact and legacy ownership semantics
+ok 23 - bundle delete removes an exact cross-version Process owner reference
+ok 24 - bundle delete keeps legacy fallback behavior for null model_version
+ok 25 - bundle delete preserves Processes owned by another Model version
+ok 26 - latest Process list returns model_version
+ok 27 - Process search returns model_version from the selected Process revision
+ok 28 - legacy PGroonga Process search keeps its established result shape
+ok 29 - dataset create capability follows the new exact signature
+ok 30 - dataset save-draft capability follows the new exact signature
+ok 31 - dataset create-version capability follows the new exact signature
+ok 32 - retired command signatures do not remain in the capability manifest

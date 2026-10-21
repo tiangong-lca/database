@@ -6,6 +6,7 @@ declare
   v_actor uuid := auth.uid();
   v_model_version text := nullif(btrim(coalesce(p_model_version, '')), '');
   v_created_row jsonb;
+  v_stable_review_detail text;
 begin
   if v_actor is null then
     return jsonb_build_object(
@@ -160,6 +161,12 @@ begin
         'message', 'Dataset creation requires a valid id, version, and jsonOrdered payload'
       );
     when check_violation then
+      if sqlerrm = 'DATASET_REVIEW_IN_PROGRESS' then
+        get stacked diagnostics v_stable_review_detail = pg_exception_detail;
+        return jsonb_build_object('ok',false,'code','DATASET_REVIEW_IN_PROGRESS',
+          'status',409,'message','The owner dataset family is under review',
+          'details',v_stable_review_detail::jsonb);
+      end if;
       return jsonb_build_object(
         'ok', false,
         'code', sqlstate,

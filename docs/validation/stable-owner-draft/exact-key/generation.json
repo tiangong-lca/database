@@ -1,0 +1,11 @@
+{
+  "cli": "2.117.0",
+  "schemaDeterministicTwice": true,
+  "schemaSHA256": "081225b379dc7a29a788744ee897cb7d27c66476a0c0c3ced81944638ad8a5cc",
+  "typesDeterministicTwice": true,
+  "typesUnchangedFromHead": true,
+  "typesSHA256": "f0022a0d45ec7386e0d8eb25e91d1032e1f94f6e049f9e4cd7a2175e0abda027",
+  "guardSHA256": "fda61835467ea73332f3d5665340b47b90336fd1643af32787433c407fcab551",
+  "originalMigrationUnchanged": "e328f5ff68145abbff246ab9de0db80382c2d8750806b1698d3865b99301cbec",
+  "additiveMigrationSHA256": "7c04bbdec5e1f0ef865c190acdb6d32cb2e04530a70fc006cd070be99011cc09"
+}

@@ -1,0 +1,41 @@
+{
+  "schema": "stable-owner-draft-native-proof-public.v1",
+  "scope": "synthetic local integration, not production deployment or original-data/scientific acceptance",
+  "databaseHead": "c62b4d2130b0145b567fb704a828e58d1f4fd240",
+  "cliAcceptedHead": "fd12bf27ee691d86571df585ff99c4513eeb1695",
+  "edgeHead": "a077bf3f2676be85c84fb05d2a7c577e479ca39d",
+  "path": "installed accepted CLI -> actual Edge handler -> merged local PostgreSQL",
+  "observed": {
+    "source_unchanged": true,
+    "draft_count": 1,
+    "assigned_version_observed_from_server": "01.00.001",
+    "new_draft_rule_verification": false,
+    "review_family_new_draft_count": 0,
+    "prepare_receipt_count": 1,
+    "gateway_before": {
+      "prepare": 0,
+      "recovery": 0,
+      "save": 0,
+      "dropped": 0
+    },
+    "gateway_after": {
+      "prepare": 1,
+      "recovery": 2,
+      "save": 0,
+      "dropped": 1
+    },
+    "original_request_unchanged": true
+  },
+  "offlineBinding": {
+    "passed": true,
+    "saveReady": false
+  },
+  "externalHooksRestored": true,
+  "productionTouched": false,
+  "redactions": [
+    "command arguments",
+    "local artifact paths",
+    "synthetic actor and dataset identifiers",
+    "proposal and source body hashes"
+  ]
+}

@@ -1,0 +1,89 @@
+1..75
+75d057e7-adbf-4ee7-a66b-da83d957016a
+1f9af04d-68fb-4c84-b458-f99b1568f403
+
+
+
+ok 1 - the protected preflight refuses an unauthenticated call
+ok 2 - the protected admission refuses an unauthenticated call
+
+ok 3 - a request bound to another actor is refused
+
+ok 4 - a request whose actor email is not the authenticated email is refused
+
+ok 5 - a plan edited to drop the source flow property snapshot no longer matches its signed digest
+ok 6 - a plan carrying a malformed source flow property digest no longer matches its signed digest
+ok 7 - the private executor refuses a plan whose source evidence omits the source flow property snapshot
+ok 8 - the private executor refuses a malformed source flow property digest
+
+ok 9 - a request whose plan body no longer matches its signed digest is refused at admission
+ok 10 - the reviewed request passes the protected preflight
+ok 11 - the preflight reports its own command
+ok 12 - the preflight proof is the versioned schema
+ok 13 - the proof is bound to the client request identity
+ok 14 - the proof carries the CLI plan digest
+ok 15 - the internal operation identity is the plan digest
+ok 16 - the proof is bound to the production server context
+ok 17 - the plan simulation rolled back
+ok 18 - the simulation proves the plan row count
+ok 19 - the simulation proves the plan exchange count
+ok 20 - the simulation proves the plan audit topology
+ok 21 - the simulation proves the derivative target count
+ok 22 - the admission window is the preserved 180 seconds
+ok 23 - the preflight issues the gate expectation set digest
+ok 24 - exactly the three gates carry expectations
+ok 25 - the simulation wrote no flow change
+ok 26 - the simulation left no protected execution request
+ok 27 - the exact approval identity can be spent once
+ok 28 - the unused-execution gate cannot be captured before the primary support gate
+ok 29 - a gate that is not one of the three reviewed names is refused
+ok 30 - a gate with the wrong preflight token is refused
+ok 31 - the primary support gate passes
+ok 32 - the execution-unused gate passes
+ok 33 - the derivative-quiescence gate passes
+ok 34 - the primary gate receipt proves the expected evidence was observed
+ok 35 - exactly three gate receipts are stored
+ok 36 - an admission that does not carry the full gate set is refused
+ok 37 - the admission response carries its single proof schema name
+ok 38 - the admission request keeps its own input schema name: the response name is not accepted as input
+ok 39 - the sealed admission is accepted
+ok 40 - admission queues exactly one dispatch
+ok 41 - one attempt and one dispatch are consumed
+ok 42 - the single attempt is consumed without a retry
+ok 43 - exactly one executor callback is queued
+ok 44 - the queued callback targets the exact protected executor route
+ok 45 - the queued callback explicitly selects the exposed api content profile
+ok 46 - the queued callback keeps the service-key authentication headers
+ok 47 - the queued callback body keeps exactly the nonce-bound request fields
+ok 48 - the queued callback body binds the admitted request identity
+ok 49 - the one-shot attempt cannot be admitted twice
+
+ok 50 - a foreign actor cannot read the admitted execution
+
+ok 51 - the executor refuses a non-service call
+{"apikey": "[REDACTED TEST HEADER]", "authorization": "[REDACTED TEST HEADER]"}
+ok 52 - the executor refuses a callback that is not bound to the dispatched nonce
+ok 53 - the nonce-bound callback executes the plan
+ok 54 - the execution commits the primary and admits the derivative closure
+ok 55 - the executed row count is the plan count
+ok 56 - the executed exchange count is the plan count
+ok 57 - the executed audit topology is the plan count
+ok 58 - the derivative closure carries one target per changed row
+ok 59 - the executed attempt is not retryable
+ok 60 - a second callback against the executed attempt is refused
+ok 61 - every committed flow holds exactly the payload the plan claimed
+ok 62 - every committed process holds exactly the payload the plan claimed
+
+ok 63 - the applied plan replays as the stored proof under the same identity
+ok 64 - an exact plan replay writes no audit row
+ok 65 - a pending execution carries a null terminal proof (never a fabricated observation)
+ok 66 - the terminal read succeeds
+ok 67 - the read reports the derivative closure as pending, never a completed run
+ok 68 - the execution status is the committed primary
+ok 69 - the read never offers a retry
+ok 70 - the read proves the live primary closure
+ok 71 - the live closure counts the plan rows
+ok 72 - the live closure counts the plan exchanges
+ok 73 - the live closure counts the plan-derived audit topology
+ok 74 - no action of the closure is invalid
+ok 75 - the read echoes the executing plan request digest

@@ -1,0 +1,46 @@
+1..45
+ok 1 - sort key bytes: index zero
+ok 2 - sort key bytes: index 42
+ok 3 - sort key bytes: index max in domain
+ok 4 - sort key bytes: index max out of domain
+ok 5 - sort key bytes: ten digits out of domain
+ok 6 - sort key bytes: eleven digits
+ok 7 - sort key bytes: leading zeros
+ok 8 - sort key bytes: explicit plus
+ok 9 - sort key bytes: empty value
+ok 10 - sort key bytes: ascii single
+ok 11 - sort key bytes: ascii key
+ok 12 - sort key bytes: ascii newline
+ok 13 - sort key bytes: ascii tab
+ok 14 - sort key bytes: ascii DEL
+ok 15 - sort key bytes: two-byte max U+07FF
+ok 16 - sort key bytes: three-byte min U+0800
+ok 17 - sort key bytes: latin-1 U+00E9
+ok 18 - sort key bytes: three-byte CJK U+540D
+ok 19 - sort key bytes: below the gap U+D7FF
+ok 20 - sort key bytes: above the gap U+E000
+ok 21 - sort key bytes: replacement U+FFFD
+ok 22 - sort key bytes: BMP max U+FFFF
+ok 23 - sort key bytes: first non-BMP U+10000
+ok 24 - sort key bytes: emoji U+1F600
+ok 25 - sort key bytes: Unicode max U+10FFFF
+ok 26 - sort key bytes: ascii then CJK
+ok 27 - sort key bytes: 100-character ASCII key is one 0x00-prefixed byte per character
+ok 28 - order: canonical array indexes sort in ascending numeric order, not lexically
+ok 29 - order: every canonical array index sorts before every string key
+ok 30 - order: the empty key sorts before any non-empty string key
+ok 31 - order: the BMP maximum sorts above the first non-BMP code point, as UTF-16 requires
+ok 32 - canonical text: array-index keys first in numeric order, then strings in UTF-16 order
+ok 33 - canonical text: nested objects, nested arrays and a nested empty key
+ok 34 - canonical text: empty object
+ok 35 - canonical text: empty array
+ok 36 - canonical text: string scalar
+ok 37 - canonical text: numeric scalar
+ok 38 - canonical text: null scalar
+ok 39 - payload digest: mixed ASCII, CJK, emoji and index keys
+ok 40 - payload digest: nested canonical text
+ok 41 - payload digest: non-ASCII keys
+ok 42 - payload digest: scalars of every type
+ok 43 - shared util flow-identity digest: same canonical text, same digest
+ok 44 - shared util flow-identity digest: nested canonical text
+ok 45 - sort key: five distinct inputs produce five distinct deterministic keys

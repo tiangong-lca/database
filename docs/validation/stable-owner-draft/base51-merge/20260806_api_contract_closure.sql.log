@@ -1,0 +1,47 @@
+1..46
+ok 1 - api has no function executable through the PostgreSQL PUBLIC role
+ok 2 - every external API execute grant maps to an exact capability manifest entry
+ok 3 - the catalog contains every exact role grant frozen by the capability manifest
+ok 4 - all new facades are SECURITY DEFINER with an empty fixed search_path
+ok 5 - simple-search facades traverse their helper through the constrained executor
+ok 6 - authenticated receives the actor-derived read contracts
+ok 7 - actor-derived contracts are not callable by anon or bare service role
+ok 8 - service role receives the service facade family
+ok 9 - service facades reject browser roles at the ACL boundary
+ok 10 - future postgres-owned functions do not inherit PUBLIC execute
+ok 11 - membership mine returns only the actor memberships
+ok 12 - membership mine derives the actor from auth.uid
+ok 13 - ranked team mode returns only ranked teams
+ok 14 - team list embeds only the owner relationship
+ok 15 - team list exposes the explicit owner email DTO
+ok 16 - team keyword percent and underscore are matched literally
+ok 17 - team pagination carries an exact total count
+ok 18 - actor cannot read an unrelated private unranked team
+ok 19 - identity mine returns the actor email
+ok 20 - identity mine returns contact without raw metadata
+ok 21 - visible identity lookup includes self and active teammate but not outsider
+ok 22 - visible identity lookup enforces the 100-id bound
+ok 23 - unranked team directory requires a system manager
+ok 24 - ordinary actor cannot use system candidate lookup
+ok 25 - ordinary actor cannot use review candidate lookup
+ok 26 - system manager can read the unranked directory
+ok 27 - system candidate lookup normalizes email case and whitespace
+ok 28 - review admin can use the review candidate lookup
+ok 29 - review admin cannot cross into the system candidate lookup
+ok 30 - anon cannot execute actor-derived membership facade
+ok 31 - anon cannot execute service worker facade
+ok 32 - anon can execute the retained contacts simple-search facade
+ok 33 - anon can execute the retained flow-properties simple-search facade
+ok 34 - anon can execute the retained sources simple-search facade
+ok 35 - anon can execute the retained unit-groups simple-search facade
+ok 36 - authenticated cannot execute service LCA facade
+ok 37 - authenticated can execute the retained contacts simple-search facade
+ok 38 - authenticated can execute the retained flow-properties simple-search facade
+ok 39 - authenticated can execute the retained sources simple-search facade
+ok 40 - authenticated can execute the retained unit-groups simple-search facade
+ok 41 - service worker facade traverses the private implementation boundary
+ok 42 - service LCA projection returns the stable empty result contract
+ok 43 - service-only schema readback reports the exact migration head
+ok 44 - new read facades contain no stale public qualification for moved state
+ok 45 - bundle save overwrites actorUserId from auth.uid inside the transaction
+ok 46 - bundle delete locks the target before authorizing and mutating

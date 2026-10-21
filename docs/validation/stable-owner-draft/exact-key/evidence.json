@@ -1,0 +1,135 @@
+{
+  "schema": "stable-owner-draft-exact-key-proof.v1",
+  "parentHead": "55fd698ed60b97e429556f9240d1fe2e8e6d3f4c",
+  "canonicalBase": "96d042679810e8df0427d4d4ecd34e2c1b6a5d61",
+  "runtime": {
+    "postgres": "17.11",
+    "supabaseCli": "2.117.0",
+    "target": "owned disposable local database"
+  },
+  "sources": {
+    "supabase/migrations/20261020164514_stable_owner_draft.sql": "e328f5ff68145abbff246ab9de0db80382c2d8750806b1698d3865b99301cbec",
+    "supabase/migrations/20261020191735_stable_owner_draft_exact_key_compatibility.sql": "7c04bbdec5e1f0ef865c190acdb6d32cb2e04530a70fc006cd070be99011cc09",
+    "supabase/tests/20261021_stable_owner_draft.sql": "a9fe74736146fbda9a8056b5137e6af48462b7a59a3772bd4e74fd31f6ac0794",
+    "supabase/tests/20260806_api_contract_closure.sql": "d27aba0f799bbd4a60d27f42ac3fa0273d9b5ecc22b8a0976366dbbb4dbdf615",
+    "supabase/tests/regression/20261021_stable_owner_draft_concurrency.py": "36ffb67237e1d6d68661d3a46f18cbf29cff1f5f06a56439d310b0fe004b9434",
+    "supabase/workspace/remote_schema.sql": "081225b379dc7a29a788744ee897cb7d27c66476a0c0c3ced81944638ad8a5cc",
+    "supabase/workspace/schemas/private/functions/guard_stable_owner_draft/definition.sql": "fda61835467ea73332f3d5665340b47b90336fd1643af32787433c407fcab551",
+    "supabase/workspace/database.types.ts": "f0022a0d45ec7386e0d8eb25e91d1032e1f94f6e049f9e4cd7a2175e0abda027"
+  },
+  "red": {
+    "featureResult": "red-final-source.json",
+    "featureAssertions": 150,
+    "featureFailures": 21,
+    "method": "original guard substituted only inside rollback test transaction; no original migration replay",
+    "finalFeatureSourceDelta": "one additional Flow-type admission assertion after this RED recording; final GREEN binds the final source hash",
+    "fullImport": {
+      "passingBeforeSqlError": 9,
+      "exit": 3,
+      "error": "DATASET_DRAFT_CONFLICT",
+      "log": "red-full-import.sql.log"
+    }
+  },
+  "green": {
+    "assertions": 477,
+    "suiteCount": 11,
+    "suites": [
+      {
+        "suite": "20261021_stable_owner_draft.sql",
+        "sha256": "a9fe74736146fbda9a8056b5137e6af48462b7a59a3772bd4e74fd31f6ac0794",
+        "assertions": 151,
+        "exit": 0,
+        "failures": []
+      },
+      {
+        "suite": "20260918_tidas_full_package_import.sql",
+        "sha256": "c12aeffc483f84013f10034c366de3da22d9f4a2b94926ee590795a7c482ca08",
+        "exit": 0,
+        "assertions": 31,
+        "failures": [],
+        "error": []
+      },
+      {
+        "suite": "20260909_tidas_partial_import.sql",
+        "sha256": "acdac6c1d3b47c664a2fcefc37dae7e9107e26a8a8539fbcd2741ddfc7554001",
+        "exit": 0,
+        "assertions": 19,
+        "failures": [],
+        "error": []
+      },
+      {
+        "suite": "20260921_guarded_dataset_save_draft.sql",
+        "sha256": "65009582f9bcb12122a7e2eb8e472c0ebfe12404d701a1eb2a82ff4910a2dd19",
+        "exit": 0,
+        "assertions": 53,
+        "failures": [],
+        "error": []
+      },
+      {
+        "suite": "20260404_dataset_command_rpcs.sql",
+        "sha256": "ea1be9b2558d5241384e138249ce754347dd7cbd9decc25ad861eef79297a3f9",
+        "exit": 0,
+        "assertions": 15,
+        "failures": [],
+        "error": []
+      },
+      {
+        "suite": "20260611_dataset_create_version_rpc.sql",
+        "sha256": "a77e43b8e2e67f24ffc844081beb75a50d3a036266acdbba5be677491c21ea53",
+        "exit": 0,
+        "assertions": 19,
+        "failures": [],
+        "error": []
+      },
+      {
+        "suite": "20260902_process_model_version.sql",
+        "sha256": "5547ba38ae1ad58515ea44d03da9da983c3fb7a470d0dccc625ec117c590e719",
+        "exit": 0,
+        "assertions": 32,
+        "failures": [],
+        "error": []
+      },
+      {
+        "suite": "20261009_model_bundle_process_references.sql",
+        "sha256": "475c8eeb49bbb0abe88c357c4d1f407404dbac1bf8176ac46565f4abdbdbb65c",
+        "exit": 0,
+        "assertions": 16,
+        "failures": [],
+        "error": []
+      },
+      {
+        "suite": "20260915_result_process_lifecycle_protection.sql",
+        "sha256": "db79c96c94aa808ab981e23dbdcff2ac304af59621bc25046fe54caf80837985",
+        "exit": 0,
+        "assertions": 69,
+        "failures": [],
+        "error": []
+      },
+      {
+        "suite": "20260805_full_schema_cutover.sql",
+        "sha256": "04cfaed6fc43637ef17255a6b61d562a31cc2f5b132bbe4b7bccbb31e0c3d606",
+        "exit": 0,
+        "assertions": 26,
+        "failures": [],
+        "error": []
+      },
+      {
+        "suite": "20260806_api_contract_closure.sql",
+        "sha256": "d27aba0f799bbd4a60d27f42ac3fa0273d9b5ecc22b8a0976366dbbb4dbdf615",
+        "exit": 0,
+        "assertions": 46,
+        "failures": [],
+        "error": []
+      }
+    ]
+  },
+  "concurrency": {
+    "assertions": 65,
+    "passed": true,
+    "report": "concurrency.json",
+    "cleanupExit": 0
+  },
+  "generation": "generation.json",
+  "populatedCanonicalBaseUpgrade": "prior 22-assertion checkpoint retained; not freshly rerun for this additive compatibility migration",
+  "deploymentOrDataAcceptance": false
+}

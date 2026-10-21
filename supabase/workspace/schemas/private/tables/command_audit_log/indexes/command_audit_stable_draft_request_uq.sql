@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "command_audit_stable_draft_request_uq" ON "private"."command_audit_log" USING "btree" ("actor_user_id", (("payload" ->> 'requestId'::"text"))) WHERE ("command" = 'cmd_dataset_prepare_stable_draft'::"text");

@@ -1,0 +1,5 @@
+1..4
+ok 1 - every text literal of the shared vector list is installed
+ok 2 - the accepted set matches the shared oracle exactly
+ok 3 - every shared vector is evaluated without an exception
+ok 4 - every shared vector yields the expected verdict and the expected canonical desired string

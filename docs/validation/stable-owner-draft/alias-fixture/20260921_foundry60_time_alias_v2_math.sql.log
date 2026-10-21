@@ -1,0 +1,19 @@
+1..18
+ok 1 - grammar guard exists
+ok 2 - exact multiply helper exists
+ok 3 - integer one derives the canonical trimmed decimal
+ok 4 - trailing-zero one derives the identical canonical text
+ok 5 - stored 1.18E-7 literal multiplies exactly
+ok 6 - stored 1.03E-4 literal multiplies exactly
+ok 7 - stored 9.423E-4 literal multiplies exactly
+ok 8 - zero renders as plain zero
+ok 9 - a non-unit literal with a trailing zero multiplies and trims
+ok 10 - an exponent factor yields no product
+ok 11 - a factor other than the approved constant yields no product
+ok 12 - a bounded exponent literal passes
+ok 13 - a bounded negative exponent literal passes
+ok 14 - an out-of-range exponent is refused
+ok 15 - an over-long literal is refused
+ok 16 - a double exponent is refused
+ok 17 - a non-finite literal is refused
+ok 18 - a digit separator is refused

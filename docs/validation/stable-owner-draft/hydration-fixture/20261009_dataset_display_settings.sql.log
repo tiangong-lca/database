@@ -1,0 +1,49 @@
+ok 1 - configuration stores no operator
+ok 2 - private source projection is ACL closed
+ok 3 - anonymous and service mutation remain denied
+authenticated
+71200000-0000-4000-8000-000000000002
+ok 4 - ordinary actor cannot enumerate all database candidates
+ok 5 - ordinary actor cannot configure display
+ok 6 - unconfigured versions are hidden
+71200000-0000-4000-8000-000000000001
+ok 7 - manager sees every exact Process including foreign draft and state120
+ok 8 - draft accepted and duplicate exact identities deduplicated
+ok 9 - state120 accepts display without numerical publication
+ok 10 - setting again is a no-op
+ok 11 - no-op preserves the original operation timestamp
+ok 12 - mixed invalid batch rolls back earlier writes
+ok 13 - failed batch leaves no partial visibility
+ok 14 - LCIA methods excluded
+ok 15 - ILCD excluded
+ok 16 - empty batch rejected
+ok 17 - caller cannot alter source state
+ok 18 - page size bounded
+ok 19 - offset bounded
+ok 20 - type filter excludes Process
+ok 21 - empty page retains total count
+ok 22 - count precedes page
+71200000-0000-4000-8000-000000000002
+ok 23 - ordinary actor reads selected name projection
+ok 24 - displayed response excludes raw source and owner metadata
+ok 25 - raw state120 RLS remains closed even after selection
+71200000-0000-4000-8000-000000000001
+ok 26 - cancel stores false
+ok 27 - cancel retry is a no-op
+ok 28 - cancel disappears immediately
+ok 29 - source lifecycle remains unchanged
+ok 30 - false configuration retained without history
+ok 31 - actual visibility change updates the operation timestamp
+71200000-0000-4000-8000-000000000001
+ok 32 - all seven kinds and all versions selectable
+ok 33 - display projection spans exactly seven types
+ok 34 - visibility filter and total agree
+ok 35 - hidden filter excludes all selected versions
+ok 36 - new version does not inherit display
+ok 37 - source deletion clears only exact configuration
+ok 38 - display does not bypass approved source immutability
+{"ok": true, "data": {"isVisible": true, "inputCount": 1, "changedCount": 1, "requestedCount": 1, "unchangedCount": 0}}
+ok 39 - admitted source identity replacement clears exact configuration
+
+ok 40 - projection requires actor even under definer
+1..40

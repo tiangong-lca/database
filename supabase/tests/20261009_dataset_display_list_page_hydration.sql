@@ -58,12 +58,14 @@ do $$ declare k text; t text; path text[]; n integer; v text; name jsonb; doc js
    when 'source' then array['sourceDataSet','sourceInformation','dataSetInformation','common:shortName']
    else array['contactDataSet','contactInformation','dataSetInformation','common:name'] end;
   for n in 1..3 loop
+   -- Odd families retain published history plus one current draft; even
+   -- families retain both review versions. Display identities are unchanged.
    foreach v in array array['01.00.000','02.00.000'] loop
     name:=jsonb_build_object('@xml:lang','zh','#text',case when n=3 then repeat('长',6000) else k||' 测试 100% _ '||chr(39)||' '||n||' '||v end);
     if k in ('lifecyclemodel','process','flow') then name:=jsonb_build_object('baseName',name);end if;
     doc:=jsonb_build_object(path[1],jsonb_build_object(path[2],jsonb_build_object(path[3],jsonb_build_object(path[4],name))));
     execute format('insert into public.%I(id,version,state_code,user_id,json) values($1,$2,$3,$4,$5)',t)
-      using ('80100000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,v::character(9),case when n%2=0 then 20 else 0 end,'71200000-0000-4000-8000-000000000002'::uuid,doc;
+      using ('80100000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,v::character(9),case when n%2=0 then 20 when v='01.00.000' then 100 else 0 end,'71200000-0000-4000-8000-000000000002'::uuid,doc;
     insert into private.dataset_display_settings(dataset_kind,dataset_id,dataset_version,is_visible)
       values(k,('80100000-0000-4000-8000-'||lpad(n::text,12,'0'))::uuid,v::character(9),n%2=0);
    end loop;

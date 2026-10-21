@@ -1,0 +1,185 @@
+1..121
+88b8054b-87fd-477c-acd7-b3dc0d54285f
+9472cd33-1bdc-4552-9ee3-3039fa1cd42b
+
+ok 1 - profile: the length-time schema resolves to its closed profile
+ok 2 - profile: the time schema still resolves to alias_v2
+ok 3 - profile: an unknown schema resolves to null (closed)
+ok 4 - profile: a non-object plan resolves to null
+ok 5 - math: the reviewed factor is exactly 1000
+ok 6 - math: exact decimal multiplication renders canonically
+ok 7 - math: an out-of-grammar literal yields null, never a guess
+ok 8 - apply: the real-shaped cohort applies
+ok 9 - apply: the applied code is the length-time one
+ok 10 - apply: a fresh run is not a replay
+ok 11 - apply: 13 process actions
+ok 12 - apply: 13 processes written
+ok 13 - apply: no flow action exists
+ok 14 - apply: 39 exchange instances
+ok 15 - apply: 78 amount leaves
+ok 16 - apply: 26 unrelated occurrences inside the selected processes
+ok 17 - apply: the audit topology is 13 row + 1 batch + 1 plan
+ok 18 - apply: every process holds the exact x1000 literal on the output exchange
+ok 19 - apply: the resulting amount moved with the mean amount
+ok 20 - apply: unrelated exchanges are untouched
+ok 21 - uncertainty: exactly the four corpus exchanges that carry the relative field still carry it
+ok 22 - uncertainty: the preserved relative values are byte-identical to the fixture
+ok 23 - uncertainty: thirteen selected exchanges keep the undefined distribution
+ok 24 - uncertainty: twenty-six selected exchanges keep the log-normal spelling
+ok 25 - apply: the functional-unit text 1 kmy is byte-identical
+ok 26 - apply: every claimed flow is still a Product flow (read-only)
+ok 27 - apply: the canonical unit group is untouched
+ok 28 - ledger: one row audit per action
+ok 29 - ledger: one batch summary
+ok 30 - ledger: one plan summary
+ok 31 - closure: the fresh primary closure passes
+ok 32 - closure: 13 rows observed at their desired image
+ok 33 - proof: the terminal proof reports applied
+ok 34 - proof: 13 row audits in the proof
+ok 35 - proof: 13 fresh readback rows
+ok 36 - proof: the functional-unit expectation is the before image (no text action)
+ok 37 - replay: an exact resubmission replays
+ok 38 - replay: the replay code is the length-time one
+ok 39 - replay: no new audit row is written
+
+
+ok 40 - refuse: a desired-state row without its audit proof
+
+
+ok 41 - refuse: a declared factor other than 1000
+ok 42 - refuse: the factor refusal is a 409
+ok 43 - refuse: a before literal that is numerically equal but not byte-equal
+ok 44 - refuse: any edit outside the two named amount leaves
+ok 45 - refuse: an omitted instance no longer derives the claimed desired payload
+ok 46 - refuse: absolute uncertainty on a selected exchange
+ok 47 - refuse: a foreign live consumer of a claimed flow
+ok 48 - refuse: a claimed process that is no longer an owner-draft row of this actor
+ok 49 - refuse: a drifted modification timestamp
+ok 50 - refuse: a rescaled canonical unit group breaks the snapshot binding
+ok 51 - refuse: a claimed read-only flow whose payload drifted
+
+
+ok 52 - closed: the length-time executor refuses a time plan
+ok 53 - closed: the time executor refuses a length-time plan
+ok 54 - closed: the time batch executor refuses a length-time plan
+ok 55 - late failure: a stale action in the batch is refused
+ok 56 - late failure: zero audit rows survive
+ok 57 - late failure: every process row still holds its byte-exact before literal (zero rows written)
+
+
+ok 58 - null-safety: a JSON-null source digest refuses
+ok 59 - null-safety: a JSON-null source instance count refuses
+ok 60 - null-safety: a quoted source instance count refuses (the wire carries counts as numbers)
+ok 61 - null-safety: a JSON-null unit-group digest refuses
+ok 62 - null-safety: a JSON-null property version refuses
+ok 63 - null-safety: a JSON-null flow-snapshot digest refuses
+ok 64 - null-safety: a JSON-null source exchange number refuses
+ok 65 - null-safety: a JSON-null after literal refuses
+ok 66 - null-safety: a JSON-null expected modification timestamp refuses
+ok 67 - null-safety: a JSON-null claimed before digest refuses
+ok 68 - null-safety: a JSON-null claimed desired digest refuses
+ok 69 - null-safety: a JSON-null expected count refuses
+ok 70 - null-safety: an extra source-evidence key refuses even when null
+ok 71 - null-safety: an absent source digest key refuses
+ok 72 - null-safety: an extra canonical unit-group key refuses
+ok 73 - support binding: a canonical property pointing at a nonexistent unit-group version refuses
+
+
+ok 74 - observation: the terminal proof reports the live functional-unit text, never the plan claim
+ok 75 - observation: a drifted row is never labelled applied by the terminal proof
+ok 76 - observation: only the rows actually at their desired image count as observed
+ok 77 - observation: the fresh closure refuses a drifted row
+
+
+
+
+
+
+ok 78 - parse: metadata numbers without the anchored declaration refuse (never mistaken for the source id)
+
+
+ok 79 - parse: a declaration whose number differs from the plan refuses
+
+
+ok 80 - parse: two source-number declarations are ambiguous and refuse
+
+
+ok 81 - parse: the anchored declaration without its period refuses
+
+
+ok 82 - parse: a JSON-null comment node refuses
+
+
+ok 83 - parse: a bare-integer comment without the anchored declaration refuses (the closed rule is the anchored form)
+
+
+ok 84 - parse: a metadata number matching the claim never substitutes for the anchored declaration
+
+
+ok 85 - parse: the anchored declaration wins even when metadata repeats the same number
+
+
+
+
+
+
+ok 86 - factor spelling: a decimal spelling of the reviewed factor applies
+
+
+
+ok 87 - factor spelling: a value-equal exponent spelling is the same decimal and applies
+
+
+
+ok 88 - factor spelling: a rescaled factor refuses
+
+
+
+ok 89 - factor spelling: a malformed factor refuses cleanly instead of raising
+
+
+
+
+
+ok 90 - absent: the required-scalar helper returns false (never NULL) for an SQL NULL
+ok 91 - absent: the required-count helper returns false (never NULL) for an SQL NULL
+ok 92 - absent: a plan missing nine of its ten keys is refused by the key set
+ok 93 - absent: a plan without target_visibility refuses (root F1)
+ok 94 - absent: a plan without flow_snapshots refuses
+ok 95 - absent: a plan without the canonical property snapshot refuses
+ok 96 - absent: a plan without the canonical unit-group snapshot refuses
+ok 97 - absent: a plan without the expected block refuses
+ok 98 - absent: a plan without the source evidence refuses
+ok 99 - absent: a plan without its actor refuses
+ok 100 - absent: a plan without its self-hash refuses
+ok 101 - absent: an action without its expected modification timestamp refuses
+ok 102 - absent: an action without its claimed before digest refuses
+ok 103 - absent: an instance without its source exchange number refuses
+ok 104 - absent: an instance without its flow version refuses
+ok 105 - absent: a flow snapshot without its digest refuses
+ok 106 - absent: a canonical snapshot without its version refuses
+ok 107 - absent: an expected block missing one count refuses
+ok 108 - absent: every absent-field refusal wrote zero audit rows
+ok 109 - absent: every process row still holds its byte-exact before literal
+
+
+
+
+ok 110 - fresh read: the applied fixture still closes on every revalidated layer
+ok 111 - fresh read: the exact global occurrence closure holds at read time
+ok 112 - fresh read: an extra live consumer breaks the closure (39 -> 42)
+ok 113 - fresh read: the occurrence closure reports the mismatch
+ok 114 - fresh read: the live occurrence count is recomputed, not claimed
+ok 115 - fresh read: the claimed occurrence count comes from the plan
+
+ok 116 - fresh read: a rescaled canonical factor breaks the support binding
+ok 117 - fresh read: a rescaled canonical factor is not applied
+
+ok 118 - fresh read: a drifted read-only flow is counted, never silently accepted
+ok 119 - fresh read: a drifted read-only flow is not applied
+
+
+ok 120 - fresh read: the terminal proof refuses a drifted fixture
+ok 121 - fresh read: the clean applied fixture still proves applied
+
+

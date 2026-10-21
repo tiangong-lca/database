@@ -144,6 +144,7 @@ jobs:
           supabase test db supabase/tests/20261001_filtered_latest_flow_payloads.sql
           supabase test db supabase/tests/20261002_sources_rls_performance.sql
           supabase test db supabase/tests/20260921_guarded_dataset_save_draft.sql
+          supabase test db supabase/tests/20261021_stable_owner_draft.sql
           supabase test db supabase/tests/20260714_guarded_dataset_derivative_rebuild.sql
           supabase test db supabase/tests/20260715_guarded_dataset_derivative_rebuild_batch.sql
           supabase test db supabase/tests/20260928_edge_dispatch_modern_secret_headers.sql

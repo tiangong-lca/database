@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-10-21
-lastReviewedCommit: 96d042679810e8df0427d4d4ecd34e2c1b6a5d61
-lastReviewedNote: "Database #857: reviewed one-current-assigned-approval finalization and batch eligibility. Exact-local schema is generated from clean migration history; authority, revision, target-only publication, metadata, helper ACLs and independent rejection remain unchanged. Focused and populated-upgrade proof is tracked on the Issue."
+lastReviewedCommit: "51a0b3e81287c691b18b885af8767d4a8f8fd47d"
+lastReviewedNote: "Reviewed fresh-base merge of upstream #857 one-current-approval policy with unchanged stable-owner-draft admission/recovery; both ownership and validation contracts retained."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -90,6 +90,68 @@ contract. Record those hosted results separately before merge; offline fixtures
 do not replace them.
 
 ## Proof Matrix
+
+For Database #855, run `supabase/tests/20261021_stable_owner_draft.sql`, the existing
+create-version, guarded-save, dataset-command, Process-model-version, Model-bundle,
+Result lifecycle, API closure and full-schema suites. Keep the exact Result guard
+last; do not relax its trigger-order assertion. The older create-version fixture's
+other version belongs to a different owner's review instead of another active
+caller-owned draft, so allocation coverage does not bypass the caller's review fence.
+Run the unchanged `20260909_tidas_partial_import.sql` and
+`20260918_tidas_full_package_import.sql` suites for exact-key import compatibility.
+The stable-draft suite must preserve native duplicate `23505`, `DO NOTHING` body
+preservation and legitimate `DO UPDATE` content saves across all four types, while
+actual owner/state/post-sync version/model admission remains fenced. Use deliberately
+mismatched supplied/JSON versions to prove the final synchronized PK is pinned.
+Real overlapping sessions must prove delete/key-change contention both before and
+after pin acquisition, plus normal retry after the competing commit or rollback.
+Prove all four supported types, complete 0/1/many semantics, source and draft
+preimages, explicit reviewed selection, owner/table isolation, stale census,
+fake-modelId cross-scope refusal, reference-only Flow refusal without writer/audit,
+model/Flow scope changes after a receipt, exhausted-version refusal without a
+second allocator, and injected post-insert delegate failures with zero residual
+draft/native audit/receipt. Verify source true/new-clone false rule flags and
+unchanged existing-draft flags: identity preparation is not scientific save-ready
+acceptance. Verify owner review blocks with zero drafts and complete existing
+review return points, another-owner isolation, structured legacy errors and
+read-only receipt recovery after a review transition. Native model-bound-only and
+reference-only Flow-only duplicates are explicit exclusions, not global guarantees.
+Generate the schema and Data API type snapshots with the Supabase CLI selected by
+this repository's workflow, not a sibling Edge CLI. The PR #856 failure at the
+generated-types gate exposed a local `2.121.0` versus CI `2.117.0` mismatch;
+the correction restores canonical generation and leaves SQL/business bytes intact.
+READ COMMITTED admission also applies to these otherwise excluded scopes;
+repeatable-read/serializable admission is a documented compatibility refusal,
+while same-identity content saves retain their existing contract.
+
+Use an owned disposable canonical-base database for the populated upgrade:
+`supabase/tests/upgrade/20261021_stable_owner_draft_base.sql`, actual migration
+`20261020164514_stable_owner_draft.sql`, then
+`supabase/tests/upgrade/20261021_stable_owner_draft_head.sql`. The base fixture must
+run before the migration; never disable the new guard to synthesize historical
+duplicates. Compare whole rows, preserve published and never-published histories
+and mixed model groups, and prove conflicts/explicit selection perform zero
+version creates or deletions. The base fixture disables only its external Process
+AFTER webhook during synthetic seeding and restores it before commit.
+
+Run `python3 -B supabase/tests/regression/20261021_stable_owner_draft_concurrency.py
+--docker-host unix:///absolute/path/to/local/docker.sock
+--report /tmp/stable-owner-draft-concurrency.json` only against an owned local
+`supabase_db_cli372-local` container. The public Docker adapter validates the
+explicit local Unix socket, exact container/project label and sole internal
+`cli372-local` network with `codex.task=cli372`. It accepts no remote URL/credentials,
+refuses existing fixture identities,
+observes a live barrier wait before the peer verdict, settles only its unique
+session names and cleans only its own rows. Prove stable/stable, stable/legacy-create,
+legacy-create-version/stable and owner-transition/stable races, original-request
+lost-response lookup with no new writer, plus a `0 -> 20` review-entry race whose
+exact table/UUID family lock is observed in `pg_locks` before the peer verdict;
+the committed review must block all new drafts and return its existing version.
+Prove rejection under repeatable-read snapshots,
+and actual writer/receipt counts. If another environment is needed, give its
+runner an equally exact owned-local binding rather than relaxing the guard.
+These SQL/local results do not prove a deployed backend, original-data acceptance,
+runtime adoption, or authorization for Elementary Flow/LCIA/model data writes.
 
 For Database #842, the local-contract job runs `20261014_snapshot_build_terminal_guard.sql`: terminal failures survive repeated polling without additional jobs or draft snapshots, while explicit service retry and completed-request refresh remain available. The API closure assertion must track the exact new migration head.
 

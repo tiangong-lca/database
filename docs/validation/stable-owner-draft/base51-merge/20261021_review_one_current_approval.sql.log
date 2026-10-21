@@ -1,0 +1,33 @@
+ok 1 - task 1 batch permits one approval with another pending
+ok 2 - task 2 batch permits an approval alongside a rejection
+ok 3 - task 3 finalization requires a current assigned approving opinion
+ok 4 - task 3 batch uses identical approval guard
+ok 5 - task 4 finalization requires a current assigned approving opinion
+ok 6 - task 4 batch uses identical approval guard
+ok 7 - task 5 finalization requires a current assigned approving opinion
+ok 8 - task 5 batch uses identical approval guard
+ok 9 - task 6 finalization requires a current assigned approving opinion
+ok 10 - task 6 batch uses identical approval guard
+ok 11 - no reviewers still blocks finalization
+ok 12 - revision mismatch remains blocked
+ok 13 - invalid target state remains blocked
+ok 14 - reviewer cannot finalize even with an approving opinion
+ok 15 - task 1 finalizes without waiting for another reviewer
+ok 16 - task 1 publishes only its exact target
+ok 17 - task 1 becomes finalized
+ok 18 - task 1 retains existing pending-comment finalization behavior
+ok 19 - task 1 cannot be finalized again
+ok 20 - task 2 finalizes with mixed opinions
+ok 21 - task 2 publishes only its exact target
+ok 22 - task 2 becomes finalized
+ok 23 - task 2 retains existing pending-comment finalization behavior
+ok 24 - task 2 cannot be finalized again
+ok 25 - task 8 rejection does not require opinions
+ok 26 - task 8 can be rejected immediately
+ok 27 - task 8 rejection returns only its target to draft
+ok 28 - task 9 rejection does not require opinions
+ok 29 - task 9 can be rejected immediately
+ok 30 - task 9 rejection returns only its target to draft
+ok 31 - browser cannot execute private approval helper
+ok 32 - service role gains no helper authority
+1..32

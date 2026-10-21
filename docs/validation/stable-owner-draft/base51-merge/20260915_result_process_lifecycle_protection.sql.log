@@ -1,0 +1,70 @@
+ok 1 - the lifecycle guard is exactly an enabled row-level BEFORE UPDATE OR DELETE trigger
+ok 2 - no other BEFORE trigger on public.processes runs after the guard
+ok 3 - the guard consults no caller-settable setting
+ok 4 - the guard has no schema-qualified setting read either
+ok 5 - the guard depends on no publication receipt
+ok 6 - the guard helper is owned by postgres
+ok 7 - the guard helper pins an exactly empty fixed search_path
+ok 8 - the guard helper is executable by no browser or service role
+ok 9 - a Result cannot be downgraded to draft state
+ok 10 - a Result cannot be moved back to numeric-eligible state 100
+ok 11 - a Result version cannot be rewritten
+ok 12 - a Result owner cannot be reassigned
+ok 13 - a Result model binding cannot be changed
+ok 14 - a Result model version cannot be changed
+ok 15 - Result review verification cannot be changed
+ok 16 - Result review team assignment cannot be changed
+ok 17 - Result review binding cannot be changed
+ok 18 - Result review payload cannot be changed
+ok 19 - Result authored content cannot be changed
+ok 20 - the whitespace-variant document is jsonb-equal to the stored document
+ok 21 - the whitespace-variant document differs from the stored document byte-wise
+ok 22 - a jsonb-equal but byte-different ordered document is still rejected
+ok 23 - the Result row is reachable in the service context under test
+ok 24 - service_role direct UPDATE of a Result is refused
+ok 25 - service_role direct DELETE of a Result is refused
+ok 26 - both Results are intact immediately after the service-context attempts
+ok 27 - the review-controlled write context does not bypass Result protection
+ok 28 - the review-controlled write context cannot edit Result authored content
+ok 29 - the review-controlled write context cannot delete a Result
+ok 30 - the Result is byte-for-byte unchanged after the controlled-write attempts
+ok 31 - even a superuser DELETE of a Result is refused by the guard
+ok 32 - both Results survived every blocked attempt unchanged
+ok 33 - a no-op derivative update is permitted
+ok 34 - extracted_md may change on a Result
+ok 35 - search_text may change on a Result
+ok 36 - embedding_ft may change on a Result
+ok 37 - embedding_ft_at may change on a Result
+ok 38 - permitted derivative writes leave authored modified_at and content at parity
+ok 39 - the derivative write actually landed
+ok 40 - the fixture has no current release
+ok 41 - no publication receipt relation exists, so protection cannot depend on one
+ok 42 - the owner cannot withdraw a Result, even with no publication receipt present
+ok 43 - the Result withdrawal rejection is a 403
+ok 44 - baseline: withdrawing a state-100 process already raises the existing immutability guard
+ok 45 - baseline: withdrawing a state-100 support flow already raises the same guard
+ok 46 - a state-200 process is still refused by the preserved published-state condition
+ok 47 - the state-200 process withdrawal refusal keeps its 403 status
+ok 48 - a state-200 support flow is still refused by the preserved published-state condition
+ok 49 - the state-200 support flow withdrawal refusal keeps its 403 status
+ok 50 - the manager fixture holds the live platform role
+ok 51 - the Data Product Manager cannot withdraw even a Result it owns
+ok 52 - no withdrawal attempt changed a Result state
+ok 53 - a Result cannot be used as a version source
+ok 54 - the Result version-derivation rejection is a 403
+ok 55 - the blocked derivation created no draft row
+ok 56 - an ordinary process is still a valid version source
+ok 57 - the derived version is created as an ordinary state-0 draft
+ok 58 - a support flow still supports version derivation
+ok 59 - a state-200 row is still freely editable
+ok 60 - an ordinary state-0 row is still deletable
+ok 61 - the newly created support draft is still freely editable
+ok 62 - withdraw keeps its owner
+ok 63 - create_version keeps its owner
+ok 64 - withdraw keeps its exact fixed search_path
+ok 65 - create_version keeps its exact fixed search_path
+ok 66 - withdraw keeps its exact ACL set
+ok 67 - create_version keeps its exact ACL set
+ok 68 - no raw table write privilege was widened for browser roles
+ok 69 - service_role table privileges are unchanged
+1..69

@@ -1,0 +1,32 @@
+ok 1 - staging never writes domain data
+ok 2 - missing chunk cannot commit
+ok 3 - orphan-only package imports all records without a root
+ok 4 - receipt identifies whole-package mode
+ok 5 - exact replay returns original receipt
+ok 6 - one atomic receipt per package
+ok 7 - replay with changed records is rejected
+ok 8 - owner readback recovers whole-package committed count
+ok 9 - foreign actor cannot read receipt summary
+ok 10 - all-existing package skips every record
+ok 11 - all-existing package is a successful reused execution
+ok 12 - every skip is present in receipt for report generation
+ok 13 - skipping never overwrites existing content
+ok 14 - late invalid record fails whole package
+ok 15 - late failure rolls back earlier insert from another chunk
+ok 16 - failed package has no committed receipt
+ok 17 - failed package rolls back plan binding
+ok 18 - unrelated earlier committed package remains intact
+ok 19 - empty package cannot succeed
+ok 20 - expired lease cannot commit staged package
+ok 21 - expired lease leaves no writes
+ok 22 - browser cannot stage a package
+ok 23 - anonymous caller cannot apply a package
+ok 24 - receipt table is ACL closed
+ok 25 - same id/version in a different type is inserted
+ok 26 - skip identity includes the data type
+ok 27 - final fence rejects lease lost during domain inserts
+ok 28 - final fence rolls back all domain writes
+ok 29 - final fence rolls back receipt publication
+ok 30 - whole package receipt records real roots without requiring them
+ok 31 - recovered whole-package root counts remain accurate
+1..31

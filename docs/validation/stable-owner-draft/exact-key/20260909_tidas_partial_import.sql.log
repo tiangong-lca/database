@@ -1,0 +1,133 @@
+BEGIN
+CREATE EXTENSION
+SET
+ no_plan
+---------
+(0 rows)
+
+  set_config
+--------------
+ service_role
+(1 row)
+
+       set_config
+-------------------------
+ {"role":"service_role"}
+(1 row)
+
+CREATE TABLE
+CREATE FUNCTION
+INSERT 0 0
+INSERT 0 1
+INSERT 0 1
+INSERT 0 1
+CREATE FUNCTION
+CREATE TABLE
+INSERT 0 1
+UPDATE 1
+                     is
+--------------------------------------------
+ ok 1 - root and dependency commit together
+(1 row)
+
+                      is
+-----------------------------------------------
+ ok 2 - replay returns original commit receipt
+(1 row)
+
+                    is
+------------------------------------------
+ ok 3 - replay does not duplicate receipt
+(1 row)
+
+UPDATE 1
+INSERT 0 1
+UPDATE 1
+                    is
+-------------------------------------------
+ ok 4 - existing shared dependency skipped
+(1 row)
+
+                                     is
+----------------------------------------------------------------------------
+ ok 5 - different incoming content never overwrites existing state 100 data
+(1 row)
+
+                is
+----------------------------------
+ ok 6 - skip preserves state code
+(1 row)
+
+               throws_ok
+---------------------------------------
+ ok 7 - late invalid entry fails group
+(1 row)
+
+                            is
+----------------------------------------------------------
+ ok 8 - late failure rolls back earlier dependency insert
+(1 row)
+
+                          is
+------------------------------------------------------
+ ok 9 - prior successful groups survive later failure
+(1 row)
+
+                   is
+----------------------------------------
+ ok 10 - failed group leaves no receipt
+(1 row)
+
+                                     is
+-----------------------------------------------------------------------------
+ ok 11 - readback reports distinct committed records without report artifact
+(1 row)
+
+                        is
+--------------------------------------------------
+ ok 12 - foreign user cannot read receipt summary
+(1 row)
+
+                 ok
+-------------------------------------
+ ok 13 - browser cannot write groups
+(1 row)
+
+                      ok
+----------------------------------------------
+ ok 14 - receipts require reviewed capability
+(1 row)
+
+UPDATE 1
+                  throws_ok
+----------------------------------------------
+ ok 15 - expired lease cannot replay or write
+(1 row)
+
+INSERT 0 1
+                            is
+----------------------------------------------------------
+ ok 16 - v2 admission reuses existing source/queue checks
+(1 row)
+
+                         is
+-----------------------------------------------------
+ ok 17 - new job pins v2 before it becomes claimable
+(1 row)
+
+                 is
+-------------------------------------
+ ok 18 - new job pins partial policy
+(1 row)
+
+                   is
+-----------------------------------------
+ ok 19 - v2 re-enqueue reuses active job
+(1 row)
+
+ finish
+--------
+ 1..19
+(1 row)
+
+ROLLBACK

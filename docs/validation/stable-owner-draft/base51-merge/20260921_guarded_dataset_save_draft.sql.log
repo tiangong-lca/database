@@ -1,0 +1,54 @@
+1..53
+ok 1 - guarded draft-save facade exists with the exact expected-before signature
+ok 2 - the guarded facade has no default-overload ambiguity
+ok 3 - the guarded facade is SECURITY DEFINER, postgres-owned, with the writer's fixed search path
+ok 4 - the guarded facade is not executable through the PostgreSQL PUBLIC role
+ok 5 - only the authenticated actor role receives the guarded draft-save ACL
+ok 6 - the guarded facade reuses only the existing owner-draft write capability
+ok 7 - the manifest routine identity matches the exact catalog signature
+ok 8 - the guarded facade has exactly one capability manifest entry
+ok 9 - the owner can save exactly matching before content through the guarded facade
+ok 10 - the guarded facade writes the desired content through the existing writer
+ok 11 - the guarded facade forwards the existing rule-verification field
+ok 12 - a guarded save produces exactly one existing writer audit entry
+ok 13 - the guarded save forwards the caller audit payload unchanged
+ok 14 - a stale before image is refused with a stable conflict code
+ok 15 - the stale before image conflict reports HTTP 409
+ok 16 - the conflict response discloses no stored payload details
+ok 17 - a refused stale before image leaves the primary row unchanged
+ok 18 - a refused stale before image writes no successful write audit
+ok 19 - a reordered JSON array is not an equal before image under PostgreSQL JSON semantics
+ok 20 - an expected before image with an extra key is not equal and is refused
+ok 21 - numeric scale, object key order and whitespace do not change JSON value equality
+ok 22 - a before image that is a strict subset of the stored content stays unequal
+ok 23 - a non-owner cannot use the guard even with an exactly matching before image
+ok 24 - ownership is decided before any before-image comparison
+ok 25 - a review-state draft stays closed to the guarded path
+ok 26 - a published draft stays closed to the guarded path
+ok 27 - an example dataset is refused as a non-editable owner draft
+ok 28 - the guarded path is strictly owner state-0
+ok 29 - a nonexistent target fails closed without a write
+ok 30 - an unsupported table name is refused before any row access
+ok 31 - a null expected before image is refused
+ok 32 - a non-object expected before image is refused
+ok 33 - a scalar expected before image is refused
+ok 34 - an omitted expected before image cannot resolve the guarded facade at all
+ok 35 - no rejected guarded call produced a write audit
+ok 36 - the guarded facade delegates existing writer validation instead of copying it
+ok 37 - a session without a verified actor fails closed
+ok 38 - a NULL table name is refused with the stable invalid-table code
+ok 39 - a NULL table name reports HTTP 400
+ok 40 - a NULL target id fails closed as not found
+ok 41 - a NULL target version fails closed as not found
+ok 42 - an empty target version fails closed as not found
+ok 43 - a row whose state_code is unknown is refused instead of being treated as a draft
+ok 44 - an unknown draft state reports HTTP 403
+ok 45 - the guarded capability manifest identity resolves to the exact catalog signature
+ok 46 - invalid-input calls leave the primary row untouched
+ok 47 - invalid-input calls write no audit entry
+ok 48 - an unknown-state row keeps its original content
+ok 49 - an unknown-state refusal writes no audit entry
+ok 50 - the legacy unguarded save keeps its compatibility contract
+ok 51 - the legacy writer keeps its exact existing signature
+ok 52 - the legacy writer keeps its existing capability registration
+ok 53 - the legacy unguarded save still writes exactly one audit entry

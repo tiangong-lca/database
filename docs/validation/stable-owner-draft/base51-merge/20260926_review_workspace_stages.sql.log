@@ -1,0 +1,18 @@
+1..17
+ok 1 - admin workspace queue V5 exists
+ok 2 - member workspace queue V5 exists
+ok 3 - batch eligibility projection exists
+ok 4 - admin unassigned stage contains only state-zero reviews
+ok 5 - admin in-progress stage contains active assigned reviews
+ok 6 - admin completed stage contains approved and returned reviews
+ok 7 - admin queue exposes submitted reviewer progress
+ok 8 - admin approval preflight accepts a fully submitted review
+ok 9 - admin approval preflight requires an approving opinion
+ok 10 - member pending stage contains the editable draft
+ok 11 - member submitted stage contains active submitted opinions
+ok 12 - member completed stage contains both terminal outcomes
+ok 13 - submitted opinion can be reopened as a draft before finalization
+ok 14 - saving an edited submitted opinion resets it to pending
+ok 15 - reopened opinion leaves the submitted stage
+ok 16 - reopened opinion returns to the pending stage
+ok 17 - completed reviews remain read-only

@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-10-21
-lastReviewedCommit: 96d042679810e8df0427d4d4ecd34e2c1b6a5d61
-lastReviewedNote: "Database #857: reviewed one-current-assigned-approval finalization and batch eligibility. Exact-local schema is generated from clean migration history; authority, revision, target-only publication, metadata, helper ACLs and independent rejection remain unchanged. Focused and populated-upgrade proof is tracked on the Issue."
+lastReviewedCommit: "51a0b3e81287c691b18b885af8767d4a8f8fd47d"
+lastReviewedNote: "Reviewed fresh-base merge of upstream #857 one-current-approval policy with unchanged stable-owner-draft admission/recovery; both ownership and validation contracts retained."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -685,6 +685,9 @@ newline handling:
 ```bash
 supabase gen types typescript --local --workdir <isolated-workdir> --schema public --schema api
 ```
+
+Use the Supabase CLI pinned in `.github/workflows/supabase-dev.yml` for this
+generation. A sibling repository's CLI is not the Database generation toolchain.
 
 ### `build_portal_contract_types.py`
 

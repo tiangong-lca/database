@@ -1,0 +1,100 @@
+BEGIN
+CREATE EXTENSION
+SET
+ plan
+-------
+ 1..16
+(1 row)
+
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+ALTER TABLE
+INSERT 0 1
+INSERT 0 1
+SET
+                    is
+-------------------------------------------
+ ok 1 - array: allocate next model version
+(1 row)
+
+                                        is
+----------------------------------------------------------------------------------
+ ok 2 - array: only same-bundle exact references change; shape and fields survive
+(1 row)
+
+                                         is
+-------------------------------------------------------------------------------------
+ ok 3 - array: included refs follow created providers and preserve external versions
+(1 row)
+
+                          is
+------------------------------------------------------
+ ok 4 - array: children retain exact parent ownership
+(1 row)
+
+                     is
+--------------------------------------------
+ ok 5 - object: allocate next model version
+(1 row)
+
+                                        is
+-----------------------------------------------------------------------------------
+ ok 6 - object: only same-bundle exact references change; shape and fields survive
+(1 row)
+
+                                          is
+--------------------------------------------------------------------------------------
+ ok 7 - object: included refs follow created providers and preserve external versions
+(1 row)
+
+                          is
+-------------------------------------------------------
+ ok 8 - object: children retain exact parent ownership
+(1 row)
+
+                    is
+-------------------------------------------
+ ok 9 - empty: allocate next model version
+(1 row)
+
+                                        is
+-----------------------------------------------------------------------------------
+ ok 10 - empty: only same-bundle exact references change; shape and fields survive
+(1 row)
+
+                                          is
+--------------------------------------------------------------------------------------
+ ok 11 - empty: included refs follow created providers and preserve external versions
+(1 row)
+
+                          is
+-------------------------------------------------------
+ ok 12 - empty: children retain exact parent ownership
+(1 row)
+
+                     is
+---------------------------------------------
+ ok 13 - absent: allocate next model version
+(1 row)
+
+                                         is
+------------------------------------------------------------------------------------
+ ok 14 - absent: only same-bundle exact references change; shape and fields survive
+(1 row)
+
+                                          is
+---------------------------------------------------------------------------------------
+ ok 15 - absent: included refs follow created providers and preserve external versions
+(1 row)
+
+                           is
+--------------------------------------------------------
+ ok 16 - absent: children retain exact parent ownership
+(1 row)
+
+ finish
+--------
+(0 rows)
+
+ROLLBACK
