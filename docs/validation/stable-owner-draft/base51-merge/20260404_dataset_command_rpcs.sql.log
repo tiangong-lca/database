@@ -1,0 +1,16 @@
+1..15
+ok 1 - dataset owner can save a draft dataset through cmd_dataset_save_draft
+ok 2 - cmd_dataset_save_draft updates json_ordered
+ok 3 - cmd_dataset_save_draft updates rule_verification when provided
+ok 4 - non-owners cannot save someone else's draft dataset
+ok 5 - process draft save works when modelId is omitted
+ok 6 - cmd_dataset_save_draft preserves the existing process model_id when modelId is omitted
+ok 7 - cmd_dataset_save_draft clears existing process rule_verification when omitted
+ok 8 - changed process draft save invokes markdown extraction exactly once
+ok 9 - same-payload draft save succeeds without duplicating markdown extraction
+ok 10 - draft save is blocked when the dataset is already under review
+ok 11 - dataset owner can assign a draft dataset to a team they belong to
+ok 12 - cmd_dataset_assign_team updates the dataset team_id
+ok 13 - dataset owner can publish a draft dataset through cmd_dataset_publish
+ok 14 - direct publish is blocked when the dataset is under review
+ok 15 - successful dataset commands write command_audit_log entries

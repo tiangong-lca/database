@@ -1,0 +1,218 @@
+{
+  "schema": "stable-owner-draft-base51-merge-proof.v1",
+  "repository": "tiangong-lca/database",
+  "pr": "https://github.com/tiangong-lca/database/pull/856",
+  "base": "51a0b3e81287c691b18b885af8767d4a8f8fd47d",
+  "head": "c62b4d2130b0145b567fb704a828e58d1f4fd240",
+  "parents": [
+    "c5ae55a398b12b9820c856c854fb15959b49d627",
+    "51a0b3e81287c691b18b885af8767d4a8f8fd47d"
+  ],
+  "sourceHashes": {
+    "supabase/migrations/20261020164514_stable_owner_draft.sql": "e328f5ff68145abbff246ab9de0db80382c2d8750806b1698d3865b99301cbec",
+    "supabase/migrations/20261020191735_stable_owner_draft_exact_key_compatibility.sql": "7c04bbdec5e1f0ef865c190acdb6d32cb2e04530a70fc006cd070be99011cc09",
+    "supabase/workspace/database.types.ts": "f0022a0d45ec7386e0d8eb25e91d1032e1f94f6e049f9e4cd7a2175e0abda027",
+    "supabase/workspace/schemas/private/functions/guard_stable_owner_draft/definition.sql": "fda61835467ea73332f3d5665340b47b90336fd1643af32787433c407fcab551",
+    "supabase/workspace/schemas/api/functions/cmd_dataset_prepare_stable_draft/definition.sql": "7d03006778e8bca25bf23f762b532d1e49498d856099750bc00cdd18355a25e2",
+    "supabase/workspace/schemas/api/functions/get_dataset_stable_draft_request/definition.sql": "89633f595dce9d9e4274b3ddf1ce8aba64bcec178b6f01358c423854bcace072",
+    "supabase/migrations/20261021000624_review_one_current_approval.sql": "006c80e03a711058b9185bdf0b5a830990a03e62c76a85bf61461d074e4ef3c1",
+    "supabase/workspace/remote_schema.sql": "4ab4392811de70c5967869b41245fd4c319206b67ce2cd656c0a3dfa2c7d6183",
+    "supabase/tests/20260806_api_contract_closure.sql": "26bb5b13dbbf09cc22881686b9773ff08a0b81734f1881ad6645008af2b3b20f",
+    "supabase/tests/20261021_review_one_current_approval.sql": "6f1dca8f66f23db230a3a1c3e8f7bb36fdc97d61867203acbea83b5bdc8e6ef7"
+  },
+  "integration": {
+    "canonicalChange": "Upstream #857 / PR #858 allows final approval after one current assigned approving opinion; this is the only upstream runtime change integrated here.",
+    "canonicalPr": "https://github.com/tiangong-lca/database/pull/858",
+    "stableDraftImplementationUnchanged": true,
+    "apiTypesUnchanged": true,
+    "newAuthoredProductionLogic": false,
+    "conflictsResolved": {
+      "reviewMetadataFiles": 7,
+      "exactMigrationHeadTest": "20261021000624",
+      "runtimeSourceConflicts": 0
+    }
+  },
+  "freshValidation": {
+    "sqlAssertions": 673,
+    "sqlSuiteCount": 18,
+    "sqlSuites": [
+      {
+        "suite": "20261021_stable_owner_draft.sql",
+        "sha256": "a9fe74736146fbda9a8056b5137e6af48462b7a59a3772bd4e74fd31f6ac0794",
+        "assertions": 151,
+        "exit": 0,
+        "log": "20261021_stable_owner_draft.sql.log"
+      },
+      {
+        "suite": "20260918_tidas_full_package_import.sql",
+        "sha256": "c12aeffc483f84013f10034c366de3da22d9f4a2b94926ee590795a7c482ca08",
+        "assertions": 31,
+        "exit": 0,
+        "log": "20260918_tidas_full_package_import.sql.log"
+      },
+      {
+        "suite": "20260909_tidas_partial_import.sql",
+        "sha256": "acdac6c1d3b47c664a2fcefc37dae7e9107e26a8a8539fbcd2741ddfc7554001",
+        "assertions": 19,
+        "exit": 0,
+        "log": "20260909_tidas_partial_import.sql.log"
+      },
+      {
+        "suite": "20260921_guarded_dataset_save_draft.sql",
+        "sha256": "65009582f9bcb12122a7e2eb8e472c0ebfe12404d701a1eb2a82ff4910a2dd19",
+        "assertions": 53,
+        "exit": 0,
+        "log": "20260921_guarded_dataset_save_draft.sql.log"
+      },
+      {
+        "suite": "20260404_dataset_command_rpcs.sql",
+        "sha256": "ea1be9b2558d5241384e138249ce754347dd7cbd9decc25ad861eef79297a3f9",
+        "assertions": 15,
+        "exit": 0,
+        "log": "20260404_dataset_command_rpcs.sql.log"
+      },
+      {
+        "suite": "20260611_dataset_create_version_rpc.sql",
+        "sha256": "a77e43b8e2e67f24ffc844081beb75a50d3a036266acdbba5be677491c21ea53",
+        "assertions": 19,
+        "exit": 0,
+        "log": "20260611_dataset_create_version_rpc.sql.log"
+      },
+      {
+        "suite": "20260902_process_model_version.sql",
+        "sha256": "5547ba38ae1ad58515ea44d03da9da983c3fb7a470d0dccc625ec117c590e719",
+        "assertions": 32,
+        "exit": 0,
+        "log": "20260902_process_model_version.sql.log"
+      },
+      {
+        "suite": "20261009_model_bundle_process_references.sql",
+        "sha256": "475c8eeb49bbb0abe88c357c4d1f407404dbac1bf8176ac46565f4abdbdbb65c",
+        "assertions": 16,
+        "exit": 0,
+        "log": "20261009_model_bundle_process_references.sql.log"
+      },
+      {
+        "suite": "20260915_result_process_lifecycle_protection.sql",
+        "sha256": "db79c96c94aa808ab981e23dbdcff2ac304af59621bc25046fe54caf80837985",
+        "assertions": 69,
+        "exit": 0,
+        "log": "20260915_result_process_lifecycle_protection.sql.log"
+      },
+      {
+        "suite": "20260805_full_schema_cutover.sql",
+        "sha256": "04cfaed6fc43637ef17255a6b61d562a31cc2f5b132bbe4b7bccbb31e0c3d606",
+        "assertions": 26,
+        "exit": 0,
+        "log": "20260805_full_schema_cutover.sql.log"
+      },
+      {
+        "suite": "20260806_api_contract_closure.sql",
+        "sha256": "26bb5b13dbbf09cc22881686b9773ff08a0b81734f1881ad6645008af2b3b20f",
+        "assertions": 46,
+        "exit": 0,
+        "log": "20260806_api_contract_closure.sql.log"
+      },
+      {
+        "suite": "20260731_root_reference_review_v2.sql",
+        "sha256": "05bc6d884354738c8c224302262976e62248d57d62a0735342b4613f1be6f263",
+        "assertions": 29,
+        "exit": 0,
+        "log": "20260731_root_reference_review_v2.sql.log"
+      },
+      {
+        "suite": "20260802_root_grouped_review_queue.sql",
+        "sha256": "6ebfea89de08176dc44f8c1f980a0871b6e147734fb85069ccaa3786dce93372",
+        "assertions": 68,
+        "exit": 0,
+        "log": "20260802_root_grouped_review_queue.sql.log"
+      },
+      {
+        "suite": "20260809_rejected_reference_resubmission.sql",
+        "sha256": "b7cef971d952ffedaab9ae62d7ae4a46ec51f7e136db804fdfd9071ae7bfc597",
+        "assertions": 21,
+        "exit": 0,
+        "log": "20260809_rejected_reference_resubmission.sql.log"
+      },
+      {
+        "suite": "20260809_review_metadata_scope_basis.sql",
+        "sha256": "c648d96542c4fbd5fa8309e4e82faa3b89371b00f42b446b4af6c5125b892397",
+        "assertions": 22,
+        "exit": 0,
+        "log": "20260809_review_metadata_scope_basis.sql.log"
+      },
+      {
+        "suite": "20260812_reference_approval_scope_isolation.sql",
+        "sha256": "4ede6bec1618f2a0e0b973c2abfa1da56f3b63aa4f620e5036080e1a79fcc5f2",
+        "assertions": 7,
+        "exit": 0,
+        "log": "20260812_reference_approval_scope_isolation.sql.log"
+      },
+      {
+        "suite": "20260926_review_workspace_stages.sql",
+        "sha256": "fd9cca2f85909571491d0b9a3a0c53d5d10ca3dbc66338ef17c389ef490892cd",
+        "assertions": 17,
+        "exit": 0,
+        "log": "20260926_review_workspace_stages.sql.log"
+      },
+      {
+        "suite": "20261021_review_one_current_approval.sql",
+        "sha256": "6f1dca8f66f23db230a3a1c3e8f7bb36fdc97d61867203acbea83b5bdc8e6ef7",
+        "assertions": 32,
+        "exit": 0,
+        "log": "20261021_review_one_current_approval.sql.log"
+      }
+    ],
+    "concurrencyAssertions": 65,
+    "concurrencyReport": "concurrency.json",
+    "supabaseCli": "2.117.0",
+    "postgres": "17.11",
+    "liveSchemaMatchesHead": true,
+    "liveTypesMatchHead": true,
+    "nativeReport": "native-proof.json",
+    "cleanRebuild": false
+  },
+  "populatedUpgrade": {
+    "migration": "20261021000624_review_one_current_approval.sql",
+    "sha256": "006c80e03a711058b9185bdf0b5a830990a03e62c76a85bf61461d074e4ef3c1",
+    "appliedOnce": true,
+    "tablesCompared": 160,
+    "changedTables": [
+      "supabase_migrations.schema_migrations"
+    ],
+    "allDomainRowsUnchanged": true,
+    "schemaHead": "20261021000624",
+    "scope": "unchanged upstream migration applied to retained populated owned fixture; no reset"
+  },
+  "nonAuthorReview": {
+    "method": "independent fixed-ref comparison against both parents; no reviewer DB calls",
+    "materialFindings": 0,
+    "summary": "Both source intents preserved; canonical Review artifacts are exact upstream, accepted stable-draft bytes unchanged; only upstream Review helper/call/predicate/ACL changes in the merged schema."
+  },
+  "acceptance": {
+    "combinedRuntimeAcceptedForExistingPrPhase": true,
+    "dataCliSdkEvidenceReuseExplicit": true,
+    "method": "Root inspected the exact diff, bindings and counted TAP results, accepted fresh 673 SQL/65 concurrency/local native proof and explicit unchanged-evidence reuse",
+    "newRootDatabaseOrOriginalPositiveRun": false,
+    "productionAdoption": false
+  },
+  "historicalReuse": {
+    "originalCanonicalBaseUpgradeAssertions": 22,
+    "hydrationFixtureAssertions": 961,
+    "aliasFixtureAssertions": 490,
+    "freshlyRerunForThisMerge": false,
+    "priorHostedChecksAreNewHeadHostedProof": false
+  },
+  "publication": {
+    "sqlLogs": "TAP-only projections from private full logs; test results and plan lines retained, non-TAP query output and session/fixture values omitted",
+    "nativeProof": "allowlisted summary; commands, identities, private paths and authentication excluded",
+    "privateDriversOrReceiptsPublished": false
+  },
+  "boundaries": {
+    "productionDataAccess": false,
+    "productionWrites": false,
+    "deploymentOrRelease": false,
+    "originalDataAcceptance": false,
+    "scientificAcceptance": false
+  }
+}

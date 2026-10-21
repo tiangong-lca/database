@@ -1,0 +1,22 @@
+1..21
+ok 1 - the shared Reference Review helper no longer rejects an unchanged rejected checksum
+ok 2 - the unified submit command no longer exposes the unchanged-rejection gate
+ok 3 - the owner-repair fixture enters its initial Root Review
+ok 4 - Review Admin rejects the first Reference Review
+ok 5 - the rejected referenced dataset returns to Draft without changing content
+ok 6 - the referenced dataset owner can resubmit the unchanged rejected revision
+ok 7 - unchanged owner resubmission uses the reference_repair path
+ok 8 - unchanged owner resubmission creates a new Reference Review identity
+ok 9 - the rejected history and new active review retain the same unchanged checksum
+ok 10 - current JSON derives the new Reference Review identity without rebind storage
+ok 11 - unchanged reference repair persists no relationship snapshot
+ok 12 - the dependency fixture enters its initial Root Review
+ok 13 - Review Admin rejects the shared dependency revision
+ok 14 - a new Root Review can submit an unchanged previously rejected dependency
+ok 15 - the new Root Review receives a new Reference Review instead of the rejected row
+ok 16 - both current JSON closures derive the shared new Reference Review
+ok 17 - the earlier Root Review preserves no historical Root/Reference relationship
+ok 18 - a later Root Review can reuse the new active Reference Review
+ok 19 - active-review deduplication remains unchanged after the rejected retry
+ok 20 - later reuse has no snapshot append mechanism
+ok 21 - the dependency retry creates one new active row and preserves one rejected row

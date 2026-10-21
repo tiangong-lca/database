@@ -2,6 +2,12 @@
 
 Database [#855](https://github.com/tiangong-lca/database/issues/855) adds source-based preparation of a stable owner draft and read-only recovery of its original request. This directory records synthetic local database evidence, not deployment or original-data acceptance.
 
+The current [base-51 merge evidence](base51-merge/evidence.json) binds `dev@51a0b3e81287c691b18b885af8767d4a8f8fd47d` and merged runtime `c62b4d2130b0145b567fb704a828e58d1f4fd240`. Fresh qualification passed **673 SQL assertions in 18 suites and 65 real-overlap concurrency assertions**, live schema/type comparison using Database CLI `2.117.0`, and installed accepted CLI → actual Edge → merged local PostgreSQL transport, including response-loss recovery. [Native proof](base51-merge/native-proof.json) records one prepare dispatch, two recovery calls, zero saves, one draft/receipt, unchanged public source/request, review refusal and `save_ready=false`. The non-author fixed-ref review found no material issue.
+
+This merge integrates only canonical [#857 / PR #858](https://github.com/tiangong-lca/database/pull/858) Review approval changes; accepted #855 implementation and API types remain byte-identical. The unchanged upstream migration was applied once to the retained populated owned fixture: comparisons of all 160 tables found only migration-ledger changes. This was **not a fresh clean rebuild**. Root inspected the exact candidate diff/bindings and counted TAP evidence, then accepted this combined runtime for the existing PR phase with explicit unchanged DATA/CLI/SDK evidence reuse; Root did not perform another database or original positive-case run. Production adoption, original-data and scientific acceptance remain separate.
+
+The original 22-assertion populated-base upgrade and the 961/490 hydration/alias fixture checkpoints below remain historical, not fresh merge results. The 18 public SQL logs are TAP-only projections: result and plan lines are retained; other query/session output is omitted. Native commands, actor/dataset identities, local paths and authentication are excluded. All earlier evidence files remain unchanged, and prior hosted checks are not claimed as checks of this merged head.
+
 | Binding | Recorded value |
 | --- | --- |
 | Canonical repository / routine base | `tiangong-lca/database` / `dev` |

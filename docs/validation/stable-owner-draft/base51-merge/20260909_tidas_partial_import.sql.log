@@ -1,0 +1,20 @@
+ok 1 - root and dependency commit together
+ok 2 - replay returns original commit receipt
+ok 3 - replay does not duplicate receipt
+ok 4 - existing shared dependency skipped
+ok 5 - different incoming content never overwrites existing state 100 data
+ok 6 - skip preserves state code
+ok 7 - late invalid entry fails group
+ok 8 - late failure rolls back earlier dependency insert
+ok 9 - prior successful groups survive later failure
+ok 10 - failed group leaves no receipt
+ok 11 - readback reports distinct committed records without report artifact
+ok 12 - foreign user cannot read receipt summary
+ok 13 - browser cannot write groups
+ok 14 - receipts require reviewed capability
+ok 15 - expired lease cannot replay or write
+ok 16 - v2 admission reuses existing source/queue checks
+ok 17 - new job pins v2 before it becomes claimable
+ok 18 - new job pins partial policy
+ok 19 - v2 re-enqueue reuses active job
+1..19

@@ -1,0 +1,20 @@
+1..19
+ok 1 - cmd_dataset_create_version allocates after visible, commercial, and under-review versions when no owner draft exists
+ok 2 - created version is owned by the current actor
+ok 3 - created version persists rule verification
+ok 4 - created json_ordered dataSetVersion matches the allocated version
+ok 5 - created json_ordered permanentDataSetURI matches the allocated version
+ok 6 - command audit log records the allocated target version
+ok 7 - cmd_dataset_create_version carries version overflow correctly
+ok 8 - contact permanentDataSetURI uses the contact dataset route
+ok 9 - sourceVersion is checked when provided
+ok 10 - sourceVersion is required for create-version commands
+ok 11 - modelId is rejected outside process version creation
+ok 12 - lifecycle model create-version stays on bundle-specific commands
+ok 13 - unsupported tables are rejected
+ok 14 - jsonOrdered is required
+ok 15 - save_lifecycle_model_bundle allocates the next lifecycle model version when requested
+ok 16 - allocated lifecycle model JSON version is persisted
+ok 17 - allocated lifecycle model json_tg submodel version is persisted
+ok 18 - allocated lifecycle model resulting-process reference version is persisted
+ok 19 - allocated lifecycle bundle child process JSON version is persisted

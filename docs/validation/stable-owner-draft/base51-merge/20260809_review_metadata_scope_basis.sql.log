@@ -1,0 +1,23 @@
+1..22
+ok 1 - Reviewer metadata comment submission succeeds when it introduces references
+ok 2 - Reviewer metadata draft save succeeds when it introduces a reference
+ok 3 - Reviewer metadata draft remains an editable state-zero Comment
+ok 4 - temporarily stored metadata creates no Reference Review
+ok 5 - temporarily stored metadata appends no Root candidate hint
+ok 6 - reviewed Member queue ignores the unrelated state-zero draft Root
+ok 7 - formally saving the metadata Comment succeeds
+ok 8 - formally saved metadata Comment leaves the draft state
+ok 9 - formally saved metadata creates an unassigned Reference Review
+ok 10 - formally saved metadata stores the parent Root candidate hint
+ok 11 - formally saved unassigned Reference Review is grouped under its Root
+ok 12 - formally saved Root is included by its unassigned child task
+ok 13 - Reviewer metadata persists no relationship snapshot
+ok 14 - current Comment JSON excludes already-published metadata references
+ok 15 - approved metadata targets remain immutable without active candidate hints
+ok 16 - business candidate entries contain no Reference Review mapping data
+ok 17 - published Source and Contact references do not receive redundant Reference Reviews
+ok 18 - published ownerless metadata references require no approved Reference Review
+ok 19 - command response reports both affected datasets
+ok 20 - command audit preserves command facts without persisting Root/Reference mappings
+ok 21 - Reviewer approval comment is stored after scope expansion
+ok 22 - revoking the Comment removes both current relationships without cleanup writes

@@ -1,0 +1,17 @@
+1..16
+ok 1 - array: allocate next model version
+ok 2 - array: only same-bundle exact references change; shape and fields survive
+ok 3 - array: included refs follow created providers and preserve external versions
+ok 4 - array: children retain exact parent ownership
+ok 5 - object: allocate next model version
+ok 6 - object: only same-bundle exact references change; shape and fields survive
+ok 7 - object: included refs follow created providers and preserve external versions
+ok 8 - object: children retain exact parent ownership
+ok 9 - empty: allocate next model version
+ok 10 - empty: only same-bundle exact references change; shape and fields survive
+ok 11 - empty: included refs follow created providers and preserve external versions
+ok 12 - empty: children retain exact parent ownership
+ok 13 - absent: allocate next model version
+ok 14 - absent: only same-bundle exact references change; shape and fields survive
+ok 15 - absent: included refs follow created providers and preserve external versions
+ok 16 - absent: children retain exact parent ownership

@@ -1,0 +1,69 @@
+1..68
+ok 1 - Contact review snapshots normalize common:shortName as baseName
+ok 2 - Source review snapshots normalize common:shortName as baseName
+ok 3 - Unit Group review snapshots normalize common:name as baseName
+ok 4 - Flow Property review snapshots normalize common:name as baseName
+ok 5 - grouped Review Admin queue function exists
+ok 6 - grouped Review Member queue function exists
+ok 7 - flat Review Admin queue function exists
+ok 8 - flat Review Member queue function exists
+ok 9 - flat Review queues have a status and modified-time index
+ok 10 - Member Review queues have a reviewer and state index
+ok 11 - filtered Review queues have a target, status, and modified-time index
+ok 12 - flat Admin queue defaults to fifty rows per page
+ok 13 - flat Member queue defaults to fifty rows per page
+ok 14 - versioned root child query function exists
+ok 15 - legacy root child query remains available for compatibility
+ok 16 - Admin unassigned queue includes roots matched directly or through a child
+ok 17 - Admin main queue contains only Root Reviews
+ok 18 - an assigned root is marked as included by its unassigned child
+ok 19 - an unassigned root is marked as directly matching the tab
+ok 20 - Admin total_count counts grouped roots rather than individual reviews
+ok 21 - Admin pagination is applied after root grouping
+ok 22 - paginated Admin rows retain the grouped total
+ok 23 - flat Admin queue lists the matching Root and Reference as independent rows
+ok 24 - flat Admin queue retains the directly matching Root row
+ok 25 - flat Admin queue retains the shared Reference only once
+ok 26 - flat Admin model/process mode includes only the matching Process Root
+ok 27 - flat Admin other mode includes only the matching non-model Reference
+ok 28 - flat Admin exact Process filter includes only Process reviews
+ok 29 - flat Admin exact Flow filter includes only Flow reviews
+ok 30 - flat Admin display mode and exact data type use intersection semantics
+ok 31 - flat Admin queue rejects an unknown display mode
+ok 32 - flat Admin queue rejects an unknown target table
+ok 33 - flat Admin total_count counts independent Reviews before pagination
+ok 34 - Review Admin sees all current Reference Reviews under a root
+ok 35 - the child-row contract does not expose relation paths
+ok 36 - a shared Reference Review keeps the same review id under both roots
+ok 37 - one assigned Reference Review places every related root in the member queue
+ok 38 - Reference-only member results do not expose root actions or full root access
+ok 39 - Review Member pagination also counts grouped roots
+ok 40 - flat Member queue lists the assigned Reference once instead of related Roots
+ok 41 - flat Member queue preserves the assigned Reference Review identity
+ok 42 - flat Member total_count counts independent actor tasks
+ok 43 - flat Member other mode includes the assigned Source Review
+ok 44 - flat Member model/process mode excludes an assigned Source Review
+ok 45 - flat Member exact Source filter retains the filtered total count
+ok 46 - flat Member queue rejects an unknown target table
+ok 47 - Review Member child query hides unassigned and sibling reviewer tasks
+ok 48 - Review Member sees only their assigned Reference Review id
+ok 49 - member child row includes the actor comment state needed for tab matching
+ok 50 - Member reviewed tab includes every root that currently derives a reviewed child
+ok 51 - flat Member reviewed tab lists the reviewed Reference itself
+ok 52 - Member rejected tab requires both rejected Review and rejected actor Comment
+ok 53 - flat Member rejected tab lists the rejected Reference itself
+ok 54 - Admin assigned tab groups direct assigned roots and assigned children
+ok 55 - flat Admin assigned tab lists two matching Roots and one matching Reference
+ok 56 - Admin rejected tab groups roots matched directly or by rejected children
+ok 57 - Admin rejected tab marks a directly rejected root as a direct match
+ok 58 - Admin rejected tab marks a root included only by its rejected child
+ok 59 - flat Admin rejected tab lists one Root and two References independently
+ok 60 - stale business reviews[].id candidates are removed by current JSON validation
+ok 61 - flat queue membership is independent from changing Root relationship candidates
+ok 62 - active roots fail closed when a current JSON target has no Reference Review
+ok 63 - child query rejects callers without a review role
+ok 64 - anonymous callers cannot execute the grouped Admin queue
+ok 65 - anonymous callers cannot execute the grouped Member queue
+ok 66 - anonymous callers cannot execute the flat Admin queue
+ok 67 - anonymous callers cannot execute the flat Member queue
+ok 68 - the exact capability manifest admits both flat queues for authenticated only

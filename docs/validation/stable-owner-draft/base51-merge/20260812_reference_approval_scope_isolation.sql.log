@@ -1,0 +1,8 @@
+1..7
+ok 1 - the fixture retains an unrelated active Root with a missing current Reference Review
+ok 2 - impacted-root lookup does not evaluate the unrelated incomplete Root
+ok 3 - impacted-root lookup returns only the Root currently matching the selected Reference checksum
+ok 4 - Reference approval succeeds despite an unrelated incomplete Root
+ok 5 - successful Reference approval commits the Review transition
+ok 6 - successful Reference approval publishes the selected dataset
+ok 7 - the unrelated incomplete Root remains unchanged

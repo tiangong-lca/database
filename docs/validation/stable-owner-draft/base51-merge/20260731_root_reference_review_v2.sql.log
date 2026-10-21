@@ -1,0 +1,30 @@
+1..29
+ok 1 - latest-event notifications do not retain the superseded per-event unique index
+ok 2 - Contact uses the stable direct submit command
+ok 3 - normal submission creates a Root Review
+ok 4 - submitted root becomes read-only state 20
+ok 5 - one Root Review is created
+ok 6 - Root Reviews do not persist an immutable relationship scope snapshot
+ok 7 - a Contact with no current JSON/comment references has no derived child review
+ok 8 - submitted checksum matches the Gate checksum format
+ok 9 - Review Admin assigns the simple Root Review
+ok 10 - Reviewer approval requires no opinion payload
+ok 11 - Reviewer approval is stored as comment state 1
+ok 12 - Reviewer approval does not perform the Review Admin final transition
+ok 13 - Review Admin cannot submit a Reviewer opinion without a Reviewer assignment
+ok 14 - Review Admin can finalize the completed Root Review
+ok 15 - final approval moves the exact dataset to Open Data state 100
+ok 16 - final approval archives Reviewer comments as state 2
+ok 17 - published dataset business fields are immutable
+ok 18 - Review Admin assigns the Root Review before Reviewer rejection
+ok 19 - Reviewer rejection is accepted as an opinion
+ok 20 - Reviewer rejection is stored as Comment state -3
+ok 21 - Reviewer rejection leaves the Review assigned for final admin action
+ok 22 - Review Admin rejection succeeds after an earlier review event
+ok 23 - successful rejection atomically restores the dataset to editable state 0
+ok 24 - successful rejection keeps the review transition in the same transaction
+ok 25 - review lifecycle notifications retain one latest-event row per existing identity
+ok 26 - review lifecycle notification updates preserve the existing row identity
+ok 27 - latest-event notification exposes the rejection event
+ok 28 - latest-event notification retains the rejection reason code
+ok 29 - replaying the latest review event remains idempotent
