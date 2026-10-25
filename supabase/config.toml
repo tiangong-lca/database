@@ -4,7 +4,7 @@
 # working directory name when running `supabase init`.
 project_id = "database-engine"
 # Branching model for this repository:
-# - Git `main` -> primary production project using the shared baseline below
+# - Git `main` -> primary production project using the explicit [remotes.main] profile
 # - Git `dev` -> persistent Supabase branch configured under [remotes.dev]
 # - Pull requests / feature branches -> ephemeral preview branches inheriting the shared baseline
 # Keep branch-specific overrides under [remotes.<branch>] instead of duplicating the `supabase/`
