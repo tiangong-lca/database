@@ -30,9 +30,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-10-16
-lastReviewedCommit: a84fcd60be87bec5bea3f54ff2d494a09a51e1a4
-lastReviewedNote: "Reviewed Database #845 Actions-only monitoring and exact persistent-Dev push scope guard; existing local/ARM64 checks, Preview authority, generated-workspace ownership and production boundaries remain required."
+lastReviewedAt: 2026-10-25
+lastReviewedCommit: 3711a8e8e671decc5e77cd37341b9f5d83b622b6
+lastReviewedNote: "Database #863: reviewed local-safe Auth defaults and explicit Main/Dev config projections; no schema, migration, generated workspace or hosted operation is changed."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

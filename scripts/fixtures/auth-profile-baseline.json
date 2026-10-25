@@ -1,0 +1,212 @@
+{
+  "source": "3711a8e8e671decc5e77cd37341b9f5d83b622b6",
+  "main_auth": {
+    "enabled": true,
+    "site_url": "https://lca.tiangong.earth",
+    "additional_redirect_urls": [
+      "http://127.0.0.1:8000/*",
+      "http://localhost:8000/*",
+      "https://lca.tiangong.earth/*"
+    ],
+    "jwt_expiry": 3600,
+    "enable_refresh_token_rotation": true,
+    "refresh_token_reuse_interval": 10,
+    "enable_signup": true,
+    "enable_anonymous_sign_ins": false,
+    "enable_manual_linking": false,
+    "minimum_password_length": 6,
+    "password_requirements": "",
+    "rate_limit": {
+      "email_sent": 2,
+      "sms_sent": 30,
+      "anonymous_users": 30,
+      "token_refresh": 150,
+      "sign_in_sign_ups": 30,
+      "token_verifications": 30,
+      "web3": 30
+    },
+    "email": {
+      "enable_signup": true,
+      "double_confirm_changes": true,
+      "enable_confirmations": false,
+      "secure_password_change": false,
+      "max_frequency": "1s",
+      "otp_length": 6,
+      "otp_expiry": 3600,
+      "template": {
+        "recovery": {
+          "subject": "Reset your TianGong LCA password",
+          "content_path": "./supabase/templates/recovery.html"
+        }
+      }
+    },
+    "sms": {
+      "enable_signup": false,
+      "enable_confirmations": false,
+      "template": "Your code is {{ .Code }}",
+      "max_frequency": "5s",
+      "twilio": {
+        "enabled": false,
+        "account_sid": "",
+        "message_service_sid": "",
+        "auth_token": "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
+      }
+    },
+    "mfa": {
+      "max_enrolled_factors": 10,
+      "totp": {
+        "enroll_enabled": false,
+        "verify_enabled": false
+      },
+      "phone": {
+        "enroll_enabled": false,
+        "verify_enabled": false,
+        "otp_length": 6,
+        "template": "Your code is {{ .Code }}",
+        "max_frequency": "5s"
+      }
+    },
+    "external": {
+      "apple": {
+        "enabled": false,
+        "client_id": "",
+        "secret": "env(SUPABASE_AUTH_EXTERNAL_APPLE_SECRET)",
+        "redirect_uri": "",
+        "url": "",
+        "skip_nonce_check": false,
+        "email_optional": false
+      }
+    },
+    "web3": {
+      "solana": {
+        "enabled": false
+      }
+    },
+    "third_party": {
+      "firebase": {
+        "enabled": false
+      },
+      "auth0": {
+        "enabled": false
+      },
+      "aws_cognito": {
+        "enabled": false
+      },
+      "clerk": {
+        "enabled": false
+      }
+    },
+    "oauth_server": {
+      "enabled": false,
+      "authorization_url_path": "/oauth/consent",
+      "allow_dynamic_registration": false
+    }
+  },
+  "dev_auth": {
+    "enabled": true,
+    "site_url": "http://localhost:8000",
+    "additional_redirect_urls": [
+      "http://127.0.0.1:8000/*",
+      "http://localhost:8000/*"
+    ],
+    "jwt_expiry": 3600,
+    "enable_refresh_token_rotation": true,
+    "refresh_token_reuse_interval": 10,
+    "enable_signup": true,
+    "enable_anonymous_sign_ins": false,
+    "enable_manual_linking": false,
+    "minimum_password_length": 6,
+    "password_requirements": "",
+    "rate_limit": {
+      "email_sent": 2,
+      "sms_sent": 30,
+      "anonymous_users": 30,
+      "token_refresh": 150,
+      "sign_in_sign_ups": 30,
+      "token_verifications": 30,
+      "web3": 30
+    },
+    "email": {
+      "enable_signup": true,
+      "double_confirm_changes": true,
+      "enable_confirmations": false,
+      "secure_password_change": false,
+      "max_frequency": "1s",
+      "otp_length": 6,
+      "otp_expiry": 3600,
+      "template": {
+        "recovery": {
+          "subject": "Reset your TianGong LCA password",
+          "content_path": "./supabase/templates/recovery.html"
+        }
+      }
+    },
+    "sms": {
+      "enable_signup": false,
+      "enable_confirmations": false,
+      "template": "Your code is {{ .Code }}",
+      "max_frequency": "5s",
+      "twilio": {
+        "enabled": false,
+        "account_sid": "",
+        "message_service_sid": "",
+        "auth_token": "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
+      }
+    },
+    "mfa": {
+      "max_enrolled_factors": 10,
+      "totp": {
+        "enroll_enabled": false,
+        "verify_enabled": false
+      },
+      "phone": {
+        "enroll_enabled": false,
+        "verify_enabled": false,
+        "otp_length": 6,
+        "template": "Your code is {{ .Code }}",
+        "max_frequency": "5s"
+      }
+    },
+    "external": {
+      "apple": {
+        "enabled": false,
+        "client_id": "",
+        "secret": "env(SUPABASE_AUTH_EXTERNAL_APPLE_SECRET)",
+        "redirect_uri": "",
+        "url": "",
+        "skip_nonce_check": false,
+        "email_optional": false
+      }
+    },
+    "web3": {
+      "solana": {
+        "enabled": false
+      }
+    },
+    "third_party": {
+      "firebase": {
+        "enabled": false
+      },
+      "auth0": {
+        "enabled": false
+      },
+      "aws_cognito": {
+        "enabled": false
+      },
+      "clerk": {
+        "enabled": false
+      }
+    },
+    "oauth_server": {
+      "enabled": false,
+      "authorization_url_path": "/oauth/consent",
+      "allow_dynamic_registration": false
+    }
+  },
+  "seed": {
+    "enabled": true,
+    "sql_paths": [
+      "./seed.sql"
+    ]
+  }
+}

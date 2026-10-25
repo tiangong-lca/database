@@ -20,9 +20,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-10-23
-lastReviewedCommit: 51a0b3e81287c691b18b885af8767d4a8f8fd47d
-lastReviewedNote: "Database #860: reviewed additive dashboard v6 migration, latest-current state-0 attribution, draft ranking, capability ACLs and generated schema; original v5, ownership and deployment workflow remain unchanged."
+lastReviewedAt: 2026-10-25
+lastReviewedCommit: 3711a8e8e671decc5e77cd37341b9f5d83b622b6
+lastReviewedNote: "Database #863: reviewed local-safe Auth defaults and explicit Main/Dev config projections; no schema, migration, generated workspace or hosted operation is changed."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -985,3 +985,10 @@ once qualification evidence is preserved.
 ### Calculation export upgrade qualification
 
 `render_calculation_export_upgrade.py <output.sql>` renders the exact canonical-base populated fixture without connecting to a database. `test_calculation_export_upgrade.sh` runs that fixture only in the matching ephemeral GitHub-hosted workspace, with explicit isolated-reset admission. It verifies historical jobs/results/packages/snapshots, native export leases and immutable admission; see the validation guide for the pinned base and restore sequence.
+
+### Local Auth config qualification
+
+`python3 scripts/test_local_auth_profiles.py --require-cli` verifies local defaults
+and explicit Main/Dev projections through pinned CLI 2.117.0 and a loopback API
+fixture. `SUPABASE_CLI` can select that local executable. It does not apply hosted
+configuration; use the branching and validation guides for the boundary.

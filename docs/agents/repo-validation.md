@@ -32,9 +32,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-10-21
-lastReviewedCommit: 96d042679810e8df0427d4d4ecd34e2c1b6a5d61
-lastReviewedNote: "Database #857: reviewed one-current-assigned-approval finalization and batch eligibility. Exact-local schema is generated from clean migration history; authority, revision, target-only publication, metadata, helper ACLs and independent rejection remain unchanged. Focused and populated-upgrade proof is tracked on the Issue."
+lastReviewedAt: 2026-10-25
+lastReviewedCommit: 3711a8e8e671decc5e77cd37341b9f5d83b622b6
+lastReviewedNote: "Database #863: reviewed local-safe Auth defaults and explicit Main/Dev config projections; no schema, migration, generated workspace or hosted operation is changed."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1225,3 +1225,22 @@ The terminal-cache replay compatibility fix is a separate forward migration (`20
 ## National carbon organization drafts v6
 
 After a fresh migration rebuild, run `supabase test db supabase/tests/20260805_full_schema_cutover.sql supabase/tests/20260806_api_contract_closure.sql supabase/tests/20260901_national_carbon_organization_contributions.sql`. The exact API inventory adds only the v6 dashboard facade (339 total); schema readback must report migration head `20261023020324`. In addition to v5 compatibility, verify v6 admission/ACL/capability, latest-version state-0 counting, current-profile unit merging and reviewer-role exclusions, draft-only/zero units, all four numeric ranking priorities, deterministic name ties and continuous ranks. Keep chart membership/limits and summary/region/activity scopes covered.
+
+## Local-safe Auth config profiles
+
+For Database #863's config boundary, run:
+
+~~~bash
+python3 scripts/test_local_auth_profiles.py --require-cli
+~~~
+
+Use the repository-pinned Supabase CLI 2.117.0 on PATH, or set `SUPABASE_CLI` to
+its executable/JavaScript launcher. The standard-library test compares full
+Main/Dev Auth projections with the pre-change fixture and checks Main's explicit
+seed preservation. It invokes the actual CLI with a private synthetic profile
+whose Management API is a temporary loopback HTTP fixture, never a hosted project.
+Missing CLI is a failure with `--require-cli`; without it, only the CLI case skips.
+The hosted local-contract job requires that case. Also retain the existing local
+start/reset proof in an isolated project; never reset the shared development stack.
+No migration or generated schema/type regeneration is needed for this config-only
+change. Hosted apply/readback remains separate operational evidence.

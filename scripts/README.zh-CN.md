@@ -20,9 +20,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-10-23
-lastReviewedCommit: 51a0b3e81287c691b18b885af8767d4a8f8fd47d
-lastReviewedNote: "Database #860: reviewed additive dashboard v6 migration, latest-current state-0 attribution, draft ranking, capability ACLs and generated schema; original v5, ownership and deployment workflow remain unchanged."
+lastReviewedAt: 2026-10-25
+lastReviewedCommit: 3711a8e8e671decc5e77cd37341b9f5d83b622b6
+lastReviewedNote: "Database #863: reviewed local-safe Auth defaults and explicit Main/Dev config projections; no schema, migration, generated workspace or hosted operation is changed."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -839,3 +839,9 @@ qualification 小节。
 ### 计算导出升级验证
 
 `render_calculation_export_upgrade.py <output.sql>` 只生成绑定准确基线和迁移文件的 populated fixture，不连接数据库。`test_calculation_export_upgrade.sh` 只在匹配的临时 GitHub-hosted workspace 中、显式允许隔离重置后执行，验证既有任务/结果/包/快照不变、导出租约和不可变输入绑定。基线与恢复顺序见 validation guide。
+
+### 本地 Auth 配置验证
+
+`python3 scripts/test_local_auth_profiles.py --require-cli` 使用固定 CLI 2.117.0
+和回环 API 夹具，验证本地默认值及显式 Main/Dev 覆盖。`SUPABASE_CLI` 可指定该
+版本的本地入口。它不应用远端配置；详见 branching 与验证指南。

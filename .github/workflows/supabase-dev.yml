@@ -73,6 +73,7 @@ jobs:
       - name: Verify deployment workflow contract
         run: |
           python scripts/test_resolve_migration_head.py
+          python scripts/test_local_auth_profiles.py --require-cli
           python3 scripts/test_configure_derivative_scheduler.py
           python scripts/test_supabase_dev_workflow_contract.py
           python scripts/test_portal_rank_retirement_governance.py
