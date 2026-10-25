@@ -22,9 +22,9 @@ checkPaths:
   - .github/workflows/supabase-dev.yml
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
-lastReviewedAt: 2026-10-16
-lastReviewedCommit: a84fcd60be87bec5bea3f54ff2d494a09a51e1a4
-lastReviewedNote: "Reviewed Database #845 Actions-only monitoring and exact persistent-Dev push scope guard; existing local/ARM64 checks, Preview authority, generated-workspace ownership and production boundaries remain required."
+lastReviewedAt: 2026-10-25
+lastReviewedCommit: 3711a8e8e671decc5e77cd37341b9f5d83b622b6
+lastReviewedNote: "Database #863: reviewed local-safe Auth defaults and explicit Main/Dev config projections; no schema, migration, generated workspace or hosted operation is changed."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -97,7 +97,7 @@ canonical-base-to-head upgrade；追加的 Preview repair 本身不能证明首�
 
 ## 需要维护的文件
 
-- `supabase/config.toml`：共享基线加 `[remotes.dev]`
+- `supabase/config.toml`：本地安全基线与显式 `[remotes.main]`、`[remotes.dev]`
 - `.github/workflows/supabase-dev.yml`：重建本地合同、不部署 schema 地修复并验证准确的 PR Preview 运行态、把已提交 migration 部署到持久化 `dev`，并验证准确的托管结果
 - `supabase/migrations/*.sql`：已提交的 migration 历史
 - `supabase/seed.sql`：共享 seed 数据
@@ -388,3 +388,18 @@ python3 scripts/test_check_auth_email_templates.py
 - `supabase migration list`
 - `supabase link --project-ref <ref>`
 - `supabase db push`
+
+## 本地与显式托管 Auth 配置
+
+基础 `[auth]` 使用 `http://localhost:8000`，只允许回环地址跳转；普通本地启动和
+不匹配官方项目的 ref 不会继承天工生产站点的邮件或默认跳转地址。独立部署者应
+明确配置自己的站点和跳转范围。
+
+`[remotes.main]` 仅匹配准确的生产项目 ref，并保留原有生产 Auth 地址；
+`[remotes.dev]` 保留持久 Dev 的现有值。匹配依据是解析后的项目 ref，而不是当前
+Git 分支名称。Main 的显式 seed 段保留原共享 seed 行为，避免 CLI 在远端覆盖未
+声明该字段时自动禁用 seed。
+
+固定版本 CLI 2.117.0 的实际配置投影通过回环 Management API 夹具验证，使用合成
+凭据，覆盖自定义、Main、Dev 三种 ref。该证明不代表托管环境已应用配置，也不
+授权执行生产 `config push`；持久 Dev workflow 仍不得推送完整配置。

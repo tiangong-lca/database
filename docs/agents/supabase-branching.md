@@ -22,9 +22,9 @@ checkPaths:
   - .github/workflows/supabase-dev.yml
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
-lastReviewedAt: 2026-10-16
-lastReviewedCommit: a84fcd60be87bec5bea3f54ff2d494a09a51e1a4
-lastReviewedNote: "Reviewed Database #845 Actions-only monitoring and exact persistent-Dev push scope guard; existing local/ARM64 checks, Preview authority, generated-workspace ownership and production boundaries remain required."
+lastReviewedAt: 2026-10-25
+lastReviewedCommit: 3711a8e8e671decc5e77cd37341b9f5d83b622b6
+lastReviewedNote: "Database #863: reviewed local-safe Auth defaults and explicit Main/Dev config projections; no schema, migration, generated workspace or hosted operation is changed."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -95,7 +95,7 @@ When review changes an already-applied PR migration, add a later migration that 
 
 ## Files to maintain
 
-- `supabase/config.toml`: shared baseline plus `[remotes.dev]`
+- `supabase/config.toml`: local-safe baseline plus explicit `[remotes.main]` and `[remotes.dev]`
 - `.github/workflows/supabase-dev.yml`: rebuilds the local contract, repairs and verifies the exact PR Preview runtime without schema deployment, deploys committed migrations to persistent `dev`, and verifies the exact hosted result
 - `supabase/migrations/*.sql`: committed migration history
 - `supabase/seed.sql`: shared seed data
@@ -108,6 +108,27 @@ When review changes an already-applied PR migration, add a later migration that 
 - `docs/agents/supabase-branching_CN.md`: Chinese branching workflow
 
 Frontend consumer-repo env files are intentionally **not** maintained here.
+
+## Local and explicit hosted Auth profiles
+
+The base `[auth]` configuration uses `http://localhost:8000` and only loopback
+redirects. Plain local startup and unrelated project refs therefore do not inherit
+the TianGong hosted application's email/redirect destination. A fork or independent
+installation should configure its own site/redirect URLs explicitly.
+
+The first-party `[remotes.main]` block matches only the exact Production project
+ref; it retains the previous hosted site URL and redirect list. `[remotes.dev]`
+retains the existing persistent-Dev values. Selection is by the resolved project
+ref, not merely the current Git branch name. The explicit Main seed block also
+preserves the existing shared seed behavior: the pinned CLI disables seeding for
+a selected remote that omits that setting.
+
+Supabase CLI 2.117.0 merges the matching remote before projecting config. The
+loopback-backed contract test exercises the actual pinned CLI against a loopback
+Management API fixture for custom, Main and Dev refs, with synthetic credentials.
+This proves local projection/selection, not any hosted project's applied state.
+It does not authorize `config push` or a production Auth change. The existing
+persistent-Dev workflow still must not push full configuration.
 
 ## Operator env files
 
