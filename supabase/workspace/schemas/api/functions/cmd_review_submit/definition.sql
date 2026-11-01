@@ -109,7 +109,7 @@ begin
               modified_at = now()
         where id = $1
           and version = $2
-          and state_code = 0',
+          and coalesce(state_code, 0) = 0',
       v_table
     ) using p_target_id, p_target_version;
     perform set_config('app.review_controlled_write', 'off', true);
@@ -224,20 +224,27 @@ begin
         'message', 'A referenced dataset is not accessible'
       );
     end if;
+  end loop;
 
+  -- Validate the complete locked closure before creating any Reference Reviews.
+  -- A rejected dependency must leave the submission without partial writes.
+  for v_target in
+    select *
+    from review_submit_targets
+    where not is_root and state_code < 100
+    order by table_name, dataset_id, dataset_version
+  loop
     v_target_checksum := private.review_revision_fingerprint_v1(
       v_target.table_name,
       v_target.dataset_row
     );
 
-    if not v_target.is_root then
-      v_reference := private.review_get_or_create_reference_v1(
-        v_target.table_name,
-        v_target.dataset_row,
-        v_target_checksum,
-        v_actor
-      );
-    end if;
+    v_reference := private.review_get_or_create_reference_v1(
+      v_target.table_name,
+      v_target.dataset_row,
+      v_target_checksum,
+      v_actor
+    );
   end loop;
 
   insert into private.reviews (
@@ -275,22 +282,21 @@ begin
   returning * into v_root_review;
 
   perform set_config('app.review_controlled_write', 'on', true);
+  -- Published dependencies, including historical results, are validation-only.
   for v_target in
     select *
     from review_submit_targets
+    where state_code < 100
     order by is_root desc, table_name, dataset_id, dataset_version
   loop
     execute format(
       'update public.%I
-          set state_code = case when state_code < 20 then 20 else state_code end,
-              reviews = case
-                when state_code < 100
-                  then api.cmd_review_append_review_ref(reviews, $1)
-                else reviews
-              end,
+          set state_code = case when coalesce(state_code, 0) < 20 then 20 else state_code end,
+              reviews = api.cmd_review_append_review_ref(reviews, $1),
               modified_at = now()
         where id = $2
-          and version = $3',
+          and version = $3
+          and coalesce(state_code, 0) < 100',
       v_target.table_name
     ) using v_root_review_id, v_target.dataset_id, v_target.dataset_version;
 

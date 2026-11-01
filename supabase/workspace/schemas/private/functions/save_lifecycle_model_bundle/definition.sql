@@ -17,6 +17,7 @@ declare
     v_mutation jsonb;
     v_child_id uuid;
     v_child_version text;
+    v_saved_child_version text;
     v_child_json_ordered jsonb;
     v_child_rule_verification boolean;
     v_result_row lifecyclemodels%rowtype;
@@ -253,6 +254,8 @@ begin
           from lifecyclemodels
          where id = v_model_id
            and version = v_expected_version
+           and user_id = v_actor_user_id
+           and state_code = 0
          for update;
 
         if not found then
@@ -292,8 +295,8 @@ begin
                     raise exception 'INVALID_PLAN';
                 end if;
 
-                execute 'del' || 'ete from processes where id = $1 and version = $2 and model_id = $3 and coalesce(model_version, version) = $4'
-                   using v_child_id, v_child_version, v_model_id, v_model_version;
+                execute 'del' || 'ete from processes where id = $1 and version = $2 and model_id = $3 and coalesce(model_version, version) = $4 and user_id = $5 and state_code = 0'
+                   using v_child_id, v_child_version, v_model_id, v_model_version, v_actor_user_id;
 
                 get diagnostics v_rows_affected = row_count;
                 if v_rows_affected = 0 then
@@ -384,10 +387,18 @@ begin
                  where id = v_child_id
                    and version = v_child_version
                    and model_id = v_model_id
-                   and coalesce(model_version, version) = v_model_version;
+                   and coalesce(model_version, version) = v_model_version
+                   and user_id = v_actor_user_id
+                   and state_code = 0
+                returning version::text into v_saved_child_version;
 
                 if not found then
                     raise exception 'PROCESS_NOT_FOUND';
+                end if;
+                -- JSON synchronization may derive a different key from content.
+                -- Reject that change within the same transaction.
+                if v_saved_child_version is distinct from v_child_version then
+                    raise exception 'INVALID_PLAN';
                 end if;
             else
                 raise exception 'INVALID_PLAN';
@@ -423,11 +434,16 @@ begin
                rule_verification = v_parent_rule_verification
          where id = v_model_id
            and version = v_expected_version
+           and user_id = v_actor_user_id
+           and state_code = 0
         returning *
              into v_result_row;
 
         if not found then
             raise exception 'MODEL_NOT_FOUND';
+        end if;
+        if v_result_row.version::text is distinct from v_expected_version then
+            raise exception 'INVALID_PLAN';
         end if;
     end if;
 

@@ -53,6 +53,14 @@ begin
 end;
 $$;
 
+grant execute on function
+  pg_temp.bundle_document(text, text, text),
+  pg_temp.bundle_mutation(text, text, text),
+  pg_temp.bundle_plan(jsonb, text),
+  pg_temp.bundle_reject_save(jsonb),
+  pg_temp.bundle_reject_delete(uuid, text)
+to authenticated;
+
 insert into auth.users(id, instance_id, aud, role, email, encrypted_password,
   email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
   is_sso_user, is_anonymous)

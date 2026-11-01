@@ -16512,7 +16512,7 @@ begin
               modified_at = now()
         where id = $1
           and version = $2
-          and state_code = 0',
+          and coalesce(state_code, 0) = 0',
       v_table
     ) using p_target_id, p_target_version;
     perform set_config('app.review_controlled_write', 'off', true);
@@ -16627,20 +16627,27 @@ begin
         'message', 'A referenced dataset is not accessible'
       );
     end if;
+  end loop;
 
+  -- Validate the complete locked closure before creating any Reference Reviews.
+  -- A rejected dependency must leave the submission without partial writes.
+  for v_target in
+    select *
+    from review_submit_targets
+    where not is_root and state_code < 100
+    order by table_name, dataset_id, dataset_version
+  loop
     v_target_checksum := private.review_revision_fingerprint_v1(
       v_target.table_name,
       v_target.dataset_row
     );
 
-    if not v_target.is_root then
-      v_reference := private.review_get_or_create_reference_v1(
-        v_target.table_name,
-        v_target.dataset_row,
-        v_target_checksum,
-        v_actor
-      );
-    end if;
+    v_reference := private.review_get_or_create_reference_v1(
+      v_target.table_name,
+      v_target.dataset_row,
+      v_target_checksum,
+      v_actor
+    );
   end loop;
 
   insert into private.reviews (
@@ -16678,22 +16685,21 @@ begin
   returning * into v_root_review;
 
   perform set_config('app.review_controlled_write', 'on', true);
+  -- Published dependencies, including historical results, are validation-only.
   for v_target in
     select *
     from review_submit_targets
+    where state_code < 100
     order by is_root desc, table_name, dataset_id, dataset_version
   loop
     execute format(
       'update public.%I
-          set state_code = case when state_code < 20 then 20 else state_code end,
-              reviews = case
-                when state_code < 100
-                  then api.cmd_review_append_review_ref(reviews, $1)
-                else reviews
-              end,
+          set state_code = case when coalesce(state_code, 0) < 20 then 20 else state_code end,
+              reviews = api.cmd_review_append_review_ref(reviews, $1),
               modified_at = now()
         where id = $2
-          and version = $3',
+          and version = $3
+          and coalesce(state_code, 0) < 100',
       v_target.table_name
     ) using v_root_review_id, v_target.dataset_id, v_target.dataset_version;
 
@@ -52354,28 +52360,49 @@ CREATE OR REPLACE FUNCTION "private"."delete_lifecycle_model_bundle"("p_model_id
     AS $_$
 declare
     v_rows_affected integer;
+    v_owner uuid;
+    v_expected_children integer;
 begin
     if p_model_id is null or nullif(btrim(coalesce(p_version, '')), '') is null then
         raise exception 'INVALID_PLAN';
     end if;
 
-    perform 1
+    select user_id into v_owner
       from public.lifecyclemodels
      where id = p_model_id
        and version = p_version
+       and state_code = 0
      for update;
 
     if not found then
         raise exception 'MODEL_NOT_FOUND';
     end if;
 
-    -- The relational ownership columns define bundle membership. json_tg is
-    -- frontend state and may be absent, stale, or malformed.
-    execute 'del' || 'ete from processes where model_id = $1 and coalesce(model_version, version) = $2'
-       using p_model_id, p_version;
+    -- Materialize and lock relational membership once, including legacy fallback
+    -- and cross-version children. The destructive set cannot gain later rows.
+    -- A count mismatch rejects the complete command and rolls back any deletion.
+    execute 'with members as materialized (
+        select id, version, user_id, state_code
+          from public.processes
+         where model_id = $1 and coalesce(model_version, version) = $2
+         order by id, version
+         for update
+    ), removed as (' || 'del' || 'ete from public.processes p using members m
+        where p.id = m.id and p.version = m.version
+          and p.model_id = $1 and coalesce(p.model_version, p.version) = $2
+          and m.user_id = $3 and m.state_code = 0
+          and p.user_id = $3 and p.state_code = 0
+        returning 1
+    ) select (select count(*) from removed), (select count(*) from members)'
+       into v_rows_affected, v_expected_children
+       using p_model_id, p_version, v_owner;
+    if v_rows_affected <> v_expected_children then
+        raise exception 'PROCESS_NOT_FOUND';
+    end if;
 
-    execute 'del' || 'ete from lifecyclemodels where id = $1 and version = $2'
-       using p_model_id, p_version;
+    execute 'del' || 'ete from lifecyclemodels where id = $1 and version = $2
+        and user_id = $3 and state_code = 0'
+       using p_model_id, p_version, v_owner;
 
     get diagnostics v_rows_affected = row_count;
     if v_rows_affected = 0 then
@@ -78658,6 +78685,7 @@ declare
     v_mutation jsonb;
     v_child_id uuid;
     v_child_version text;
+    v_saved_child_version text;
     v_child_json_ordered jsonb;
     v_child_rule_verification boolean;
     v_result_row lifecyclemodels%rowtype;
@@ -78894,6 +78922,8 @@ begin
           from lifecyclemodels
          where id = v_model_id
            and version = v_expected_version
+           and user_id = v_actor_user_id
+           and state_code = 0
          for update;
 
         if not found then
@@ -78933,8 +78963,8 @@ begin
                     raise exception 'INVALID_PLAN';
                 end if;
 
-                execute 'del' || 'ete from processes where id = $1 and version = $2 and model_id = $3 and coalesce(model_version, version) = $4'
-                   using v_child_id, v_child_version, v_model_id, v_model_version;
+                execute 'del' || 'ete from processes where id = $1 and version = $2 and model_id = $3 and coalesce(model_version, version) = $4 and user_id = $5 and state_code = 0'
+                   using v_child_id, v_child_version, v_model_id, v_model_version, v_actor_user_id;
 
                 get diagnostics v_rows_affected = row_count;
                 if v_rows_affected = 0 then
@@ -79025,10 +79055,18 @@ begin
                  where id = v_child_id
                    and version = v_child_version
                    and model_id = v_model_id
-                   and coalesce(model_version, version) = v_model_version;
+                   and coalesce(model_version, version) = v_model_version
+                   and user_id = v_actor_user_id
+                   and state_code = 0
+                returning version::text into v_saved_child_version;
 
                 if not found then
                     raise exception 'PROCESS_NOT_FOUND';
+                end if;
+                -- JSON synchronization may derive a different key from content.
+                -- Reject that change within the same transaction.
+                if v_saved_child_version is distinct from v_child_version then
+                    raise exception 'INVALID_PLAN';
                 end if;
             else
                 raise exception 'INVALID_PLAN';
@@ -79064,11 +79102,16 @@ begin
                rule_verification = v_parent_rule_verification
          where id = v_model_id
            and version = v_expected_version
+           and user_id = v_actor_user_id
+           and state_code = 0
         returning *
              into v_result_row;
 
         if not found then
             raise exception 'MODEL_NOT_FOUND';
+        end if;
+        if v_result_row.version::text is distinct from v_expected_version then
+            raise exception 'INVALID_PLAN';
         end if;
     end if;
 
