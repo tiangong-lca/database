@@ -3,7 +3,8 @@ CREATE OR REPLACE FUNCTION "private"."lca_release_guard_run_update"() RETURNS "t
     SET "search_path" TO 'private', 'api', 'public', 'util', 'extensions', 'pg_temp'
     AS $$
 begin
-  if old.id is distinct from new.id
+  if old.publication_format is distinct from new.publication_format
+     or old.id is distinct from new.id
      or old.release_version is distinct from new.release_version
      or old.scope_mode is distinct from new.scope_mode
      or old.selection_manifest_hash is distinct from new.selection_manifest_hash

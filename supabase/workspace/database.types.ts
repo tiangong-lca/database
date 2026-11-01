@@ -255,6 +255,22 @@ export type Database = {
         }
         Returns: Json
       }
+      cmd_final_result_release_members_v2: {
+        Args: {
+          p_publish_plan_hash: string
+          p_release_run_id: string
+          p_rows: Json
+        }
+        Returns: Json
+      }
+      cmd_final_result_release_prepare_v2: {
+        Args: { p_idempotency_key: string; p_plan_text: string }
+        Returns: Json
+      }
+      cmd_final_result_release_seal_v2: {
+        Args: { p_publish_plan_hash: string; p_release_run_id: string }
+        Returns: Json
+      }
       cmd_lca_release_approve: {
         Args: {
           p_audit?: Json
@@ -2120,6 +2136,10 @@ export type Database = {
       processes_embedding_ft_input: {
         Args: { proc: Database["public"]["Tables"]["processes"]["Row"] }
         Returns: string
+      }
+      qry_final_result_release_v2: {
+        Args: { p_release_run_id: string }
+        Returns: Json
       }
       qry_identity_get_mine: {
         Args: never

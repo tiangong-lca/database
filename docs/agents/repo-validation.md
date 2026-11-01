@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-01
-lastReviewedCommit: 438d81e6eeab80d6b21a5ed065568cfdfced1793
-lastReviewedNote: "Database #879: reviewed additive Candidate v3/catalog registration, complete Result-only ZIP membership, independent storage targets, immutable receipt recovery, concurrency and populated-upgrade proof; existing publication authority, branch and deployment policies remain unchanged."
+lastReviewedCommit: ad274d627aef629ecea6004b238942912440040c
+lastReviewedNote: "Database #879: reviewed explicit final Result release format, actor-bound immutable selection, bounded batches and independent seal hash, legacy populated-upgrade and concurrency proof, exact generated contracts and focused CI additions. Branch, deployment and publication authority policies remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -178,6 +178,33 @@ It checks retained rows, ten existing API bodies, current-v1 readability,
 unpublished-version denial and exact recovery of pre-existing v2 seals.
 Finish with an exact blank rebuild and two drift-free schema/type exports.
 Actual S3 verification and actor activation/rollback remain separate acceptance.
+
+## Final Result release selection validation
+
+Run `20261101_final_result_release_selection.sql` with the preceding final
+identity/query/Candidate, legacy release/reader, API closure and full inventory
+suites after an exact blank rebuild. The Candidate and selection suites share
+`fixtures/final-result-candidate-setup.sql`; each caller owns its transaction and
+rollback. Cover live manager authorization/revocation, exact plan/idempotency,
+expected-current conflict, multiple artifacts, derived selection without parent
+membership, no raw ordinal input, late-batch rollback, bounded batches, incomplete
+or wrong selection hashes, immutable retries and absence of publication effects.
+
+`regression/20261101_final_result_release_selection.py` uses two actual connections
+on its exact disposable `hdf5-final-879` project. It observes blocking before
+committing, covers conflicting actor preparation and member/seal retries in all
+three isolation levels, and recovers the original through a fresh transaction.
+The harness retains its immutable synthetic records until the owner resets the
+project. Fixture user/profile creation shares a transaction because Auth mirrors
+profiles through a deferred trigger.
+
+For upgrade proof, populate the prior `20261101103000` baseline with the retained
+current-v1 fixture from the query-v2 upgrade and a registered Candidate, then run
+`upgrade/20261101_final_result_release_selection.sql` in one psql session. It
+compares existing rows (excluding only the new explicit format default), thirteen
+API bodies, current-v1 readability, unpublished-version denial and original
+Candidate receipts. End with an exact blank rebuild and two drift-free generated
+schema/type exports. These tests do not prove reader readiness or public activation.
 
 ## HDF5 result binding validation
 

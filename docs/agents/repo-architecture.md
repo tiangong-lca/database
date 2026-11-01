@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-01
-lastReviewedCommit: 438d81e6eeab80d6b21a5ed065568cfdfced1793
-lastReviewedNote: "Database #879: reviewed additive Candidate v3/catalog registration, complete Result-only ZIP membership, independent storage targets, immutable receipt recovery, concurrency and populated-upgrade proof; existing publication authority, branch and deployment policies remain unchanged."
+lastReviewedCommit: ad274d627aef629ecea6004b238942912440040c
+lastReviewedNote: "Database #879: reviewed explicit final Result release format, actor-bound immutable selection, bounded batches and independent seal hash, legacy populated-upgrade and concurrency proof, exact generated contracts and focused CI additions. Branch, deployment and publication authority policies remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -144,7 +144,45 @@ bounded metadata and the original target receipt for lost-ACK reconciliation.
 All three APIs are service-only under `EDGE-DATA-PRODUCT-01`; raw tables remain
 ACL-closed with RLS. Neither storage receipts nor reconciliation grants actor
 access or creates a release/current pointer. The versioned publication adapter,
-reader readiness, selected membership and full-ZIP authorization remain required.
+reader readiness, selection activation and full-ZIP authorization remain required.
+
+## Final Result publication selection
+
+Final Result runs reuse `lca_release_runs` and the existing publication authority.
+`publication_format` explicitly separates `legacy-four-zip.v1` from
+`final-result-pair.v2`. Existing runs retain the legacy format and its non-null
+Bundle, global scope and two-digit version contract. Final Result runs require
+null Bundle fields, `selected_final_results` scope and `YYYY.MM.N` release
+versions of at most 64 characters; their manifest and package-set hashes come
+from the qualified Candidate.
+The existing immutable-content and state-transition guards still apply.
+
+The authenticated-only `cmd_final_result_release_prepare_v2`,
+`cmd_final_result_release_members_v2`, `cmd_final_result_release_seal_v2` and
+`qry_final_result_release_v2` use `EDGE-REL-01` and recheck the live global manager
+role on every call, including retries. Service-role storage admission cannot
+approve or prepare an actor release. Prepare binds exact raw UTF-8 plan bytes,
+Candidate, storage target, selected count/hash, expected current publication and
+optional terminal rollback history. Actor/idempotency and run locks arbitrate
+concurrent requests; the same key cannot bind another run or changed plan bytes.
+
+`final_result_release_plans`, `final_result_release_members` and
+`final_result_release_selection_seals` are immutable, private and RLS-enabled.
+Member batches contain only exact Result UUID/version pairs (1–500, 1 MiB); SQL
+derives each artifact and ordinal from the Candidate's registered rows. Source
+Units, unselected parents and other file-contained Results acquire no membership.
+The selected count must be complete before sealing. Sort exact UUID@version keys
+as ASCII, hash LF-terminated groups of 500, then hash the LF-terminated domain
+`tiangong.final-result-selection.v1` followed by each block hash and LF. Seal
+recomputes this hash; duplicate retries preserve the original binding.
+
+Selection seal leaves the run `prepared` and creates no current publication.
+Fresh reader/permission readiness, exact actor approval, transactional
+expected-current activation, new-record rollback and actor-safe query/download
+remain required in the subsequent adapter. Stored files and sealed membership
+alone are not readiness or authorization. Rollback preparation only admits a
+terminal v2 publication referencing the exact retained Candidate; it never
+reactivates a historical row.
 
 ## Published HDF5 query bindings v1
 

@@ -1,8 +1,8 @@
 version: 1
 layout: repo
 lastReviewedAt: "2026-11-01"
-lastReviewedCommit: "438d81e6eeab80d6b21a5ed065568cfdfced1793"
-lastReviewedNote: "Database #879: reviewed registered final Result v2 artifact/row/source bindings, target-bound full-readback seals, bounded wire hashes, unchanged v1 publication authority, blank/populated-upgrade/concurrency evidence and exact-local generated contracts. Branch, Preview and deployment policies are unchanged."
+lastReviewedCommit: "ad274d627aef629ecea6004b238942912440040c"
+lastReviewedNote: "Database #879: reviewed explicit final Result release format, actor-bound immutable selection, bounded batches and independent seal hash, legacy populated-upgrade and concurrency proof, exact generated contracts and focused CI additions. Branch, deployment and publication authority policies remain unchanged."
 
 # Keep deterministic governance facts here.
 # AGENTS.md remains the repo contract entrypoint.

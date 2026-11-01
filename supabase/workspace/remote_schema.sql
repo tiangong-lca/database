@@ -10910,6 +10910,181 @@ COMMENT ON FUNCTION "api"."cmd_dataset_withdraw"("p_table" "text", "p_id" "uuid"
 
 
 
+CREATE OR REPLACE FUNCTION "api"."cmd_final_result_release_members_v2"("p_release_run_id" "uuid", "p_publish_plan_hash" "text", "p_rows" "jsonb") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$
+declare v_auth jsonb:=api.assert_lca_release_manager(); v_run private.lca_release_runs%rowtype;
+  v_plan private.final_result_release_plans%rowtype; v_row jsonb; v_query private.final_result_query_rows%rowtype;
+  v_old private.final_result_release_members%rowtype; v_count bigint;
+begin
+  if not coalesce((v_auth->>'ok')::boolean,false) then return v_auth; end if;
+  if jsonb_typeof(p_rows) is distinct from 'array' or pg_column_size(p_rows)>1048576 or octet_length(p_rows::text)>1048576 then
+    raise exception using errcode='22023',message='Invalid final Result release membership batch';
+  end if;
+  if jsonb_array_length(p_rows) not between 1 and 500 then raise exception using errcode='22023',message='Invalid final Result release membership batch'; end if;
+  select * into v_run from private.lca_release_runs where id=p_release_run_id for update;
+  if not found or v_run.publication_format<>'final-result-pair.v2' or v_run.publish_plan_hash is distinct from p_publish_plan_hash then
+    return private.lca_release_error('final_result_release_not_found',404,'Exact final Result release plan is required');
+  end if;
+  select * into strict v_plan from private.final_result_release_plans where release_run_id=v_run.id;
+  for v_row in select value from jsonb_array_elements(p_rows) loop
+    if jsonb_typeof(v_row) is distinct from 'object' then raise exception using errcode='22023',message='Invalid final Result selection identity'; end if;
+    if (select count(*) from jsonb_object_keys(v_row))<>2
+      or coalesce(v_row->>'uuid','') !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      or coalesce(v_row->>'version','') !~ '^[0-9]{2}\.[0-9]{2}\.[0-9]{3}$' then
+      raise exception using errcode='22023',message='Invalid final Result selection identity';
+    end if;
+    select q.* into v_query from private.final_result_query_rows q
+      join private.final_result_candidate_artifacts a on a.artifact_id=q.artifact_id
+      where a.candidate_hash=v_plan.candidate_hash and q.result_id=(v_row->>'uuid')::uuid and q.result_version=v_row->>'version';
+    if not found then raise exception using errcode='22023',message='Selected Result is absent from the exact Candidate'; end if;
+    select * into v_old from private.final_result_release_members where release_run_id=v_run.id and result_id=v_query.result_id and result_version=v_query.result_version;
+    if found then
+      if v_old.artifact_id<>v_query.artifact_id or v_old.row_ordinal<>v_query.row_ordinal then
+        raise exception using errcode='23505',message='Final Result selection binding conflict';
+      end if;
+    else
+      if v_run.status<>'prepared' or exists(select 1 from private.final_result_release_selection_seals where release_run_id=v_run.id) then
+        raise exception using errcode='55000',message='Sealed final Result release selection is immutable';
+      end if;
+      insert into private.final_result_release_members values(v_run.id,v_query.result_id,v_query.result_version,v_query.artifact_id,v_query.row_ordinal);
+    end if;
+  end loop;
+  select count(*) into v_count from private.final_result_release_members where release_run_id=v_run.id;
+  if v_count>v_plan.selection_count then raise exception using errcode='22023',message='Final Result selection exceeds the frozen count'; end if;
+  return jsonb_build_object('ok',true,'data',jsonb_build_object('releaseRunId',v_run.id,'registeredResultCount',v_count,'publicationAuthorized',false));
+end;
+$_$;
+
+
+ALTER FUNCTION "api"."cmd_final_result_release_members_v2"("p_release_run_id" "uuid", "p_publish_plan_hash" "text", "p_rows" "jsonb") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "api"."cmd_final_result_release_prepare_v2"("p_plan_text" "text", "p_idempotency_key" "text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$
+declare v_auth jsonb:=api.assert_lca_release_manager(); v_plan jsonb; v_hash text; v_id uuid; v_expected uuid; v_rollback uuid;
+  v_current uuid; v_candidate private.final_result_candidates%rowtype; v_old private.lca_release_runs%rowtype;
+  v_count integer;
+begin
+  if not coalesce((v_auth->>'ok')::boolean,false) then return v_auth; end if;
+  if p_plan_text is null or octet_length(p_plan_text) not between 1 and 16384
+    or not (p_plan_text is json object with unique keys) or coalesce(length(p_idempotency_key),0) not between 1 and 128
+    or p_idempotency_key<>btrim(p_idempotency_key) then
+    raise exception using errcode='22023',message='Invalid final Result publish plan';
+  end if;
+  v_plan:=p_plan_text::jsonb;
+  if (select count(*) from jsonb_object_keys(v_plan))<>10
+    or v_plan->>'schemaVersion' is distinct from 'tiangong.final-result-publish-plan.v2'
+    or coalesce(v_plan->>'releaseRunId','') !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    or coalesce(v_plan->>'releaseVersion','') !~ '^[0-9]{4}\.[0-9]{2}\.[0-9]+$'
+    or jsonb_typeof(v_plan->'releaseVersion') is distinct from 'string'
+    or length(v_plan->>'releaseVersion')>64
+    or coalesce(v_plan->>'candidateSha256','') !~ '^[0-9a-f]{64}$'
+    or jsonb_typeof(v_plan->'candidateSha256') is distinct from 'string'
+    or coalesce(v_plan->>'targetHash','') !~ '^[0-9a-f]{64}$'
+    or jsonb_typeof(v_plan->'targetHash') is distinct from 'string'
+    or coalesce(v_plan->>'selectionHash','') !~ '^[0-9a-f]{64}$'
+    or jsonb_typeof(v_plan->'selectionHash') is distinct from 'string'
+    or jsonb_typeof(v_plan->'reason') is distinct from 'string'
+    or coalesce(length(btrim(v_plan->>'reason')),0) not between 1 and 2000
+    or not (v_plan ? 'expectedCurrentPublicationId') or not (v_plan ? 'rollbackOfPublicationId') then
+    raise exception using errcode='22023',message='Invalid final Result publish plan';
+  end if;
+  if (v_plan->'expectedCurrentPublicationId'<>'null'::jsonb and coalesce(v_plan->>'expectedCurrentPublicationId','') !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
+    or (v_plan->'rollbackOfPublicationId'<>'null'::jsonb and coalesce(v_plan->>'rollbackOfPublicationId','') !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$') then
+    raise exception using errcode='22023',message='Invalid final Result publication precondition';
+  end if;
+  v_count:=private.final_result_query_uint(v_plan->'selectionCount',2000000);
+  if v_count=0 then raise exception using errcode='22023',message='Empty final Result publication selection'; end if;
+  v_id:=(v_plan->>'releaseRunId')::uuid;
+  v_expected:=(v_plan->>'expectedCurrentPublicationId')::uuid; v_rollback:=(v_plan->>'rollbackOfPublicationId')::uuid;
+  v_hash:=encode(extensions.digest(convert_to(p_plan_text,'UTF8'),'sha256'),'hex');
+  -- The actor/idempotency lock also arbitrates two different run UUIDs for one key.
+  perform pg_advisory_xact_lock(hashtextextended(auth.uid()::text||':'||p_idempotency_key,881));
+  select * into v_old from private.lca_release_runs where id=v_id or (created_by=auth.uid() and idempotency_key=p_idempotency_key)
+    order by (id=v_id) desc limit 1 for update;
+  if found then
+    if v_old.id<>v_id or v_old.created_by<>auth.uid() or v_old.publication_format<>'final-result-pair.v2'
+      or v_old.publish_plan_hash<>v_hash or v_old.idempotency_key<>p_idempotency_key then
+      raise exception using errcode='23505',message='Final Result release preparation identity conflict';
+    end if;
+    return jsonb_build_object('ok',true,'data',jsonb_build_object('releaseRunId',v_id,'publishPlanHash',v_hash,'status',v_old.status,'publicationAuthorized',false));
+  end if;
+  select * into v_candidate from private.final_result_candidates c where c.candidate_hash=v_plan->>'candidateSha256'
+    and exists(select 1 from private.final_result_candidate_storage s where s.candidate_hash=c.candidate_hash and s.target_hash=v_plan->>'targetHash');
+  if not found or v_count>v_candidate.result_count then
+    raise exception using errcode='22023',message='Final Result Candidate storage or selection count is invalid';
+  end if;
+  select id into v_current from private.lca_release_publications where publication_series_key='global'
+    and publication_channel='public' and visibility_scope='public' and is_current and status='current';
+  if v_current is distinct from v_expected then
+    return private.lca_release_error('expected_current_conflict',409,'Current publication changed; prepare a new exact plan');
+  end if;
+  if v_rollback is not null and not exists(select 1 from private.lca_release_publications p
+    join private.final_result_release_plans old on old.release_run_id=p.release_run_id
+    where p.id=v_rollback and old.candidate_hash=v_candidate.candidate_hash and not p.is_current
+      and p.status in ('superseded','unpublished')) then
+    raise exception using errcode='22023',message='Rollback must reference terminal history with the exact retained Candidate';
+  end if;
+  insert into private.lca_release_runs(id,release_version,publication_format,scope_mode,selection_manifest_hash,input_manifest_hash,
+    calculation_bundle_hash,calculation_bundle_ref,profile_lock_hash,publish_plan_hash,publish_plan,artifact_set_hash,
+    release_manifest_hash,release_manifest,artifacts_finalized_at,status,idempotency_key,request_hash,created_by)
+    values(v_id,v_plan->>'releaseVersion','final-result-pair.v2','selected_final_results',v_plan->>'selectionHash',v_candidate.input_hash,
+      null,null,encode(extensions.digest(convert_to('result-process-full-closure.v1','UTF8'),'sha256'),'hex'),v_hash,v_plan,
+      v_candidate.manifest->>'packageSetHash',v_candidate.candidate_hash,v_candidate.manifest,clock_timestamp(),'prepared',p_idempotency_key,v_hash,auth.uid());
+  insert into private.final_result_release_plans values(v_id,v_candidate.candidate_hash,v_plan->>'targetHash',v_count,v_expected,v_rollback,p_plan_text);
+  insert into private.command_audit_log(command,actor_user_id,target_table,target_id,target_version,payload)
+    values('cmd_final_result_release_prepare_v2',auth.uid(),'lca_release_runs',v_id,v_plan->>'releaseVersion',
+      jsonb_build_object('publishPlanHash',v_hash,'candidateHash',v_candidate.candidate_hash,'targetHash',v_plan->>'targetHash','rollbackOfPublicationId',v_rollback));
+  return jsonb_build_object('ok',true,'data',jsonb_build_object('releaseRunId',v_id,'publishPlanHash',v_hash,'status','prepared','publicationAuthorized',false));
+end;
+$_$;
+
+
+ALTER FUNCTION "api"."cmd_final_result_release_prepare_v2"("p_plan_text" "text", "p_idempotency_key" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "api"."cmd_final_result_release_seal_v2"("p_release_run_id" "uuid", "p_publish_plan_hash" "text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare v_auth jsonb:=api.assert_lca_release_manager(); v_run private.lca_release_runs%rowtype;
+  v_plan private.final_result_release_plans%rowtype; v_hash text; v_count bigint;
+begin
+  if not coalesce((v_auth->>'ok')::boolean,false) then return v_auth; end if;
+  select * into v_run from private.lca_release_runs where id=p_release_run_id for update;
+  if not found or v_run.publication_format<>'final-result-pair.v2' or v_run.publish_plan_hash is distinct from p_publish_plan_hash then
+    return private.lca_release_error('final_result_release_not_found',404,'Exact final Result release plan is required');
+  end if;
+  select * into strict v_plan from private.final_result_release_plans where release_run_id=v_run.id;
+  select count(*) into v_count from private.final_result_release_members where release_run_id=v_run.id;
+  if v_count<>v_plan.selection_count then raise exception using errcode='22023',message='Final Result selection is incomplete'; end if;
+  with selected as (
+    select (row_number() over(order by result_id,result_version collate "C")-1)/500 as block,
+      result_id::text||'@'||result_version as key
+    from private.final_result_release_members where release_run_id=v_run.id
+  ), blocks as (
+    select block,encode(extensions.digest(convert_to(string_agg(key||E'\n','' order by key collate "C"),'UTF8'),'sha256'),'hex') hash
+    from selected group by block
+  ) select encode(extensions.digest(convert_to('tiangong.final-result-selection.v1'||E'\n'||string_agg(hash||E'\n','' order by block),'UTF8'),'sha256'),'hex') into v_hash from blocks;
+  if v_hash<>v_run.selection_manifest_hash then raise exception using errcode='22023',message='Final Result selection hash mismatch'; end if;
+  if not exists(select 1 from private.final_result_release_selection_seals where release_run_id=v_run.id) then
+    if v_run.status<>'prepared' then raise exception using errcode='55000',message='Final Result release cannot change its selection'; end if;
+    insert into private.final_result_release_selection_seals(release_run_id,selection_hash,sealed_by) values(v_run.id,v_hash,auth.uid());
+    insert into private.command_audit_log(command,actor_user_id,target_table,target_id,target_version,payload)
+      values('cmd_final_result_release_seal_v2',auth.uid(),'lca_release_runs',v_run.id,v_run.release_version,jsonb_build_object('publishPlanHash',v_run.publish_plan_hash,'selectionHash',v_hash,'resultCount',v_count));
+  end if;
+  return jsonb_build_object('ok',true,'data',jsonb_build_object('releaseRunId',v_run.id,'selectionHash',v_hash,'resultCount',v_count,'sealed',true,'publicationAuthorized',false));
+end;
+$$;
+
+
+ALTER FUNCTION "api"."cmd_final_result_release_seal_v2"("p_release_run_id" "uuid", "p_publish_plan_hash" "text") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "api"."cmd_lca_release_approve"("p_release_run_id" "uuid", "p_publish_plan_hash" "text", "p_expires_at" timestamp with time zone DEFAULT NULL::timestamp with time zone, "p_reason" "text" DEFAULT NULL::"text", "p_audit" "jsonb" DEFAULT '{}'::"jsonb") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'api', 'private', 'public', 'util', 'extensions', 'pg_temp'
@@ -26124,6 +26299,29 @@ $$;
 
 
 ALTER FUNCTION "api"."processes_embedding_ft_input"("proc" "public"."processes") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "api"."qry_final_result_release_v2"("p_release_run_id" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare v_auth jsonb:=api.assert_lca_release_manager(); v_data jsonb;
+begin
+  if not coalesce((v_auth->>'ok')::boolean,false) then return v_auth; end if;
+  select jsonb_build_object('releaseRunId',r.id,'releaseVersion',r.release_version,'status',r.status,'publishPlanHash',r.publish_plan_hash,
+    'candidateHash',p.candidate_hash,'targetHash',p.target_hash,'selectionHash',r.selection_manifest_hash,'selectionCount',p.selection_count,
+    'registeredResultCount',(select count(*) from private.final_result_release_members where release_run_id=r.id),
+    'selectionSealed',exists(select 1 from private.final_result_release_selection_seals where release_run_id=r.id),
+    'expectedCurrentPublicationId',p.expected_current_publication_id,'rollbackOfPublicationId',p.rollback_of_publication_id,
+    'publicationAuthorized',false) into v_data
+  from private.lca_release_runs r join private.final_result_release_plans p on p.release_run_id=r.id
+  where r.id=p_release_run_id and r.publication_format='final-result-pair.v2';
+  return jsonb_build_object('ok',true,'data',v_data);
+end;
+$$;
+
+
+ALTER FUNCTION "api"."qry_final_result_release_v2"("p_release_run_id" "uuid") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "api"."qry_identity_get_mine"() RETURNS TABLE("id" "uuid", "email" "text", "display_name" "text", "contact" "jsonb")
@@ -67336,7 +67534,8 @@ CREATE OR REPLACE FUNCTION "private"."lca_release_guard_run_update"() RETURNS "t
     SET "search_path" TO 'private', 'api', 'public', 'util', 'extensions', 'pg_temp'
     AS $$
 begin
-  if old.id is distinct from new.id
+  if old.publication_format is distinct from new.publication_format
+     or old.id is distinct from new.id
      or old.release_version is distinct from new.release_version
      or old.scope_mode is distinct from new.scope_mode
      or old.selection_manifest_hash is distinct from new.selection_manifest_hash
@@ -100236,6 +100435,47 @@ CREATE TABLE IF NOT EXISTS "private"."final_result_query_sources" (
 ALTER TABLE "private"."final_result_query_sources" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "private"."final_result_release_members" (
+    "release_run_id" "uuid" NOT NULL,
+    "result_id" "uuid" NOT NULL,
+    "result_version" "text" NOT NULL,
+    "artifact_id" "uuid" NOT NULL,
+    "row_ordinal" integer NOT NULL,
+    CONSTRAINT "final_result_release_members_result_version_check" CHECK (("result_version" ~ '^[0-9]{2}\.[0-9]{2}\.[0-9]{3}$'::"text"))
+);
+
+
+ALTER TABLE "private"."final_result_release_members" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "private"."final_result_release_plans" (
+    "release_run_id" "uuid" NOT NULL,
+    "candidate_hash" "text" NOT NULL,
+    "target_hash" "text" NOT NULL,
+    "selection_count" integer NOT NULL,
+    "expected_current_publication_id" "uuid",
+    "rollback_of_publication_id" "uuid",
+    "plan_text" "text" NOT NULL,
+    CONSTRAINT "final_result_release_plans_plan_text_check" CHECK ((("octet_length"("plan_text") >= 1) AND ("octet_length"("plan_text") <= 16384))),
+    CONSTRAINT "final_result_release_plans_selection_count_check" CHECK ((("selection_count" >= 1) AND ("selection_count" <= 2000000)))
+);
+
+
+ALTER TABLE "private"."final_result_release_plans" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "private"."final_result_release_selection_seals" (
+    "release_run_id" "uuid" NOT NULL,
+    "selection_hash" "text" NOT NULL,
+    "sealed_by" "uuid" NOT NULL,
+    "sealed_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "final_result_release_selection_seals_selection_hash_check" CHECK (("selection_hash" ~ '^[0-9a-f]{64}$'::"text"))
+);
+
+
+ALTER TABLE "private"."final_result_release_selection_seals" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "private"."identity_center_processed_events" (
     "event_id" "text" NOT NULL,
     "event_type" "text" NOT NULL,
@@ -100469,8 +100709,8 @@ CREATE TABLE IF NOT EXISTS "private"."lca_release_runs" (
     "scope_mode" "text" DEFAULT 'global_eligible'::"text" NOT NULL,
     "selection_manifest_hash" "text" NOT NULL,
     "input_manifest_hash" "text" NOT NULL,
-    "calculation_bundle_hash" "text" NOT NULL,
-    "calculation_bundle_ref" "jsonb" NOT NULL,
+    "calculation_bundle_hash" "text",
+    "calculation_bundle_ref" "jsonb",
     "profile_lock_hash" "text" NOT NULL,
     "publish_plan_hash" "text" NOT NULL,
     "publish_plan" "jsonb" NOT NULL,
@@ -100488,10 +100728,13 @@ CREATE TABLE IF NOT EXISTS "private"."lca_release_runs" (
     "published_at" timestamp with time zone,
     "readback_verified_at" timestamp with time zone,
     "readback_receipt" "jsonb",
+    "publication_format" "text" DEFAULT 'legacy-four-zip.v1'::"text" NOT NULL,
+    CONSTRAINT "lca_release_runs_bundle_format_chk" CHECK (((("publication_format" = 'legacy-four-zip.v1'::"text") AND ("calculation_bundle_hash" IS NOT NULL) AND ("calculation_bundle_ref" IS NOT NULL)) OR (("publication_format" = 'final-result-pair.v2'::"text") AND ("calculation_bundle_hash" IS NULL) AND ("calculation_bundle_ref" IS NULL)))),
+    CONSTRAINT "lca_release_runs_format_chk" CHECK (("publication_format" = ANY (ARRAY['legacy-four-zip.v1'::"text", 'final-result-pair.v2'::"text"]))),
     CONSTRAINT "lca_release_runs_hashes_chk" CHECK ((("selection_manifest_hash" ~ '^[0-9a-f]{64}$'::"text") AND ("input_manifest_hash" ~ '^[0-9a-f]{64}$'::"text") AND ("calculation_bundle_hash" ~ '^[0-9a-f]{64}$'::"text") AND ("profile_lock_hash" ~ '^[0-9a-f]{64}$'::"text") AND ("publish_plan_hash" ~ '^[0-9a-f]{64}$'::"text") AND ("artifact_set_hash" ~ '^[0-9a-f]{64}$'::"text") AND ("request_hash" ~ '^[0-9a-f]{64}$'::"text") AND (("release_manifest_hash" IS NULL) OR ("release_manifest_hash" ~ '^[0-9a-f]{64}$'::"text")))),
     CONSTRAINT "lca_release_runs_json_chk" CHECK ((("jsonb_typeof"("calculation_bundle_ref") = 'object'::"text") AND ("jsonb_typeof"("publish_plan") = 'object'::"text") AND (("release_manifest" IS NULL) OR ("jsonb_typeof"("release_manifest") = 'object'::"text")) AND (("readback_receipt" IS NULL) OR ("jsonb_typeof"("readback_receipt") = 'object'::"text")))),
-    CONSTRAINT "lca_release_runs_release_version_chk" CHECK (("release_version" ~ '^[0-9]{2}\.[0-9]{2}\.[0-9]{3}$'::"text")),
-    CONSTRAINT "lca_release_runs_scope_chk" CHECK (("scope_mode" = 'global_eligible'::"text")),
+    CONSTRAINT "lca_release_runs_release_version_chk" CHECK (((("publication_format" = 'legacy-four-zip.v1'::"text") AND ("release_version" ~ '^[0-9]{2}\.[0-9]{2}\.[0-9]{3}$'::"text")) OR (("publication_format" = 'final-result-pair.v2'::"text") AND ("length"("release_version") <= 64) AND ("release_version" ~ '^[0-9]{4}\.[0-9]{2}\.[0-9]+$'::"text")))),
+    CONSTRAINT "lca_release_runs_scope_chk" CHECK (((("publication_format" = 'legacy-four-zip.v1'::"text") AND ("scope_mode" = 'global_eligible'::"text")) OR (("publication_format" = 'final-result-pair.v2'::"text") AND ("scope_mode" = 'selected_final_results'::"text")))),
     CONSTRAINT "lca_release_runs_status_chk" CHECK (("status" = ANY (ARRAY['prepared'::"text", 'ready_for_approval'::"text", 'approved'::"text", 'published'::"text", 'readback_verified'::"text", 'unpublished'::"text", 'failed'::"text", 'abandoned'::"text"])))
 );
 
@@ -103114,6 +103357,21 @@ ALTER TABLE ONLY "private"."final_result_query_sources"
 
 
 
+ALTER TABLE ONLY "private"."final_result_release_members"
+    ADD CONSTRAINT "final_result_release_members_pkey" PRIMARY KEY ("release_run_id", "result_id", "result_version");
+
+
+
+ALTER TABLE ONLY "private"."final_result_release_plans"
+    ADD CONSTRAINT "final_result_release_plans_pkey" PRIMARY KEY ("release_run_id");
+
+
+
+ALTER TABLE ONLY "private"."final_result_release_selection_seals"
+    ADD CONSTRAINT "final_result_release_selection_seals_pkey" PRIMARY KEY ("release_run_id");
+
+
+
 ALTER TABLE ONLY "private"."identity_center_processed_events"
     ADD CONSTRAINT "identity_center_processed_events_pkey" PRIMARY KEY ("event_id");
 
@@ -105497,6 +105755,18 @@ CREATE OR REPLACE TRIGGER "final_result_query_sources_immutable" BEFORE DELETE O
 
 
 
+CREATE OR REPLACE TRIGGER "final_result_release_members_immutable" BEFORE DELETE OR UPDATE ON "private"."final_result_release_members" FOR EACH ROW EXECUTE FUNCTION "private"."result_query_immutable_guard"();
+
+
+
+CREATE OR REPLACE TRIGGER "final_result_release_plans_immutable" BEFORE DELETE OR UPDATE ON "private"."final_result_release_plans" FOR EACH ROW EXECUTE FUNCTION "private"."result_query_immutable_guard"();
+
+
+
+CREATE OR REPLACE TRIGGER "final_result_release_selection_seals_immutable" BEFORE DELETE OR UPDATE ON "private"."final_result_release_selection_seals" FOR EACH ROW EXECUTE FUNCTION "private"."result_query_immutable_guard"();
+
+
+
 CREATE OR REPLACE TRIGGER "lca_network_snapshots_closure_delete_guard" BEFORE DELETE ON "private"."lca_network_snapshots" FOR EACH ROW EXECUTE FUNCTION "private"."lcia_scope_closure_guard_snapshot_delete"();
 
 
@@ -106247,6 +106517,46 @@ ALTER TABLE ONLY "private"."final_result_query_sources"
 
 
 
+ALTER TABLE ONLY "private"."final_result_release_members"
+    ADD CONSTRAINT "final_result_release_members_artifact_id_row_ordinal_fkey" FOREIGN KEY ("artifact_id", "row_ordinal") REFERENCES "private"."final_result_query_rows"("artifact_id", "row_ordinal");
+
+
+
+ALTER TABLE ONLY "private"."final_result_release_members"
+    ADD CONSTRAINT "final_result_release_members_release_run_id_fkey" FOREIGN KEY ("release_run_id") REFERENCES "private"."final_result_release_plans"("release_run_id");
+
+
+
+ALTER TABLE ONLY "private"."final_result_release_plans"
+    ADD CONSTRAINT "final_result_release_plans_candidate_hash_fkey" FOREIGN KEY ("candidate_hash") REFERENCES "private"."final_result_candidates"("candidate_hash");
+
+
+
+ALTER TABLE ONLY "private"."final_result_release_plans"
+    ADD CONSTRAINT "final_result_release_plans_candidate_hash_target_hash_fkey" FOREIGN KEY ("candidate_hash", "target_hash") REFERENCES "private"."final_result_candidate_storage"("candidate_hash", "target_hash");
+
+
+
+ALTER TABLE ONLY "private"."final_result_release_plans"
+    ADD CONSTRAINT "final_result_release_plans_expected_current_publication_id_fkey" FOREIGN KEY ("expected_current_publication_id") REFERENCES "private"."lca_release_publications"("id");
+
+
+
+ALTER TABLE ONLY "private"."final_result_release_plans"
+    ADD CONSTRAINT "final_result_release_plans_release_run_id_fkey" FOREIGN KEY ("release_run_id") REFERENCES "private"."lca_release_runs"("id");
+
+
+
+ALTER TABLE ONLY "private"."final_result_release_plans"
+    ADD CONSTRAINT "final_result_release_plans_rollback_of_publication_id_fkey" FOREIGN KEY ("rollback_of_publication_id") REFERENCES "private"."lca_release_publications"("id");
+
+
+
+ALTER TABLE ONLY "private"."final_result_release_selection_seals"
+    ADD CONSTRAINT "final_result_release_selection_seals_release_run_id_fkey" FOREIGN KEY ("release_run_id") REFERENCES "private"."final_result_release_plans"("release_run_id");
+
+
+
 ALTER TABLE ONLY "private"."identity_center_users"
     ADD CONSTRAINT "identity_center_users_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id");
 
@@ -106948,6 +107258,15 @@ ALTER TABLE "private"."final_result_query_seals" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "private"."final_result_query_sources" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."final_result_release_members" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."final_result_release_plans" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."final_result_release_selection_seals" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "private"."identity_center_processed_events" ENABLE ROW LEVEL SECURITY;
@@ -107963,6 +108282,21 @@ GRANT ALL ON FUNCTION "api"."cmd_dataset_save_draft_guarded"("p_table" "text", "
 REVOKE ALL ON FUNCTION "api"."cmd_dataset_withdraw"("p_table" "text", "p_id" "uuid", "p_version" "text", "p_reason" "text", "p_audit" "jsonb") FROM PUBLIC;
 GRANT ALL ON FUNCTION "api"."cmd_dataset_withdraw"("p_table" "text", "p_id" "uuid", "p_version" "text", "p_reason" "text", "p_audit" "jsonb") TO "api_internal_executor";
 GRANT ALL ON FUNCTION "api"."cmd_dataset_withdraw"("p_table" "text", "p_id" "uuid", "p_version" "text", "p_reason" "text", "p_audit" "jsonb") TO "authenticated";
+
+
+
+REVOKE ALL ON FUNCTION "api"."cmd_final_result_release_members_v2"("p_release_run_id" "uuid", "p_publish_plan_hash" "text", "p_rows" "jsonb") FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."cmd_final_result_release_members_v2"("p_release_run_id" "uuid", "p_publish_plan_hash" "text", "p_rows" "jsonb") TO "authenticated";
+
+
+
+REVOKE ALL ON FUNCTION "api"."cmd_final_result_release_prepare_v2"("p_plan_text" "text", "p_idempotency_key" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."cmd_final_result_release_prepare_v2"("p_plan_text" "text", "p_idempotency_key" "text") TO "authenticated";
+
+
+
+REVOKE ALL ON FUNCTION "api"."cmd_final_result_release_seal_v2"("p_release_run_id" "uuid", "p_publish_plan_hash" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."cmd_final_result_release_seal_v2"("p_release_run_id" "uuid", "p_publish_plan_hash" "text") TO "authenticated";
 
 
 
@@ -109204,6 +109538,11 @@ GRANT SELECT("search_text") ON TABLE "public"."processes" TO "next_public_search
 
 REVOKE ALL ON FUNCTION "api"."processes_embedding_ft_input"("proc" "public"."processes") FROM PUBLIC;
 GRANT ALL ON FUNCTION "api"."processes_embedding_ft_input"("proc" "public"."processes") TO "api_internal_executor";
+
+
+
+REVOKE ALL ON FUNCTION "api"."qry_final_result_release_v2"("p_release_run_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."qry_final_result_release_v2"("p_release_run_id" "uuid") TO "authenticated";
 
 
 

@@ -73,7 +73,7 @@ select is(
   -- Database #846 adds one service-only export facade.
   -- Database #860 adds the versioned organization dashboard facade; v5 stays available.
   -- Database #877 adds four service-only HDF5 query artifact stage/seal/bind/resolve facades.
-  350::bigint,
+  354::bigint,
   'One additive organization dashboard v6 facade plus four Portal navigation/V3 facades: api contains the active cutover and consumer facades, including the two Open Data catalog readers and three dataset display RPCs, the reviewer Contact status and activation RPCs, eight additive Portal/Next version-search APIs, two V4, two V5 and two V6 review queues plus batch eligibility, the rejection-detail RPC, the actor-bound rejected-review report download descriptor RPC and the reviewer workload drill-down RPC, two partial-import APIs, the three manager-attested Result publication RPCs, the guarded owner-draft before-content save facade, and the five versioned v2 Time-alias protected endpoints (preflight/gate/admit/read plus the service-only execute callback)'
 );
 
@@ -136,7 +136,7 @@ select is(
   ),
   -- Database #807 adds 15 display synchronization triggers; legacy inventory remains included.
   -- Database #877 adds three HDF5 artifact/source/release-binding immutability triggers.
-  161::bigint,
+  164::bigint,
   'Two private navigation writers and one seed guard plus: all active application triggers and two Process composite-name sync triggers plus seven example write guards remain present, including the review submitted-decision sync trigger, the Result lifecycle guard and the append-only Result guard and seven dataset display source-cleanup triggers'
 );
 
@@ -242,8 +242,8 @@ select is(
   -- Database #807 adds 56 display brand, projection and rollout constraints; legacy inventory remains included.
   -- Database #873 adds ten identity/descriptor/FK constraints.
   -- Database #877 adds fifteen constraints on the three private HDF5 query evidence relations.
-  -- Database #879 adds eight identity, 22 final Result query and 21 Candidate storage constraints.
-  798::bigint,
+  -- Database #879 adds eight identity, 22 final Result query, 21 Candidate storage and 17 publication selection constraints.
+  815::bigint,
   'Twenty-nine navigation constraints plus: all application, OAuth registry and twenty-two composite-name constraints plus ten partial-import and four whole-package constraints, the review submitted-decision constraint, the Result publication attestation and dataset display exact-version and allowlist constraints remain present, and the versioned v2 Time-alias preflight/gate/request tables carry their own reviewed constraints'
 );
 
@@ -275,7 +275,7 @@ select is(
   -- Database #807 adds 8 isolated display projection and rollout relations; legacy inventory remains included.
   -- Database #873 adds two RLS-protected identity tables.
   -- Database #877 adds three private HDF5 query evidence relations with RLS and no browser policies.
-  106::bigint,
+  109::bigint,
   'RLS covers the Open Data publication relation, five new private navigation relations and existing tables plus four private composite-name relations and three private import plan/receipt relations'
 );
 
