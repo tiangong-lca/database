@@ -22,6 +22,21 @@ begin
         raise exception 'MODEL_NOT_FOUND';
     end if;
 
+    -- Advisory locks cannot refresh a Repeatable Read transaction snapshot.
+    -- A whole-bundle destructive set requires the normal command isolation.
+    if current_setting('transaction_isolation') not in ('read committed', 'read uncommitted') then
+        raise exception using errcode = '0A000', message = 'UNSUPPORTED_TRANSACTION_ISOLATION';
+    end if;
+
+    -- Fail immediately if a linked Process is in flight, including one whose
+    -- parent was absent when it was created. A subsequent attempt gets a fresh
+    -- committed membership set without inverting parent/child row-lock order.
+    if not pg_catalog.pg_try_advisory_xact_lock(
+        pg_catalog.hashtextextended(p_model_id::text || ':' || btrim(p_version), 880)
+    ) then
+        raise exception using errcode = '55P03', message = 'MODEL_MEMBERSHIP_BUSY';
+    end if;
+
     -- Materialize and lock relational membership once, including legacy fallback
     -- and cross-version children. The destructive set cannot gain later rows.
     -- A count mismatch rejects the complete command and rolls back any deletion.

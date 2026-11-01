@@ -254,8 +254,11 @@ begin
           from lifecyclemodels
          where id = v_model_id
            and version = v_expected_version
-           and user_id = v_actor_user_id
            and state_code = 0
+           and (user_id = v_actor_user_id or (
+               v_process_mutations = '[]'::jsonb
+               and api.svc_membership_is_review_admin(v_actor_user_id) @> '{"ok":true,"data":true}'::jsonb
+           ))
          for update;
 
         if not found then
@@ -434,8 +437,11 @@ begin
                rule_verification = v_parent_rule_verification
          where id = v_model_id
            and version = v_expected_version
-           and user_id = v_actor_user_id
            and state_code = 0
+           and (user_id = v_actor_user_id or (
+               v_process_mutations = '[]'::jsonb
+               and api.svc_membership_is_review_admin(v_actor_user_id) @> '{"ok":true,"data":true}'::jsonb
+           ))
         returning *
              into v_result_row;
 

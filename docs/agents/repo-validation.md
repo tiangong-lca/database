@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: "2026-11-01"
-lastReviewedCommit: "de04709ec164e3c9810944a339b1851ca184b5ad"
-lastReviewedNote: "Database #880. Reviewed Model bundle ownership, review submission write scope, and the two rollback suites in local-contract CI."
+lastReviewedCommit: "5e9660e75497b6538067e7fac8ba28e30fde73d4"
+lastReviewedNote: "Database #880. Reviewed delegated parent saves, concurrent Process attachment and whole-bundle deletion, and the scope of Reference repair."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -71,6 +71,15 @@ For grouped Model mutation or review submission changes, run both rollback suite
 ```bash
 supabase test db supabase/tests/20261101_model_bundle_children.sql
 supabase test db supabase/tests/20261101_review_validation_targets.sql
+```
+
+For membership or whole-bundle deletion changes, run the two-session regression on a local Unix Docker endpoint. It restores the current local database into a disposable database on that endpoint. Set the project ID to the one in the local Supabase configuration.
+
+```bash
+project_id=$(python3 -c 'import tomllib; print(tomllib.load(open("supabase/config.toml", "rb"))["project_id"])')
+python3 supabase/tests/regression/20261101_model_membership_concurrency.py \
+  --container "supabase_db_${project_id}" --project-id "$project_id" \
+  --receipt "$(mktemp -d)/model-membership-concurrency.json"
 ```
 
 The full-schema cutover inventory includes Database #807 additions: 14 API functions, 186 private helpers, 15 application triggers, 12 RLS policies, 56 constraints and eight RLS-enabled private relations. The composite-name graph harness pins the exact 11 legacy and nine isolated display generation function identities separately, while preserving its 34 legacy body/owner/config comparisons. Keep the exact aggregate assertions and the display-specific role/manifest tests together; never relax the aggregate to a lower bound when adding a projection.

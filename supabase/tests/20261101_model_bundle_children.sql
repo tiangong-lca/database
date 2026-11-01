@@ -68,11 +68,13 @@ select id::uuid, '00000000-0000-0000-0000-000000000000', 'authenticated',
   'authenticated', email, 'x', now(), '{}', '{}', now(), now(), false, false
 from (values
   ('88000000-0000-4000-8000-000000000001', 'bundle-owner@example.invalid'),
-  ('88000000-0000-4000-8000-000000000002', 'bundle-other@example.invalid')
+  ('88000000-0000-4000-8000-000000000002', 'bundle-other@example.invalid'),
+  ('88000000-0000-4000-8000-000000000003', 'bundle-team-review-admin@example.invalid')
 ) u(id,email);
 insert into private.users(id, raw_user_meta_data)
 values ('88000000-0000-4000-8000-000000000001', '{}'),
-       ('88000000-0000-4000-8000-000000000002', '{}')
+       ('88000000-0000-4000-8000-000000000002', '{}'),
+       ('88000000-0000-4000-8000-000000000003', '{}')
 on conflict (id) do nothing;
 insert into private.teams(id, json, rank, is_public)
 values ('00000000-0000-0000-0000-000000000000', '{"name":"System"}', 0, false)
@@ -80,6 +82,11 @@ on conflict (id) do nothing;
 insert into private.roles(user_id, team_id, role)
 values ('88000000-0000-4000-8000-000000000002',
   '00000000-0000-0000-0000-000000000000', 'review-admin');
+insert into private.teams(id, json, rank, is_public)
+values ('88000000-0000-4000-8000-000000000090', '{"name":"Bundle synthetic team"}', 0, false);
+insert into private.roles(user_id, team_id, role)
+values ('88000000-0000-4000-8000-000000000003',
+  '88000000-0000-4000-8000-000000000090', 'review-admin');
 
 insert into public.lifecyclemodels(id, version, state_code, user_id, json_ordered, json_tg)
 select id::uuid, '01.00.000', state_code, owner::uuid,
@@ -93,7 +100,8 @@ from (values
   ('88000000-0000-4000-8000-000000000014', 0, '88000000-0000-4000-8000-000000000002'),
   ('88000000-0000-4000-8000-000000000015', 0, '88000000-0000-4000-8000-000000000001'),
   ('88000000-0000-4000-8000-000000000016', 0, '88000000-0000-4000-8000-000000000001'),
-  ('88000000-0000-4000-8000-000000000017', 0, '88000000-0000-4000-8000-000000000001')
+  ('88000000-0000-4000-8000-000000000017', 0, '88000000-0000-4000-8000-000000000001'),
+  ('88000000-0000-4000-8000-000000000019', 0, '88000000-0000-4000-8000-000000000001')
 ) m(id,state_code,owner);
 
 insert into public.processes(id, version, state_code, user_id, model_id, model_version, json_ordered)
@@ -132,6 +140,12 @@ values
   ('88000000-0000-4000-8000-000000000035', '01.00.000', 0,
    '88000000-0000-4000-8000-000000000002', '88000000-0000-4000-8000-000000000017',
    '01.00.000', pg_temp.bundle_document('processDataSet', '01.00.000')::json);
+-- Isolate whole-delete state enforcement from child-owner enforcement.
+insert into public.processes(id, version, state_code, user_id, model_id, model_version, json_ordered)
+values ('88000000-0000-4000-8000-000000000036', '02.00.000', 100,
+  '88000000-0000-4000-8000-000000000001', '88000000-0000-4000-8000-000000000019',
+  '01.00.000', pg_temp.bundle_document('processDataSet', '02.00.000')::json);
+
 -- Legacy same-document rows can have a column version different from their JSON
 -- after a service-side key update. An unchanged document does not resynchronize it.
 insert into public.lifecyclemodels(id, version, state_code, user_id, json_ordered)
@@ -210,6 +224,11 @@ select throws_ok(format('select pg_temp.bundle_reject_save(%L::jsonb)',
   'P0001', 'INVALID_PLAN', 'parent JSON cannot move the exact requested Model version');
 
 select throws_ok($$select pg_temp.bundle_reject_delete(
+  '88000000-0000-4000-8000-000000000019', '01.00.000')$$,
+  'P0001', 'PROCESS_NOT_FOUND',
+  'owner cannot delete a draft Model whose only child is same-owner and published');
+
+select throws_ok($$select pg_temp.bundle_reject_delete(
   '88000000-0000-4000-8000-000000000010', '01.00.000')$$,
   'P0001', 'PROCESS_NOT_FOUND', 'whole bundle deletion rejects immutable or foreign members');
 select throws_ok(format('select pg_temp.bundle_reject_delete(%L::uuid, %L)',
@@ -223,6 +242,10 @@ select throws_ok($$select pg_temp.bundle_reject_delete(
   '88000000-0000-4000-8000-000000000014', '01.00.000')$$,
   '42501', 'FORBIDDEN', 'foreign Model deletion retains the facade authorization');
 select set_config('request.jwt.claim.sub', '88000000-0000-4000-8000-000000000002', true);
+select throws_ok($$select pg_temp.bundle_reject_delete(
+  '88000000-0000-4000-8000-000000000019', '01.00.000')$$,
+  'P0001', 'PROCESS_NOT_FOUND',
+  'review-admin cannot delete the isolated same-owner published child bundle');
 select throws_ok($$select pg_temp.bundle_reject_delete(
   '88000000-0000-4000-8000-000000000017', '01.00.000')$$,
   'P0001', 'PROCESS_NOT_FOUND', 'review-admin cannot delete a draft bundle with a foreign child');
@@ -239,6 +262,59 @@ select is((select count(*) from bundle_before b
   where b.row_value = c.row_value and b.ordered_value = c.ordered_value),
   (select count(*) from bundle_before),
   'every rejected command preserves all preimages including timestamp and ordered bytes');
+
+set local role authenticated;
+-- Edge delegates parent-only saves through the service review-admin predicate,
+-- which admits review-admin membership independently of its team.
+select set_config('request.jwt.claim.sub', '88000000-0000-4000-8000-000000000002', true);
+select lives_ok(format('select api.cmd_lifecycle_model_bundle_save(%L::jsonb)',
+  pg_temp.bundle_plan('[]')),
+  'system review-admin retains another owner parent-only draft save');
+select throws_ok(format('select pg_temp.bundle_reject_save(%L::jsonb)',
+  pg_temp.bundle_plan(jsonb_build_array(pg_temp.bundle_mutation(op,
+    case when op = 'create' then '88000000-0000-4000-8000-000000000098'
+      else '88000000-0000-4000-8000-000000000023' end,
+    case when op = 'create' then '04.00.000' else '01.00.000' end)))),
+  'P0001', 'MODEL_NOT_FOUND',
+  'system review-admin parent delegation rejects nonempty ' || op || ' child plan')
+from (values ('create'), ('update'), ('delete')) operation(op);
+select set_config('request.jwt.claim.sub', '88000000-0000-4000-8000-000000000003', true);
+select lives_ok(format('select api.cmd_lifecycle_model_bundle_save(%L::jsonb)',
+  pg_temp.bundle_plan('[]')),
+  'non-system review-admin retains Edge-authorized parent-only draft save');
+select throws_ok(format('select pg_temp.bundle_reject_save(%L::jsonb)',
+  pg_temp.bundle_plan(jsonb_build_array(pg_temp.bundle_mutation(op,
+    case when op = 'create' then '88000000-0000-4000-8000-000000000098'
+      else '88000000-0000-4000-8000-000000000023' end,
+    case when op = 'create' then '04.00.000' else '01.00.000' end)))),
+  'P0001', 'MODEL_NOT_FOUND',
+  'delegated parent-only authority rejects nonempty ' || op || ' child plan')
+from (values ('create'), ('update'), ('delete')) operation(op);
+select throws_ok(format('select pg_temp.bundle_reject_save(%L::jsonb)',
+  pg_temp.bundle_plan('[]', id)), 'P0001', 'MODEL_NOT_FOUND', label)
+from (values
+  ('88000000-0000-4000-8000-000000000011', 'review-admin parent-only save rejects pending state'),
+  ('88000000-0000-4000-8000-000000000012', 'review-admin parent-only save rejects published state'),
+  ('88000000-0000-4000-8000-000000000013', 'review-admin parent-only save rejects read-only example state')
+) target(id,label);
+select throws_ok($$select pg_temp.bundle_reject_delete(
+  '88000000-0000-4000-8000-000000000019', '01.00.000')$$,
+  '42501', 'FORBIDDEN', 'non-system parent-save delegation does not expand whole-delete authority');
+reset role;
+select ok((select user_id = '88000000-0000-4000-8000-000000000001'::uuid
+    and state_code = 0
+    and json_ordered::jsonb #>> '{lifeCycleModelDataSet,bundleMarker}' = 'after'
+  from public.lifecyclemodels where id = '88000000-0000-4000-8000-000000000010'
+    and version = '01.00.000'),
+  'delegated parent saves preserve the existing owner, state and exact Model key');
+select is((select count(*) from public.processes
+  where id = '88000000-0000-4000-8000-000000000098'), 0::bigint,
+  'delegated parent authority cannot attach a newly created actor child');
+select ok(not exists(select 1 from public.processes p join bundle_before b
+  on b.dataset_table = 'processes' and b.id = p.id and b.version = p.version
+  where p.id::text like '88000000-%'
+    and (to_jsonb(p) is distinct from b.row_value or p.json_ordered::text is distinct from b.ordered_value)),
+  'parent delegation and rejected child plans leave all existing child preimages unchanged');
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '88000000-0000-4000-8000-000000000001', true);

@@ -1,0 +1,1 @@
+CREATE OR REPLACE TRIGGER "zz_process_model_membership_fence" BEFORE INSERT OR UPDATE ON "public"."processes" FOR EACH ROW WHEN (("new"."model_id" IS NOT NULL)) EXECUTE FUNCTION "private"."fence_process_model_membership_v1"();

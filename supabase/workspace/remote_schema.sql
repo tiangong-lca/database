@@ -52378,6 +52378,21 @@ begin
         raise exception 'MODEL_NOT_FOUND';
     end if;
 
+    -- Advisory locks cannot refresh a Repeatable Read transaction snapshot.
+    -- A whole-bundle destructive set requires the normal command isolation.
+    if current_setting('transaction_isolation') not in ('read committed', 'read uncommitted') then
+        raise exception using errcode = '0A000', message = 'UNSUPPORTED_TRANSACTION_ISOLATION';
+    end if;
+
+    -- Fail immediately if a linked Process is in flight, including one whose
+    -- parent was absent when it was created. A subsequent attempt gets a fresh
+    -- committed membership set without inverting parent/child row-lock order.
+    if not pg_catalog.pg_try_advisory_xact_lock(
+        pg_catalog.hashtextextended(p_model_id::text || ':' || btrim(p_version), 880)
+    ) then
+        raise exception using errcode = '55P03', message = 'MODEL_MEMBERSHIP_BUSY';
+    end if;
+
     -- Materialize and lock relational membership once, including legacy fallback
     -- and cross-version children. The destructive set cannot gain later rows.
     -- A count mismatch rejects the complete command and rolls back any deletion.
@@ -65044,6 +65059,35 @@ $_$;
 
 
 ALTER FUNCTION "private"."display_validate_search_v3"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_sort" "text", "p_limit" integer) OWNER TO "portal_display_executor";
+
+
+CREATE OR REPLACE FUNCTION "private"."fence_process_model_membership_v1"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+declare
+  v_model_version text;
+begin
+  v_model_version := coalesce(new.model_version, new.version::text);
+  if tg_op = 'UPDATE'
+     and new.model_id is not distinct from old.model_id
+     and v_model_version is not distinct from coalesce(old.model_version, old.version::text) then
+    return new;
+  end if;
+
+  -- A shared lock permits independent link writers for the same Model. Never
+  -- wait here while holding an existing Process row that a delete may need.
+  if not pg_catalog.pg_try_advisory_xact_lock_shared(
+    pg_catalog.hashtextextended(new.model_id::text || ':' || btrim(v_model_version), 880)
+  ) then
+    raise exception using errcode = '55P03', message = 'MODEL_MEMBERSHIP_BUSY';
+  end if;
+  return new;
+end;
+$$;
+
+
+ALTER FUNCTION "private"."fence_process_model_membership_v1"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "private"."flowproperties_sync_jsonb_version"() RETURNS "trigger"
@@ -78922,8 +78966,11 @@ begin
           from lifecyclemodels
          where id = v_model_id
            and version = v_expected_version
-           and user_id = v_actor_user_id
            and state_code = 0
+           and (user_id = v_actor_user_id or (
+               v_process_mutations = '[]'::jsonb
+               and api.svc_membership_is_review_admin(v_actor_user_id) @> '{"ok":true,"data":true}'::jsonb
+           ))
          for update;
 
         if not found then
@@ -79102,8 +79149,11 @@ begin
                rule_verification = v_parent_rule_verification
          where id = v_model_id
            and version = v_expected_version
-           and user_id = v_actor_user_id
            and state_code = 0
+           and (user_id = v_actor_user_id or (
+               v_process_mutations = '[]'::jsonb
+               and api.svc_membership_is_review_admin(v_actor_user_id) @> '{"ok":true,"data":true}'::jsonb
+           ))
         returning *
              into v_result_row;
 
@@ -105112,6 +105162,10 @@ CREATE OR REPLACE TRIGGER "zz_next_hybrid_public_process_candidate_v2" AFTER INS
 
 
 
+CREATE OR REPLACE TRIGGER "zz_process_model_membership_fence" BEFORE INSERT OR UPDATE ON "public"."processes" FOR EACH ROW WHEN (("new"."model_id" IS NOT NULL)) EXECUTE FUNCTION "private"."fence_process_model_membership_v1"();
+
+
+
 CREATE OR REPLACE TRIGGER "zzz_guard_process_result_lifecycle" BEFORE DELETE OR UPDATE ON "public"."processes" FOR EACH ROW EXECUTE FUNCTION "private"."zzz_guard_process_result_lifecycle"();
 
 
@@ -110259,6 +110313,10 @@ GRANT ALL ON FUNCTION "private"."display_validate_search_v1"("p_kind" "text", "p
 
 REVOKE ALL ON FUNCTION "private"."display_validate_search_v3"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_sort" "text", "p_limit" integer) FROM PUBLIC;
 GRANT ALL ON FUNCTION "private"."display_validate_search_v3"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_sort" "text", "p_limit" integer) TO "postgres";
+
+
+
+REVOKE ALL ON FUNCTION "private"."fence_process_model_membership_v1"() FROM PUBLIC;
 
 
 
