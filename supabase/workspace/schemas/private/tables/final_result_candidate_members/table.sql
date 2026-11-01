@@ -23,3 +23,5 @@ ALTER TABLE ONLY "private"."final_result_candidate_members"
     ADD CONSTRAINT "final_result_candidate_members_candidate_hash_fkey" FOREIGN KEY ("candidate_hash") REFERENCES "private"."final_result_candidates"("candidate_hash");
 
 ALTER TABLE "private"."final_result_candidate_members" ENABLE ROW LEVEL SECURITY;
+
+GRANT SELECT ON TABLE "private"."final_result_candidate_members" TO "api_internal_executor";

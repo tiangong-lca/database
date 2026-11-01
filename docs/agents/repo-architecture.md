@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-01
-lastReviewedCommit: d1cf6848d6be2080a43191abaa620b94dfd3c31b
-lastReviewedNote: "Database #879: reviewed immutable trusted-verifier readiness attempts, exact Candidate/query-file and selected-probe coverage, bounded fresh evidence, historical retries without renewed authority, concurrency/upgrade proof and generated contracts. Actor approval, activation, branch and deployment authority remain separate."
+lastReviewedCommit: a40388d73beea7e48942a2bb6bf6cb8973b63865
+lastReviewedNote: "Database #879: reviewed exact actor approval, atomic final Result activation and rollback, public source/Result/ZIP RLS authorization, cached policy invalidation, predecessor upgrade and concurrent expiry proof. Hosted deployment and consumer adoption remain separate."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -256,8 +256,62 @@ permission precondition, enabled runtime revision/target and expected current.
 Readiness storage leaves the run `prepared` and `publicationAuthorized=false`.
 Actor approval and activation must independently check the exact bindings,
 current authority and receipt expiry while holding their transaction locks;
-these commands and public Result/download authorization remain to be connected.
+the v2 approval/activation commands below implement these checks.
 No migration admits a runtime, certifies files or activates a publication.
+
+## Final Result approval, activation and read authorization
+
+`cmd_final_result_release_approve_v2` and `cmd_final_result_release_activate_v2`
+are authenticated manager operations under `EDGE-REL-01`; the service verifier
+cannot call them. They reuse the existing release run, approval and publication
+records. Approval binds exact plan/Candidate/selection/target/runtime/binary and
+approver permission identity, requires fresh sealed readiness and an expiration
+within 24 hours, and needs an explicit expected approval ID to replace an active
+approval. Its JSONB hash domain is `tiangong.final-result-approval.jsonb.v2`.
+A repeated approval UUID may recover only the original exact record; it never
+reactivates revoked, expired or consumed authority.
+
+Activation locks the run, approval, runtime head, approver/executor manager grants
+and global publication authority. It rechecks approval/readiness expiry after lock
+waits and requires the plan's exact current-publication precondition. Fresh
+readiness may replace the original verification only under the same approved
+context. The transaction supersedes the previous current, creates a new immutable
+publication binding, consumes approval and moves the run to `published` atomically.
+An exact execution retry returns the existing record, including its terminal
+status. Rollback creates a new publication with the same historical Candidate and
+selected Result set; it never revives the old row. The shared withdrawal command
+continues to remove a current v2 publication. Independent post-activation
+observation is separate; activation does not claim `readback_verified`.
+
+`qry_final_result_query_v2` accepts an exact selected Result identity and optional
+exact current publication ID. It exposes a narrow Worker descriptor with
+publication scope and current admitted reader identity. Numeric queries become
+available at activation commit, without waiting for post-activation observation.
+Unavailable runtime fails closed. A public Derived Result is independently
+readable, without granting access to its ancestors or unselected file rows.
+`qry_source_final_results_v2` first enforces source Process RLS, exact version and
+non-120 state, then returns only direct selected Results with bounded keyset
+pagination tied to the same current publication. The DTO explicitly identifies
+legacy/v2 format; callers must select the matching contract rather than falling
+back from a failed v2 request to a legacy reader.
+
+`qry_final_result_download_v2` returns an exact prebuilt TIDAS/ILCD ZIP descriptor
+only while that publication is current, every Candidate Result root is selected,
+and all non-result Candidate members are readable under existing dataset RLS.
+Missing/private support or a partial selection denies download; there is no ZIP
+cropping, dynamic archive construction or whole-HDF5 browser download. Edge owns
+configured-target verification and short-lived URL signing. Both RLS helpers run
+as the established NOLOGIN/NOBYPASSRLS internal executor. PL/pgSQL SPI plans retain
+policy invalidation even when an outer definer was already cached; tests add and
+remove restrictive policies after successful reads. The internal Candidate member
+SELECT policy exists only for this closed role, not browser or service raw access.
+
+Six legacy commands/readers reject v2 explicitly at verified dispatch boundaries.
+Legacy bodies, owners/configuration/ACLs otherwise retain their predecessor
+contracts. A migration never grants an actor permission, enables runtime, attests
+file bytes or activates a publication. Release aggregate verification/actor
+adapters, independent post-activation observation and Edge/Platform adoption remain
+separate implementation work.
 
 ## Published HDF5 query bindings v1
 

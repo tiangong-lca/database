@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-01
-lastReviewedCommit: d1cf6848d6be2080a43191abaa620b94dfd3c31b
-lastReviewedNote: "Database #879: reviewed immutable trusted-verifier readiness attempts, exact Candidate/query-file and selected-probe coverage, bounded fresh evidence, historical retries without renewed authority, concurrency/upgrade proof and generated contracts. Actor approval, activation, branch and deployment authority remain separate."
+lastReviewedCommit: a40388d73beea7e48942a2bb6bf6cb8973b63865
+lastReviewedNote: "Database #879: reviewed exact actor approval, atomic final Result activation and rollback, public source/Result/ZIP RLS authorization, cached policy invalidation, predecessor upgrade and concurrent expiry proof. Hosted deployment and consumer adoption remain separate."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml

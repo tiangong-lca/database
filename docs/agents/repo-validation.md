@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-01
-lastReviewedCommit: d1cf6848d6be2080a43191abaa620b94dfd3c31b
-lastReviewedNote: "Database #879: reviewed immutable trusted-verifier readiness attempts, exact Candidate/query-file and selected-probe coverage, bounded fresh evidence, historical retries without renewed authority, concurrency/upgrade proof and generated contracts. Actor approval, activation, branch and deployment authority remain separate."
+lastReviewedCommit: a40388d73beea7e48942a2bb6bf6cb8973b63865
+lastReviewedNote: "Database #879: reviewed exact actor approval, atomic final Result activation and rollback, public source/Result/ZIP RLS authorization, cached policy invalidation, predecessor upgrade and concurrent expiry proof. Hosted deployment and consumer adoption remain separate."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -251,6 +251,35 @@ coverage. Immutable synthetic evidence remains for the owner-controlled reset.
 current publication, sealed final selection and admitted runtime plus all
 21 prior API bodies. End with complete blank rebuild and two no-drift schema/type
 exports. These local checks do not deploy, approve or activate a publication.
+
+## Final Result activation validation
+
+Run `20261101_final_result_release_activation.sql` and
+`20261101_final_result_publication_packages.sql` with the preceding Final Result,
+legacy release and exact API/schema contract suites. Prove service/ordinary-user
+denial, exact approval replacement and historical retries, runtime/permission
+revocation, fresh same-context verification, atomic activation before independent
+post-activation observation, exact Result/version/publication resolution, direct
+source-only mapping, withdrawal and historical execution retries without revival.
+Complete ZIP tests must exercise both successful formats plus omitted Result,
+missing/private support and future restrictive RLS denial after a cached read.
+Synthetic fixture rows alone may suppress unrelated extraction/network triggers;
+publication guards, identity arbitration and RLS stay enabled.
+
+`regression/20261101_final_result_release_activation.py` requires the exact clean
+owner-controlled `hdf5-final-879` database. Two actual clients must demonstrate
+observed blocking for approval retries, activation retries and competing current
+switches at READ COMMITTED, REPEATABLE READ and SERIALIZABLE. Recheck an approval
+that expires while waiting on the publication lock. Exact historical rollback
+must create a new record and preserve the old terminal record. Immutable synthetic
+evidence remains for the owner reset, without bypassing guards or deleting audit.
+
+Run `upgrade/20261101_final_result_release_activation.sql` on populated head
+`20261101160000` with current v1 publication, sealed final selection, runtime and
+readiness. Verify all existing rows and ACL/owner/configuration facts, exactly six
+legacy dispatch changes, restored role/schema authority and continued v1 reads.
+Finish with a blank rebuild and two identical schema/type exports. These local
+synthetic tests do not authorize hosted activation or prove Edge/Platform adoption.
 
 ## HDF5 result binding validation
 

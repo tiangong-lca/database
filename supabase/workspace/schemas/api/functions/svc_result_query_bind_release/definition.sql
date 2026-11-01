@@ -8,6 +8,9 @@ declare
   v_previous uuid;
 begin
   select * into v_run from private.lca_release_runs where id=p_release_run_id for update;
+  if v_run.publication_format='final-result-pair.v2' then
+    raise exception using errcode='22023',message='Final Result releases require the versioned query binding contract';
+  end if;
   select * into v_artifact from private.result_query_artifacts where id=p_artifact_id for share;
   if v_run.id is null or v_artifact.id is null or v_artifact.status <> 'ready'
     or v_run.status not in ('ready_for_approval','approved','published','readback_verified')

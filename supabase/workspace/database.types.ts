@@ -255,6 +255,30 @@ export type Database = {
         }
         Returns: Json
       }
+      cmd_final_result_release_activate_v2: {
+        Args: {
+          p_approval_hash: string
+          p_approval_id: string
+          p_credential_fingerprint: string
+          p_idempotency_key: string
+          p_publish_plan_hash: string
+          p_release_run_id: string
+          p_verification_id: string
+        }
+        Returns: Json
+      }
+      cmd_final_result_release_approve_v2: {
+        Args: {
+          p_approval_id: string
+          p_expected_approval_id: string
+          p_expires_at: string
+          p_publish_plan_hash: string
+          p_reason: string
+          p_release_run_id: string
+          p_verification_id: string
+        }
+        Returns: Json
+      }
       cmd_final_result_release_members_v2: {
         Args: {
           p_publish_plan_hash: string
@@ -2137,6 +2161,18 @@ export type Database = {
         Args: { proc: Database["public"]["Tables"]["processes"]["Row"] }
         Returns: string
       }
+      qry_final_result_download_v2: {
+        Args: { p_format: string; p_publication_id: string }
+        Returns: Json
+      }
+      qry_final_result_query_v2: {
+        Args: {
+          p_publication_id?: string
+          p_result_id: string
+          p_result_version: string
+        }
+        Returns: Json
+      }
       qry_final_result_release_probe_page_v2: {
         Args: {
           p_after_artifact_id?: string
@@ -2862,6 +2898,16 @@ export type Database = {
           submitted_revision_checksum: string
           target_table: string
         }[]
+      }
+      qry_source_final_results_v2: {
+        Args: {
+          p_after_key?: string
+          p_limit?: number
+          p_publication_id?: string
+          p_source_id: string
+          p_source_version: string
+        }
+        Returns: Json
       }
       qry_system_find_member_candidate_by_email: {
         Args: { p_email: string }
