@@ -33025,6 +33025,122 @@ $_$;
 ALTER FUNCTION "api"."svc_oauth_client_configure"("p_client_id" "text", "p_client_kind" "text", "p_enabled" boolean, "p_capability_ids" "text"[]) OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "api"."svc_result_identity_register"("p_request" "jsonb") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$
+declare
+  v_id uuid; v_version text; v_content text; v_dependency jsonb;
+  v_previous_key text; v_dependencies text:=''; v_envelope text; v_hash text;
+  v_identity private.final_result_identities%rowtype;
+begin
+  if jsonb_typeof(p_request) is distinct from 'object' or pg_column_size(p_request)>8388608
+    or p_request->>'schemaVersion' is distinct from 'tiangong.final-result-identity-request.v1'
+    or p_request->>'hashDomain' is distinct from 'tiangong.final-result-content.jcs.v1'
+    or jsonb_typeof(p_request->'result') is distinct from 'object'
+    or jsonb_typeof(p_request->'semanticDependencies') is distinct from 'array'
+    or coalesce(p_request->>'canonicalContentHash','') !~ '^[0-9a-f]{64}$'
+    or coalesce(p_request->>'contentHash','') !~ '^[0-9a-f]{64}$'
+    or coalesce(p_request#>>'{result,version}','') !~ '^[0-9]{2}\.[0-9]{2}\.[0-9]{3}$'
+    or coalesce(p_request#>>'{result,uuid}','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+    or jsonb_typeof(p_request->'producer') is distinct from 'string'
+    or jsonb_typeof(p_request->'canonicalContentHash') is distinct from 'string'
+    or jsonb_typeof(p_request->'contentHash') is distinct from 'string'
+    or coalesce(length(p_request->>'producer'),0) not between 1 and 64 then
+    raise exception using errcode='22023',message='Invalid final Result identity request';
+  end if;
+  if (select count(*) from jsonb_object_keys(p_request))<>7
+    or (select count(*) from jsonb_object_keys(p_request->'result'))<>2
+    or jsonb_array_length(p_request->'semanticDependencies') not between 1 and 50000 then
+    raise exception using errcode='22023',message='Invalid final Result identity fields';
+  end if;
+  for v_dependency in select value from jsonb_array_elements(p_request->'semanticDependencies') loop
+    if jsonb_typeof(v_dependency) is distinct from 'object'
+      or jsonb_typeof(v_dependency->'contentHash') is distinct from 'string'
+      or coalesce(v_dependency->>'contentHash','') !~ '^[0-9a-f]{64}$'
+      or coalesce(v_dependency->>'key','') !~ '^(flow|flowproperty|unitgroup|lciamethod):[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}@[0-9]{2}\.[0-9]{2}\.[0-9]{3}$' then
+      raise exception using errcode='22023',message='Invalid final Result semantic dependency';
+    end if;
+    if (select count(*) from jsonb_object_keys(v_dependency))<>2
+      or (v_previous_key is not null and v_previous_key collate "C" >= (v_dependency->>'key') collate "C") then
+      raise exception using errcode='22023',message='Final Result dependencies must be unique and canonically ordered';
+    end if;
+    v_previous_key:=v_dependency->>'key';
+  end loop;
+  select string_agg('{"contentHash":"' || (value->>'contentHash') || '","key":"' || (value->>'key') || '"}',',' order by ordinal)
+    into v_dependencies from jsonb_array_elements(p_request->'semanticDependencies') with ordinality as entries(value,ordinal);
+  v_id:=(p_request#>>'{result,uuid}')::uuid; v_version:=p_request#>>'{result,version}';
+  v_content:=p_request->>'canonicalContentHash';
+  v_envelope:='{"canonicalContentHash":"' || v_content
+    || '","hashDomain":"tiangong.final-result-content.jcs.v1","semanticDependencies":[' || v_dependencies || ']}';
+  v_hash:=encode(extensions.digest(convert_to(v_envelope,'UTF8'),'sha256'),'hex');
+  if v_hash<>p_request->>'contentHash' then
+    raise exception using errcode='22023',message='Final Result content envelope hash mismatch';
+  end if;
+  -- Legacy hash domains lack the frozen semantic-dependency evidence required
+  -- here. Even equal-looking digests do not prove equivalence. No backfill or
+  -- silent domain reinterpretation occurs in this migration.
+  if exists(select 1 from public.processes where id=v_id and version=v_version)
+    or exists(select 1 from private.result_process_publications where dataset_id=v_id and dataset_version=v_version)
+    or exists(select 1 from private.lca_release_dataset_versions where dataset_type='process' and dataset_uuid=v_id and dataset_version=v_version) then
+    raise exception using errcode='55000',message='Legacy Result identity is occupied; explicit equivalence migration or a new version is required';
+  end if;
+  insert into private.final_result_identities(result_id,result_version,hash_domain,canonical_content_hash,content_hash,content_ref,producer)
+    values(v_id,v_version,p_request->>'hashDomain',v_content,v_hash,'urn:sha256:'||v_content,p_request->>'producer')
+    on conflict(result_id,result_version) do nothing;
+  select * into strict v_identity from private.final_result_identities where result_id=v_id and result_version=v_version;
+  if v_identity.registration_kind='legacy' then
+    raise exception using errcode='55000',message='Legacy Result identity is occupied; explicit equivalence migration or a new version is required';
+  end if;
+  if v_identity.hash_domain<>p_request->>'hashDomain' or v_identity.canonical_content_hash<>v_content or v_identity.content_hash<>v_hash then
+    raise exception using errcode='23505',message='Final Result identity is already bound to different content';
+  end if;
+  return jsonb_build_object('ok',true,'data',jsonb_build_object(
+    'schemaVersion','tiangong.final-result-identity-receipt.v1','registrationId',v_identity.registration_id,
+    'result',jsonb_build_object('uuid',v_id,'version',v_version),'hashDomain',v_identity.hash_domain,
+    'canonicalContentHash',v_identity.canonical_content_hash,'contentHash',v_identity.content_hash,
+    'contentRef',v_identity.content_ref,'createdAt',v_identity.created_at));
+end;
+$_$;
+
+
+ALTER FUNCTION "api"."svc_result_identity_register"("p_request" "jsonb") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "api"."svc_result_identity_versions"("p_result_id" "uuid", "p_before_version" "text" DEFAULT NULL::"text", "p_limit" integer DEFAULT 100) RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$
+declare v_rows jsonb;
+begin
+  if p_result_id is null or p_limit is null or p_limit not between 1 and 256
+    or (p_before_version is not null and p_before_version !~ '^[0-9]{2}\.[0-9]{2}\.[0-9]{3}$') then
+    raise exception using errcode='22023',message='Invalid final Result version lookup';
+  end if;
+  with occupied as (
+    select result_version as version from private.final_result_identities where result_id=p_result_id
+    union select version::text from public.processes where id=p_result_id
+    union select dataset_version from private.result_process_publications where dataset_id=p_result_id
+    union select dataset_version from private.lca_release_dataset_versions where dataset_type='process' and dataset_uuid=p_result_id
+  ), page as (
+    select version from occupied where version ~ '^[0-9]{2}\.[0-9]{2}\.[0-9]{3}$'
+      and (p_before_version is null or version collate "C" < p_before_version collate "C")
+    order by version collate "C" desc limit p_limit
+  )
+  select coalesce(jsonb_agg(jsonb_build_object('version',page.version,'registrationId',case when identity.registration_kind='registered' then identity.registration_id else null end,
+    'status',case when identity.registration_kind='registered' then 'registered' else 'legacy_requires_equivalence' end,
+    'hashDomain',identity.hash_domain,'contentHash',identity.content_hash)
+    order by page.version collate "C" desc),'[]'::jsonb) into v_rows
+  from page left join private.final_result_identities identity on identity.result_id=p_result_id and identity.result_version=page.version;
+  return jsonb_build_object('ok',true,'data',jsonb_build_object('resultId',p_result_id,'versions',v_rows,
+    'nextBeforeVersion',case when jsonb_array_length(v_rows)=p_limit then v_rows->(p_limit-1)->>'version' else null end));
+end;
+$_$;
+
+
+ALTER FUNCTION "api"."svc_result_identity_versions"("p_result_id" "uuid", "p_before_version" "text", "p_limit" integer) OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "api"."svc_result_query_bind_release"("p_release_run_id" "uuid", "p_artifact_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -65017,6 +65133,61 @@ $_$;
 
 
 ALTER FUNCTION "private"."display_validate_search_v3"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_sort" "text", "p_limit" integer) OWNER TO "portal_display_executor";
+
+
+CREATE OR REPLACE FUNCTION "private"."final_result_legacy_claim"("p_id" "uuid", "p_version" "text") RETURNS "void"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+declare v_kind text;
+begin
+  insert into private.final_result_identities(result_id,result_version,registration_kind,producer)
+    values(p_id,p_version,'legacy','legacy-process-namespace') on conflict(result_id,result_version) do nothing;
+  select registration_kind into strict v_kind from private.final_result_identities where result_id=p_id and result_version=p_version;
+  if v_kind <> 'legacy' then
+    raise exception using errcode='23505',message='Final Result identity is registered; legacy writes require explicit equivalence migration';
+  end if;
+end;
+$$;
+
+
+ALTER FUNCTION "private"."final_result_legacy_claim"("p_id" "uuid", "p_version" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."final_result_legacy_write_guard"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare v_old_id uuid; v_old_version text; v_new_id uuid; v_new_version text;
+begin
+  -- Project only the identity fields: process JSON may be large, and this
+  -- trigger also runs for ordinary metadata/embedding updates.
+  if tg_table_schema='public' and tg_table_name='processes' then
+    if tg_op <> 'INSERT' then v_old_id:=old.id; v_old_version:=rtrim(old.version::text); end if;
+    if tg_op <> 'DELETE' then v_new_id:=new.id; v_new_version:=rtrim(new.version::text); end if;
+  elsif tg_table_schema='private' and tg_table_name='lca_release_dataset_versions' then
+    if tg_op <> 'INSERT' and old.dataset_type='process' then
+      v_old_id:=old.dataset_uuid; v_old_version:=old.dataset_version;
+    end if;
+    if tg_op <> 'DELETE' and new.dataset_type='process' then
+      v_new_id:=new.dataset_uuid; v_new_version:=new.dataset_version;
+    end if;
+  elsif tg_table_schema='private' and tg_table_name='result_process_publications' then
+    if tg_op <> 'INSERT' then v_old_id:=old.dataset_id; v_old_version:=old.dataset_version; end if;
+    if tg_op <> 'DELETE' then v_new_id:=new.dataset_id; v_new_version:=new.dataset_version; end if;
+  else
+    raise exception using errcode='55000',message='Unexpected final Result identity guard target';
+  end if;
+  if v_old_id is not null then perform private.final_result_legacy_claim(v_old_id,v_old_version); end if;
+  if v_new_id is not null and (v_new_id,v_new_version) is distinct from (v_old_id,v_old_version) then
+    perform private.final_result_legacy_claim(v_new_id,v_new_version);
+  end if;
+  return null;
+end;
+$$;
+
+
+ALTER FUNCTION "private"."final_result_legacy_write_guard"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "private"."flowproperties_sync_jsonb_version"() RETURNS "trigger"
@@ -99342,6 +99513,29 @@ COMMENT ON TABLE "private"."display_sitemap_rows_v1" IS 'Exact public Process/Fl
 
 
 
+CREATE TABLE IF NOT EXISTS "private"."final_result_identities" (
+    "result_id" "uuid" NOT NULL,
+    "result_version" "text" NOT NULL,
+    "registration_kind" "text" DEFAULT 'registered'::"text" NOT NULL,
+    "registration_id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "hash_domain" "text",
+    "canonical_content_hash" "text",
+    "content_hash" "text",
+    "content_ref" "text",
+    "producer" "text" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "final_result_identities_canonical_content_hash_check" CHECK (("canonical_content_hash" ~ '^[0-9a-f]{64}$'::"text")),
+    CONSTRAINT "final_result_identities_check" CHECK (((("registration_kind" = 'registered'::"text") AND ("result_version" ~ '^[0-9]{2}\.[0-9]{2}\.[0-9]{3}$'::"text") AND ("hash_domain" IS NOT NULL) AND ("canonical_content_hash" IS NOT NULL) AND ("content_hash" IS NOT NULL) AND ("content_ref" IS NOT NULL) AND ("content_ref" = ('urn:sha256:'::"text" || "canonical_content_hash"))) OR (("registration_kind" = 'legacy'::"text") AND ("hash_domain" IS NULL) AND ("canonical_content_hash" IS NULL) AND ("content_hash" IS NULL) AND ("content_ref" IS NULL)))),
+    CONSTRAINT "final_result_identities_content_hash_check" CHECK (("content_hash" ~ '^[0-9a-f]{64}$'::"text")),
+    CONSTRAINT "final_result_identities_hash_domain_check" CHECK (("hash_domain" = 'tiangong.final-result-content.jcs.v1'::"text")),
+    CONSTRAINT "final_result_identities_producer_check" CHECK ((("length"("producer") >= 1) AND ("length"("producer") <= 64))),
+    CONSTRAINT "final_result_identities_registration_kind_check" CHECK (("registration_kind" = ANY (ARRAY['registered'::"text", 'legacy'::"text"])))
+);
+
+
+ALTER TABLE "private"."final_result_identities" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "private"."identity_center_processed_events" (
     "event_id" "text" NOT NULL,
     "event_type" "text" NOT NULL,
@@ -102150,6 +102344,16 @@ ALTER TABLE ONLY "private"."dataset_review_submit_requests"
 
 
 
+ALTER TABLE ONLY "private"."final_result_identities"
+    ADD CONSTRAINT "final_result_identities_pkey" PRIMARY KEY ("result_id", "result_version");
+
+
+
+ALTER TABLE ONLY "private"."final_result_identities"
+    ADD CONSTRAINT "final_result_identities_registration_id_key" UNIQUE ("registration_id");
+
+
+
 ALTER TABLE ONLY "private"."identity_center_processed_events"
     ADD CONSTRAINT "identity_center_processed_events_pkey" PRIMARY KEY ("event_id");
 
@@ -103282,6 +103486,10 @@ CREATE UNIQUE INDEX "lca_release_approvals_active_uidx" ON "private"."lca_releas
 
 
 CREATE INDEX "lca_release_approvals_run_idx" ON "private"."lca_release_approvals" USING "btree" ("release_run_id", "approved_at" DESC);
+
+
+
+CREATE INDEX "lca_release_dataset_global_process_identity_idx" ON "private"."lca_release_dataset_versions" USING "btree" ("dataset_uuid", "dataset_version") WHERE ("dataset_type" = 'process'::"text");
 
 
 
@@ -104481,6 +104689,18 @@ CREATE OR REPLACE TRIGGER "dataset_display_settings_touch" BEFORE UPDATE OF "is_
 
 
 
+CREATE OR REPLACE TRIGGER "final_result_identities_immutable" BEFORE DELETE OR UPDATE ON "private"."final_result_identities" FOR EACH ROW EXECUTE FUNCTION "private"."result_query_immutable_guard"();
+
+
+
+CREATE OR REPLACE TRIGGER "final_result_identity_guard" AFTER INSERT OR DELETE OR UPDATE ON "private"."lca_release_dataset_versions" FOR EACH ROW EXECUTE FUNCTION "private"."final_result_legacy_write_guard"();
+
+
+
+CREATE OR REPLACE TRIGGER "final_result_identity_guard" AFTER INSERT OR DELETE OR UPDATE ON "private"."result_process_publications" FOR EACH ROW EXECUTE FUNCTION "private"."final_result_legacy_write_guard"();
+
+
+
 CREATE OR REPLACE TRIGGER "lca_network_snapshots_closure_delete_guard" BEFORE DELETE ON "private"."lca_network_snapshots" FOR EACH ROW EXECUTE FUNCTION "private"."lcia_scope_closure_guard_snapshot_delete"();
 
 
@@ -104762,6 +104982,10 @@ CREATE OR REPLACE TRIGGER "dataset_flow_identity_unitgroup_delete_active_fence" 
 
 
 COMMENT ON TRIGGER "dataset_flow_identity_unitgroup_delete_active_fence" ON "public"."unitgroups" IS 'Fail-closed Step 3 actor fence for every UnitGroup delete.';
+
+
+
+CREATE OR REPLACE TRIGGER "final_result_identity_guard" AFTER INSERT OR DELETE OR UPDATE ON "public"."processes" FOR EACH ROW EXECUTE FUNCTION "private"."final_result_legacy_write_guard"();
 
 
 
@@ -105856,6 +106080,9 @@ CREATE POLICY "display_scope" ON "private"."display_sitemap_rows_v1" FOR SELECT 
 
 
 ALTER TABLE "private"."display_sitemap_rows_v1" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."final_result_identities" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "private"."identity_center_processed_events" ENABLE ROW LEVEL SECURITY;
@@ -108690,6 +108917,16 @@ GRANT ALL ON FUNCTION "api"."svc_oauth_client_configure"("p_client_id" "text", "
 
 
 
+REVOKE ALL ON FUNCTION "api"."svc_result_identity_register"("p_request" "jsonb") FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."svc_result_identity_register"("p_request" "jsonb") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "api"."svc_result_identity_versions"("p_result_id" "uuid", "p_before_version" "text", "p_limit" integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."svc_result_identity_versions"("p_result_id" "uuid", "p_before_version" "text", "p_limit" integer) TO "service_role";
+
+
+
 REVOKE ALL ON FUNCTION "api"."svc_result_query_bind_release"("p_release_run_id" "uuid", "p_artifact_id" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "api"."svc_result_query_bind_release"("p_release_run_id" "uuid", "p_artifact_id" "uuid") TO "service_role";
 
@@ -110216,6 +110453,14 @@ GRANT ALL ON FUNCTION "private"."display_validate_search_v1"("p_kind" "text", "p
 
 REVOKE ALL ON FUNCTION "private"."display_validate_search_v3"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_sort" "text", "p_limit" integer) FROM PUBLIC;
 GRANT ALL ON FUNCTION "private"."display_validate_search_v3"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_sort" "text", "p_limit" integer) TO "postgres";
+
+
+
+REVOKE ALL ON FUNCTION "private"."final_result_legacy_claim"("p_id" "uuid", "p_version" "text") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."final_result_legacy_write_guard"() FROM PUBLIC;
 
 
 

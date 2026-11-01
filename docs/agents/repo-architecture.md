@@ -30,9 +30,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: "2026-10-30"
-lastReviewedCommit: "a6ddf4cbcb61c8360788ffcb514e1f38189e9da7"
-lastReviewedNote: "Database #877: user-approved removal of routine Dev PR Preview requirements. Reviewed job-boundary scope, retained Main hotfix checks, persistent-Dev promotion proof and unchanged local/ARM64/deployment gates; generated schema/type contracts are unchanged."
+lastReviewedAt: 2026-11-01
+lastReviewedCommit: de04709ec164e3c9810944a339b1851ca184b5ad
+lastReviewedNote: "Database #879: reviewed immutable final Result identity occupancy, service-only RPCs, legacy normalized-key guards, local concurrency/upgrade proof and deterministic exact-local schema/type refresh. Branch, Preview and deployment policies are unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -45,6 +45,28 @@ Allocation contract update (Database #789): `private.lcia_scope_closure_normaliz
 ## Repo Shape
 
 This repo is organized around one checked-in Supabase project plus a generated schema-inspection workspace.
+
+## Final Result content identity
+
+`private.final_result_identities` is the global Process UUID/version occupancy
+ledger. The service-only `api.svc_result_identity_register` independently checks
+the `tiangong.final-result-content.jcs.v1` envelope of the canonical Result hash
+and sorted exact semantic-dependency hashes. The trusted Release producer must
+verify those file hashes before registering; the database stores no numerics or
+source/background snapshots. Equal content reuses one immutable receipt;
+changed content requires a different version. Registration grants no visibility.
+
+Legacy `public.processes`, formal release dataset membership and manager Result
+publication writes claim the same unique key through AFTER triggers, after JSON
+version normalization. Legacy occupancy asserts no content equivalence, survives
+row deletion, and blocks automatic adoption. Existing rows are checked on
+registration; no large backfill or hash-domain reinterpretation is performed.
+All isolation levels arbitrate on the unique ledger; serialization failures are
+retryable only by repeating the exact request against fresh authoritative state.
+
+The two service RPCs return bounded identity metadata only. Browser/raw-table
+access remains closed. The later v2 Candidate/activation path must recheck the
+registered receipt; this registry alone does not implement publication.
 
 ## Published HDF5 query bindings
 

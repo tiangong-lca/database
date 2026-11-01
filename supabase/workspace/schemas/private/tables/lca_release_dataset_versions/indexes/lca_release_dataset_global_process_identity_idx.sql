@@ -1,0 +1,1 @@
+CREATE INDEX "lca_release_dataset_global_process_identity_idx" ON "private"."lca_release_dataset_versions" USING "btree" ("dataset_uuid", "dataset_version") WHERE ("dataset_type" = 'process'::"text");

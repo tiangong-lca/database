@@ -3685,6 +3685,15 @@ export type Database = {
         }
         Returns: Json
       }
+      svc_result_identity_register: { Args: { p_request: Json }; Returns: Json }
+      svc_result_identity_versions: {
+        Args: {
+          p_before_version?: string
+          p_limit?: number
+          p_result_id: string
+        }
+        Returns: Json
+      }
       svc_result_query_bind_release: {
         Args: { p_artifact_id: string; p_release_run_id: string }
         Returns: Json

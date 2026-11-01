@@ -32,9 +32,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: "2026-10-30"
-lastReviewedCommit: "a6ddf4cbcb61c8360788ffcb514e1f38189e9da7"
-lastReviewedNote: "Database #877: user-approved removal of routine Dev PR Preview requirements. Reviewed job-boundary scope, retained Main hotfix checks, persistent-Dev promotion proof and unchanged local/ARM64/deployment gates; generated schema/type contracts are unchanged."
+lastReviewedAt: 2026-11-01
+lastReviewedCommit: de04709ec164e3c9810944a339b1851ca184b5ad
+lastReviewedNote: "Database #879: reviewed immutable final Result identity occupancy, service-only RPCs, legacy normalized-key guards, local concurrency/upgrade proof and deterministic exact-local schema/type refresh. Branch, Preview and deployment policies are unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -88,6 +88,35 @@ no local or hosted database operation is needed for that scoped proof. The
 unchanged required hosted PR jobs still rebuild and validate the full database
 contract. Record those hosted results separately before merge; offline fixtures
 do not replace them.
+
+## Final Result identity validation
+
+Run `supabase/tests/20261101_final_result_identity_registry.sql` after a blank
+migration rebuild with the HDF5 binding, release-control-plane, manager Result
+publication, API closure and full-schema inventory suites. The identity addition
+contains two API functions, two private helpers, four triggers, eight constraints
+and one private RLS relation. Pin exact enabled AFTER trigger identities on all
+three legacy producer surfaces, including normalized Process versions.
+
+The golden content digest is independently generated from canonical JSON, not
+PostgreSQL JSONB serialization. Cover same-content retries across producers,
+changed-content/domain conflicts, dependency ordering, immutable occupancy,
+bounded version lookup and browser denial. No test may equate a legacy digest
+with the new hash domain or manufacture a canonical state-120 Result.
+
+Run `python3 supabase/tests/regression/20261101_final_result_identity_concurrency.py`
+only against its exact disposable project `hdf5-final-879`. It refuses existing
+fixture identities and proves two real clients block on one another before the
+first commits. Read committed, repeatable read and serializable all cover equal
+content, changed content, and both legacy/registered write orders. Higher
+isolation may reject with serialization failure; no path can commit two meanings.
+The harness leaves immutable synthetic claims for an owner-controlled database
+reset; it never disables guards or deletes audit/identity rows. Use `supabase/tests/upgrade/20261101_final_result_identity_registry.sql` on
+the exact prior migration head; expand its migration include in the same psql
+session or execute it from the checked-in file path. It retains one synthetic
+legacy Process for an owner reset and compares all three legacy surfaces before
+and after the forward migration. Keep this proof separate from blank rebuilds
+and regenerate the schema workspace/types twice before submission.
 
 ## HDF5 result binding validation
 
