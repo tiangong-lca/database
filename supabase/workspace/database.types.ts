@@ -2137,6 +2137,26 @@ export type Database = {
         Args: { proc: Database["public"]["Tables"]["processes"]["Row"] }
         Returns: string
       }
+      qry_final_result_release_probe_page_v2: {
+        Args: {
+          p_after_artifact_id?: string
+          p_limit?: number
+          p_publish_plan_hash: string
+          p_release_run_id: string
+          p_runtime_revision?: string
+        }
+        Returns: Json
+      }
+      qry_final_result_release_probe_v2: {
+        Args: {
+          p_publish_plan_hash: string
+          p_release_run_id: string
+          p_result_id: string
+          p_result_version: string
+          p_runtime_revision: string
+        }
+        Returns: Json
+      }
       qry_final_result_release_v2: {
         Args: { p_release_run_id: string }
         Returns: Json
@@ -3742,6 +3762,18 @@ export type Database = {
         }
         Returns: Json
       }
+      svc_result_query_runtime_configure_v2: {
+        Args: {
+          p_enabled: boolean
+          p_expected_revision_id: string
+          p_reader_sha256: string
+          p_reason: string
+          p_revision_id: string
+          p_target_hash: string
+        }
+        Returns: Json
+      }
+      svc_result_query_runtime_read_v2: { Args: never; Returns: Json }
       svc_result_query_seal: { Args: { p_artifact_id: string }; Returns: Json }
       svc_result_query_seal_v2: {
         Args: { p_artifact_id: string; p_receipt: Json }

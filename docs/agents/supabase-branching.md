@@ -23,8 +23,8 @@ checkPaths:
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
 lastReviewedAt: 2026-11-01
-lastReviewedCommit: ad274d627aef629ecea6004b238942912440040c
-lastReviewedNote: "Database #879: reviewed explicit final Result release format, actor-bound immutable selection, bounded batches and independent seal hash, legacy populated-upgrade and concurrency proof, exact generated contracts and focused CI additions. Branch, deployment and publication authority policies remain unchanged."
+lastReviewedCommit: eadfd5f2736d5ce0b36ea032aa04b024f64e943d
+lastReviewedNote: "Database #879: reviewed immutable runtime admission revisions and expected-head arbitration, live manager-only exact selected Result probes and bounded pagination, role/runtime drift, populated-upgrade/concurrency proof and generated contracts. Admission is not readiness or publication; branch and deployment policies remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

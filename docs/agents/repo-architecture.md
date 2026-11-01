@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-01
-lastReviewedCommit: ad274d627aef629ecea6004b238942912440040c
-lastReviewedNote: "Database #879: reviewed explicit final Result release format, actor-bound immutable selection, bounded batches and independent seal hash, legacy populated-upgrade and concurrency proof, exact generated contracts and focused CI additions. Branch, deployment and publication authority policies remain unchanged."
+lastReviewedCommit: eadfd5f2736d5ce0b36ea032aa04b024f64e943d
+lastReviewedNote: "Database #879: reviewed immutable runtime admission revisions and expected-head arbitration, live manager-only exact selected Result probes and bounded pagination, role/runtime drift, populated-upgrade/concurrency proof and generated contracts. Admission is not readiness or publication; branch and deployment policies remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -183,6 +183,42 @@ remain required in the subsequent adapter. Stored files and sealed membership
 alone are not readiness or authorization. Rollback preparation only admits a
 terminal v2 publication referencing the exact retained Candidate; it never
 reactivates a historical row.
+
+## Final Result query runtime and private probes
+
+The service-only runtime configure/read APIs admit an explicit storage target
+fingerprint and reader executable SHA-256. `final_result_query_runtime_revisions`
+is immutable history; `final_result_query_runtime_head` is its single current
+pointer. Configuration uses a caller-supplied new revision UUID and expected
+previous revision. Exact retries recover their original revision and report
+whether it remains current. Reverting settings requires another new revision;
+replaying historical admission never revives stale readiness. No target is seeded
+by the migration. These two private RLS relations have closed raw ACLs; immutable
+revision history records service admission and reason without fabricating an
+actor in the human command audit log.
+
+`qry_final_result_release_probe_page_v2` and `qry_final_result_release_probe_v2`
+are manager-only `EDGE-REL-01` APIs. They require an exact unpublished v2 plan,
+sealed selection, enabled matching target, unchanged expected current and live
+manager role. Their context binds runtime revision, binary hash and an opaque
+manager-role precondition hash; deleting/recreating the grant changes that hash.
+Service storage credentials have no execute grant on these actor endpoints.
+
+Pages enumerate at most 100 selected artifacts with the first/last exact selected
+Result per artifact (deduplicated for a single selected row). The covering
+run/artifact/Result index supports keyset pagination. Continuations bind runtime
+revision; a runtime change requires restarting verification. Exact Result probes
+resolve only sealed membership and recheck registered content/receipt identity.
+They return Worker readiness scope and a bounded locator-free descriptor, never
+a source alias, arbitrary ordinal or whole index. Ordinary users cannot use this
+path to inspect staging. Public query/download authorization remains separate.
+
+Admission and descriptor enumeration do not query the Worker, attest numerical
+correctness, write a readiness receipt or advance a run. The run remains prepared
+until a later trusted verifier supplies complete file verification and successful
+runtime probe evidence. First/last probes are runtime qualification samples; they
+do not replace Release's complete independent final Result/HDF5/ZIP parity check.
+Fresh readiness, exact approval and atomic current activation are still required.
 
 ## Published HDF5 query bindings v1
 

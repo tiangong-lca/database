@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-01
-lastReviewedCommit: ad274d627aef629ecea6004b238942912440040c
-lastReviewedNote: "Database #879: reviewed explicit final Result release format, actor-bound immutable selection, bounded batches and independent seal hash, legacy populated-upgrade and concurrency proof, exact generated contracts and focused CI additions. Branch, deployment and publication authority policies remain unchanged."
+lastReviewedCommit: eadfd5f2736d5ce0b36ea032aa04b024f64e943d
+lastReviewedNote: "Database #879: reviewed immutable runtime admission revisions and expected-head arbitration, live manager-only exact selected Result probes and bounded pagination, role/runtime drift, populated-upgrade/concurrency proof and generated contracts. Admission is not readiness or publication; branch and deployment policies remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -205,6 +205,31 @@ compares existing rows (excluding only the new explicit format default), thirtee
 API bodies, current-v1 readability, unpublished-version denial and original
 Candidate receipts. End with an exact blank rebuild and two drift-free generated
 schema/type exports. These tests do not prove reader readiness or public activation.
+
+## Final Result runtime admission validation
+
+Run `20261101_final_result_query_runtime.sql` with the preceding selection,
+Candidate, query and identity suites, plus legacy release/reader and exact schema
+inventories. Cover explicit empty admission, service/actor separation, bounded
+reasons/pages, target mismatch, precise direct/derived membership, unselected
+file-contained denial, first/last deduplication, revision-bound continuation,
+disable/re-enable without history resurrection, live role revocation and changed
+permission preconditions. Descriptor success is not proof of a working reader.
+
+`regression/20261101_final_result_query_runtime.py` only accepts the owned local
+`hdf5-final-879` project with empty runtime history. Six actual two-connection
+races observe blocking and exercise same-revision retries versus conflicting
+expected-head updates across all three isolation levels. Records remain until
+the owner's reset. Runtime admission uses a transaction advisory lock plus a
+row lock on the current pointer; later activation must hold a shared pointer lock
+while checking its bound revision. PostgreSQL 17's row-lock contract is the
+versioned authority: [PostgreSQL 17 explicit locking](https://www.postgresql.org/docs/17/explicit-locking.html).
+
+For populated upgrade, start at `20261101120000` with current-v1 and a sealed final
+selection whose expected-current ID matches that v1 publication. Run `upgrade/20261101_final_result_query_runtime.sql`. It
+compares all retained data and seventeen API definitions, old v1 read/denial,
+selected members and the absence of implicitly admitted runtime. End with a blank
+rebuild and two generated schema/type exports before submission.
 
 ## HDF5 result binding validation
 

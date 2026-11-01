@@ -26301,6 +26301,71 @@ $$;
 ALTER FUNCTION "api"."processes_embedding_ft_input"("proc" "public"."processes") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "api"."qry_final_result_release_probe_page_v2"("p_release_run_id" "uuid", "p_publish_plan_hash" "text", "p_runtime_revision" "uuid" DEFAULT NULL::"uuid", "p_after_artifact_id" "uuid" DEFAULT NULL::"uuid", "p_limit" integer DEFAULT 100) RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare v_context jsonb:=private.final_result_release_probe_context(p_release_run_id,p_publish_plan_hash);
+  v_ids uuid[]; v_id uuid; v_first text; v_last text; v_count bigint; v_ref jsonb; v_items jsonb:='[]'; v_probes jsonb;
+begin
+  if not coalesce((v_context->>'ok')::boolean,false) then return v_context; end if;
+  if p_limit is null or p_limit not between 1 and 100 or (p_after_artifact_id is not null and p_runtime_revision is null) then
+    raise exception using errcode='22023',message='Invalid bounded final Result probe page';
+  end if;
+  if p_runtime_revision is not null and p_runtime_revision::text is distinct from v_context#>>'{data,runtimeRevision}' then
+    return private.lca_release_error('runtime_revision_conflict',409,'Runtime changed during verification; restart with the current revision');
+  end if;
+  select array_agg(artifact_id order by artifact_id) into v_ids from (
+    select distinct artifact_id from private.final_result_release_members where release_run_id=p_release_run_id
+      and (p_after_artifact_id is null or artifact_id>p_after_artifact_id) order by artifact_id limit p_limit+1
+  ) ids;
+  foreach v_id in array coalesce(v_ids[1:p_limit],array[]::uuid[]) loop
+    select min((result_id::text||'@'||result_version) collate "C"),max((result_id::text||'@'||result_version) collate "C"),count(*)
+      into v_first,v_last,v_count from private.final_result_release_members where release_run_id=p_release_run_id and artifact_id=v_id;
+    select artifact_ref into strict v_ref from private.final_result_query_artifacts where id=v_id;
+    v_probes:=jsonb_build_array(jsonb_build_object('uuid',split_part(v_first,'@',1),'version',split_part(v_first,'@',2)));
+    if v_first<>v_last then v_probes:=v_probes||jsonb_build_array(jsonb_build_object('uuid',split_part(v_last,'@',1),'version',split_part(v_last,'@',2))); end if;
+    v_items:=v_items||jsonb_build_array(jsonb_build_object('artifact',v_ref,'selectedResultCount',v_count,'probes',v_probes));
+  end loop;
+  return jsonb_build_object('ok',true,'data',(v_context->'data')||jsonb_build_object('artifacts',v_items,
+    'nextArtifactCursor',case when cardinality(v_ids)>p_limit then v_ids[p_limit] else null end));
+end;
+$$;
+
+
+ALTER FUNCTION "api"."qry_final_result_release_probe_page_v2"("p_release_run_id" "uuid", "p_publish_plan_hash" "text", "p_runtime_revision" "uuid", "p_after_artifact_id" "uuid", "p_limit" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "api"."qry_final_result_release_probe_v2"("p_release_run_id" "uuid", "p_publish_plan_hash" "text", "p_runtime_revision" "uuid", "p_result_id" "uuid", "p_result_version" "text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$
+declare v_context jsonb:=private.final_result_release_probe_context(p_release_run_id,p_publish_plan_hash); v_data jsonb;
+begin
+  if not coalesce((v_context->>'ok')::boolean,false) then return v_context; end if;
+  if p_runtime_revision::text is distinct from v_context#>>'{data,runtimeRevision}' then
+    return private.lca_release_error('runtime_revision_conflict',409,'Exact admitted runtime revision is required');
+  end if;
+  if p_result_id is null or coalesce(p_result_version,'') !~ '^[0-9]{2}\.[0-9]{2}\.[0-9]{3}$' then
+    raise exception using errcode='22023',message='Exact final Result probe identity is required';
+  end if;
+  select jsonb_build_object('artifact',a.artifact_ref,'result',jsonb_build_object('uuid',m.result_id,'version',m.result_version),
+    'contentHash',q.content_hash,'lciAvailable',true,'lciaAvailable',a.impact_count>0) into v_data
+    from private.final_result_release_members m join private.final_result_query_artifacts a on a.id=m.artifact_id
+    join private.final_result_query_rows q on q.artifact_id=m.artifact_id and q.row_ordinal=m.row_ordinal
+      and q.result_id=m.result_id and q.result_version=m.result_version
+    join private.final_result_identities i on i.result_id=q.result_id and i.result_version=q.result_version
+      and i.registration_id=q.registration_id and i.content_hash=q.content_hash and i.registration_kind='registered'
+    where m.release_run_id=p_release_run_id and m.result_id=p_result_id and m.result_version=p_result_version;
+  if v_data is null then return private.lca_release_error('final_result_probe_not_available',404,'Result is absent from the sealed publication selection'); end if;
+  return jsonb_build_object('ok',true,'data',(v_context->'data')||v_data);
+end;
+$_$;
+
+
+ALTER FUNCTION "api"."qry_final_result_release_probe_v2"("p_release_run_id" "uuid", "p_publish_plan_hash" "text", "p_runtime_revision" "uuid", "p_result_id" "uuid", "p_result_version" "text") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "api"."qry_final_result_release_v2"("p_release_run_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -33712,6 +33777,57 @@ $_$;
 
 
 ALTER FUNCTION "api"."svc_result_query_resolve"("p_process_id" "uuid", "p_process_version" "text", "p_publication_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "api"."svc_result_query_runtime_configure_v2"("p_revision_id" "uuid", "p_expected_revision_id" "uuid", "p_target_hash" "text", "p_reader_sha256" "text", "p_enabled" boolean, "p_reason" "text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$
+declare v_head uuid; v_old private.final_result_query_runtime_revisions%rowtype;
+begin
+  if p_revision_id is null or coalesce(p_target_hash,'') !~ '^[0-9a-f]{64}$'
+    or coalesce(p_reader_sha256,'') !~ '^[0-9a-f]{64}$' or p_enabled is null
+    or coalesce(length(p_reason),0) not between 1 and 2000 or length(btrim(p_reason))=0 then
+    raise exception using errcode='22023',message='Invalid final Result runtime admission';
+  end if;
+  perform pg_advisory_xact_lock(882,1);
+  select revision_id into v_head from private.final_result_query_runtime_head where singleton for update;
+  select * into v_old from private.final_result_query_runtime_revisions where id=p_revision_id;
+  if found then
+    if v_old.previous_revision_id is distinct from p_expected_revision_id or v_old.target_hash<>p_target_hash
+      or v_old.reader_sha256<>p_reader_sha256 or v_old.enabled<>p_enabled or v_old.reason<>p_reason then
+      raise exception using errcode='23505',message='Final Result runtime revision identity conflict';
+    end if;
+    return jsonb_build_object('ok',true,'data',jsonb_build_object('runtimeRevision',v_old.id,'isCurrent',v_head=v_old.id,
+      'targetHash',v_old.target_hash,'readerSha256',v_old.reader_sha256,'enabled',v_old.enabled,'publicationAuthorized',false));
+  end if;
+  if v_head is distinct from p_expected_revision_id then
+    return private.lca_release_error('runtime_revision_conflict',409,'Runtime admission changed; read the exact current revision');
+  end if;
+  insert into private.final_result_query_runtime_revisions(id,previous_revision_id,target_hash,reader_sha256,enabled,reason)
+    values(p_revision_id,v_head,p_target_hash,p_reader_sha256,p_enabled,p_reason);
+  insert into private.final_result_query_runtime_head(singleton,revision_id) values(true,p_revision_id)
+    on conflict(singleton) do update set revision_id=excluded.revision_id;
+  return jsonb_build_object('ok',true,'data',jsonb_build_object('runtimeRevision',p_revision_id,'isCurrent',true,
+    'targetHash',p_target_hash,'readerSha256',p_reader_sha256,'enabled',p_enabled,'publicationAuthorized',false));
+end;
+$_$;
+
+
+ALTER FUNCTION "api"."svc_result_query_runtime_configure_v2"("p_revision_id" "uuid", "p_expected_revision_id" "uuid", "p_target_hash" "text", "p_reader_sha256" "text", "p_enabled" boolean, "p_reason" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "api"."svc_result_query_runtime_read_v2"() RETURNS "jsonb"
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+  select jsonb_build_object('ok',true,'data',(select jsonb_build_object('runtimeRevision',r.id,'targetHash',r.target_hash,
+    'readerSha256',r.reader_sha256,'enabled',r.enabled,'publicationAuthorized',false)
+    from private.final_result_query_runtime_head h join private.final_result_query_runtime_revisions r on r.id=h.revision_id where h.singleton));
+$$;
+
+
+ALTER FUNCTION "api"."svc_result_query_runtime_read_v2"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "api"."svc_result_query_seal"("p_artifact_id" "uuid") RETURNS "jsonb"
@@ -65957,6 +66073,52 @@ $_$;
 
 
 ALTER FUNCTION "private"."final_result_query_uint"("p_value" "jsonb", "p_max" bigint) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."final_result_release_probe_context"("p_release_run_id" "uuid", "p_publish_plan_hash" "text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare v_auth jsonb:=api.assert_lca_release_manager(); v_run private.lca_release_runs%rowtype;
+  v_plan private.final_result_release_plans%rowtype; v_runtime private.final_result_query_runtime_revisions%rowtype;
+  v_current uuid; v_permission text;
+begin
+  if not coalesce((v_auth->>'ok')::boolean,false) then return v_auth; end if;
+  select * into v_run from private.lca_release_runs where id=p_release_run_id;
+  if not found or v_run.publication_format<>'final-result-pair.v2' or v_run.publish_plan_hash is distinct from p_publish_plan_hash
+    or v_run.status not in ('prepared','ready_for_approval','approved') then
+    return private.lca_release_error('final_result_probe_not_available',404,'Exact unpublished final Result plan is required');
+  end if;
+  select * into strict v_plan from private.final_result_release_plans where release_run_id=v_run.id;
+  if not exists(select 1 from private.final_result_release_selection_seals where release_run_id=v_run.id and selection_hash=v_run.selection_manifest_hash) then
+    return private.lca_release_error('final_result_selection_unsealed',409,'Complete selected membership must be sealed first');
+  end if;
+  select r.* into v_runtime from private.final_result_query_runtime_head h
+    join private.final_result_query_runtime_revisions r on r.id=h.revision_id where h.singleton;
+  if not found or not v_runtime.enabled or v_runtime.target_hash<>v_plan.target_hash then
+    return private.lca_release_error('final_result_runtime_unavailable',409,'An enabled exact storage target and reader revision are required');
+  end if;
+  select id into v_current from private.lca_release_publications where publication_series_key='global'
+    and publication_channel='public' and visibility_scope='public' and is_current and status='current';
+  if v_current is distinct from v_plan.expected_current_publication_id then
+    return private.lca_release_error('expected_current_conflict',409,'Current publication changed; prepare a new exact plan');
+  end if;
+  select encode(extensions.digest(convert_to('tiangong.final-result-manager-precondition.v1'||E'\n'||r.user_id::text||E'\n'||
+    coalesce(extract(epoch from r.created_at)::text,'')||E'\n'||coalesce(extract(epoch from r.modified_at)::text,'')||E'\n','UTF8'),'sha256'),'hex')
+    into v_permission from private.roles r where r.user_id=auth.uid()
+      and r.team_id='00000000-0000-0000-0000-000000000000' and r.role='data_product_manager';
+  if v_permission is null then return private.lca_release_error('not_data_product_manager',403,'Live manager role is required'); end if;
+  return jsonb_build_object('ok',true,'data',jsonb_build_object('releaseRunId',v_run.id,'publishPlanHash',v_run.publish_plan_hash,
+    'candidateHash',v_plan.candidate_hash,'targetHash',v_plan.target_hash,'selectionHash',v_run.selection_manifest_hash,
+    'selectionCount',v_plan.selection_count,'runtimeRevision',v_runtime.id,'readerSha256',v_runtime.reader_sha256,
+    'actorId',auth.uid(),'permissionHash',v_permission,
+    'scope',jsonb_build_object('kind','readiness','releaseRunId',v_run.id,'selectionHash',v_run.selection_manifest_hash),
+    'publicationAuthorized',false));
+end;
+$$;
+
+
+ALTER FUNCTION "private"."final_result_release_probe_context"("p_release_run_id" "uuid", "p_publish_plan_hash" "text") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "private"."flowproperties_sync_jsonb_version"() RETURNS "trigger"
@@ -100408,6 +100570,33 @@ CREATE TABLE IF NOT EXISTS "private"."final_result_query_rows" (
 ALTER TABLE "private"."final_result_query_rows" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "private"."final_result_query_runtime_head" (
+    "singleton" boolean DEFAULT true NOT NULL,
+    "revision_id" "uuid" NOT NULL,
+    CONSTRAINT "final_result_query_runtime_head_singleton_check" CHECK ("singleton")
+);
+
+
+ALTER TABLE "private"."final_result_query_runtime_head" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "private"."final_result_query_runtime_revisions" (
+    "id" "uuid" NOT NULL,
+    "previous_revision_id" "uuid",
+    "target_hash" "text" NOT NULL,
+    "reader_sha256" "text" NOT NULL,
+    "enabled" boolean NOT NULL,
+    "reason" "text" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "clock_timestamp"() NOT NULL,
+    CONSTRAINT "final_result_query_runtime_revisions_reader_sha256_check" CHECK (("reader_sha256" ~ '^[0-9a-f]{64}$'::"text")),
+    CONSTRAINT "final_result_query_runtime_revisions_reason_check" CHECK (((("length"("reason") >= 1) AND ("length"("reason") <= 2000)) AND ("length"("btrim"("reason")) > 0))),
+    CONSTRAINT "final_result_query_runtime_revisions_target_hash_check" CHECK (("target_hash" ~ '^[0-9a-f]{64}$'::"text"))
+);
+
+
+ALTER TABLE "private"."final_result_query_runtime_revisions" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "private"."final_result_query_seals" (
     "artifact_id" "uuid" NOT NULL,
     "target_hash" "text" NOT NULL,
@@ -103342,6 +103531,16 @@ ALTER TABLE ONLY "private"."final_result_query_rows"
 
 
 
+ALTER TABLE ONLY "private"."final_result_query_runtime_head"
+    ADD CONSTRAINT "final_result_query_runtime_head_pkey" PRIMARY KEY ("singleton");
+
+
+
+ALTER TABLE ONLY "private"."final_result_query_runtime_revisions"
+    ADD CONSTRAINT "final_result_query_runtime_revisions_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "private"."final_result_query_seals"
     ADD CONSTRAINT "final_result_query_seals_pkey" PRIMARY KEY ("artifact_id", "target_hash");
 
@@ -104384,6 +104583,10 @@ CREATE INDEX "dataset_review_submit_requests_submit_worker_job_idx" ON "private"
 
 
 CREATE INDEX "final_result_query_source_lookup_idx" ON "private"."final_result_query_sources" USING "btree" ("source_id", "source_version", "artifact_id", "row_ordinal");
+
+
+
+CREATE INDEX "final_result_release_members_artifact_idx" ON "private"."final_result_release_members" USING "btree" ("release_run_id", "artifact_id", "result_id", "result_version");
 
 
 
@@ -105747,6 +105950,10 @@ CREATE OR REPLACE TRIGGER "final_result_query_rows_immutable" BEFORE DELETE OR U
 
 
 
+CREATE OR REPLACE TRIGGER "final_result_query_runtime_revisions_immutable" BEFORE DELETE OR UPDATE ON "private"."final_result_query_runtime_revisions" FOR EACH ROW EXECUTE FUNCTION "private"."result_query_immutable_guard"();
+
+
+
 CREATE OR REPLACE TRIGGER "final_result_query_seals_immutable" BEFORE DELETE OR UPDATE ON "private"."final_result_query_seals" FOR EACH ROW EXECUTE FUNCTION "private"."result_query_immutable_guard"();
 
 
@@ -106507,6 +106714,16 @@ ALTER TABLE ONLY "private"."final_result_query_rows"
 
 
 
+ALTER TABLE ONLY "private"."final_result_query_runtime_head"
+    ADD CONSTRAINT "final_result_query_runtime_head_revision_id_fkey" FOREIGN KEY ("revision_id") REFERENCES "private"."final_result_query_runtime_revisions"("id");
+
+
+
+ALTER TABLE ONLY "private"."final_result_query_runtime_revisions"
+    ADD CONSTRAINT "final_result_query_runtime_revisions_previous_revision_id_fkey" FOREIGN KEY ("previous_revision_id") REFERENCES "private"."final_result_query_runtime_revisions"("id");
+
+
+
 ALTER TABLE ONLY "private"."final_result_query_seals"
     ADD CONSTRAINT "final_result_query_seals_artifact_id_fkey" FOREIGN KEY ("artifact_id") REFERENCES "private"."final_result_query_artifacts"("id");
 
@@ -107252,6 +107469,12 @@ ALTER TABLE "private"."final_result_query_artifacts" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "private"."final_result_query_rows" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."final_result_query_runtime_head" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."final_result_query_runtime_revisions" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "private"."final_result_query_seals" ENABLE ROW LEVEL SECURITY;
@@ -109541,6 +109764,16 @@ GRANT ALL ON FUNCTION "api"."processes_embedding_ft_input"("proc" "public"."proc
 
 
 
+REVOKE ALL ON FUNCTION "api"."qry_final_result_release_probe_page_v2"("p_release_run_id" "uuid", "p_publish_plan_hash" "text", "p_runtime_revision" "uuid", "p_after_artifact_id" "uuid", "p_limit" integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."qry_final_result_release_probe_page_v2"("p_release_run_id" "uuid", "p_publish_plan_hash" "text", "p_runtime_revision" "uuid", "p_after_artifact_id" "uuid", "p_limit" integer) TO "authenticated";
+
+
+
+REVOKE ALL ON FUNCTION "api"."qry_final_result_release_probe_v2"("p_release_run_id" "uuid", "p_publish_plan_hash" "text", "p_runtime_revision" "uuid", "p_result_id" "uuid", "p_result_version" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."qry_final_result_release_probe_v2"("p_release_run_id" "uuid", "p_publish_plan_hash" "text", "p_runtime_revision" "uuid", "p_result_id" "uuid", "p_result_version" "text") TO "authenticated";
+
+
+
 REVOKE ALL ON FUNCTION "api"."qry_final_result_release_v2"("p_release_run_id" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "api"."qry_final_result_release_v2"("p_release_run_id" "uuid") TO "authenticated";
 
@@ -110153,6 +110386,16 @@ GRANT ALL ON FUNCTION "api"."svc_result_query_describe_v2"("p_artifact_id" "uuid
 
 REVOKE ALL ON FUNCTION "api"."svc_result_query_resolve"("p_process_id" "uuid", "p_process_version" "text", "p_publication_id" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "api"."svc_result_query_resolve"("p_process_id" "uuid", "p_process_version" "text", "p_publication_id" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "api"."svc_result_query_runtime_configure_v2"("p_revision_id" "uuid", "p_expected_revision_id" "uuid", "p_target_hash" "text", "p_reader_sha256" "text", "p_enabled" boolean, "p_reason" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."svc_result_query_runtime_configure_v2"("p_revision_id" "uuid", "p_expected_revision_id" "uuid", "p_target_hash" "text", "p_reader_sha256" "text", "p_enabled" boolean, "p_reason" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "api"."svc_result_query_runtime_read_v2"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."svc_result_query_runtime_read_v2"() TO "service_role";
 
 
 
@@ -111698,6 +111941,10 @@ REVOKE ALL ON FUNCTION "private"."final_result_query_row_hash"("p_row" "jsonb") 
 
 
 REVOKE ALL ON FUNCTION "private"."final_result_query_uint"("p_value" "jsonb", "p_max" bigint) FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."final_result_release_probe_context"("p_release_run_id" "uuid", "p_publish_plan_hash" "text") FROM PUBLIC;
 
 
 
