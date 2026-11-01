@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-01
-lastReviewedCommit: eadfd5f2736d5ce0b36ea032aa04b024f64e943d
-lastReviewedNote: "Database #879: reviewed immutable runtime admission revisions and expected-head arbitration, live manager-only exact selected Result probes and bounded pagination, role/runtime drift, populated-upgrade/concurrency proof and generated contracts. Admission is not readiness or publication; branch and deployment policies remain unchanged."
+lastReviewedCommit: d1cf6848d6be2080a43191abaa620b94dfd3c31b
+lastReviewedNote: "Database #879: reviewed immutable trusted-verifier readiness attempts, exact Candidate/query-file and selected-probe coverage, bounded fresh evidence, historical retries without renewed authority, concurrency/upgrade proof and generated contracts. Actor approval, activation, branch and deployment authority remain separate."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -230,6 +230,27 @@ selection whose expected-current ID matches that v1 publication. Run `upgrade/20
 compares all retained data and seventeen API definitions, old v1 read/denial,
 selected members and the absence of implicitly admitted runtime. End with a blank
 rebuild and two generated schema/type exports before submission.
+
+## Final Result readiness validation
+
+Run `20261101_final_result_release_readiness.sql` with identity/query/Candidate/
+selection/runtime and legacy publication/reader suites, exact API/ACL inventories
+and generated types. Cover full Candidate and selected-artifact file/probe
+coverage, exact registered content and runtime/actor bindings, pagination and
+LCIA counts, invalid-later-batch rollback, actual freshness expiry, historical
+idempotent receipt recovery and denial after runtime or manager revocation.
+SQL fixtures are synthetic service attestations, not proof of remote bytes or
+numerics; Release's separate actual HDF5/ZIP/Worker qualification owns that proof.
+
+`regression/20261101_final_result_release_readiness.py` runs only against the
+exact owner-reset `hdf5-final-879` database. Observe a real blocking relationship
+for begin conflicts, proof retries and seal retries at all three isolation
+levels; fresh-snapshot recovery must retain one receipt and exact complete
+coverage. Immutable synthetic evidence remains for the owner-controlled reset.
+`upgrade/20261101_final_result_release_readiness.sql` preserves populated v1
+current publication, sealed final selection and admitted runtime plus all
+21 prior API bodies. End with complete blank rebuild and two no-drift schema/type
+exports. These local checks do not deploy, approve or activate a publication.
 
 ## HDF5 result binding validation
 

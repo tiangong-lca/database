@@ -3605,6 +3605,22 @@ export type Database = {
         }
         Returns: Json
       }
+      svc_final_result_readiness_artifacts_v2: {
+        Args: { p_proofs: Json; p_verification_id: string }
+        Returns: Json
+      }
+      svc_final_result_readiness_begin_v2: {
+        Args: { p_header: Json }
+        Returns: Json
+      }
+      svc_final_result_readiness_describe_v2: {
+        Args: { p_verification_id: string }
+        Returns: Json
+      }
+      svc_final_result_readiness_seal_v2: {
+        Args: { p_verification_id: string }
+        Returns: Json
+      }
       svc_identity_desired_state_read: {
         Args: { p_keycloak_sub: string }
         Returns: Json

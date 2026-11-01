@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-01
-lastReviewedCommit: eadfd5f2736d5ce0b36ea032aa04b024f64e943d
-lastReviewedNote: "Database #879: reviewed immutable runtime admission revisions and expected-head arbitration, live manager-only exact selected Result probes and bounded pagination, role/runtime drift, populated-upgrade/concurrency proof and generated contracts. Admission is not readiness or publication; branch and deployment policies remain unchanged."
+lastReviewedCommit: d1cf6848d6be2080a43191abaa620b94dfd3c31b
+lastReviewedNote: "Database #879: reviewed immutable trusted-verifier readiness attempts, exact Candidate/query-file and selected-probe coverage, bounded fresh evidence, historical retries without renewed authority, concurrency/upgrade proof and generated contracts. Actor approval, activation, branch and deployment authority remain separate."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml

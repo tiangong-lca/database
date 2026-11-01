@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-01
-lastReviewedCommit: eadfd5f2736d5ce0b36ea032aa04b024f64e943d
-lastReviewedNote: "Database #879: reviewed immutable runtime admission revisions and expected-head arbitration, live manager-only exact selected Result probes and bounded pagination, role/runtime drift, populated-upgrade/concurrency proof and generated contracts. Admission is not readiness or publication; branch and deployment policies remain unchanged."
+lastReviewedCommit: d1cf6848d6be2080a43191abaa620b94dfd3c31b
+lastReviewedNote: "Database #879: reviewed immutable trusted-verifier readiness attempts, exact Candidate/query-file and selected-probe coverage, bounded fresh evidence, historical retries without renewed authority, concurrency/upgrade proof and generated contracts. Actor approval, activation, branch and deployment authority remain separate."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -219,6 +219,45 @@ until a later trusted verifier supplies complete file verification and successfu
 runtime probe evidence. First/last probes are runtime qualification samples; they
 do not replace Release's complete independent final Result/HDF5/ZIP parity check.
 Fresh readiness, exact approval and atomic current activation are still required.
+
+## Final Result readiness evidence
+
+The four service-only `svc_final_result_readiness_*_v2` APIs register a bounded
+attempt, append artifact proofs, seal complete coverage and describe the original
+immutable evidence. All three new private relations have RLS and closed raw ACLs.
+An authenticated manager cannot self-attest file availability or reader success.
+The trusted verifier must actually perform full GET/hash checks and independent
+reader comparisons; SQL verifies their scope, identity, counts, timing and live
+preconditions, not the external computation itself.
+
+An attempt binds the same exact Candidate/target/selection/runtime/binary/actor/
+permission context returned by the manager probe API. It attests all four
+Candidate files. Each artifact proof must contain its complete sealed file set
+and exactly the first/last selected Result probes (deduplicated for one row),
+including registered content identity and the explicit v1 reader-probe evidence.
+LCI count determines the required first-one-then-1000 pagination count; LCIA
+capability/count and overview/query counts must agree. Batches allow 1–100
+artifacts within 1 MiB, each proof at most 64 KiB; invalid later members roll back
+the complete batch. One verification UUID cannot bind different evidence.
+
+The verifier starts the attempt clock before any file read. File qualification
+must complete within one hour of that start; reader evidence expires fifteen
+minutes after the oldest probe start. Both are explicit current policy bounds,
+not renewed by seal, retries or response recovery. Timestamps permit at most
+thirty seconds of future clock skew and reject non-finite values. Seal compares
+all selected-artifact coverage and returns the earlier expiration. Its coverage
+hash uses database JSONB proof hashes in sorted 500-artifact blocks under
+`tiangong.final-result-readiness-coverage.jsonb.v1`; this is not JCS or content
+identity and must not replace either domain.
+
+Same-identity retries may recover historical evidence after runtime drift; they
+do not make it fresh or current. New work rechecks live manager membership,
+permission precondition, enabled runtime revision/target and expected current.
+Readiness storage leaves the run `prepared` and `publicationAuthorized=false`.
+Actor approval and activation must independently check the exact bindings,
+current authority and receipt expiry while holding their transaction locks;
+these commands and public Result/download authorization remain to be connected.
+No migration admits a runtime, certifies files or activates a publication.
 
 ## Published HDF5 query bindings v1
 
