@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-01
-lastReviewedCommit: de04709ec164e3c9810944a339b1851ca184b5ad
-lastReviewedNote: "Database #879: reviewed immutable final Result identity occupancy, service-only RPCs, legacy normalized-key guards, local concurrency/upgrade proof and deterministic exact-local schema/type refresh. Branch, Preview and deployment policies are unchanged."
+lastReviewedCommit: 49542c9c9c14515d55cd04385aaae781a8ed3a1c
+lastReviewedNote: "Database #879: reviewed registered final Result v2 artifact/row/source bindings, target-bound full-readback seals, bounded wire hashes, unchanged v1 publication authority, blank/populated-upgrade/concurrency evidence and exact-local generated contracts. Branch, Preview and deployment policies are unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -117,6 +117,39 @@ session or execute it from the checked-in file path. It retains one synthetic
 legacy Process for an owner reset and compares all three legacy surfaces before
 and after the forward migration. Keep this proof separate from blank rebuilds
 and regenerate the schema workspace/types twice before submission.
+
+## Final Result query v2 validation
+
+Run `supabase/tests/20261101_final_result_query_artifacts_v2.sql` after a blank
+rebuild, alongside final identity, v1 HDF5 bindings, release-control-plane,
+API closure and full-schema inventory. This addition owns two service API
+functions, two private helpers, four triggers, 22 constraints and four RLS
+relations. Keep exact aggregate inventories; v1-specific assertions name the
+four original RPCs rather than matching the additive v2 names by prefix.
+
+The rollback-only SQL suite covers raw manifest hashes, dimensions/file budgets,
+registered content, direct/derived associations, incomplete axes, row/readback
+hash mismatches, stale evidence, idempotent sealed retries and closed raw/browser
+access. `fixtures/final-result-query-v2.json` contains independent Python SHA-256
+goldens for the ASCII row and block contract, not PostgreSQL-derived expectations.
+
+Run `python3 supabase/tests/regression/20261101_final_result_query_v2.py` only
+against its exact disposable `hdf5-final-879` project. It checks 501 real identity
+receipts across out-of-order batches and the 500-row hash-block boundary, plus
+six observed two-client races across read committed, repeatable read and
+serializable. It refuses reused fixture IDs and leaves immutable synthetic
+records for an owner reset. A unique/serialization conflict is a safe abort,
+not permission to overwrite a Result or silently change an artifact identity.
+
+At prior migration `20261101063159`, run
+`supabase/tests/upgrade/20261101_final_result_query_artifacts_v2.sql` in one psql
+session (expand the migration include when streaming through container stdin).
+It retains a synthetic current v1 publication for the owner reset and checks
+its package, artifact, row membership, approval, current pointer and six v1
+function bodies through the additive upgrade. Regenerate schema/types twice
+after a subsequent blank rebuild. Storage bytes are synthetic in these database
+tests: actual S3 GET verification, reader readiness, activation/rollback and
+actor authorization remain separate cross-repository acceptance requirements.
 
 ## HDF5 result binding validation
 

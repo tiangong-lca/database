@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-01
-lastReviewedCommit: de04709ec164e3c9810944a339b1851ca184b5ad
-lastReviewedNote: "Database #879: reviewed immutable final Result identity occupancy, service-only RPCs, legacy normalized-key guards, local concurrency/upgrade proof and deterministic exact-local schema/type refresh. Branch, Preview and deployment policies are unchanged."
+lastReviewedCommit: 49542c9c9c14515d55cd04385aaae781a8ed3a1c
+lastReviewedNote: "Database #879: reviewed registered final Result v2 artifact/row/source bindings, target-bound full-readback seals, bounded wire hashes, unchanged v1 publication authority, blank/populated-upgrade/concurrency evidence and exact-local generated contracts. Branch, Preview and deployment policies are unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -68,7 +68,51 @@ The two service RPCs return bounded identity metadata only. Browser/raw-table
 access remains closed. The later v2 Candidate/activation path must recheck the
 registered receipt; this registry alone does not implement publication.
 
-## Published HDF5 query bindings
+## Final Result query artifacts v2
+
+`final_result_query_artifacts`, `final_result_query_rows`,
+`final_result_query_sources` and `final_result_query_seals` are private,
+append-only metadata. The explicit `svc_result_query_stage_v2` and
+`svc_result_query_seal_v2` RPCs are service-only under `EDGE-DATA-PRODUCT-01`.
+They do not create calculation packages, public Process rows or publications.
+
+Stage accepts the exact UTF-8 manifest text and independently checks its byte
+size/SHA-256 before decoding. Duplicate JSON keys, unknown fields, dimensions,
+file roles, decompressed-index and total-file budgets fail closed. Batches are
+limited to 500 rows / 1 MiB, with at most 4,096 exact source identities per row.
+Each row binds the authoritative Result registration ID and content hash to one
+ordinal; direct Results require one source, while derived associations remain
+separate. Normalized source ordering does not alter the immutable content hash.
+An artifact advisory lock serializes stage/seal and exact retries. Stale
+repeatable-read/serializable snapshots may abort with a unique or serialization
+conflict; recover in a fresh transaction using the same artifact and metadata.
+
+Seal requires the complete contiguous axis and a trusted verifier's full-GET
+readback receipt for a target fingerprint, exact manifest, every file and the
+registered row mapping. The verifier must compare actual index bytes and
+identity receipts; ETag/upload success is insufficient. SQL cannot fetch S3.
+First admission requires a finite verification timestamp within 15 minutes and
+at most 30 seconds in the future. Exact receipt retries preserve the original
+seal, including after that admission window. Target-bound seal evidence does
+not grant visibility, current availability, reader compatibility or approval;
+activation must obtain independent fresh readiness evidence.
+
+The mapping hash is `tiangong.final-result-row-bindings.v1`: SHA-256 of a UTF-8
+domain line followed by lowercase block hashes, each ending LF. A block hashes
+up to 500 consecutive ordinal row hashes, each ending LF. Each row hashes the
+`tiangong.final-result-row.v1` domain line, ordinal, UUID, version, registration
+UUID, content hash, relation kind, then ASCII-sorted `source UUID@version` lines;
+every line ends LF. This is an ASCII metadata wire hash, not a new Result
+content hash domain or PostgreSQL JSONB canonicalization. Aggregates are bounded
+to 32,500 bytes per block and 260,000 bytes for the root's block list.
+
+This storage foundation has no actor resolver or activation path yet. The
+versioned publication adapter must bind Candidate/selection, multiple sealed
+artifacts, ZIP closure scope and fresh readiness into the existing
+`lca_release_publications` authority before exposing v2 results. It must not
+reuse the following v1 Bundle-only resolver as a v2 fallback.
+
+## Published HDF5 query bindings v1
 
 `private.result_query_artifacts`, `result_query_sources` and
 `result_query_release_bindings` contain immutable encoding receipts and exact

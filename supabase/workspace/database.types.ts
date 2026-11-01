@@ -3707,6 +3707,10 @@ export type Database = {
         Returns: Json
       }
       svc_result_query_seal: { Args: { p_artifact_id: string }; Returns: Json }
+      svc_result_query_seal_v2: {
+        Args: { p_artifact_id: string; p_receipt: Json }
+        Returns: Json
+      }
       svc_result_query_stage: {
         Args: {
           p_artifact_ref: Json
@@ -3714,6 +3718,10 @@ export type Database = {
           p_package_id: string
           p_rows: Json
         }
+        Returns: Json
+      }
+      svc_result_query_stage_v2: {
+        Args: { p_artifact_ref: Json; p_manifest_text: string; p_rows: Json }
         Returns: Json
       }
       svc_schema_contract_status: { Args: never; Returns: Json }

@@ -23,8 +23,8 @@ checkPaths:
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
 lastReviewedAt: 2026-11-01
-lastReviewedCommit: de04709ec164e3c9810944a339b1851ca184b5ad
-lastReviewedNote: "Database #879: reviewed immutable final Result identity occupancy, service-only RPCs, legacy normalized-key guards, local concurrency/upgrade proof and deterministic exact-local schema/type refresh. Branch, Preview and deployment policies are unchanged."
+lastReviewedCommit: 49542c9c9c14515d55cd04385aaae781a8ed3a1c
+lastReviewedNote: "Database #879: reviewed registered final Result v2 artifact/row/source bindings, target-bound full-readback seals, bounded wire hashes, unchanged v1 publication authority, blank/populated-upgrade/concurrency evidence and exact-local generated contracts. Branch, Preview and deployment policies are unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
