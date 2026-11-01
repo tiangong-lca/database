@@ -30,9 +30,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: "2026-10-30"
-lastReviewedCommit: "a6ddf4cbcb61c8360788ffcb514e1f38189e9da7"
-lastReviewedNote: "Database #877: user-approved removal of routine Dev PR Preview requirements. Reviewed job-boundary scope, retained Main hotfix checks, persistent-Dev promotion proof and unchanged local/ARM64/deployment gates; generated schema/type contracts are unchanged."
+lastReviewedAt: "2026-11-01"
+lastReviewedCommit: "de04709ec164e3c9810944a339b1851ca184b5ad"
+lastReviewedNote: "Database #880. Reviewed Model bundle ownership, review submission write scope, and the two rollback suites in local-contract CI."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -91,6 +91,8 @@ Open Data catalog publication is represented independently in
 `private.sample_library_process_publications` relation.
 
 For LifecycleModel review and bundle operations, authoritative composition comes from ILCD `processInstance` references and the Process ownership pair `public.processes.model_id` plus `coalesce(public.processes.model_version, public.processes.version)`. The nullable `model_version` is an additive correction to the original same-version bundle assumption: new writers persist the exact owning LifecycleModel version, while historical rows with `model_version is null` retain the legacy Process-version fallback. Readers must never substitute the latest LifecycleModel version. `lifecyclemodels.json_tg` is persisted for frontend reconstruction only and must not define review closure, approval targets, publication admission, or deletion membership.
+
+A grouped save may update or delete an existing Process only at its exact key and owning Model version, in draft state and owned by the actor. Whole-bundle deletion requires a draft Model and draft members owned by that Model's owner. Review submission validates the locked dependency closure before creating Reference Reviews. Published dependencies and historical published results receive no dataset write or Root candidate hint.
 
 When a Model bundle creates a new version, the save transaction assigns that version to its created Processes and rewrites exact same-bundle references in Model process instances and Process `referenceToIncludedProcesses`. Matching uses both Process UUID and the submitted Process version. Source inventories and references to other versions retain their pinned versions. Singleton, array, empty and absent reference shapes retain their structure and order; Process ownership continues to use the exact parent Model version.
 

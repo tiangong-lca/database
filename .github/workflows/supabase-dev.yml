@@ -125,6 +125,8 @@ jobs:
           supabase test db supabase/tests/20260611_dataset_create_version_rpc.sql
           supabase test db supabase/tests/20260902_process_model_version.sql
           supabase test db supabase/tests/20261009_model_bundle_process_references.sql
+          supabase test db supabase/tests/20261101_model_bundle_children.sql
+          supabase test db supabase/tests/20261101_review_validation_targets.sql
           supabase test db supabase/tests/20260806_identity_center_facades.sql
           supabase test db supabase/tests/20260806_lca_package_capability_facades.sql
           supabase test db supabase/tests/20260810_issue_448_package_ownership_and_attempt_diagnostics.sql

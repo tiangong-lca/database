@@ -32,9 +32,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: "2026-10-30"
-lastReviewedCommit: "a6ddf4cbcb61c8360788ffcb514e1f38189e9da7"
-lastReviewedNote: "Database #877: user-approved removal of routine Dev PR Preview requirements. Reviewed job-boundary scope, retained Main hotfix checks, persistent-Dev promotion proof and unchanged local/ARM64/deployment gates; generated schema/type contracts are unchanged."
+lastReviewedAt: "2026-11-01"
+lastReviewedCommit: "de04709ec164e3c9810944a339b1851ca184b5ad"
+lastReviewedNote: "Database #880. Reviewed Model bundle ownership, review submission write scope, and the two rollback suites in local-contract CI."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -65,6 +65,13 @@ Open Data catalog or publication changes must additionally run the focused
 `supabase/tests/20261009_dataset_display_list_page_hydration.sql` pgTAP suites and
 record any pre-existing local migration-history drift separately from failures
 in the new migration.
+
+For grouped Model mutation or review submission changes, run both rollback suites after the isolated reset.
+
+```bash
+supabase test db supabase/tests/20261101_model_bundle_children.sql
+supabase test db supabase/tests/20261101_review_validation_targets.sql
+```
 
 The full-schema cutover inventory includes Database #807 additions: 14 API functions, 186 private helpers, 15 application triggers, 12 RLS policies, 56 constraints and eight RLS-enabled private relations. The composite-name graph harness pins the exact 11 legacy and nine isolated display generation function identities separately, while preserving its 34 legacy body/owner/config comparisons. Keep the exact aggregate assertions and the display-specific role/manifest tests together; never relax the aggregate to a lower bound when adding a projection.
 
