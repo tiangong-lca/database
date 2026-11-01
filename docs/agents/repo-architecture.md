@@ -30,9 +30,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: "2026-10-30"
-lastReviewedCommit: "a6ddf4cbcb61c8360788ffcb514e1f38189e9da7"
-lastReviewedNote: "Database #877: user-approved removal of routine Dev PR Preview requirements. Reviewed job-boundary scope, retained Main hotfix checks, persistent-Dev promotion proof and unchanged local/ARM64/deployment gates; generated schema/type contracts are unchanged."
+lastReviewedAt: "2026-11-01"
+lastReviewedCommit: "5e9660e75497b6538067e7fac8ba28e30fde73d4"
+lastReviewedNote: "Database #880. Reviewed delegated parent saves, concurrent Process attachment and whole-bundle deletion, and the scope of Reference repair."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -91,6 +91,12 @@ Open Data catalog publication is represented independently in
 `private.sample_library_process_publications` relation.
 
 For LifecycleModel review and bundle operations, authoritative composition comes from ILCD `processInstance` references and the Process ownership pair `public.processes.model_id` plus `coalesce(public.processes.model_version, public.processes.version)`. The nullable `model_version` is an additive correction to the original same-version bundle assumption: new writers persist the exact owning LifecycleModel version, while historical rows with `model_version is null` retain the legacy Process-version fallback. Readers must never substitute the latest LifecycleModel version. `lifecyclemodels.json_tg` is persisted for frontend reconstruction only and must not define review closure, approval targets, publication admission, or deletion membership.
+
+A Model owner can save its draft bundle. Each existing Process mutation requires the exact child key, owning Model version, draft state and actor ownership. A review admin admitted by the Edge membership predicate can edit another owner's draft Model only when the Process mutation list is empty. Whole-bundle deletion requires the Model owner or a system review admin, a draft Model and draft members owned by the Model owner.
+
+A Process acquiring a Model link takes a shared transaction lock on the destination Model UUID and effective version, including a link created before its Model. Whole-bundle deletion takes an exclusive lock on the same key before reading the members. A conflict raises SQLSTATE `55P03`. The dataset create commands translate it into their existing retryable lock-timeout responses. Whole deletion needs a fresh snapshot of the children and returns `0A000` under Repeatable Read or Serializable.
+
+A new Root submission locks the collected dataset rows and validates access before creating Reference Reviews. For a repaired draft, submit locks the draft and checks its candidate Root IDs against current references without locking the dependency closure. If a Root still references the draft, submit creates or reuses its Reference Review, moves the draft into review and returns. Published dependencies and historical published results receive no dataset write or Root candidate hint.
 
 When a Model bundle creates a new version, the save transaction assigns that version to its created Processes and rewrites exact same-bundle references in Model process instances and Process `referenceToIncludedProcesses`. Matching uses both Process UUID and the submitted Process version. Source inventories and references to other versions retain their pinned versions. Singleton, array, empty and absent reference shapes retain their structure and order; Process ownership continues to use the exact parent Model version.
 

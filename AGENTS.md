@@ -37,9 +37,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: "2026-10-30"
-lastReviewedCommit: "a6ddf4cbcb61c8360788ffcb514e1f38189e9da7"
-lastReviewedNote: "Database #877: user-approved removal of routine Dev PR Preview requirements. Reviewed job-boundary scope, retained Main hotfix checks, persistent-Dev promotion proof and unchanged local/ARM64/deployment gates; generated schema/type contracts are unchanged."
+lastReviewedAt: "2026-11-01"
+lastReviewedCommit: "de04709ec164e3c9810944a339b1851ca184b5ad"
+lastReviewedNote: "Database #880. Reviewed Model bundle ownership, review submission write scope, and the two rollback suites in local-contract CI."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-validation.md

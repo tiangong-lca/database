@@ -32,9 +32,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: "2026-10-30"
-lastReviewedCommit: "a6ddf4cbcb61c8360788ffcb514e1f38189e9da7"
-lastReviewedNote: "Database #877: user-approved removal of routine Dev PR Preview requirements. Reviewed job-boundary scope, retained Main hotfix checks, persistent-Dev promotion proof and unchanged local/ARM64/deployment gates; generated schema/type contracts are unchanged."
+lastReviewedAt: "2026-11-01"
+lastReviewedCommit: "5e9660e75497b6538067e7fac8ba28e30fde73d4"
+lastReviewedNote: "Database #880. Reviewed delegated parent saves, concurrent Process attachment and whole-bundle deletion, and the scope of Reference repair."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -65,6 +65,22 @@ Open Data catalog or publication changes must additionally run the focused
 `supabase/tests/20261009_dataset_display_list_page_hydration.sql` pgTAP suites and
 record any pre-existing local migration-history drift separately from failures
 in the new migration.
+
+For grouped Model mutation or review submission changes, run both rollback suites after the isolated reset.
+
+```bash
+supabase test db supabase/tests/20261101_model_bundle_children.sql
+supabase test db supabase/tests/20261101_review_validation_targets.sql
+```
+
+For membership or whole-bundle deletion changes, run the two-session regression on a local Unix Docker endpoint. It restores the current local database into a disposable database on that endpoint. Set the project ID to the one in the local Supabase configuration.
+
+```bash
+project_id=$(python3 -c 'import tomllib; print(tomllib.load(open("supabase/config.toml", "rb"))["project_id"])')
+python3 supabase/tests/regression/20261101_model_membership_concurrency.py \
+  --container "supabase_db_${project_id}" --project-id "$project_id" \
+  --receipt "$(mktemp -d)/model-membership-concurrency.json"
+```
 
 The full-schema cutover inventory includes Database #807 additions: 14 API functions, 186 private helpers, 15 application triggers, 12 RLS policies, 56 constraints and eight RLS-enabled private relations. The composite-name graph harness pins the exact 11 legacy and nine isolated display generation function identities separately, while preserving its 34 legacy body/owner/config comparisons. Keep the exact aggregate assertions and the display-specific role/manifest tests together; never relax the aggregate to a lower bound when adding a projection.
 

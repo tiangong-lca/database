@@ -20,9 +20,9 @@ checkPaths:
   - .githooks/pre-push
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: "2026-10-30"
-lastReviewedCommit: "a6ddf4cbcb61c8360788ffcb514e1f38189e9da7"
-lastReviewedNote: "Database #877: user-approved removal of routine Dev PR Preview requirements. Reviewed job-boundary scope, retained Main hotfix checks, persistent-Dev promotion proof and unchanged local/ARM64/deployment gates; generated schema/type contracts are unchanged."
+lastReviewedAt: "2026-11-01"
+lastReviewedCommit: "572cb10c5d086c5b27419a6b3bd1d39d732656e0"
+lastReviewedNote: "Database #880。在独立的 ARM64 本地项目验证了架构和 API 类型生成命令，两次运行的输出逐文件一致。"
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
