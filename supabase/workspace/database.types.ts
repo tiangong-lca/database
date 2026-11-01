@@ -291,6 +291,14 @@ export type Database = {
         Args: { p_idempotency_key: string; p_plan_text: string }
         Returns: Json
       }
+      cmd_final_result_release_readback_v2: {
+        Args: {
+          p_observation_text: string
+          p_publish_plan_hash: string
+          p_release_run_id: string
+        }
+        Returns: Json
+      }
       cmd_final_result_release_seal_v2: {
         Args: { p_publish_plan_hash: string; p_release_run_id: string }
         Returns: Json

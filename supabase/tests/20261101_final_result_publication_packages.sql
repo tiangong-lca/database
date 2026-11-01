@@ -61,6 +61,18 @@ drop policy final_package_canary on public.flows;
 set local role authenticated;
 select is(api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')#>>'{data,file,name}','result.tidas.zip','removed restriction restores authorized package');
 select set_config('request.jwt.claim.sub','87930000-0000-4000-8000-000000000001',true);
+reset role;
+create temporary table package_readback(observation jsonb);
+insert into package_readback select jsonb_build_object('schemaVersion','tiangong.final-result-public-observation.v1','releaseRunId','87930000-0000-4000-8000-000000000010','publishPlanHash',pg_temp.final_plan_hash(),'publicationId',publication#>>'{data,publicationId}',
+ 'candidateHash',pg_temp.candidate_fixture()#>>'{receipt,candidateSha256}','targetHash',repeat('d',64),'selectionHash','402fe6857b36ec20ac91b65c3de19973d2b0fc8fd284df7c8deb09bae89a017e',
+ 'actorId','87930000-0000-4000-8000-000000000001','runtimeRevision','87940000-0000-4000-8000-000000000001','readerSha256',repeat('c',64),'resultCount',3,
+ 'startedAt',clock_timestamp(),'verifiedAt',clock_timestamp(),'observationsSha256',repeat('a',64),'downloads','{"tidas":{"status":"unavailable"},"ilcd":{"status":"unavailable"}}'::jsonb) from package_publication;
+grant select,update on package_readback to authenticated;
+set local role authenticated;
+select is(api.cmd_final_result_release_readback_v2('87930000-0000-4000-8000-000000000010',pg_temp.final_plan_hash(),(select observation::text from package_readback))->>'code','final_result_readback_changed','readable ZIPs cannot be recorded as unavailable');
+update package_readback set observation=jsonb_set(observation,'{downloads}',jsonb_build_object('tidas',jsonb_build_object('status','verified','file',api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')#>'{data,file}'),'ilcd',jsonb_build_object('status','verified','file',api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'ilcd')#>'{data,file}')));
+select is(api.cmd_final_result_release_readback_v2('87930000-0000-4000-8000-000000000010',pg_temp.final_plan_hash(),(select jsonb_set(observation,'{downloads,tidas,file,sha256}',to_jsonb(repeat('f',64)))::text from package_readback))->>'code','final_result_readback_changed','wrong ZIP digest is rejected');
+select is(api.cmd_final_result_release_readback_v2('87930000-0000-4000-8000-000000000010',pg_temp.final_plan_hash(),(select observation::text from package_readback))->>'ok','true','both exact authorized ZIP attestations can be recorded');
 select api.cmd_lca_release_unpublish((select (publication#>>'{data,publicationId}')::uuid from package_publication),'synthetic complete package withdrawal');
 select is(api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')->>'code','result_package_not_available','withdrawn package cannot get a fresh download descriptor');
 reset role;

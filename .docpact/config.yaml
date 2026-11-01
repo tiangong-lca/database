@@ -1,8 +1,8 @@
 version: 1
 layout: repo
 lastReviewedAt: "2026-11-01"
-lastReviewedCommit: "cc36f78aa2efa18d25fc2efc057a4f2ec5680e01"
-lastReviewedNote: "Database #879: reviewed immutable trusted-verifier readiness attempts, exact Candidate/query-file and selected-probe coverage, bounded fresh evidence, historical retries without renewed authority, concurrency/upgrade proof and generated contracts. Actor approval, activation, branch and deployment authority remain separate."
+lastReviewedCommit: "fb69a78b88833f0f01fba5c1fea9b97df09fa4ad"
+lastReviewedNote: "Database #879: reviewed immutable manager public-readback attestations, live publication/reader/ZIP admission, historical recovery, populated upgrade and identical local schema exports. No remote deployment."
 
 # Keep deterministic governance facts here.
 # AGENTS.md remains the repo contract entrypoint.

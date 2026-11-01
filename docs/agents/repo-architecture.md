@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-01
-lastReviewedCommit: cc36f78aa2efa18d25fc2efc057a4f2ec5680e01
-lastReviewedNote: "Database #879: reviewed bounded manager-only current/run/exact-approval recovery reads, historical authority preservation, explicit legacy format and populated upgrade proof. Reads do not authorize or mutate publication."
+lastReviewedCommit: fb69a78b88833f0f01fba5c1fea9b97df09fa4ad
+lastReviewedNote: "Database #879: reviewed immutable manager public-readback attestations, live publication/reader/ZIP admission, historical recovery, populated upgrade and identical local schema exports. No remote deployment."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -330,6 +330,26 @@ and hashes, never credentials, whole selection indexes or readiness proof lists.
 `publicationAuthorized=false` on the run DTO means that the read itself grants
 no authority; actual approval/activation commands revalidate all live conditions.
 No recovery read recreates missing records or changes a terminal publication.
+
+## Final Result post-activation observation
+
+`cmd_final_result_release_readback_v2` records a bounded immutable manager
+attestation after public Edge numerical/ZIP readback. The text digest binds
+actor, exact run/plan, publication, Candidate/selection/target, enabled current
+reader revision/binary, complete selected Result count, observation digest and
+both ZIP outcomes. The actor must have a current manager role. End time must be
+within five minutes; start cannot precede activation. Complete authorized ZIPs
+require exact file descriptors; partial/private packages must be explicitly
+unavailable under the current caller's RLS.
+
+Recording locks and rechecks authority, advances only the existing run's audit
+status to `readback_verified`, and preserves the current publication. Visibility
+already begins atomically at qualified activation. The database verifies binding
+and admission, not external bytes: Release owns actual public queries, complete
+ZIP GETs and numerical comparisons. The immutable raw-text hash supports exact
+lost-ACK recovery after withdrawal without resurrection. Conflicting observations
+cannot replace history; service/anonymous roles cannot record them. A failed
+observation does not implicitly withdraw or roll back a publication.
 
 ## Published HDF5 query bindings v1
 

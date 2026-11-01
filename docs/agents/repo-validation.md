@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-01
-lastReviewedCommit: cc36f78aa2efa18d25fc2efc057a4f2ec5680e01
-lastReviewedNote: "Database #879: reviewed bounded manager-only current/run/exact-approval recovery reads, historical authority preservation, explicit legacy format and populated upgrade proof. Reads do not authorize or mutate publication."
+lastReviewedCommit: fb69a78b88833f0f01fba5c1fea9b97df09fa4ad
+lastReviewedNote: "Database #879: reviewed immutable manager public-readback attestations, live publication/reader/ZIP admission, historical recovery, populated upgrade and identical local schema exports. No remote deployment."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -292,6 +292,24 @@ fixture for `upgrade/20261101_final_result_release_recovery_views.sql` starts at
 all authority rows and old routine owners/ACL/configuration; only the existing
 run DTO body changes. Legacy head format and null final Candidate remain explicit.
 Finish with blank rebuild and identical twice-generated schema/types.
+
+## Final Result public observation validation
+
+Run `20261101_final_result_release_readback.sql` and
+`20261101_final_result_publication_packages.sql` with the existing release, API
+capability and full-schema suites. Cover partial numerical counts, runtime and
+publication drift, expiry, malformed evidence, complete readable ZIP digests,
+explicit inaccessible ZIPs, lost-ACK recovery, conflict, manager revocation and
+withdrawal without resurrection. The storage trigger must prevent receipt and
+verification timestamp replacement. SQL uses synthetic attestations; Release's
+actual CLI/Edge/Worker fixture separately proves public numeric comparison,
+corruption rejection and complete ZIP transport hashing. Neither proves hosted
+JWT or production/browser qualification. Regenerate schema and API types from
+the owned blank rebuild; additive inventory is one API routine, one private
+guard and one trigger with no new numerical table. Run the populated
+`upgrade/20261101_final_result_release_readback.sql` fixture from exact
+`20261101200000` with an activated v2 run; preserve every existing run/publication
+and predecessor function body/owner/ACL/configuration before restoring the latest blank head.
 
 ## HDF5 result binding validation
 
