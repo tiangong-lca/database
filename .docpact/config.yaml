@@ -1,7 +1,7 @@
 version: 1
 layout: repo
 lastReviewedAt: "2026-11-01"
-lastReviewedCommit: "a40388d73beea7e48942a2bb6bf6cb8973b63865"
+lastReviewedCommit: "cc36f78aa2efa18d25fc2efc057a4f2ec5680e01"
 lastReviewedNote: "Database #879: reviewed immutable trusted-verifier readiness attempts, exact Candidate/query-file and selected-probe coverage, bounded fresh evidence, historical retries without renewed authority, concurrency/upgrade proof and generated contracts. Actor approval, activation, branch and deployment authority remain separate."
 
 # Keep deterministic governance facts here.

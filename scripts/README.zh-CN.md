@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-01
-lastReviewedCommit: a40388d73beea7e48942a2bb6bf6cb8973b63865
-lastReviewedNote: "Database #879: reviewed exact actor approval, atomic final Result activation and rollback, public source/Result/ZIP RLS authorization, cached policy invalidation, predecessor upgrade and concurrent expiry proof. Hosted deployment and consumer adoption remain separate."
+lastReviewedCommit: cc36f78aa2efa18d25fc2efc057a4f2ec5680e01
+lastReviewedNote: "Database #879: reviewed bounded manager-only current/run/exact-approval recovery reads, historical authority preservation, explicit legacy format and populated upgrade proof. Reads do not authorize or mutate publication."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml

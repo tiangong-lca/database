@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-01
-lastReviewedCommit: a40388d73beea7e48942a2bb6bf6cb8973b63865
-lastReviewedNote: "Database #879: reviewed exact actor approval, atomic final Result activation and rollback, public source/Result/ZIP RLS authorization, cached policy invalidation, predecessor upgrade and concurrent expiry proof. Hosted deployment and consumer adoption remain separate."
+lastReviewedCommit: cc36f78aa2efa18d25fc2efc057a4f2ec5680e01
+lastReviewedNote: "Database #879: reviewed bounded manager-only current/run/exact-approval recovery reads, historical authority preservation, explicit legacy format and populated upgrade proof. Reads do not authorize or mutate publication."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -280,6 +280,18 @@ readiness. Verify all existing rows and ACL/owner/configuration facts, exactly s
 legacy dispatch changes, restored role/schema authority and continued v1 reads.
 Finish with a blank rebuild and two identical schema/type exports. These local
 synthetic tests do not authorize hosted activation or prove Edge/Platform adoption.
+
+## Final Result recovery view validation
+
+Run `20261101_final_result_release_recovery_views.sql` with the preceding release
+suites. Prove exact null absence, manager-only admission, revocation after a cached
+read, original/replaced/consumed approval recovery, exact activation identity and
+withdrawn current behavior with no read-side mutation. The populated predecessor
+fixture for `upgrade/20261101_final_result_release_recovery_views.sql` starts at
+`20261101180000` with an existing legacy current and an approved v2 run. Preserve
+all authority rows and old routine owners/ACL/configuration; only the existing
+run DTO body changes. Legacy head format and null final Candidate remain explicit.
+Finish with blank rebuild and identical twice-generated schema/types.
 
 ## HDF5 result binding validation
 

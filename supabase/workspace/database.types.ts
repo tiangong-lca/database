@@ -2165,12 +2165,17 @@ export type Database = {
         Args: { p_format: string; p_publication_id: string }
         Returns: Json
       }
+      qry_final_result_publication_head_v2: { Args: never; Returns: Json }
       qry_final_result_query_v2: {
         Args: {
           p_publication_id?: string
           p_result_id: string
           p_result_version: string
         }
+        Returns: Json
+      }
+      qry_final_result_release_approval_v2: {
+        Args: { p_approval_id: string; p_release_run_id: string }
         Returns: Json
       }
       qry_final_result_release_probe_page_v2: {

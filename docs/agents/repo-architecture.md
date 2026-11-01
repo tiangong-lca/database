@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-01
-lastReviewedCommit: a40388d73beea7e48942a2bb6bf6cb8973b63865
-lastReviewedNote: "Database #879: reviewed exact actor approval, atomic final Result activation and rollback, public source/Result/ZIP RLS authorization, cached policy invalidation, predecessor upgrade and concurrent expiry proof. Hosted deployment and consumer adoption remain separate."
+lastReviewedCommit: cc36f78aa2efa18d25fc2efc057a4f2ec5680e01
+lastReviewedNote: "Database #879: reviewed bounded manager-only current/run/exact-approval recovery reads, historical authority preservation, explicit legacy format and populated upgrade proof. Reads do not authorize or mutate publication."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -312,6 +312,24 @@ contracts. A migration never grants an actor permission, enables runtime, attest
 file bytes or activates a publication. Release aggregate verification/actor
 adapters, independent post-activation observation and Edge/Platform adoption remain
 separate implementation work.
+
+## Final Result manager recovery reads
+
+`qry_final_result_publication_head_v2` returns the one current publication or
+explicit null, with an explicit legacy/v2 format. Legacy rows have no final
+Candidate/target identity. `qry_final_result_release_v2` describes a single run,
+including its active approval pointer, exact execution/publication binding and
+post-observation receipt when one exists. `qry_final_result_release_approval_v2`
+requires both run and approval UUID and independently recovers the original
+approval, including revoked/consumed history. These bounded manager-only reads
+have `EDGE-REL-01` capability and no service/anonymous execution grant.
+
+An active approval row may already be expired or context-stale; recovery reads
+do not renew it or claim execution eligibility. They return existing timestamps
+and hashes, never credentials, whole selection indexes or readiness proof lists.
+`publicationAuthorized=false` on the run DTO means that the read itself grants
+no authority; actual approval/activation commands revalidate all live conditions.
+No recovery read recreates missing records or changes a terminal publication.
 
 ## Published HDF5 query bindings v1
 
