@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-01
-lastReviewedCommit: 49542c9c9c14515d55cd04385aaae781a8ed3a1c
-lastReviewedNote: "Database #879: reviewed registered final Result v2 artifact/row/source bindings, target-bound full-readback seals, bounded wire hashes, unchanged v1 publication authority, blank/populated-upgrade/concurrency evidence and exact-local generated contracts. Branch, Preview and deployment policies are unchanged."
+lastReviewedCommit: 438d81e6eeab80d6b21a5ed065568cfdfced1793
+lastReviewedNote: "Database #879: reviewed additive Candidate v3/catalog registration, complete Result-only ZIP membership, independent storage targets, immutable receipt recovery, concurrency and populated-upgrade proof; existing publication authority, branch and deployment policies remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -111,6 +111,40 @@ versioned publication adapter must bind Candidate/selection, multiple sealed
 artifacts, ZIP closure scope and fresh readiness into the existing
 `lca_release_publications` authority before exposing v2 results. It must not
 reuse the following v1 Bundle-only resolver as a v2 fallback.
+
+## Final Result Candidate storage evidence
+
+`final_result_candidates`, `final_result_candidate_artifacts`,
+`final_result_candidate_members` and `final_result_candidate_storage` are
+immutable private metadata. `svc_result_candidate_register_v2` binds the exact
+UTF-8 Candidate v3 and publication-catalog v1 byte hashes to complete registered
+Result rows across one or more sealed v2 artifacts. Each artifact must have the
+same final input hash and an independent seal on the specified storage target.
+The combined metadata budget is 128 MiB; receipts are bounded to 16 KiB.
+
+Only the Result-only two-ZIP profile is accepted. Catalog references use exact
+key strings, as emitted by Release. Exact roots, unique identities, registered
+canonical hashes, all reference targets and forward reachability are checked;
+unrelated documents cannot enlarge ZIP scope. Complete ZIP membership remains
+separate from the selected Result membership of a future publication.
+
+The trusted service verifier attests full GET hashes and actual package closure
+for `release-candidate.json`, `publication-catalog.json`, `result.ilcd.zip` and
+`result.tidas.zip`. SQL verifies their hashes/sizes against the bound metadata;
+it does not fetch ZIP bytes, rerun Toolkit or trust ETags as content proof.
+First admission uses the same 15-minute / 30-second timestamp window as query
+seals. A Candidate-hash transaction lock serializes registration. Exact retries
+recover the original receipt; another receipt cannot replace it. Independent
+storage targets can reuse one immutable Candidate after qualifying every query
+artifact on that target. Different Candidates may reuse identical registered
+Results and query files without copying or changing existing evidence.
+
+`svc_result_query_describe_v2` and `svc_result_candidate_describe_v2` return
+bounded metadata and the original target receipt for lost-ACK reconciliation.
+All three APIs are service-only under `EDGE-DATA-PRODUCT-01`; raw tables remain
+ACL-closed with RLS. Neither storage receipts nor reconciliation grants actor
+access or creates a release/current pointer. The versioned publication adapter,
+reader readiness, selected membership and full-ZIP authorization remain required.
 
 ## Published HDF5 query bindings v1
 

@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-01
-lastReviewedCommit: 49542c9c9c14515d55cd04385aaae781a8ed3a1c
-lastReviewedNote: "Database #879: reviewed registered final Result v2 artifact/row/source bindings, target-bound full-readback seals, bounded wire hashes, unchanged v1 publication authority, blank/populated-upgrade/concurrency evidence and exact-local generated contracts. Branch, Preview and deployment policies are unchanged."
+lastReviewedCommit: 438d81e6eeab80d6b21a5ed065568cfdfced1793
+lastReviewedNote: "Database #879: reviewed additive Candidate v3/catalog registration, complete Result-only ZIP membership, independent storage targets, immutable receipt recovery, concurrency and populated-upgrade proof; existing publication authority, branch and deployment policies remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -150,6 +150,34 @@ function bodies through the additive upgrade. Regenerate schema/types twice
 after a subsequent blank rebuild. Storage bytes are synthetic in these database
 tests: actual S3 GET verification, reader readiness, activation/rollback and
 actor authorization remain separate cross-repository acceptance requirements.
+
+## Final Result Candidate validation
+
+Run `supabase/tests/20261101_final_result_candidate_catalog.sql` with the query
+v2, identity, release, v1 reader, API closure and full-schema suites after a
+blank rebuild. It covers exact producer schema, multiple query artifacts,
+registered Result content, complete ZIP closure, missing/unreachable references,
+target-specific receipts, partial replication rejection, independent target
+reuse, shared Results/files, immutable retries and no publication side effect.
+This migration adds three service APIs, four immutable triggers, 21 constraints
+and four RLS relations; update exact inventories from the rebuilt schema.
+
+Run `python3 supabase/tests/regression/20261101_final_result_candidate_v2.py`
+only on its exact disposable `hdf5-final-879` project. Six observed two-client
+races exercise same-receipt retry and conflicting receipts at all three
+isolation levels, followed by a fresh-transaction recovery of the original.
+Fixtures use real identity/query RPCs and synthetic file attestations; they
+remain immutable until the task owner's reset.
+
+For populated-upgrade proof, reset to `20261101063159`, run the query-v2 upgrade
+suite (which retains a current v1 publication), then the query-v2 Python
+regression to create sealed v2 evidence. Run
+`supabase/tests/upgrade/20261101_final_result_candidate_catalog.sql` in one psql
+session, expanding the relative migration include when streaming through stdin.
+It checks retained rows, ten existing API bodies, current-v1 readability,
+unpublished-version denial and exact recovery of pre-existing v2 seals.
+Finish with an exact blank rebuild and two drift-free schema/type exports.
+Actual S3 verification and actor activation/rollback remain separate acceptance.
 
 ## HDF5 result binding validation
 

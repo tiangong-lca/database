@@ -1,7 +1,7 @@
 version: 1
 layout: repo
 lastReviewedAt: "2026-11-01"
-lastReviewedCommit: "49542c9c9c14515d55cd04385aaae781a8ed3a1c"
+lastReviewedCommit: "438d81e6eeab80d6b21a5ed065568cfdfced1793"
 lastReviewedNote: "Database #879: reviewed registered final Result v2 artifact/row/source bindings, target-bound full-readback seals, bounded wire hashes, unchanged v1 publication authority, blank/populated-upgrade/concurrency evidence and exact-local generated contracts. Branch, Preview and deployment policies are unchanged."
 
 # Keep deterministic governance facts here.

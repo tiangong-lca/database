@@ -3685,6 +3685,18 @@ export type Database = {
         }
         Returns: Json
       }
+      svc_result_candidate_describe_v2: {
+        Args: { p_candidate_hash: string; p_target_hash: string }
+        Returns: Json
+      }
+      svc_result_candidate_register_v2: {
+        Args: {
+          p_candidate_text: string
+          p_catalog_text: string
+          p_receipt: Json
+        }
+        Returns: Json
+      }
       svc_result_identity_register: { Args: { p_request: Json }; Returns: Json }
       svc_result_identity_versions: {
         Args: {
@@ -3696,6 +3708,10 @@ export type Database = {
       }
       svc_result_query_bind_release: {
         Args: { p_artifact_id: string; p_release_run_id: string }
+        Returns: Json
+      }
+      svc_result_query_describe_v2: {
+        Args: { p_artifact_id: string; p_target_hash: string }
         Returns: Json
       }
       svc_result_query_resolve: {

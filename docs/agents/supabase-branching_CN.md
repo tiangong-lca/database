@@ -23,8 +23,8 @@ checkPaths:
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
 lastReviewedAt: 2026-11-01
-lastReviewedCommit: 49542c9c9c14515d55cd04385aaae781a8ed3a1c
-lastReviewedNote: "Database #879: reviewed registered final Result v2 artifact/row/source bindings, target-bound full-readback seals, bounded wire hashes, unchanged v1 publication authority, blank/populated-upgrade/concurrency evidence and exact-local generated contracts. Branch, Preview and deployment policies are unchanged."
+lastReviewedCommit: 438d81e6eeab80d6b21a5ed065568cfdfced1793
+lastReviewedNote: "Database #879: reviewed additive Candidate v3/catalog registration, complete Result-only ZIP membership, independent storage targets, immutable receipt recovery, concurrency and populated-upgrade proof; existing publication authority, branch and deployment policies remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
