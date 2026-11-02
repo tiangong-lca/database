@@ -116,8 +116,8 @@
         "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
         "leaseCurrent": true,
         "resultRef": {
-          "type": "analysisFactsBundle",
-          "id": "facts-1",
+          "type": "runResult",
+          "id": "result-1",
           "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
         }
       }
@@ -130,9 +130,9 @@
       "body": {
         "reportRevisionId": "report-1",
         "runId": "run-1",
-        "factsRef": {
-          "type": "analysisFactsBundle",
-          "id": "facts-1",
+        "runResultRef": {
+          "type": "runResult",
+          "id": "result-1",
           "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
         },
         "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -594,8 +594,8 @@
         "runs.run-1.executionStatus": "completed",
         "runs.run-1.availability": "ready",
         "runs.run-1.resultRef": {
-          "type": "analysisFactsBundle",
-          "id": "facts-1",
+          "type": "runResult",
+          "id": "result-1",
           "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
         }
       }
@@ -614,8 +614,8 @@
             "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
             "leaseCurrent": false,
             "resultRef": {
-              "type": "analysisFactsBundle",
-              "id": "facts-1",
+              "type": "runResult",
+              "id": "result-1",
               "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
             }
           },
@@ -658,8 +658,8 @@
             "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
             "leaseCurrent": true,
             "resultRef": {
-              "type": "analysisFactsBundle",
-              "id": "facts-1",
+              "type": "runResult",
+              "id": "result-1",
               "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
             }
           },
@@ -668,7 +668,7 @@
       ]
     },
     {
-      "id": "report-cannot-substitute-facts",
+      "id": "report-cannot-substitute-run-result",
       "steps": [
         {
           "operation": "report.create",
@@ -678,9 +678,9 @@
           "body": {
             "reportRevisionId": "report-2",
             "runId": "run-1",
-            "factsRef": {
-              "type": "analysisFactsBundle",
-              "id": "facts-1",
+            "runResultRef": {
+              "type": "runResult",
+              "id": "result-1",
               "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
             },
             "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
@@ -736,9 +736,9 @@
           "body": {
             "reportRevisionId": "report-2",
             "runId": "run-1",
-            "factsRef": {
-              "type": "analysisFactsBundle",
-              "id": "facts-1",
+            "runResultRef": {
+              "type": "runResult",
+              "id": "result-1",
               "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
             },
             "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
@@ -1121,8 +1121,8 @@
       ],
       "state": {
         "runs.run-1.resultRef": {
-          "type": "analysisFactsBundle",
-          "id": "facts-1",
+          "type": "runResult",
+          "id": "result-1",
           "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
         }
       }
@@ -1276,8 +1276,8 @@
             "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
             "leaseCurrent": true,
             "resultRef": {
-              "type": "analysisFactsBundle",
-              "id": "facts-2",
+              "type": "runResult",
+              "id": "result-2",
               "contentHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
             }
           },
@@ -1353,8 +1353,8 @@
             "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
             "leaseCurrent": true,
             "resultRef": {
-              "type": "analysisFactsBundle",
-              "id": "facts-2",
+              "type": "runResult",
+              "id": "result-2",
               "contentHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
             }
           },
@@ -1374,8 +1374,8 @@
           "result": {
             "runId": "run-1",
             "resultRef": {
-              "type": "analysisFactsBundle",
-              "id": "facts-1",
+              "type": "runResult",
+              "id": "result-1",
               "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
             }
           }
@@ -1396,16 +1396,16 @@
             "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
             "leaseCurrent": true,
             "resultRef": {
-              "type": "analysisFactsBundle",
-              "id": "facts-1",
+              "type": "runResult",
+              "id": "result-1",
               "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
             }
           },
           "expect": {
             "runId": "run-1",
             "resultRef": {
-              "type": "analysisFactsBundle",
-              "id": "facts-1",
+              "type": "runResult",
+              "id": "result-1",
               "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
             }
           }
@@ -1420,8 +1420,8 @@
           "result": {
             "runId": "run-1",
             "resultRef": {
-              "type": "analysisFactsBundle",
-              "id": "facts-1",
+              "type": "runResult",
+              "id": "result-1",
               "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
             }
           }
@@ -1538,6 +1538,51 @@
       "state": {
         "reports.report-1.finalizationStatus": "not_finalized"
       }
+    },
+    {
+      "id": "analysis-facts-cannot-substitute-for-run-result",
+      "steps": [
+        {
+          "operation": "run.complete",
+          "actor": "service",
+          "studyId": "study-1",
+          "idempotencyKey": "reject-analysis-as-run-result",
+          "body": {
+            "runId": "run-1",
+            "jobId": "job-1",
+            "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "leaseCurrent": true,
+            "resultRef": {
+              "type": "analysisFacts",
+              "id": "result-1",
+              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+            }
+          },
+          "expectError": "INVALID_REQUEST"
+        }
+      ]
+    },
+    {
+      "id": "direct-report-path-rejects-analysis-facts-reference",
+      "steps": [
+        {
+          "operation": "report.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "reject-analysis-as-report-run-result",
+          "body": {
+            "reportRevisionId": "report-2",
+            "runId": "run-1",
+            "runResultRef": {
+              "type": "analysisFacts",
+              "id": "result-1",
+              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+            },
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
     }
   ]
 }

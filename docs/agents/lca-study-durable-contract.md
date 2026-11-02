@@ -51,7 +51,7 @@ OAuth capability grant.
 | ScenarioRevision | `scenarioRevisionId` within Study; exact frozen `studyRevisionId`, explicit differences and an effective model reference. A second scenario is a research alternative, not a boundary-product output projection. |
 | Run | `runId`, exact frozen Study/Scenario/Model references, immutable input identity, opaque calculation reference, engine/profile and task/result links. A Run is not a renamed `worker_jobs` row. |
 | Analysis | Exact input Run identities, analysis profile/configuration and result evidence. Worker defines numerical and comparability semantics; Database preserves the bindings. |
-| ReportRevision | `reportRevisionId`, exact Run/AnalysisFacts references, narrative/citation content hash, template/profile identity and draft/frozen content. Finalization and review are separate records/axes. |
+| ReportRevision | `reportRevisionId`, exact Run result and optional distinct Analysis facts references, narrative/citation content hash, template/profile identity and draft/frozen content. Finalization and review are separate records/axes. |
 | Review | Append-only `reviewId`, decision, actor/time and exact target `{type:"reportRevision",revisionId,contentHash}`. Withdrawal adds a decision; it does not erase history. |
 | ReportExport | `exportId`, exact report revision, full serialized projection hash, trusted Edge disclosure decision/policy identity, actor, permission epoch and artifact/receipt. Audit retention does not imply current download permission. |
 | ReportShare | `shareId`, exact report revision/export/projection, explicit recipient/audience, expiry, permission epoch and revocation history. Sharing does not grant Study membership or underlying source access. |
@@ -60,6 +60,26 @@ Shared reference vocabulary is camelCase with `schemaVersion` on envelopes and
 type-tagged `{type,id,contentHash}` domain/artifact references. Public records and
 commands follow Edge's published schema. The fixture event names and internal
 maps below are **not** public API fields, table names or RPC signatures.
+
+The direct-result fixture path uses `Run.resultRef.type = "runResult"` and
+`Report.runResultRef` equal to that completed Run's exact result. It does not
+rename a Run result to Analysis facts. Edge separately uses
+`Analysis.factsRef.type = "analysisFacts"`; executing that Analysis layer is
+outside this small durable reference model and must be separately implemented
+and qualified. Worker remains the content/schema owner for both kinds.
+
+| Database example | Edge v1 correspondence |
+| --- | --- |
+| Run `resultRef` | Run `resultRef`, with exact `type:"runResult"`, ID and content hash |
+| Report `runId` + `runResultRef` | Report `runIds:[runId]`, `analysisIds:[]`, `factsRefs:[runResultRef]`; the referenced Run is completed in the same Study |
+| Review `decision:"approved"` | Review `decision:"approve"` |
+| Review `decision:"changes_requested"` | Review `decision:"request_changes"` |
+| Review `decision:"withdrawn"` | Review `decision:"withdraw"` |
+
+Edge's `comment` is an append-only annotation with no approval effect; the
+minimal reference model does not implement that annotation action. The table
+maps semantic roles only; it is not a second public wire schema or a runtime
+adapter. All other public fields and validation stay owned by Edge.
 
 Each mutable target has a positive integer `revision` CAS generation, distinct
 from its stable identity and content hash. Commands name the target and its

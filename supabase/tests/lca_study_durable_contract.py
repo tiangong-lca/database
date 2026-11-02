@@ -135,7 +135,7 @@ class Model:
             run = self.record("runs", body["runId"], study_id)
             require(run["inputHash"] == body["inputHash"], "REFERENCE_MISMATCH")
             require(run["jobId"] == body["jobId"] and body["leaseCurrent"] is True, "FORBIDDEN")
-            require(body["resultRef"]["type"] == "analysisFactsBundle"
+            require(body["resultRef"]["type"] == "runResult"
                     and bool(body["resultRef"]["id"]) and valid_hash(body["resultRef"]["contentHash"]), "INVALID_REQUEST")
             identity, request_hash, previous = self.receipt(event)
             if previous:
@@ -202,7 +202,7 @@ class Model:
             if operation == "report.create":
                 run = self.record("runs", body["runId"], study_id)
                 require(run["resultRef"] is not None and run["availability"] == "ready", "REFERENCE_MISMATCH")
-                require(body["factsRef"] == run["resultRef"], "REFERENCE_MISMATCH")
+                require(body["runResultRef"] == run["resultRef"], "REFERENCE_MISMATCH")
             record = copy.deepcopy(body)
             record.update(studyId=study_id, status="draft", revision=1)
             if table == "reports":
