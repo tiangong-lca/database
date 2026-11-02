@@ -157,6 +157,35 @@
       "body": {
         "revisionId": "revision-1",
         "expectedRevision": 1
+      },
+      "trustedValidationEvidence": {
+        "outcome": "passed",
+        "revisionId": "revision-1",
+        "expectedRevision": 1,
+        "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "modelPreparationId": "prepare-base-1",
+        "modelRef": {
+          "type": "modelRevision",
+          "modelRevisionId": "model-base-1",
+          "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+          "digestScope": "worker_prepared_model"
+        },
+        "definition": {
+          "methodRefs": [
+            {
+              "type": "datasetRevision",
+              "datasetType": "lciamethod",
+              "id": "method-1",
+              "version": "01.00.000"
+            },
+            {
+              "type": "datasetRevision",
+              "datasetType": "lciamethod",
+              "id": "method-2",
+              "version": "01.00.000"
+            }
+          ]
+        }
       }
     },
     {
@@ -446,6 +475,35 @@
           "body": {
             "revisionId": "revision-2",
             "expectedRevision": 1
+          },
+          "trustedValidationEvidence": {
+            "outcome": "passed",
+            "revisionId": "revision-2",
+            "expectedRevision": 1,
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000"
+                }
+              ]
+            }
           }
         },
         {
@@ -986,7 +1044,9 @@
               "revisionId": "report-1",
               "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             },
-            "decision": "approved"
+            "decision": "approved",
+            "reviewClass": "internal",
+            "supersedesReviewId": null
           },
           "expectError": "FORBIDDEN"
         }
@@ -1054,7 +1114,9 @@
               "revisionId": "report-1",
               "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
             },
-            "decision": "approved"
+            "decision": "approved",
+            "reviewClass": "internal",
+            "supersedesReviewId": null
           },
           "expectError": "REFERENCE_MISMATCH"
         }
@@ -1075,7 +1137,9 @@
               "revisionId": "report-1",
               "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             },
-            "decision": "approved"
+            "decision": "approved",
+            "reviewClass": "internal",
+            "supersedesReviewId": null
           }
         },
         {
@@ -1136,7 +1200,9 @@
               "revisionId": "report-1",
               "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             },
-            "decision": "approved"
+            "decision": "approved",
+            "reviewClass": "internal",
+            "supersedesReviewId": null
           }
         },
         {
@@ -1151,7 +1217,9 @@
               "revisionId": "report-1",
               "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             },
-            "decision": "withdrawn"
+            "decision": "withdrawn",
+            "reviewClass": "internal",
+            "supersedesReviewId": "review-1"
           }
         },
         {
@@ -1212,7 +1280,9 @@
               "revisionId": "report-1",
               "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             },
-            "decision": "approved"
+            "decision": "approved",
+            "reviewClass": "internal",
+            "supersedesReviewId": null
           }
         },
         {
@@ -1548,7 +1618,9 @@
               "revisionId": "report-1",
               "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             },
-            "decision": "approved"
+            "decision": "approved",
+            "reviewClass": "internal",
+            "supersedesReviewId": null
           }
         },
         {
@@ -1594,7 +1666,9 @@
               "revisionId": "report-1",
               "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             },
-            "decision": "approved"
+            "decision": "approved",
+            "reviewClass": "internal",
+            "supersedesReviewId": null
           }
         },
         {
@@ -1622,7 +1696,9 @@
               "revisionId": "report-1",
               "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             },
-            "decision": "withdrawn"
+            "decision": "withdrawn",
+            "reviewClass": "internal",
+            "supersedesReviewId": "review-finalize"
           }
         }
       ],
@@ -2866,6 +2942,1450 @@
             "engineId": "solver-worker"
           },
           "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
+    },
+    {
+      "id": "freeze-atomically-persists-passed-validation",
+      "steps": [
+        {
+          "operation": "revision.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "cas-two-writers-one-wins:revision.create-revision-2",
+          "body": {
+            "revisionId": "revision-2",
+            "parentRevisionId": "revision-1",
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "operation": "revision.freeze",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "validated-freeze",
+          "body": {
+            "revisionId": "revision-2",
+            "expectedRevision": 1
+          },
+          "trustedValidationEvidence": {
+            "outcome": "passed",
+            "revisionId": "revision-2",
+            "expectedRevision": 1,
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "state": {
+        "revisions.revision-2.validation": "passed",
+        "revisions.revision-2.status": "frozen",
+        "revisions.revision-2.revision": 2
+      }
+    },
+    {
+      "id": "failed-validation-preserves-draft",
+      "steps": [
+        {
+          "operation": "revision.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "cas-two-writers-one-wins:revision.create-revision-2",
+          "body": {
+            "revisionId": "revision-2",
+            "parentRevisionId": "revision-1",
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "operation": "revision.freeze",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "validated-freeze",
+          "body": {
+            "revisionId": "revision-2",
+            "expectedRevision": 1
+          },
+          "trustedValidationEvidence": {
+            "outcome": "failed",
+            "revisionId": "revision-2",
+            "expectedRevision": 1,
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000"
+                }
+              ]
+            }
+          },
+          "expectError": "INVALID_REQUEST"
+        }
+      ],
+      "state": {
+        "revisions.revision-2.validation": "not_checked",
+        "revisions.revision-2.status": "draft",
+        "revisions.revision-2.revision": 1
+      }
+    },
+    {
+      "id": "unavailable-validation-preserves-draft",
+      "steps": [
+        {
+          "operation": "revision.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "cas-two-writers-one-wins:revision.create-revision-2",
+          "body": {
+            "revisionId": "revision-2",
+            "parentRevisionId": "revision-1",
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "operation": "revision.freeze",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "validated-freeze",
+          "body": {
+            "revisionId": "revision-2",
+            "expectedRevision": 1
+          },
+          "trustedValidationEvidence": {
+            "outcome": "unavailable",
+            "revisionId": "revision-2",
+            "expectedRevision": 1,
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000"
+                }
+              ]
+            }
+          },
+          "expectError": "CAPABILITY_UNAVAILABLE"
+        }
+      ],
+      "state": {
+        "revisions.revision-2.validation": "not_checked",
+        "revisions.revision-2.status": "draft",
+        "revisions.revision-2.revision": 1
+      }
+    },
+    {
+      "id": "missing-validator-evidence-cannot-freeze",
+      "steps": [
+        {
+          "operation": "revision.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "cas-two-writers-one-wins:revision.create-revision-2",
+          "body": {
+            "revisionId": "revision-2",
+            "parentRevisionId": "revision-1",
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "operation": "revision.freeze",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "validated-freeze",
+          "body": {
+            "revisionId": "revision-2",
+            "expectedRevision": 1
+          },
+          "expectError": "CAPABILITY_UNAVAILABLE"
+        }
+      ]
+    },
+    {
+      "id": "validation-method-order-is-bound",
+      "steps": [
+        {
+          "operation": "revision.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "cas-two-writers-one-wins:revision.create-revision-2",
+          "body": {
+            "revisionId": "revision-2",
+            "parentRevisionId": "revision-1",
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "operation": "revision.freeze",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "validated-freeze",
+          "body": {
+            "revisionId": "revision-2",
+            "expectedRevision": 1
+          },
+          "trustedValidationEvidence": {
+            "outcome": "passed",
+            "revisionId": "revision-2",
+            "expectedRevision": 1,
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000"
+                }
+              ]
+            }
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
+    },
+    {
+      "id": "caller-cannot-self-report-validation",
+      "steps": [
+        {
+          "operation": "revision.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "cas-two-writers-one-wins:revision.create-revision-2",
+          "body": {
+            "revisionId": "revision-2",
+            "parentRevisionId": "revision-1",
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "operation": "revision.freeze",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "caller-cannot-self-report-validation",
+          "body": {
+            "revisionId": "revision-2",
+            "expectedRevision": 1,
+            "validation": "passed"
+          },
+          "expectError": "INVALID_REQUEST"
+        }
+      ]
+    },
+    {
+      "id": "save-cannot-self-report-validation",
+      "steps": [
+        {
+          "operation": "revision.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "cas-two-writers-one-wins:revision.create-revision-2",
+          "body": {
+            "revisionId": "revision-2",
+            "parentRevisionId": "revision-1",
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "operation": "revision.update",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "save-cannot-self-report-validation",
+          "body": {
+            "revisionId": "revision-2",
+            "expectedRevision": 1,
+            "validation": "passed",
+            "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "expectError": "INVALID_REQUEST"
+        }
+      ]
+    },
+    {
+      "id": "save-cannot-ignore-mismatched-model-replacement",
+      "steps": [
+        {
+          "operation": "revision.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "cas-two-writers-one-wins:revision.create-revision-2",
+          "body": {
+            "revisionId": "revision-2",
+            "parentRevisionId": "revision-1",
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "operation": "revision.update",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "reject-save-model",
+          "body": {
+            "revisionId": "revision-2",
+            "expectedRevision": 1,
+            "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "invented",
+              "contentHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "digestScope": "worker_prepared_model"
+            }
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ],
+      "state": {
+        "revisions.revision-2.modelRef": {
+          "type": "modelRevision",
+          "modelRevisionId": "model-base-1",
+          "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+          "digestScope": "worker_prepared_model"
+        },
+        "revisions.revision-2.revision": 1
+      }
+    },
+    {
+      "id": "save-applies-qualified-model-replacement",
+      "steps": [
+        {
+          "operation": "revision.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "cas-two-writers-one-wins:revision.create-revision-2",
+          "body": {
+            "revisionId": "revision-2",
+            "parentRevisionId": "revision-1",
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "operation": "model.prepare",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "prepare-second-base",
+          "body": {
+            "preparationId": "prepare-base-2",
+            "source": {
+              "type": "modelSourceSnapshot",
+              "snapshotId": "source-snapshot-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "digestScope": "artifact_bytes_sha256"
+            },
+            "profileId": "lca.study-deterministic-p0.v1",
+            "calculationContractRef": {
+              "kind": "calculation_contract",
+              "schema": "lca.calculation-contract.v1",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            "jobId": "job-prepare-base-2"
+          }
+        },
+        {
+          "operation": "model.complete",
+          "actor": "service",
+          "studyId": "study-1",
+          "idempotencyKey": "complete-second-base",
+          "body": {
+            "preparationId": "prepare-base-2",
+            "jobId": "job-prepare-base-2",
+            "leaseCurrent": true,
+            "producer": "solver-worker",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-2",
+              "contentHash": "4444444444444444444444444444444444444444444444444444444444444444",
+              "digestScope": "worker_prepared_model"
+            },
+            "inputArtifactRef": {
+              "type": "modelInput",
+              "id": "input-prepare-base-1",
+              "contentHash": "3333333333333333333333333333333333333333333333333333333333333333",
+              "digestScope": "artifact_bytes_sha256"
+            },
+            "inputHash": null
+          }
+        },
+        {
+          "operation": "revision.update",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "save-second-base",
+          "body": {
+            "revisionId": "revision-2",
+            "expectedRevision": 1,
+            "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "modelPreparationId": "prepare-base-2",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-2",
+              "contentHash": "4444444444444444444444444444444444444444444444444444444444444444",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000"
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "state": {
+        "revisions.revision-2.modelPreparationId": "prepare-base-2",
+        "revisions.revision-2.modelRef": {
+          "type": "modelRevision",
+          "modelRevisionId": "model-base-2",
+          "contentHash": "4444444444444444444444444444444444444444444444444444444444444444",
+          "digestScope": "worker_prepared_model"
+        },
+        "revisions.revision-2.validation": "not_checked"
+      }
+    },
+    {
+      "id": "revision-parent-rejects-revision-2",
+      "steps": [
+        {
+          "operation": "revision.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "cas-two-writers-one-wins:revision.create-revision-2",
+          "body": {
+            "revisionId": "revision-2",
+            "parentRevisionId": "revision-1",
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "operation": "revision.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "parent-revision-2",
+          "body": {
+            "revisionId": "revision-3",
+            "parentRevisionId": "revision-2",
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000"
+                }
+              ]
+            }
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
+    },
+    {
+      "id": "revision-parent-rejects-missing-parent",
+      "steps": [
+        {
+          "operation": "revision.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "cas-two-writers-one-wins:revision.create-revision-2",
+          "body": {
+            "revisionId": "revision-2",
+            "parentRevisionId": "revision-1",
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "operation": "revision.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "parent-missing-parent",
+          "body": {
+            "revisionId": "revision-3",
+            "parentRevisionId": "missing-parent",
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000"
+                }
+              ]
+            }
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
+    },
+    {
+      "id": "revision-parent-rejects-revision-3",
+      "steps": [
+        {
+          "operation": "revision.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "cas-two-writers-one-wins:revision.create-revision-2",
+          "body": {
+            "revisionId": "revision-2",
+            "parentRevisionId": "revision-1",
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "operation": "revision.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "parent-revision-3",
+          "body": {
+            "revisionId": "revision-3",
+            "parentRevisionId": "revision-3",
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000"
+                }
+              ]
+            }
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
+    },
+    {
+      "id": "scenario-parent-rejects-scenario-revision-2",
+      "steps": [
+        {
+          "operation": "scenario.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "new-draft-scenario",
+          "body": {
+            "scenarioRevisionId": "scenario-revision-2",
+            "studyRevisionId": "revision-1",
+            "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "effectiveModelRef": null,
+            "modelPreparationId": null
+          }
+        },
+        {
+          "operation": "scenario.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "parent-scenario-revision-2",
+          "body": {
+            "scenarioRevisionId": "scenario-revision-3",
+            "studyRevisionId": "revision-1",
+            "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "effectiveModelRef": null,
+            "modelPreparationId": null,
+            "parentScenarioRevisionId": "scenario-revision-2"
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
+    },
+    {
+      "id": "scenario-parent-rejects-missing-scenario",
+      "steps": [
+        {
+          "operation": "scenario.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "new-draft-scenario",
+          "body": {
+            "scenarioRevisionId": "scenario-revision-2",
+            "studyRevisionId": "revision-1",
+            "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "effectiveModelRef": null,
+            "modelPreparationId": null
+          }
+        },
+        {
+          "operation": "scenario.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "parent-missing-scenario",
+          "body": {
+            "scenarioRevisionId": "scenario-revision-3",
+            "studyRevisionId": "revision-1",
+            "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "effectiveModelRef": null,
+            "modelPreparationId": null,
+            "parentScenarioRevisionId": "missing-scenario"
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
+    },
+    {
+      "id": "scenario-parent-rejects-scenario-revision-3",
+      "steps": [
+        {
+          "operation": "scenario.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "new-draft-scenario",
+          "body": {
+            "scenarioRevisionId": "scenario-revision-2",
+            "studyRevisionId": "revision-1",
+            "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "effectiveModelRef": null,
+            "modelPreparationId": null
+          }
+        },
+        {
+          "operation": "scenario.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "parent-scenario-revision-3",
+          "body": {
+            "scenarioRevisionId": "scenario-revision-3",
+            "studyRevisionId": "revision-1",
+            "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "effectiveModelRef": null,
+            "modelPreparationId": null,
+            "parentScenarioRevisionId": "scenario-revision-3"
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
+    },
+    {
+      "id": "scenario-parent-may-reference-frozen-revision",
+      "steps": [
+        {
+          "operation": "scenario.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "new-draft-scenario",
+          "body": {
+            "scenarioRevisionId": "scenario-revision-2",
+            "studyRevisionId": "revision-1",
+            "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "effectiveModelRef": null,
+            "modelPreparationId": null,
+            "parentScenarioRevisionId": "scenario-revision-1"
+          }
+        }
+      ],
+      "state": {
+        "scenarios.scenario-revision-2.parentScenarioRevisionId": "scenario-revision-1"
+      }
+    },
+    {
+      "id": "review-substantive-update-requires-explicit-head",
+      "steps": [
+        {
+          "operation": "review.append",
+          "actor": "reviewer",
+          "studyId": "study-1",
+          "idempotencyKey": "explicit-review-1",
+          "body": {
+            "reviewId": "explicit-review-1",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "decision": "approved",
+            "reviewClass": "internal",
+            "supersedesReviewId": null
+          }
+        },
+        {
+          "operation": "review.append",
+          "actor": "reviewer",
+          "studyId": "study-1",
+          "idempotencyKey": "review-no-parent",
+          "body": {
+            "reviewId": "review-no-parent",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "decision": "changes_requested",
+            "reviewClass": "internal",
+            "supersedesReviewId": null
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
+    },
+    {
+      "id": "review-withdrawal-cannot-be-first",
+      "steps": [
+        {
+          "operation": "review.append",
+          "actor": "reviewer",
+          "studyId": "study-1",
+          "idempotencyKey": "withdraw-first",
+          "body": {
+            "reviewId": "withdraw-first",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "decision": "withdrawn",
+            "reviewClass": "internal",
+            "supersedesReviewId": null
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
+    },
+    {
+      "id": "review-chain-rejects-fork-from-old-head",
+      "steps": [
+        {
+          "operation": "review.append",
+          "actor": "reviewer",
+          "studyId": "study-1",
+          "idempotencyKey": "explicit-review-1",
+          "body": {
+            "reviewId": "explicit-review-1",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "decision": "approved",
+            "reviewClass": "internal",
+            "supersedesReviewId": null
+          }
+        },
+        {
+          "operation": "review.append",
+          "actor": "reviewer",
+          "studyId": "study-1",
+          "idempotencyKey": "explicit-withdraw",
+          "body": {
+            "reviewId": "explicit-withdraw",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "decision": "withdrawn",
+            "reviewClass": "internal",
+            "supersedesReviewId": "explicit-review-1"
+          }
+        },
+        {
+          "operation": "review.append",
+          "actor": "reviewer",
+          "studyId": "study-1",
+          "idempotencyKey": "fork",
+          "body": {
+            "reviewId": "fork",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "decision": "approved",
+            "reviewClass": "internal",
+            "supersedesReviewId": "explicit-review-1"
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ],
+      "state": {
+        "reviews.explicit-review-1.decision": "approved",
+        "reviews.explicit-withdraw.decision": "withdrawn"
+      }
+    },
+    {
+      "id": "review-chain-cannot-supersede-another-actor",
+      "steps": [
+        {
+          "operation": "review.append",
+          "actor": "reviewer",
+          "studyId": "study-1",
+          "idempotencyKey": "explicit-review-1",
+          "body": {
+            "reviewId": "explicit-review-1",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "decision": "approved",
+            "reviewClass": "internal",
+            "supersedesReviewId": null
+          }
+        },
+        {
+          "operation": "review.append",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "cross-actor",
+          "body": {
+            "reviewId": "cross-actor",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "decision": "approved",
+            "reviewClass": "internal",
+            "supersedesReviewId": "explicit-review-1"
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
+    },
+    {
+      "id": "review-chain-cannot-switch-class",
+      "steps": [
+        {
+          "operation": "review.append",
+          "actor": "reviewer",
+          "studyId": "study-1",
+          "idempotencyKey": "explicit-review-1",
+          "body": {
+            "reviewId": "explicit-review-1",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "decision": "approved",
+            "reviewClass": "internal",
+            "supersedesReviewId": null
+          }
+        },
+        {
+          "operation": "review.append",
+          "actor": "reviewer",
+          "studyId": "study-1",
+          "idempotencyKey": "cross-class",
+          "body": {
+            "reviewId": "cross-class",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "decision": "approved",
+            "reviewClass": "independent",
+            "supersedesReviewId": "explicit-review-1"
+          },
+          "expectError": "CAPABILITY_UNAVAILABLE"
+        }
+      ]
+    },
+    {
+      "id": "review-chain-cannot-switch-target",
+      "steps": [
+        {
+          "operation": "review.append",
+          "actor": "reviewer",
+          "studyId": "study-1",
+          "idempotencyKey": "explicit-review-1",
+          "body": {
+            "reviewId": "explicit-review-1",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "decision": "approved",
+            "reviewClass": "internal",
+            "supersedesReviewId": null
+          }
+        },
+        {
+          "operation": "report.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "new-report-does-not-inherit-review:report.create-run-1",
+          "body": {
+            "reportRevisionId": "report-2",
+            "runId": "run-1",
+            "runResultRef": {
+              "type": "runResult",
+              "id": "result-1",
+              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "digestScope": "artifact_bytes_sha256"
+            },
+            "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        },
+        {
+          "operation": "report.freeze",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "new-report-does-not-inherit-review:report.freeze-report-2",
+          "body": {
+            "reportRevisionId": "report-2",
+            "expectedRevision": 1
+          }
+        },
+        {
+          "operation": "review.append",
+          "actor": "reviewer",
+          "studyId": "study-1",
+          "idempotencyKey": "cross-target",
+          "body": {
+            "reviewId": "cross-target",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-2",
+              "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            "decision": "approved",
+            "reviewClass": "internal",
+            "supersedesReviewId": "explicit-review-1"
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
+    },
+    {
+      "id": "comment-does-not-supersede-approval",
+      "steps": [
+        {
+          "operation": "review.append",
+          "actor": "reviewer",
+          "studyId": "study-1",
+          "idempotencyKey": "explicit-review-1",
+          "body": {
+            "reviewId": "explicit-review-1",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "decision": "approved",
+            "reviewClass": "internal",
+            "supersedesReviewId": null
+          }
+        },
+        {
+          "operation": "review.append",
+          "actor": "reviewer",
+          "studyId": "study-1",
+          "idempotencyKey": "comment-only",
+          "body": {
+            "reviewId": "comment-only",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "decision": "comment",
+            "reviewClass": "internal",
+            "supersedesReviewId": null
+          }
+        },
+        {
+          "operation": "report.finalize",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "finalize-explicit-review",
+          "body": {
+            "reportRevisionId": "report-1",
+            "expectedRevision": 2,
+            "profileId": "test-profile-internal",
+            "reviewRequirement": "internal",
+            "now": 150
+          }
+        }
+      ],
+      "state": {
+        "reports.report-1.finalization.reviewIds": [
+          "explicit-review-1"
+        ]
+      }
+    },
+    {
+      "id": "comment-cannot-supersede-chain",
+      "steps": [
+        {
+          "operation": "review.append",
+          "actor": "reviewer",
+          "studyId": "study-1",
+          "idempotencyKey": "explicit-review-1",
+          "body": {
+            "reviewId": "explicit-review-1",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "decision": "approved",
+            "reviewClass": "internal",
+            "supersedesReviewId": null
+          }
+        },
+        {
+          "operation": "review.append",
+          "actor": "reviewer",
+          "studyId": "study-1",
+          "idempotencyKey": "bad-comment",
+          "body": {
+            "reviewId": "bad-comment",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "decision": "comment",
+            "reviewClass": "internal",
+            "supersedesReviewId": "explicit-review-1"
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
+    },
+    {
+      "id": "finalization-uses-current-substantive-head",
+      "steps": [
+        {
+          "operation": "review.append",
+          "actor": "reviewer",
+          "studyId": "study-1",
+          "idempotencyKey": "explicit-review-1",
+          "body": {
+            "reviewId": "explicit-review-1",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "decision": "approved",
+            "reviewClass": "internal",
+            "supersedesReviewId": null
+          }
+        },
+        {
+          "operation": "review.append",
+          "actor": "reviewer",
+          "studyId": "study-1",
+          "idempotencyKey": "request-changes",
+          "body": {
+            "reviewId": "request-changes",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "decision": "changes_requested",
+            "reviewClass": "internal",
+            "supersedesReviewId": "explicit-review-1"
+          }
+        },
+        {
+          "operation": "report.finalize",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "finalize-explicit-review",
+          "body": {
+            "reportRevisionId": "report-1",
+            "expectedRevision": 2,
+            "profileId": "test-profile-internal",
+            "reviewRequirement": "internal",
+            "now": 150
+          },
+          "expectError": "REVIEW_REQUIRED"
         }
       ]
     }

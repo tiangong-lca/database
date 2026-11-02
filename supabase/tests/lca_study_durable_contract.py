@@ -94,11 +94,60 @@ class Model:
             require(valid_hash(preparation["inputHash"]), "CAPABILITY_UNAVAILABLE")
         return preparation
 
+    def review_head(self, actor, target, review_class):
+        chain = [item for item in self.state["reviews"].values()
+                 if item["actor"] == actor and item["target"] == target
+                 and item["reviewClass"] == review_class and item["decision"] != "comment"]
+        superseded = {item["supersedesReviewId"] for item in chain if item["supersedesReviewId"] is not None}
+        heads = [item for item in chain if item["reviewId"] not in superseded]
+        require(len(heads) <= 1, "REFERENCE_MISMATCH")
+        return heads[0] if heads else None
+
+    def assert_provenance(self):
+        """Edges include frozen parents and captured draft-source dependencies."""
+        graph = {}
+        for identifier, revision in self.state["revisions"].items():
+            graph["revision:" + identifier] = ["preparation:" + revision["modelPreparationId"]]
+            if revision.get("parentRevisionId"):
+                graph["revision:" + identifier].append("revision:" + revision["parentRevisionId"])
+        for identifier, scenario in self.state["scenarios"].items():
+            dependencies = ["revision:" + scenario["studyRevisionId"]]
+            if scenario.get("parentScenarioRevisionId"):
+                dependencies.append("scenario:" + scenario["parentScenarioRevisionId"])
+            graph["scenario:" + identifier] = dependencies[:]
+            if scenario.get("modelPreparationId"):
+                graph["scenario:" + identifier].append("preparation:" + scenario["modelPreparationId"])
+        for identifier, preparation in self.state["preparations"].items():
+            source = preparation["source"]
+            graph["preparation:" + identifier] = []
+            if source["type"] == "scenarioRevision":
+                # The source is a captured DRAFT generation, not its later frozen node.
+                source_node = "draft-source:" + identifier
+                graph["preparation:" + identifier] = [source_node]
+                captured = preparation["sourceProvenance"]
+                graph[source_node] = ["revision:" + captured["studyRevisionId"]]
+                if captured.get("parentScenarioRevisionId"):
+                    graph[source_node].append("scenario:" + captured["parentScenarioRevisionId"])
+        visiting, done = set(), set()
+        def visit(node):
+            require(node not in visiting, "REFERENCE_MISMATCH")
+            if node in done:
+                return
+            visiting.add(node)
+            for dependency in graph.get(node, []):
+                visit(dependency)
+            visiting.remove(node)
+            done.add(node)
+        for node in graph:
+            visit(node)
+
     def execute(self, event):
         """Atomic example transition, including rollback of rejected operations."""
         before = copy.deepcopy(self.state)
         try:
-            return self._execute(event)
+            result = self._execute(event)
+            self.assert_provenance()
+            return result
         except Rejected:
             self.state = before
             raise
@@ -216,10 +265,10 @@ class Model:
             return copy.deepcopy(previous["result"])
 
         require(study["status"] == "active", "FROZEN_REVISION")
-        result = self.transition(operation, actor, study_id, study, body)
+        result = self.transition(operation, actor, study_id, study, body, event.get("trustedValidationEvidence"))
         return self.remember(receipt_key, request_hash, result)
 
-    def transition(self, operation, actor, study_id, study, body):
+    def transition(self, operation, actor, study_id, study, body, validation_evidence=None):
         if operation == "model.prepare":
             require(body["preparationId"] not in self.state["preparations"], "REFERENCE_MISMATCH")
             ref = body["calculationContractRef"]
@@ -239,6 +288,10 @@ class Model:
                 raise Rejected("CAPABILITY_UNAVAILABLE")
             self.state["preparations"][body["preparationId"]] = dict(copy.deepcopy(body), studyId=study_id,
                 executionStatus="queued", modelRef=None, inputArtifactRef=None, inputHash=None)
+            if source["type"] == "scenarioRevision":
+                self.state["preparations"][body["preparationId"]]["sourceProvenance"] = {
+                    "studyRevisionId": scenario["studyRevisionId"],
+                    "parentScenarioRevisionId": scenario.get("parentScenarioRevisionId")}
             return {"preparationId": body["preparationId"]}
         if operation == "member.set":
             self.cas(study, body["expectedRevision"])
@@ -265,20 +318,29 @@ class Model:
             require(body[key] not in self.state[table], "REFERENCE_MISMATCH")
             require(valid_hash(body["contentHash"]), "INVALID_REQUEST")
             if operation == "revision.create" and body.get("parentRevisionId"):
-                self.record("revisions", body["parentRevisionId"], study_id)
+                require(body["parentRevisionId"] != body[key], "REFERENCE_MISMATCH")
+                parent = self.record("revisions", body["parentRevisionId"], study_id)
+                require(parent["status"] == "frozen", "REFERENCE_MISMATCH")
             if operation == "revision.create":
+                require("validation" not in body, "INVALID_REQUEST")
                 preparation = self.qualified_model(body["modelPreparationId"], study_id)
                 require(body["modelRef"] == preparation["modelRef"], "REFERENCE_MISMATCH")
             if operation == "scenario.create":
                 base = self.record("revisions", body["studyRevisionId"], study_id)
                 require(base["status"] == "frozen", "FROZEN_REVISION")
                 require(body["effectiveModelRef"] is None, "REFERENCE_MISMATCH")
+                if body.get("parentScenarioRevisionId"):
+                    require(body["parentScenarioRevisionId"] != body[key], "REFERENCE_MISMATCH")
+                    parent = self.record("scenarios", body["parentScenarioRevisionId"], study_id)
+                    require(parent["status"] == "frozen", "REFERENCE_MISMATCH")
             if operation == "report.create":
                 run = self.record("runs", body["runId"], study_id)
                 require(run["resultRef"] is not None and run["availability"] == "ready", "REFERENCE_MISMATCH")
                 require(body["runResultRef"] == run["resultRef"], "REFERENCE_MISMATCH")
             record = copy.deepcopy(body)
             record.update(studyId=study_id, status="draft", revision=1)
+            if table == "revisions":
+                record["validation"] = "not_checked"
             if table == "reports":
                 record["finalizationStatus"] = "not_finalized"
                 record["finalization"] = None
@@ -295,11 +357,33 @@ class Model:
             require(record["status"] == "draft", "FROZEN_REVISION")
             if operation in {"revision.update", "scenario.update"}:
                 require(valid_hash(body["contentHash"]), "INVALID_REQUEST")
+                if operation == "revision.update":
+                    require("validation" not in body and "parentRevisionId" not in body, "INVALID_REQUEST")
+                    preparation_id = body.get("modelPreparationId", record["modelPreparationId"])
+                    model_ref = body.get("modelRef", record["modelRef"])
+                    preparation = self.qualified_model(preparation_id, study_id)
+                    require(model_ref == preparation["modelRef"], "REFERENCE_MISMATCH")
+                    record.update(modelPreparationId=preparation_id, modelRef=copy.deepcopy(model_ref), validation="not_checked")
+                    if "definition" in body:
+                        record["definition"] = copy.deepcopy(body["definition"])
+                else:
+                    require(not {"parentScenarioRevisionId", "modelPreparationId", "effectiveModelRef"}.intersection(body), "INVALID_REQUEST")
+                    if "overrides" in body:
+                        record["overrides"] = copy.deepcopy(body["overrides"])
                 record["contentHash"] = body["contentHash"]
             else:
                 if operation == "revision.freeze":
                     preparation = self.qualified_model(record["modelPreparationId"], study_id)
                     require(record["modelRef"] == preparation["modelRef"], "REFERENCE_MISMATCH")
+                    require("validation" not in body, "INVALID_REQUEST")
+                    require(validation_evidence is not None and validation_evidence.get("outcome") != "unavailable", "CAPABILITY_UNAVAILABLE")
+                    expected = {"revisionId": body[key], "expectedRevision": record["revision"],
+                                "contentHash": record["contentHash"], "modelPreparationId": record["modelPreparationId"],
+                                "modelRef": record["modelRef"], "definition": record["definition"]}
+                    require({key: validation_evidence.get(key) for key in expected} == expected, "REFERENCE_MISMATCH")
+                    require(validation_evidence["outcome"] == "passed", "INVALID_REQUEST")
+                    record["validation"] = "passed"
+                    record["validationEvidence"] = copy.deepcopy(validation_evidence)
                 if operation == "scenario.freeze":
                     preparation = self.qualified_model(body["modelPreparationId"], study_id)
                     require(preparation["source"] == {"type": "scenarioRevision", "scenarioRevisionId": body[key],
@@ -341,8 +425,16 @@ class Model:
             require(target["type"] == "reportRevision", "REFERENCE_MISMATCH")
             report = self.record("reports", target["revisionId"], study_id)
             require(report["status"] == "frozen" and report["contentHash"] == target["contentHash"], "REFERENCE_MISMATCH")
-            require(body["decision"] in {"approved", "changes_requested", "withdrawn"}, "INVALID_REQUEST")
+            require(body["decision"] in {"approved", "changes_requested", "withdrawn", "comment"}, "INVALID_REQUEST")
+            require(body["reviewClass"] == "internal", "CAPABILITY_UNAVAILABLE")
             require(body["reviewId"] not in self.state["reviews"], "REFERENCE_MISMATCH")
+            previous = self.review_head(actor, target, body["reviewClass"])
+            if body["decision"] == "comment":
+                require(body["supersedesReviewId"] is None, "REFERENCE_MISMATCH")
+            elif previous is None:
+                require(body["supersedesReviewId"] is None and body["decision"] != "withdrawn", "REFERENCE_MISMATCH")
+            else:
+                require(body["supersedesReviewId"] == previous["reviewId"], "REFERENCE_MISMATCH")
             self.state["reviews"][body["reviewId"]] = dict(copy.deepcopy(body), studyId=study_id, actor=actor)
             return {"reviewId": body["reviewId"]}
         if operation == "report.finalize":
@@ -358,14 +450,11 @@ class Model:
             require(profile["available"], "CAPABILITY_UNAVAILABLE")
             accepted_review_ids = []
             if requirement == "internal":
-                latest = {}
-                for review in self.state["reviews"].values():
-                    if review["target"] == {"type": "reportRevision", "revisionId": body["reportRevisionId"],
-                                             "contentHash": report["contentHash"]}:
-                        reviewer = review["actor"]
-                        if study["members"].get(reviewer) in {"owner", "reviewer"} and "review" in study["capabilities"].get(reviewer, []):
-                            latest[reviewer] = review
-                accepted_review_ids = [review["reviewId"] for review in latest.values() if review["decision"] == "approved"]
+                target = {"type": "reportRevision", "revisionId": body["reportRevisionId"], "contentHash": report["contentHash"]}
+                for reviewer in sorted({item["actor"] for item in self.state["reviews"].values()}):
+                    head = self.review_head(reviewer, target, "internal")
+                    if head and head["decision"] == "approved" and study["members"].get(reviewer) in {"owner", "reviewer"} and "review" in study["capabilities"].get(reviewer, []):
+                        accepted_review_ids.append(head["reviewId"])
                 require(bool(accepted_review_ids), "REVIEW_REQUIRED")
             report["finalizationStatus"] = "finalized"
             report["finalization"] = {"profileId": body["profileId"], "reviewIds": accepted_review_ids,

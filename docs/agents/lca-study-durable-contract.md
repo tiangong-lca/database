@@ -46,10 +46,10 @@ OAuth capability grant.
 | Domain object | Durable identity and invariants |
 | --- | --- |
 | Study | Stable `studyId`, server-derived owner/scope, member grants and mutable head. `active`/`archived` is a research lifecycle, never dataset publication state. A personal scope is `{kind:"personal"}`; a team scope is `{kind:"team",teamId}` and requires current team authorization. |
-| StudyRevision | `revisionId`, exact `studyId`, nullable exact `parentRevisionId`, draft/frozen content and its content hash. Frozen definition binds goal, scope, functional unit, model and methods. A new frozen definition uses a new identity; no latest alias is persisted. |
+| StudyRevision | `revisionId`, exact `studyId`, nullable distinct frozen same-Study `parentRevisionId`, draft/frozen content and its content hash. Draft validation is `not_checked`; successful atomic freeze records `passed`. Frozen definition binds goal, scope, functional unit, model and methods. A later change to frozen content uses a new identity; no latest alias is persisted. |
 | ModelRevision | Exact versioned model reference, content hash and source identity; layout is presentation. Worker owns normalized effective model semantics. Existing LifecycleModel is an input mapping, not a Study or authorization substitute. |
 | ModelSourceSnapshot / ModelPreparation | A source snapshot binds an authorized exact LifecycleModel export; a preparation binds that source or an exact draft Scenario CAS/hash to a task, numerical profile/contract and Worker-issued model/input references. Neither is a client-issued model receipt. |
-| ScenarioRevision | `scenarioRevisionId` within Study; exact frozen `studyRevisionId`, explicit differences and an effective model reference. A second scenario is a research alternative, not a boundary-product output projection. |
+| ScenarioRevision | `scenarioRevisionId` within Study; exact frozen `studyRevisionId`, nullable distinct frozen same-Study `parentScenarioRevisionId`, explicit differences and an effective model reference. A second scenario is a research alternative, not a boundary-product output projection. |
 | Run | `runId`, exact frozen Study/Scenario/Model references, immutable input identity, opaque calculation reference, engine/profile and task/result links. A Run is not a renamed `worker_jobs` row. |
 | Analysis | Exact input Run identities, analysis profile/configuration and result evidence. Worker defines numerical and comparability semantics; Database preserves the bindings. |
 | ReportRevision | `reportRevisionId`, exact Run result and optional distinct Analysis facts references, narrative/citation content hash, template/profile identity and draft/frozen content. Finalization and review are separate records/axes. |
@@ -77,9 +77,10 @@ and qualified. Worker remains the content/schema owner for both kinds.
 | Review `decision:"approved"` | Review `decision:"approve"` |
 | Review `decision:"changes_requested"` | Review `decision:"request_changes"` |
 | Review `decision:"withdrawn"` | Review `decision:"withdraw"` |
+| Review `decision:"comment"` | Review `decision:"comment"`; no supersession or approval effect |
 
-Edge's `comment` is an append-only annotation with no approval effect; the
-minimal reference model does not implement that annotation action. The table
+The reference model implements the `internal` review class; other classes are
+unavailable in this minimal model rather than silently equivalent to internal. The table
 maps semantic roles only; it is not a second public wire schema or a runtime
 adapter. All other public fields and validation stay owned by Edge.
 
@@ -90,6 +91,16 @@ generation; freezing advances it and makes the content immutable. A later
 content change creates a new revision ID linked to its exact predecessor.
 Updating a Study head is a separate Study-targeted CAS; it cannot implicitly
 overwrite a Report/Scenario head using a different object's generation.
+
+Revision and Scenario parents must exist, be distinct, frozen and in the same
+Study. Draft edits use save/update rather than create a child of a mutable
+parent. Revision save applies and validates the selected preparation/model pair
+and definition; it cannot silently ignore a replacement. Parent relationships
+remain immutable. The provenance DAG includes both parent edges and
+revision-to-preparation-to-Scenario-source dependencies, not just model links.
+Preparation source dependencies describe the captured *draft generation*, not
+its later frozen derivative, so a legal prepare/freeze does not create a false
+self-cycle. Atomic mutations reject mixed lineage/model dependency cycles.
 
 All relation validation is Study-scoped and exact. Cross-Study parents, Run
 inputs, reports or exports are rejected atomically. Display titles, job IDs,
@@ -158,7 +169,27 @@ prove those boundaries. Method references are stored as an exact `methodRefs`
 array under the Edge-owned definition; Database does not collapse multiple
 indicators to one method or interpret method content.
 
-### Resource authorization
+### Atomic StudyRevision validation and freeze
+
+W04's service performs synchronous structural/reference validation on freeze
+against the same revision ID, CAS generation, content hash, qualified model
+preparation/model and full definition, including ordered exact methodRefs.
+W03 must commit the bound trusted validation evidence, `validation:"passed"`
+and `status:"frozen"` atomically. Create/save records `not_checked`; public
+requests cannot supply `passed`. There is no separate background validator or
+an actor-controlled validation flag in this v1 design.
+
+The offline event's top-level `trustedValidationEvidence` is an internal seam,
+not a public request field. Missing/unavailable verification returns
+`CAPABILITY_UNAVAILABLE`, rejected structure returns `INVALID_REQUEST`, changed
+bindings return `REFERENCE_MISMATCH`, and stale CAS returns `REVISION_CONFLICT`.
+All leave the draft, generation and `not_checked` unchanged; `failed` is an
+internal outcome, not a persistent ghost status. `passed` proves only the
+specified structural/exact-identity/producer bindings. It does not establish
+scientific applicability, full LCIA factor coverage or new calculation gates,
+and does not change Worker's diagnostic policy for missing factors.
+
+### Live resource authorization
 
 Authorization combines the current actor, client capability and live resource
 grant. A role alone or a capability alone is insufficient. Server/service
@@ -242,9 +273,14 @@ History reads and recorded retries cannot create replacement jobs or alter an
 earlier terminal result.
 
 Review targets the exact frozen report identity/hash. Changing a report creates
-a new target with no inherited approval. A later decision from the same reviewer
-supersedes that reviewer's earlier decision for a *new* finalization check, while
-both records remain history. Finalization uses a server-resolved versioned
+a new target with no inherited approval. Substantive decisions form one explicit
+chain for actor + exact target/hash + reviewClass. The first approve/request-changes
+has `supersedesReviewId:null`; later substantive decisions, including withdrawal,
+must name that chain's current head. Withdrawal cannot be the first decision.
+Stale-head forks and cross-actor/target/class supersession are rejected. Comments
+always have null supersession and never alter the substantive head or approval.
+New finalization uses only the current approved head from each still-authorized
+reviewer, while every earlier decision remains history. Finalization uses a server-resolved versioned
 profile; clients cannot lower review requirements by supplying a boolean. The
 examples cover no-review and internal-review profiles; `independent` returns
 `CAPABILITY_UNAVAILABLE` until independently qualified support exists. Research
