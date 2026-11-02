@@ -22,9 +22,9 @@ checkPaths:
   - .github/workflows/supabase-dev.yml
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
-lastReviewedAt: 2026-11-01
-lastReviewedCommit: cc36f78aa2efa18d25fc2efc057a4f2ec5680e01
-lastReviewedNote: "Database #879: reviewed bounded manager-only current/run/exact-approval recovery reads, historical authority preservation, explicit legacy format and populated upgrade proof. Reads do not authorize or mutate publication."
+lastReviewedAt: 2026-11-02
+lastReviewedCommit: a4e49df085d3793b985b5813dbaf38f0339e0995
+lastReviewedNote: "Database #887: reviewed dedicated ZIP Storage role, restrictive path/write fences, unchanged branch deployment ownership and focused qualification requirements."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -465,3 +465,7 @@ Use the Supabase CLI in this repository.
 - `supabase migration list`
 - `supabase link --project-ref <ref>`
 - `supabase db push`
+
+## Study P0 offline contract check
+
+The existing local-contract CI job also runs the [Study durable reference model](lca-study-durable-contract.md) before database rebuild. This offline check adds no migration or hosted authority: the same five deployable-input families still determine Preview and persistent-Dev execution. Its sequential examples do not qualify SQL/RLS, actual concurrency or a deployed Study API.

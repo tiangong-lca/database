@@ -90,6 +90,9 @@ jobs:
           python3 -B supabase/tests/upgrade/test_collect_portal_flow_cas_cutover.py
           python3 -B supabase/tests/upgrade/test_collect_portal_flow_cas_ddl_fence.py
 
+      - name: Verify offline LCA Study durable contract
+        run: python3 -B supabase/tests/lca_study_durable_contract.py
+
       - name: Rebuild migration history
         run: supabase start && supabase db reset --no-seed
 
@@ -122,6 +125,8 @@ jobs:
           supabase test db supabase/tests/20260920_portal_china_administrative_navigation.sql
           supabase test db supabase/tests/20260805_full_schema_cutover.sql
           supabase test db supabase/tests/20260806_api_contract_closure.sql
+          supabase test db supabase/tests/20261102_final_result_zip_reader.sql
+          supabase test db supabase/tests/20261102_final_result_zip_generation.sql
           supabase test db supabase/tests/20260611_dataset_create_version_rpc.sql
           supabase test db supabase/tests/20260902_process_model_version.sql
           supabase test db supabase/tests/20261009_model_bundle_process_references.sql

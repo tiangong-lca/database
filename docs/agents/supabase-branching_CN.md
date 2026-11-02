@@ -22,9 +22,9 @@ checkPaths:
   - .github/workflows/supabase-dev.yml
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
-lastReviewedAt: 2026-11-01
-lastReviewedCommit: cc36f78aa2efa18d25fc2efc057a4f2ec5680e01
-lastReviewedNote: "Database #879: reviewed bounded manager-only current/run/exact-approval recovery reads, historical authority preservation, explicit legacy format and populated upgrade proof. Reads do not authorize or mutate publication."
+lastReviewedAt: 2026-11-02
+lastReviewedCommit: a4e49df085d3793b985b5813dbaf38f0339e0995
+lastReviewedNote: "Database #887: reviewed dedicated ZIP Storage role, restrictive path/write fences, unchanged branch deployment ownership and focused qualification requirements."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -390,3 +390,7 @@ python3 scripts/test_check_auth_email_templates.py
 - `supabase migration list`
 - `supabase link --project-ref <ref>`
 - `supabase db push`
+
+## Study P0 离线合同检查
+
+现有 local-contract CI job 在数据库重建前运行 [Study 持久参考模型](lca-study-durable-contract.md)。该离线检查不增加迁移或 hosted 权限，Preview 与 persistent Dev 仍由原五类 deployable 输入判定；顺序样例不代表 SQL/RLS、真实并发或 Study API 已部署。

@@ -37,9 +37,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-01
-lastReviewedCommit: fb69a78b88833f0f01fba5c1fea9b97df09fa4ad
-lastReviewedNote: "Database #879: reviewed immutable manager public-readback attestations, live publication/reader/ZIP admission, historical recovery, populated upgrade and identical local schema exports. No remote deployment."
+lastReviewedAt: 2026-11-02
+lastReviewedCommit: a4e49df085d3793b985b5813dbaf38f0339e0995
+lastReviewedNote: "Database #887: reviewed dedicated ZIP Storage role, restrictive path/write fences, unchanged branch deployment ownership and focused qualification requirements."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-validation.md
@@ -87,6 +87,7 @@ Additional governed source docs, not part of the default first-load surface:
 | Document | Owns | Does not own |
 | --- | --- | --- |
 | `README.md` and `README.zh-CN.md` | repo landing context and high-level purpose | repo contract, proof bar, or branch-policy truth |
+| `docs/agents/lca-study-durable-contract.md` | Study identity, persistence, freeze, authorization, concurrency and report review/export/share invariants; P0 offline acceptance examples | Edge public wire schemas, numerical algorithms, or proof of implemented schema/runtime |
 
 ## Load Order
 

@@ -32,9 +32,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-01
-lastReviewedCommit: fb69a78b88833f0f01fba5c1fea9b97df09fa4ad
-lastReviewedNote: "Database #879: reviewed immutable manager public-readback attestations, live publication/reader/ZIP admission, historical recovery, populated upgrade and identical local schema exports. No remote deployment."
+lastReviewedAt: 2026-11-02
+lastReviewedCommit: 394aab73e18e9885c7e17cc05e85213140d0ce5a
+lastReviewedNote: "Database #887: reviewed dedicated ZIP Storage role, restrictive path/write fences, unchanged branch deployment ownership and focused qualification requirements."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -51,13 +51,32 @@ related:
 
 ## Default Baseline
 
-Unless the change is doc-only repo-maintenance work or the offline workflow/monitoring contract category below, the baseline local commands are:
+Unless the change is doc-only repo-maintenance work, the offline Study contract category below, or the offline workflow/monitoring contract category below, the baseline local commands are:
 
 ```bash
 supabase start
 supabase db reset
 supabase migration list
 ```
+
+## Offline LCA Study durable contract (P0)
+
+For Database #885, run `python3 -B supabase/tests/lca_study_durable_contract.py`
+from this repository. The checker executes sequential transition traces from
+`supabase/tests/fixtures/lca-study-durable.v1.json` against the Database-owned
+[durable contract](lca-study-durable-contract.md), including rejection rollback,
+CAS/freeze, idempotency, live authorization, Run evidence and review/export/share
+bindings. No dependency installation, database, container or credential is needed.
+
+Keep all five deployable input groups unchanged: `supabase/config.toml`,
+`supabase/migrations/`, `supabase/seed.sql`, `supabase/seeds/` and
+`supabase/functions/`. Run Docpact and `git diff --check`; retain the normal
+required PR CI. This category proves only the offline examples. It does not
+qualify SQL/RLS, actual concurrent transactions, lease fencing, team membership,
+real disclosure/exports/shares or deployment. P1 migration work must use the
+ordinary database baseline and independent runtime proof.
+
+## Existing database baseline details
 
 Open Data catalog or publication changes must additionally run the focused
 `supabase/tests/20260923_open_data_catalog_publications.sql` and
@@ -1639,3 +1658,10 @@ After a fresh migration rebuild, run `supabase test db supabase/tests/20260805_f
 Run `supabase/tests/20261025_calculation_contract_identity.sql` after a blank migration rebuild, alongside scope-closure, snapshot-build terminal guards, API closure and exact schema inventory. Verify service-only descriptor activation, stale compare-and-set rejection, old-token pinning, distinct scan/build identities after activation, unchanged scanner/data identity, compatible-candidate ordering and immutable historical reads. Before activation the additive Worker input field is omitted for legacy decoders. Queue identity is derived from server state, never a caller-supplied fingerprint.
 
 Also apply the migration to a populated canonical-base fixture with an existing request, and run the actual Worker activation CLI against the isolated database. Verify the exact descriptor digest and an activation conflict, then feed actual candidate RPC projections to the Edge admission helper. Regenerate all five schema views and Data API types twice. These local receipts do not replace the original public-100 Manager BuildV2/Storage/download qualification or hosted Preview, deployment and integration proof. No migration selects an algorithm identity automatically.
+
+
+## Final Result ZIP reader ACL
+
+After a blank rebuild, run `supabase/tests/20261102_final_result_zip_reader.sql` together with `supabase/tests/20260805_full_schema_cutover.sql`; the exact global RLS inventory is 126 after adding these five Storage policies. It verifies role flags/memberships, absence of application-schema and write privileges, actual RLS reads for both ZIP formats, and rejection of HDF5, malformed candidate keys, wrong prefixes/buckets and writes. Rollback-only tests also add permissive PUBLIC policies and wider test grants to prove the restrictive fences remain effective. Hosted qualification must separately verify the actual generation-role JWT, positive single-object GET, read/write denials and cleanup of exact synthetic objects; pgTAP alone is not transport evidence. No business Result registration or publication is needed for these tests.
+
+Run `supabase/tests/20261102_final_result_zip_generation.sql` for actual inherited ZIP-only reads, absent application/write access, gateway SET without inheritance, and independent retirement of one credential generation. Verify native Storage with a scoped JWT before enabling Edge; an accepted opaque API-key template is not evidence that the gateway supports custom-role JWT minting.
