@@ -26,6 +26,9 @@ begin
   if v_run.id is null then
     return private.lca_release_error('release_run_not_found', 404, 'Release run not found');
   end if;
+  if v_run.publication_format<>'legacy-four-zip.v1' then
+    return private.lca_release_error('final_result_versioned_api_required',409,'Use the explicit final Result release API');
+  end if;
   if v_run.status not in ('published', 'readback_verified') then
     return private.lca_release_error('release_not_published', 409, 'Release must be published before readback verification');
   end if;

@@ -29,6 +29,9 @@ begin
   if v_run.id is null then
     return private.lca_release_error('release_run_not_found', 404, 'Release run not found');
   end if;
+  if v_run.publication_format<>'legacy-four-zip.v1' then
+    return private.lca_release_error('final_result_versioned_api_required',409,'Use the explicit final Result release API');
+  end if;
   if v_run.publish_plan_hash <> p_publish_plan_hash then
     return private.lca_release_error('publish_plan_hash_mismatch', 409, 'Artifact finalize plan hash does not match the prepared run');
   end if;

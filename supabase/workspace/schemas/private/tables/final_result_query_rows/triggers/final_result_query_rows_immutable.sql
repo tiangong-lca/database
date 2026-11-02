@@ -1,0 +1,1 @@
+CREATE OR REPLACE TRIGGER "final_result_query_rows_immutable" BEFORE DELETE OR UPDATE ON "private"."final_result_query_rows" FOR EACH ROW EXECUTE FUNCTION "private"."result_query_immutable_guard"();

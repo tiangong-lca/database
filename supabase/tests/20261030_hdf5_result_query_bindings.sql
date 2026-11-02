@@ -8,10 +8,10 @@ select is((select count(*) from pg_class c join pg_namespace n on n.oid=c.relnam
 select ok(not has_table_privilege('authenticated','private.result_query_artifacts','select')
   and not has_table_privilege('service_role','private.result_query_sources','insert'),'raw artifact relations remain ACL closed');
 select is((select count(*) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='api'
- and p.proname like 'svc_result_query_%' and p.prosecdef and p.proconfig=array['search_path=""']::text[]
+ and p.proname in ('svc_result_query_stage','svc_result_query_seal','svc_result_query_bind_release','svc_result_query_resolve') and p.prosecdef and p.proconfig=array['search_path=""']::text[]
  and has_function_privilege('service_role',p.oid,'execute') and not has_function_privilege('authenticated',p.oid,'execute')
  and not has_function_privilege('anon',p.oid,'execute')),4::bigint,'all four descriptor/writer functions are fixed-path service-only');
-select is((select count(*) from private.api_capability_grants where routine_identity like 'api.svc_result_query_%'
+select is((select count(*) from private.api_capability_grants where routine_identity in ('api.svc_result_query_stage(uuid, jsonb, jsonb, jsonb)','api.svc_result_query_seal(uuid)','api.svc_result_query_bind_release(uuid, uuid)','api.svc_result_query_resolve(uuid, text, uuid)')
   and capability_id='EDGE-DATA-PRODUCT-01' and allow_service_role and not allow_authenticated and not allow_anon),4::bigint,'exact manifest admission is service-only');
 
 insert into auth.users(id,aud,role,email,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)

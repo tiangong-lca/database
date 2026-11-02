@@ -32,9 +32,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: "2026-10-30"
-lastReviewedCommit: "a6ddf4cbcb61c8360788ffcb514e1f38189e9da7"
-lastReviewedNote: "Database #877: user-approved removal of routine Dev PR Preview requirements. Reviewed job-boundary scope, retained Main hotfix checks, persistent-Dev promotion proof and unchanged local/ARM64/deployment gates; generated schema/type contracts are unchanged."
+lastReviewedAt: 2026-11-01
+lastReviewedCommit: fb69a78b88833f0f01fba5c1fea9b97df09fa4ad
+lastReviewedNote: "Database #879: reviewed immutable manager public-readback attestations, live publication/reader/ZIP admission, historical recovery, populated upgrade and identical local schema exports. No remote deployment."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -88,6 +88,228 @@ no local or hosted database operation is needed for that scoped proof. The
 unchanged required hosted PR jobs still rebuild and validate the full database
 contract. Record those hosted results separately before merge; offline fixtures
 do not replace them.
+
+## Final Result identity validation
+
+Run `supabase/tests/20261101_final_result_identity_registry.sql` after a blank
+migration rebuild with the HDF5 binding, release-control-plane, manager Result
+publication, API closure and full-schema inventory suites. The identity addition
+contains two API functions, two private helpers, four triggers, eight constraints
+and one private RLS relation. Pin exact enabled AFTER trigger identities on all
+three legacy producer surfaces, including normalized Process versions.
+
+The golden content digest is independently generated from canonical JSON, not
+PostgreSQL JSONB serialization. Cover same-content retries across producers,
+changed-content/domain conflicts, dependency ordering, immutable occupancy,
+bounded version lookup and browser denial. No test may equate a legacy digest
+with the new hash domain or manufacture a canonical state-120 Result.
+
+Run `python3 supabase/tests/regression/20261101_final_result_identity_concurrency.py`
+only against its exact disposable project `hdf5-final-879`. It refuses existing
+fixture identities and proves two real clients block on one another before the
+first commits. Read committed, repeatable read and serializable all cover equal
+content, changed content, and both legacy/registered write orders. Higher
+isolation may reject with serialization failure; no path can commit two meanings.
+The harness leaves immutable synthetic claims for an owner-controlled database
+reset; it never disables guards or deletes audit/identity rows. Use `supabase/tests/upgrade/20261101_final_result_identity_registry.sql` on
+the exact prior migration head; expand its migration include in the same psql
+session or execute it from the checked-in file path. It retains one synthetic
+legacy Process for an owner reset and compares all three legacy surfaces before
+and after the forward migration. Keep this proof separate from blank rebuilds
+and regenerate the schema workspace/types twice before submission.
+
+## Final Result query v2 validation
+
+Run `supabase/tests/20261101_final_result_query_artifacts_v2.sql` after a blank
+rebuild, alongside final identity, v1 HDF5 bindings, release-control-plane,
+API closure and full-schema inventory. This addition owns two service API
+functions, two private helpers, four triggers, 22 constraints and four RLS
+relations. Keep exact aggregate inventories; v1-specific assertions name the
+four original RPCs rather than matching the additive v2 names by prefix.
+
+The rollback-only SQL suite covers raw manifest hashes, dimensions/file budgets,
+registered content, direct/derived associations, incomplete axes, row/readback
+hash mismatches, stale evidence, idempotent sealed retries and closed raw/browser
+access. `fixtures/final-result-query-v2.json` contains independent Python SHA-256
+goldens for the ASCII row and block contract, not PostgreSQL-derived expectations.
+
+Run `python3 supabase/tests/regression/20261101_final_result_query_v2.py` only
+against its exact disposable `hdf5-final-879` project. It checks 501 real identity
+receipts across out-of-order batches and the 500-row hash-block boundary, plus
+six observed two-client races across read committed, repeatable read and
+serializable. It refuses reused fixture IDs and leaves immutable synthetic
+records for an owner reset. A unique/serialization conflict is a safe abort,
+not permission to overwrite a Result or silently change an artifact identity.
+
+At prior migration `20261101063159`, run
+`supabase/tests/upgrade/20261101_final_result_query_artifacts_v2.sql` in one psql
+session (expand the migration include when streaming through container stdin).
+It retains a synthetic current v1 publication for the owner reset and checks
+its package, artifact, row membership, approval, current pointer and six v1
+function bodies through the additive upgrade. Regenerate schema/types twice
+after a subsequent blank rebuild. Storage bytes are synthetic in these database
+tests: actual S3 GET verification, reader readiness, activation/rollback and
+actor authorization remain separate cross-repository acceptance requirements.
+
+## Final Result Candidate validation
+
+Run `supabase/tests/20261101_final_result_candidate_catalog.sql` with the query
+v2, identity, release, v1 reader, API closure and full-schema suites after a
+blank rebuild. It covers exact producer schema, multiple query artifacts,
+registered Result content, complete ZIP closure, missing/unreachable references,
+target-specific receipts, partial replication rejection, independent target
+reuse, shared Results/files, immutable retries and no publication side effect.
+This migration adds three service APIs, four immutable triggers, 21 constraints
+and four RLS relations; update exact inventories from the rebuilt schema.
+
+Run `python3 supabase/tests/regression/20261101_final_result_candidate_v2.py`
+only on its exact disposable `hdf5-final-879` project. Six observed two-client
+races exercise same-receipt retry and conflicting receipts at all three
+isolation levels, followed by a fresh-transaction recovery of the original.
+Fixtures use real identity/query RPCs and synthetic file attestations; they
+remain immutable until the task owner's reset.
+
+For populated-upgrade proof, reset to `20261101063159`, run the query-v2 upgrade
+suite (which retains a current v1 publication), then the query-v2 Python
+regression to create sealed v2 evidence. Run
+`supabase/tests/upgrade/20261101_final_result_candidate_catalog.sql` in one psql
+session, expanding the relative migration include when streaming through stdin.
+It checks retained rows, ten existing API bodies, current-v1 readability,
+unpublished-version denial and exact recovery of pre-existing v2 seals.
+Finish with an exact blank rebuild and two drift-free schema/type exports.
+Actual S3 verification and actor activation/rollback remain separate acceptance.
+
+## Final Result release selection validation
+
+Run `20261101_final_result_release_selection.sql` with the preceding final
+identity/query/Candidate, legacy release/reader, API closure and full inventory
+suites after an exact blank rebuild. The Candidate and selection suites share
+`fixtures/final-result-candidate-setup.sql`; each caller owns its transaction and
+rollback. Cover live manager authorization/revocation, exact plan/idempotency,
+expected-current conflict, multiple artifacts, derived selection without parent
+membership, no raw ordinal input, late-batch rollback, bounded batches, incomplete
+or wrong selection hashes, immutable retries and absence of publication effects.
+
+`regression/20261101_final_result_release_selection.py` uses two actual connections
+on its exact disposable `hdf5-final-879` project. It observes blocking before
+committing, covers conflicting actor preparation and member/seal retries in all
+three isolation levels, and recovers the original through a fresh transaction.
+The harness retains its immutable synthetic records until the owner resets the
+project. Fixture user/profile creation shares a transaction because Auth mirrors
+profiles through a deferred trigger.
+
+For upgrade proof, populate the prior `20261101103000` baseline with the retained
+current-v1 fixture from the query-v2 upgrade and a registered Candidate, then run
+`upgrade/20261101_final_result_release_selection.sql` in one psql session. It
+compares existing rows (excluding only the new explicit format default), thirteen
+API bodies, current-v1 readability, unpublished-version denial and original
+Candidate receipts. End with an exact blank rebuild and two drift-free generated
+schema/type exports. These tests do not prove reader readiness or public activation.
+
+## Final Result runtime admission validation
+
+Run `20261101_final_result_query_runtime.sql` with the preceding selection,
+Candidate, query and identity suites, plus legacy release/reader and exact schema
+inventories. Cover explicit empty admission, service/actor separation, bounded
+reasons/pages, target mismatch, precise direct/derived membership, unselected
+file-contained denial, first/last deduplication, revision-bound continuation,
+disable/re-enable without history resurrection, live role revocation and changed
+permission preconditions. Descriptor success is not proof of a working reader.
+
+`regression/20261101_final_result_query_runtime.py` only accepts the owned local
+`hdf5-final-879` project with empty runtime history. Six actual two-connection
+races observe blocking and exercise same-revision retries versus conflicting
+expected-head updates across all three isolation levels. Records remain until
+the owner's reset. Runtime admission uses a transaction advisory lock plus a
+row lock on the current pointer; later activation must hold a shared pointer lock
+while checking its bound revision. PostgreSQL 17's row-lock contract is the
+versioned authority: [PostgreSQL 17 explicit locking](https://www.postgresql.org/docs/17/explicit-locking.html).
+
+For populated upgrade, start at `20261101120000` with current-v1 and a sealed final
+selection whose expected-current ID matches that v1 publication. Run `upgrade/20261101_final_result_query_runtime.sql`. It
+compares all retained data and seventeen API definitions, old v1 read/denial,
+selected members and the absence of implicitly admitted runtime. End with a blank
+rebuild and two generated schema/type exports before submission.
+
+## Final Result readiness validation
+
+Run `20261101_final_result_release_readiness.sql` with identity/query/Candidate/
+selection/runtime and legacy publication/reader suites, exact API/ACL inventories
+and generated types. Cover full Candidate and selected-artifact file/probe
+coverage, exact registered content and runtime/actor bindings, pagination and
+LCIA counts, invalid-later-batch rollback, actual freshness expiry, historical
+idempotent receipt recovery and denial after runtime or manager revocation.
+SQL fixtures are synthetic service attestations, not proof of remote bytes or
+numerics; Release's separate actual HDF5/ZIP/Worker qualification owns that proof.
+
+`regression/20261101_final_result_release_readiness.py` runs only against the
+exact owner-reset `hdf5-final-879` database. Observe a real blocking relationship
+for begin conflicts, proof retries and seal retries at all three isolation
+levels; fresh-snapshot recovery must retain one receipt and exact complete
+coverage. Immutable synthetic evidence remains for the owner-controlled reset.
+`upgrade/20261101_final_result_release_readiness.sql` preserves populated v1
+current publication, sealed final selection and admitted runtime plus all
+21 prior API bodies. End with complete blank rebuild and two no-drift schema/type
+exports. These local checks do not deploy, approve or activate a publication.
+
+## Final Result activation validation
+
+Run `20261101_final_result_release_activation.sql` and
+`20261101_final_result_publication_packages.sql` with the preceding Final Result,
+legacy release and exact API/schema contract suites. Prove service/ordinary-user
+denial, exact approval replacement and historical retries, runtime/permission
+revocation, fresh same-context verification, atomic activation before independent
+post-activation observation, exact Result/version/publication resolution, direct
+source-only mapping, withdrawal and historical execution retries without revival.
+Complete ZIP tests must exercise both successful formats plus omitted Result,
+missing/private support and future restrictive RLS denial after a cached read.
+Synthetic fixture rows alone may suppress unrelated extraction/network triggers;
+publication guards, identity arbitration and RLS stay enabled.
+
+`regression/20261101_final_result_release_activation.py` requires the exact clean
+owner-controlled `hdf5-final-879` database. Two actual clients must demonstrate
+observed blocking for approval retries, activation retries and competing current
+switches at READ COMMITTED, REPEATABLE READ and SERIALIZABLE. Recheck an approval
+that expires while waiting on the publication lock. Exact historical rollback
+must create a new record and preserve the old terminal record. Immutable synthetic
+evidence remains for the owner reset, without bypassing guards or deleting audit.
+
+Run `upgrade/20261101_final_result_release_activation.sql` on populated head
+`20261101160000` with current v1 publication, sealed final selection, runtime and
+readiness. Verify all existing rows and ACL/owner/configuration facts, exactly six
+legacy dispatch changes, restored role/schema authority and continued v1 reads.
+Finish with a blank rebuild and two identical schema/type exports. These local
+synthetic tests do not authorize hosted activation or prove Edge/Platform adoption.
+
+## Final Result recovery view validation
+
+Run `20261101_final_result_release_recovery_views.sql` with the preceding release
+suites. Prove exact null absence, manager-only admission, revocation after a cached
+read, original/replaced/consumed approval recovery, exact activation identity and
+withdrawn current behavior with no read-side mutation. The populated predecessor
+fixture for `upgrade/20261101_final_result_release_recovery_views.sql` starts at
+`20261101180000` with an existing legacy current and an approved v2 run. Preserve
+all authority rows and old routine owners/ACL/configuration; only the existing
+run DTO body changes. Legacy head format and null final Candidate remain explicit.
+Finish with blank rebuild and identical twice-generated schema/types.
+
+## Final Result public observation validation
+
+Run `20261101_final_result_release_readback.sql` and
+`20261101_final_result_publication_packages.sql` with the existing release, API
+capability and full-schema suites. Cover partial numerical counts, runtime and
+publication drift, expiry, malformed evidence, complete readable ZIP digests,
+explicit inaccessible ZIPs, lost-ACK recovery, conflict, manager revocation and
+withdrawal without resurrection. The storage trigger must prevent receipt and
+verification timestamp replacement. SQL uses synthetic attestations; Release's
+actual CLI/Edge/Worker fixture separately proves public numeric comparison,
+corruption rejection and complete ZIP transport hashing. Neither proves hosted
+JWT or production/browser qualification. Regenerate schema and API types from
+the owned blank rebuild; additive inventory is one API routine, one private
+guard and one trigger with no new numerical table. Run the populated
+`upgrade/20261101_final_result_release_readback.sql` fixture from exact
+`20261101200000` with an activated v2 run; preserve every existing run/publication
+and predecessor function body/owner/ACL/configuration before restoring the latest blank head.
 
 ## HDF5 result binding validation
 

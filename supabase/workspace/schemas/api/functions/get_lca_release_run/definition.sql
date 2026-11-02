@@ -22,6 +22,9 @@ begin
     return private.lca_release_error('not_data_product_manager', 403, 'Data product manager role is required for private release runs');
   end if;
 
+  if v_run.publication_format<>'legacy-four-zip.v1' then
+    return private.lca_release_error('final_result_versioned_api_required',409,'Use the explicit final Result release API');
+  end if;
   return jsonb_build_object(
     'ok', true,
     'data', jsonb_build_object(
