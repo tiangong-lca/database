@@ -225,8 +225,8 @@ select is(
   ),
   -- Database #807 adds 12 display executor SELECT policies; legacy inventory remains included.
   -- Database #879 adds one closed internal Candidate-member SELECT policy for ZIP authorization.
-  121::bigint,
-  'All RLS guards remain present after six authenticated example companions merge into their same-role SELECT policies; Contacts, OAuth, navigation and restrictive Result guards remain separate'
+  126::bigint,
+  'All RLS guards remain present after six authenticated example companions merge into their same-role SELECT policies; Contacts, OAuth, navigation and restrictive Result guards remain separate; five dedicated ZIP Storage guards are added'
 );
 
 select is(

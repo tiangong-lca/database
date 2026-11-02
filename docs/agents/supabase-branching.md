@@ -24,7 +24,7 @@ checkPaths:
   - .env.supabase.main.local.example
 lastReviewedAt: 2026-11-02
 lastReviewedCommit: ff306c42cecd3ea25ecc7e4be3b22f5639127904
-lastReviewedNote: "Database #885: reviewed the P0 Study durable contract, offline examples and CI check; schema, branch, grants and deployable inputs remain unchanged."
+lastReviewedNote: "Database #887: reviewed dedicated ZIP Storage role, restrictive path/write fences, unchanged branch deployment ownership and focused qualification requirements."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
