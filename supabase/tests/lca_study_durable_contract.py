@@ -11,6 +11,15 @@ import json
 from pathlib import Path
 
 
+# Trusted synthetic policy registry. Events select a profile, never its rules.
+# These IDs do not install runtime profiles or claim independent-review support.
+REPORT_PROFILES = {
+    "test-profile-none": {"reviewRequirement": "none", "available": True},
+    "test-profile-internal": {"reviewRequirement": "internal", "available": True},
+    "test-profile-independent": {"reviewRequirement": "independent", "available": False},
+}
+
+
 class Rejected(Exception):
     pass
 
@@ -60,6 +69,20 @@ class Model:
     @staticmethod
     def cas(record, expected):
         require(type(expected) is int and expected == record["revision"], "REVISION_CONFLICT")
+
+    def receipt(self, event):
+        key = event.get("idempotencyKey")
+        require(isinstance(key, str) and bool(key), "INVALID_REQUEST")
+        identity = json.dumps([event["actor"], event["operation"], event["studyId"], key])
+        request_hash = digest(event.get("body", {}))
+        previous = self.state["receipts"].get(identity)
+        if previous:
+            require(previous["requestHash"] == request_hash, "IDEMPOTENCY_CONFLICT")
+        return identity, request_hash, previous
+
+    def remember(self, identity, request_hash, result):
+        self.state["receipts"][identity] = {"requestHash": request_hash, "result": copy.deepcopy(result)}
+        return copy.deepcopy(result)
 
     def execute(self, event):
         """Atomic example transition, including rollback of rejected operations."""
@@ -114,13 +137,16 @@ class Model:
             require(run["jobId"] == body["jobId"] and body["leaseCurrent"] is True, "FORBIDDEN")
             require(body["resultRef"]["type"] == "analysisFactsBundle"
                     and bool(body["resultRef"]["id"]) and valid_hash(body["resultRef"]["contentHash"]), "INVALID_REQUEST")
+            identity, request_hash, previous = self.receipt(event)
+            if previous:
+                return copy.deepcopy(previous["result"])
             if run["resultRef"] is not None:
                 require(run["resultRef"] == body["resultRef"], "IDEMPOTENCY_CONFLICT")
             else:
                 run["resultRef"] = copy.deepcopy(body["resultRef"])
             run["executionStatus"] = "completed"
             run["availability"] = "ready"
-            return {"runId": body["runId"], "resultRef": run["resultRef"]}
+            return self.remember(identity, request_hash, {"runId": body["runId"], "resultRef": run["resultRef"]})
 
         action = "read" if operation.endswith(".read") else (
             "manage" if operation in {"member.set", "study.archive", "run.withdraw", "share.revoke"} else (
@@ -133,19 +159,13 @@ class Model:
             require(export["grantEpoch"] == study["grantEpoch"] and export["availability"] == "ready", "FORBIDDEN")
             require(export["disclosureEpoch"] == study["disclosureEpoch"], "DISCLOSURE_DENIED")
             return {"projectionHash": export["projectionHash"]}
-        key = event.get("idempotencyKey")
-        require(isinstance(key, str) and bool(key), "INVALID_REQUEST")
-        receipt_key = json.dumps([actor, operation, study_id, key])
-        request_hash = digest(body)
-        previous = self.state["receipts"].get(receipt_key)
+        receipt_key, request_hash, previous = self.receipt(event)
         if previous:
-            require(previous["requestHash"] == request_hash, "IDEMPOTENCY_CONFLICT")
             return copy.deepcopy(previous["result"])
 
         require(study["status"] == "active", "FROZEN_REVISION")
         result = self.transition(operation, actor, study_id, study, body)
-        self.state["receipts"][receipt_key] = {"requestHash": request_hash, "result": copy.deepcopy(result)}
-        return result
+        return self.remember(receipt_key, request_hash, result)
 
     def transition(self, operation, actor, study_id, study, body):
         if operation == "member.set":
@@ -240,9 +260,12 @@ class Model:
             self.cas(report, body["expectedRevision"])
             require(report["status"] == "frozen", "FROZEN_REVISION")
             require(report["finalizationStatus"] == "not_finalized", "REVISION_CONFLICT")
-            requirement = body["reviewRequirement"]
-            require(requirement in {"none", "internal", "independent"}, "INVALID_REQUEST")
-            require(requirement != "independent", "CAPABILITY_UNAVAILABLE")
+            profile = REPORT_PROFILES.get(body["profileId"])
+            require(profile is not None, "CAPABILITY_UNAVAILABLE")
+            requirement = profile["reviewRequirement"]
+            # Optional trusted projection is a consistency assertion, not authority.
+            require(body.get("reviewRequirement", requirement) == requirement, "REFERENCE_MISMATCH")
+            require(profile["available"], "CAPABILITY_UNAVAILABLE")
             accepted_review_ids = []
             if requirement == "internal":
                 latest = {}
@@ -324,6 +347,10 @@ def main():
             assertions += 1
         for path, expected in case.get("state", {}).items():
             assert lookup(model.state, path) == expected, (case["id"], path)
+            assertions += 1
+        for receipt in case.get("receipts", []):
+            identity = json.dumps([receipt["actor"], receipt["operation"], receipt["studyId"], receipt["idempotencyKey"]])
+            assert model.state["receipts"][identity]["result"] == receipt["result"], (case["id"], identity)
             assertions += 1
     assert ids and assertions > len(ids)
     print(f"lca.study-durable.v1: {len(ids)} traces, {assertions} transition/state assertions passed (offline model only).")

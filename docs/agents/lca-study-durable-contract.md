@@ -139,7 +139,9 @@ not a new solver implementation identity or proof of deployed Study support.
 Later source/model edits cannot change an admitted Run. Recording completion
 requires the exact bound task/input, a current lease and immutable result
 evidence. Identical terminal recording is idempotent; conflicting result evidence
-is rejected. Retry retains the original frozen request. Adopting changed data,
+is rejected. Service completion also records the actor/operation/Study/key
+receipt: reusing a completion key for another Run or result conflicts even when
+both task bindings are otherwise valid. Retry retains the original frozen request. Adopting changed data,
 methods, parameters or implementation requires an explicit new intent/revision
 and new Run. Reusing numerical evidence across Runs requires separately qualified
 compatibility and must preserve both Run intents and provenance.
@@ -164,6 +166,11 @@ profile; clients cannot lower review requirements by supplying a boolean. The
 examples cover no-review and internal-review profiles; `independent` returns
 `CAPABILITY_UNAVAILABLE` until independently qualified support exists. Research
 finalization does not approve a dataset or create a formal Result publication.
+The model resolves requirement and availability from its fixed synthetic
+`REPORT_PROFILES` registry. An event may select the profile ID; an independently
+supplied requirement is only a consistency assertion and cannot override it.
+Unknown profiles and unavailable capabilities fail closed. These test-only IDs
+do not install real service policies.
 The finalization receipt snapshots the exact profile, accepted review IDs and
 server time. Later review withdrawal does not rewrite this historical receipt
 or assert that its approval remains current.

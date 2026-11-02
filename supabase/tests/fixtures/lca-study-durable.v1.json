@@ -1320,6 +1320,224 @@
         "exports.export-1.disclosureEpoch": 1,
         "exports.export-1.actor": "owner"
       }
+    },
+    {
+      "id": "completion-key-cannot-be-reused-across-runs",
+      "steps": [
+        {
+          "operation": "run.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "create-second-run",
+          "body": {
+            "runId": "run-2",
+            "studyRevisionId": "revision-1",
+            "scenarioRevisionId": "scenario-revision-1",
+            "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "calculationContractRef": {
+              "kind": "calculation_contract",
+              "schema": "lca.calculation-contract.v1",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            "jobId": "job-2"
+          }
+        },
+        {
+          "operation": "run.complete",
+          "actor": "service",
+          "studyId": "study-1",
+          "idempotencyKey": "run.complete-run-1",
+          "body": {
+            "runId": "run-2",
+            "jobId": "job-2",
+            "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "leaseCurrent": true,
+            "resultRef": {
+              "type": "analysisFactsBundle",
+              "id": "facts-2",
+              "contentHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+            }
+          },
+          "expectError": "IDEMPOTENCY_CONFLICT"
+        }
+      ],
+      "state": {
+        "runs.run-2.resultRef": null,
+        "runs.run-2.executionStatus": "queued"
+      },
+      "receipts": [
+        {
+          "actor": "service",
+          "operation": "run.complete",
+          "studyId": "study-1",
+          "idempotencyKey": "run.complete-run-1",
+          "result": {
+            "runId": "run-1",
+            "resultRef": {
+              "type": "analysisFactsBundle",
+              "id": "facts-1",
+              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "completion-exact-retry-recovers-durable-receipt",
+      "steps": [
+        {
+          "operation": "run.complete",
+          "actor": "service",
+          "studyId": "study-1",
+          "idempotencyKey": "run.complete-run-1",
+          "body": {
+            "runId": "run-1",
+            "jobId": "job-1",
+            "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "leaseCurrent": true,
+            "resultRef": {
+              "type": "analysisFactsBundle",
+              "id": "facts-1",
+              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+            }
+          },
+          "expect": {
+            "runId": "run-1",
+            "resultRef": {
+              "type": "analysisFactsBundle",
+              "id": "facts-1",
+              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+            }
+          }
+        }
+      ],
+      "receipts": [
+        {
+          "actor": "service",
+          "operation": "run.complete",
+          "studyId": "study-1",
+          "idempotencyKey": "run.complete-run-1",
+          "result": {
+            "runId": "run-1",
+            "resultRef": {
+              "type": "analysisFactsBundle",
+              "id": "facts-1",
+              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "independent-profile-cannot-downgrade-to-no-review",
+      "steps": [
+        {
+          "operation": "report.finalize",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "independent-profile-cannot-downgrade-to-no-review",
+          "body": {
+            "reportRevisionId": "report-1",
+            "expectedRevision": 2,
+            "reviewRequirement": "none",
+            "profileId": "test-profile-independent",
+            "now": 150
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ],
+      "state": {
+        "reports.report-1.finalizationStatus": "not_finalized",
+        "reports.report-1.finalization": null
+      }
+    },
+    {
+      "id": "internal-profile-cannot-downgrade-to-no-review",
+      "steps": [
+        {
+          "operation": "report.finalize",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "internal-profile-cannot-downgrade-to-no-review",
+          "body": {
+            "reportRevisionId": "report-1",
+            "expectedRevision": 2,
+            "reviewRequirement": "none",
+            "profileId": "test-profile-internal",
+            "now": 150
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ],
+      "state": {
+        "reports.report-1.finalizationStatus": "not_finalized",
+        "reports.report-1.finalization": null
+      }
+    },
+    {
+      "id": "unknown-profile-cannot-finalize",
+      "steps": [
+        {
+          "operation": "report.finalize",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "unknown-profile-cannot-finalize",
+          "body": {
+            "reportRevisionId": "report-1",
+            "expectedRevision": 2,
+            "reviewRequirement": "none",
+            "profileId": "test-profile-invented",
+            "now": 150
+          },
+          "expectError": "CAPABILITY_UNAVAILABLE"
+        }
+      ],
+      "state": {
+        "reports.report-1.finalizationStatus": "not_finalized",
+        "reports.report-1.finalization": null
+      }
+    },
+    {
+      "id": "profile-only-internal-still-requires-review",
+      "steps": [
+        {
+          "operation": "report.finalize",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "profile-only-internal-still-requires-review",
+          "body": {
+            "reportRevisionId": "report-1",
+            "expectedRevision": 2,
+            "profileId": "test-profile-internal",
+            "now": 150
+          },
+          "expectError": "REVIEW_REQUIRED"
+        }
+      ],
+      "state": {
+        "reports.report-1.finalizationStatus": "not_finalized"
+      }
+    },
+    {
+      "id": "profile-only-independent-remains-unavailable",
+      "steps": [
+        {
+          "operation": "report.finalize",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "profile-only-independent-remains-unavailable",
+          "body": {
+            "reportRevisionId": "report-1",
+            "expectedRevision": 2,
+            "profileId": "test-profile-independent",
+            "now": 150
+          },
+          "expectError": "CAPABILITY_UNAVAILABLE"
+        }
+      ],
+      "state": {
+        "reports.report-1.finalizationStatus": "not_finalized"
+      }
     }
   ]
 }
