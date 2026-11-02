@@ -20,9 +20,9 @@ checkPaths:
   - .githooks/pre-push
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-01
-lastReviewedCommit: fb69a78b88833f0f01fba5c1fea9b97df09fa4ad
-lastReviewedNote: "Database #879: reviewed immutable manager public-readback attestations, live publication/reader/ZIP admission, historical recovery, populated upgrade and identical local schema exports. No remote deployment."
+lastReviewedAt: 2026-11-03
+lastReviewedCommit: 5ed1cd2cd487ff147695b76762c65e2c8e8100aa
+lastReviewedNote: "Database #894: reviewed isolated Study PG17 proof tooling, unchanged hosted branch authority, stable/generated ownership and exact-local deterministic reconstruction."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

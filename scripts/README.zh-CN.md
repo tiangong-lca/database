@@ -20,9 +20,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-01
-lastReviewedCommit: fb69a78b88833f0f01fba5c1fea9b97df09fa4ad
-lastReviewedNote: "Database #879: reviewed immutable manager public-readback attestations, live publication/reader/ZIP admission, historical recovery, populated upgrade and identical local schema exports. No remote deployment."
+lastReviewedAt: 2026-11-03
+lastReviewedCommit: 5ed1cd2cd487ff147695b76762c65e2c8e8100aa
+lastReviewedNote: "Database #894: reviewed isolated Study PG17 proof tooling, unchanged hosted branch authority, stable/generated ownership and exact-local deterministic reconstruction."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -533,6 +533,27 @@ python scripts/export_remote_schema.py --environment dev
 - 默认 schema 列表是 `public`
 - 可通过 `--schema-file` 覆盖输出路径
 - 未传 `--db-url` 时，`--environment local` 使用 Supabase CLI 的 `db dump --local`；显式 `--db-url` 仍使用该 URL
+
+### Study runtime 隔离证明（Database #894）
+
+`prepare_study_runtime_project.py --destination <new-owned-directory>/study894`
+只复制独立 PG17 项目配置和 migration，使用 API56421/DB56422，移除 remote
+binding 并记录 ownership；不启动或重置数据库，不修改 tracked config 或共享项目。
+使用 Supabase2.117.0 启动该独占项目后，运行：
+
+```sh
+STUDY_RUNTIME_UPGRADE_ALLOW_RESET=isolated python3 -B scripts/test_study_runtime_upgrade.py \
+  --workdir <owned-study894> --report <new-upgrade-json>
+python3 -B supabase/tests/regression/20261103_study_runtime_concurrency.py \
+  --report <new-concurrency-json>
+```
+
+前者验证准确 predecessor 的既有行、routine/ACL/manifest 保留并重建完整 candidate
+ledger；后者观察真实的两会话 advisory/row-lock 等待，保留合成 fixture 供资源 owner
+准确重置。保留 receipts 后，通过 workspace 资源流程释放或明确接管该项目资源。
+CLI 启动输出含本地生成密钥，须私有保存。完整边界见
+[英文使用说明](README.md)及[Study runtime 合同](../docs/agents/lca-study-runtime-contract.md)；
+这些 SQL 证明不代表真实 source export、编译、解算或 disclosure 已获资格。
 
 ### `build_schema_workspace.py`
 

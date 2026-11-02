@@ -20,9 +20,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-01
-lastReviewedCommit: fb69a78b88833f0f01fba5c1fea9b97df09fa4ad
-lastReviewedNote: "Database #879: reviewed immutable manager public-readback attestations, live publication/reader/ZIP admission, historical recovery, populated upgrade and identical local schema exports. No remote deployment."
+lastReviewedAt: 2026-11-03
+lastReviewedCommit: 5ed1cd2cd487ff147695b76762c65e2c8e8100aa
+lastReviewedNote: "Database #894: reviewed isolated Study PG17 proof tooling, unchanged hosted branch authority, stable/generated ownership and exact-local deterministic reconstruction."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -634,6 +634,34 @@ Notes:
 - Default schema list: `public`
 - You can override the destination with `--schema-file`
 - `--environment local` without `--db-url` uses Supabase CLI `db dump --local`; an explicit `--db-url` still uses that URL
+
+### Isolated Study runtime proof (Database #894)
+
+`prepare_study_runtime_project.py --destination <new-owned-directory>/study894`
+copies the pinned migrations/templates/seeds and rewrites a separate project
+configuration for API56421/DB56422/PG17, strips remote bindings and records an
+ownership manifest. It performs no database operation and refuses an existing
+destination. Tracked configuration and the shared database-engine project remain
+untouched.
+
+After starting only that owned project with Supabase2.117.0, run:
+
+```sh
+STUDY_RUNTIME_UPGRADE_ALLOW_RESET=isolated python3 -B scripts/test_study_runtime_upgrade.py \
+  --workdir <owned-study894> --report <new-upgrade-json>
+python3 -B supabase/tests/regression/20261103_study_runtime_concurrency.py \
+  --report <new-concurrency-json>
+```
+
+The upgrade proof resets the verified task project to its exact predecessor,
+preserves synthetic legacy rows and existing routine/ACL/manifest metadata across
+the real migration, then reconstructs the complete candidate migration ledger.
+The concurrency proof observes two real sessions waiting on controlled advisory
+and row locks; it retains exact synthetic fixtures for the owner's later reset.
+It never resets a database itself. Preserve both receipts and release/adopt exact
+task resources through the workspace resource workflow. CLI startup logs contain
+generated local keys and must remain private; do not publish raw status/env/logs.
+These SQL proofs do not qualify real source export, compilation or disclosure.
 
 ### `build_schema_workspace.py`
 

@@ -337,9 +337,9 @@ def main() -> int:
     supabase_cli_versions = re.findall(
         r"uses: supabase/setup-cli@v3\s+with:\s+version:\s*([^\s#]+)", text
     )
-    if supabase_cli_versions != ["2.117.0"] * 4:
+    if supabase_cli_versions != ["2.117.0"] * 5:
         failures.append(
-            "all four local, ARM profile, persistent-Dev, and Preview Supabase CLI pins "
+            "all five local, ARM profile, persistent-Dev, Preview, and isolated Study Supabase CLI pins "
             f"must be 2.117.0, found {supabase_cli_versions or 'none'}"
         )
 
@@ -364,6 +364,18 @@ def main() -> int:
     profile_workflow = jobs.get("scheduler-profile", "")
     hosted_workflow = jobs.get("deploy-and-verify", "")
     preview_workflow = jobs.get("preview-runtime-contract", "")
+    study_workflow = jobs.get("study-runtime-concurrency", "")
+    for token in (
+        'scripts/prepare_study_runtime_project.py --destination "$RUNNER_TEMP/study894"',
+        'STUDY_RUNTIME_UPGRADE_ALLOW_RESET: isolated',
+        'scripts/test_study_runtime_upgrade.py --workdir "$RUNNER_TEMP/study894"',
+        'supabase/tests/regression/20261103_study_runtime_concurrency.py',
+        'supabase/tests/regression/20261103_study_runtime_transport.py',
+        'supabase stop --project-id study894 --no-backup',
+        'label=com.supabase.cli.project=study894',
+    ):
+        if token not in study_workflow:
+            failures.append(f"isolated Study proof must preserve its owned-project boundary: {token}")
     if not local_workflow:
         failures.append("x64 local contract job is missing")
     if not profile_workflow:

@@ -37,9 +37,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-02
-lastReviewedCommit: 057eec7991bbc2815d874df3d48838d108b9d543
-lastReviewedNote: "Database #887: retire custom ZIP roles and policies; existing Edge server credentials own signing, with no business-data changes."
+lastReviewedAt: 2026-11-03
+lastReviewedCommit: 5ed1cd2cd487ff147695b76762c65e2c8e8100aa
+lastReviewedNote: "Database #894: W03 private Study runtime, live authorization, atomic validation intents and real SQL/concurrency proof; W06 admission and disclosure remain unavailable."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-validation.md
@@ -88,6 +88,7 @@ Additional governed source docs, not part of the default first-load surface:
 | --- | --- | --- |
 | `README.md` and `README.zh-CN.md` | repo landing context and high-level purpose | repo contract, proof bar, or branch-policy truth |
 | `docs/agents/lca-study-durable-contract.md` | Study identity, persistence, freeze, authorization, concurrency and report review/export/share invariants; P0 offline acceptance examples | Edge public wire schemas, numerical algorithms, or proof of implemented schema/runtime |
+| `docs/agents/lca-study-runtime-contract.md` | W03 private Study persistence, live actor/team/client authorization, command receipts, validation intents and lease-fenced producer seams | W06 queue/producer/disclosure qualification, numerical identities, public wire ownership or report/publication authority |
 
 ## Load Order
 
