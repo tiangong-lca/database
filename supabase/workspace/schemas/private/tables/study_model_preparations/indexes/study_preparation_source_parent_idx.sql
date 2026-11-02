@@ -1,0 +1,1 @@
+CREATE INDEX "study_preparation_source_parent_idx" ON "private"."study_model_preparations" USING "btree" ("source_parent_scenario_id");

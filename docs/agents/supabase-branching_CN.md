@@ -22,9 +22,9 @@ checkPaths:
   - .github/workflows/supabase-dev.yml
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
-lastReviewedAt: 2026-11-02
-lastReviewedCommit: ccec2d845b0f555f8cffdab45a91f9f78e056b63
-lastReviewedNote: "Database #887: reviewed dedicated ZIP Storage role, restrictive path/write fences, unchanged branch deployment ownership and focused qualification requirements."
+lastReviewedAt: 2026-11-03
+lastReviewedCommit: 5ed1cd2cd487ff147695b76762c65e2c8e8100aa
+lastReviewedNote: "Database #894: reviewed isolated Study PG17 proof tooling, unchanged hosted branch authority, stable/generated ownership and exact-local deterministic reconstruction."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -86,6 +86,7 @@ canonical-base-to-head upgrade；追加的 Preview repair 本身不能证明首�
 - pull-request-only Preview 运行态 job 必须与部署隔离。以 `dev` 为目标的日常 PR 和 fork PR 在 job 边界跳过整个 Preview 作业，不读取密钥、不执行云端操作；完整 local-contract 和 ARM64 检查仍为必需。以 `main` 为目标的同仓 PR 先 checkout 准确 head 并验证事件 base/head commit，只比较可部署 Preview 输入：`supabase/config.toml`、`supabase/migrations/`、`supabase/seed.sql`、`supabase/seeds/` 与 `supabase/functions/`。生成 workspace、tests、Auth templates 与仓库文档不是部署输入。该集合无 diff 时，job 无需 secret、branch 解析或 hosted mutation 即成功，并接受官方 App 的 `skipped`。准确的同仓 `dev -> main` promote 也会在 Preview authority 或 mutation 前结束，因为 Supabase 会把长期 `dev` head 识别为持久 Dev 项目；它复用准确的持久 Dev 部署证明。其他符合条件的 Main PR 的可部署输入变化仍要求完整官方 check、disposable BranchResponse、PostgREST、public key、Hybrid 与 sitemap 证据，缺少 authority 时 fail closed。
 - 把 `.github/workflows/supabase-dev.yml` 作为持久化 `dev` 的唯一 migration 部署者；它可以执行 `supabase link`、准确一次 `supabase db push --include-all`，以及一次仅包含 `db_schema`、`db_extra_search_path`、`max_rows` 的 Management API PATCH，让运行中的 PostgREST 与 checked-in 合同一致；但不得部署/删除 Edge Functions、执行 `supabase config push` 或修改其他项目设置。
 - 独立的 ARM64 `scheduler-profile` 作业只重建本地数据库，运行两组完整的合成性能样本并在两组之间重置。x64 `local-contract` 继续运行功能和安全测试；持久化 Dev 部署须等待两个作业。性能作业没有托管凭据或部署权限。
+- Study runtime 证明作业独占本地 PG17 `study894` 项目，验证 populated upgrade、完整 migration ledger 重建、实际观察到的 CAS/幂等并发与 PostgREST 授权。它保留有界证明摘要，仅释放该项目的 containers、volumes 和 network；source/solver/disclosure 的资格边界由 `lca-study-runtime-contract.md` 定义。
 - 数据库 workflow 成功后，通过 `tiangong-lca-edge-functions` 部署并验证持久化 Dev 所需的 Functions。Function 源码、函数选择、部署命令和运行时验证仍由 Edge 仓负责。
 - 不要为 Git `main` 增加 checked-in 的 GitHub Actions 生产部署流程；生产项目由绑定到本仓的 Supabase GitHub integration 自动迁移。
 - 不要先手改远端数据库再回头补 migration。

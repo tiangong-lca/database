@@ -20,6 +20,7 @@ catalog:
         - docs/agents/repo-architecture.md
         - docs/agents/portal-projection-migration-recovery.md
         - docs/agents/lca-study-durable-contract.md
+        - docs/agents/lca-study-runtime-contract.md
       workspaceIntegrationRequired: true
 
 ownership:
@@ -81,6 +82,7 @@ coverage:
     - .docpact/**
     - docs/agents/repo-validation.md
     - docs/agents/lca-study-durable-contract.md
+    - docs/agents/lca-study-runtime-contract.md
     - docs/agents/dependency-maintenance.md
     - docs/agents/repo-architecture.md
     - docs/agents/portal-projection-migration-recovery.md
@@ -280,6 +282,36 @@ repo:
   owner: database-engine
 
 rules:
+  - id: database-engine-lca-study-runtime
+    scope: repo
+    repo: database-engine
+    triggers:
+      - path: supabase/migrations/*study*.sql
+        kind: durable-domain-runtime
+      - path: supabase/tests/*study*.sql
+        kind: runtime-contract-tests
+      - path: supabase/tests/fixtures/study894_runtime_fixture.sql
+        kind: runtime-fixture
+      - path: supabase/tests/fixtures/study894_definition_vectors.sql
+        kind: wire-parity-fixture
+      - path: supabase/tests/regression/*study*.py
+        kind: concurrent-runtime-tests
+      - path: scripts/*study_runtime*.py
+        kind: isolated-runtime-tooling
+      - path: docs/agents/lca-study-runtime-contract.md
+        kind: runtime-contract
+    requiredDocs:
+      - path: docs/agents/lca-study-runtime-contract.md
+        mode: review_or_update
+      - path: docs/agents/repo-validation.md
+        mode: review_or_update
+      - path: docs/agents/repo-architecture.md
+        mode: review_or_update
+      - path: AGENTS.md
+        mode: review_or_update
+      - path: .docpact/config.yaml
+        mode: review_or_update
+    reason: Study persistence must preserve durable authorization/CAS/producer boundaries and keep real SQL proof distinct from unavailable W06 admission and disclosure.
   - id: database-engine-lca-study-durable-contract
     scope: repo
     repo: database-engine

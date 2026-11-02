@@ -32,9 +32,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-02
-lastReviewedCommit: 057eec7991bbc2815d874df3d48838d108b9d543
-lastReviewedNote: "Database #887: retire custom ZIP roles and policies; existing Edge server credentials own signing, with no business-data changes."
+lastReviewedAt: 2026-11-03
+lastReviewedCommit: 5ed1cd2cd487ff147695b76762c65e2c8e8100aa
+lastReviewedNote: "Database #894: W03 private Study runtime, live authorization, atomic validation intents and real SQL/concurrency proof; W06 admission and disclosure remain unavailable."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -75,6 +75,67 @@ required PR CI. This category proves only the offline examples. It does not
 qualify SQL/RLS, actual concurrent transactions, lease fencing, team membership,
 real disclosure/exports/shares or deployment. P1 migration work must use the
 ordinary database baseline and independent runtime proof.
+
+## Study durable runtime (Database #894)
+
+W03 schema work uses the ordinary database baseline; the P0 offline exemption
+does not apply. After a blank PG17 rebuild, run
+`supabase test db supabase/tests/20261103_study_durable_runtime.sql` alongside
+full-schema/API closure, OAuth client foundation, actor command capability,
+`supabase/tests/20260531_worker_jobs_foundation.sql`, and calculation-contract
+identity suites. W03 itself adds current job/lease/terminal-receipt probes.
+Do not use `20260602_worker_jobs_canonical_task_contract.sql` as current
+qualification: it calls the coordinator helper explicitly retired by
+`20260819090000_retire_review_submit_coordinator.sql` and expects retired
+coordinator links. Retain such a historical failed invocation as nonqualification
+rather than restoring the obsolete API. The current workflow selects the
+foundation suite. Preserve the
+P0 offline checker as independent contract-example evidence.
+The Study suite also creates forty legitimate frozen Scenario revisions with
+shared direct-parent and captured-preparation-parent edges. It must complete
+within the statement budget using deduplicated reachability, then reject a
+genuine mixed cycle without leaving nodes or disabled immutability guards.
+
+`scripts/prepare_study_runtime_project.py --destination <new-owned-directory>/study894`
+materializes an independent project/config/migration copy on API56421/DB56422;
+it does not start/reset anything and never changes tracked config. Use the
+repository-pinned Supabase2.117.0 CLI. Keep exact container/volume/network ownership
+and cleanup/retention receipts. Never target the shared database-engine project.
+
+The two-session runner is
+`python3 -B supabase/tests/regression/20261103_study_runtime_concurrency.py --report <new-json>`.
+It requires the exact study894 container/project/port and empty reserved fixture
+namespace, proves overlapping advisory and actual row-lock waits for save/save,
+freeze/save, identical receipt retry and changed-key content, then independently
+checks stored generations/content. It releases its sessions but retains committed
+synthetic fixtures for the owner's exact isolated reset. A rollback-only pgTAP
+run cannot substitute for that observation. Reset this owned project before a
+repeat and before deterministic schema generation.
+
+On that runner's committed synthetic actor fixture, run
+`python3 -B supabase/tests/regression/20261103_study_runtime_transport.py --workdir <owned-study894> --report <new-json>`.
+It exercises the real local PostgREST actor/OAuth-claim/ACL/pre-request boundaries
+with signed local fixture JWTs and the owned verifier's key in memory, logging
+only fixed codes/statuses. It does not prove GoTrue login or OAuth consent;
+the owning Edge transport proof supplies real GoTrue session evidence separately.
+The local signed fixture uses the verifier's database clock and records measured
+host/verifier clock skew; it never changes a host or VM clock to make proof pass.
+It removes its exact synthetic OAuth client and retains its synthetic Study for
+the owner's reset. This does not prove the separately deployed Edge endpoint.
+
+Qualify the exact populated predecessor and final blank migration-ledger rebuild
+with `STUDY_RUNTIME_UPGRADE_ALLOW_RESET=isolated python3 -B scripts/test_study_runtime_upgrade.py --workdir <owned-study894> --report <new-json>`.
+The runner verifies the project/port/PG17 boundary, legacy dataset/job rows,
+existing routine definitions/owners/ACLs and prior capability-manifest entries,
+then resets only that owned project to the full candidate migration ledger.
+The dedicated isolated CI job runs both this proof and observed transaction
+races, then deletes only its owned project containers/volumes/network.
+Regenerate all five schema views and Data API types twice from the same
+isolated candidate state and require no second-run drift. SQL fixtures simulate
+trusted source/Worker evidence with real canonical jobs and lease tokens; they
+do not qualify actual exports, licensing, artifact bytes, solver execution or
+disclosure. W06 must add those real actor/queue/Worker/storage/transport proofs
+before producer or artifact operations are advertised.
 
 ## Existing database baseline details
 
