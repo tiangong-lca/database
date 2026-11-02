@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-02
-lastReviewedCommit: 394aab73e18e9885c7e17cc05e85213140d0ce5a
-lastReviewedNote: "Database #887: reviewed dedicated ZIP Storage role, restrictive path/write fences, unchanged branch deployment ownership and focused qualification requirements."
+lastReviewedCommit: 057eec7991bbc2815d874df3d48838d108b9d543
+lastReviewedNote: "Database #887: retire custom ZIP roles and policies; existing Edge server credentials own signing, with no business-data changes."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1660,8 +1660,6 @@ Run `supabase/tests/20261025_calculation_contract_identity.sql` after a blank mi
 Also apply the migration to a populated canonical-base fixture with an existing request, and run the actual Worker activation CLI against the isolated database. Verify the exact descriptor digest and an activation conflict, then feed actual candidate RPC projections to the Edge admission helper. Regenerate all five schema views and Data API types twice. These local receipts do not replace the original public-100 Manager BuildV2/Storage/download qualification or hosted Preview, deployment and integration proof. No migration selects an algorithm identity automatically.
 
 
-## Final Result ZIP reader ACL
+## Final Result ZIP role retirement
 
-After a blank rebuild, run `supabase/tests/20261102_final_result_zip_reader.sql` together with `supabase/tests/20260805_full_schema_cutover.sql`; the exact global RLS inventory is 126 after adding these five Storage policies. It verifies role flags/memberships, absence of application-schema and write privileges, actual RLS reads for both ZIP formats, and rejection of HDF5, malformed candidate keys, wrong prefixes/buckets and writes. Rollback-only tests also add permissive PUBLIC policies and wider test grants to prove the restrictive fences remain effective. Hosted qualification must separately verify the actual generation-role JWT, positive single-object GET, read/write denials and cleanup of exact synthetic objects; pgTAP alone is not transport evidence. No business Result registration or publication is needed for these tests.
-
-Run `supabase/tests/20261102_final_result_zip_generation.sql` for actual inherited ZIP-only reads, absent application/write access, gateway SET without inheritance, and independent retirement of one credential generation. Verify native Storage with a scoped JWT before enabling Edge; an accepted opaque API-key template is not evidence that the gateway supports custom-role JWT minting.
+Run `supabase/tests/20261102_final_result_zip_retirement.sql` after a blank rebuild and an upgrade from the generation-role migration. Verify both custom roles and all five policies are absent, existing service Storage access and RLS remain, and the global RLS inventory returns to 121. Run schema/API closure as usual. Hosted readback must verify both environments after normal Dev/Main delivery. Edge separately verifies the actual two signed ZIP downloads with disposable objects; no business Result registration or publication is needed.
