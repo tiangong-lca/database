@@ -32,9 +32,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-01
-lastReviewedCommit: fb69a78b88833f0f01fba5c1fea9b97df09fa4ad
-lastReviewedNote: "Database #879: reviewed immutable manager public-readback attestations, live publication/reader/ZIP admission, historical recovery, populated upgrade and identical local schema exports. No remote deployment."
+lastReviewedAt: 2026-11-02
+lastReviewedCommit: 394aab73e18e9885c7e17cc05e85213140d0ce5a
+lastReviewedNote: "Database #887: reviewed dedicated ZIP Storage role, restrictive path/write fences, unchanged branch deployment ownership and focused qualification requirements."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1639,3 +1639,8 @@ After a fresh migration rebuild, run `supabase test db supabase/tests/20260805_f
 Run `supabase/tests/20261025_calculation_contract_identity.sql` after a blank migration rebuild, alongside scope-closure, snapshot-build terminal guards, API closure and exact schema inventory. Verify service-only descriptor activation, stale compare-and-set rejection, old-token pinning, distinct scan/build identities after activation, unchanged scanner/data identity, compatible-candidate ordering and immutable historical reads. Before activation the additive Worker input field is omitted for legacy decoders. Queue identity is derived from server state, never a caller-supplied fingerprint.
 
 Also apply the migration to a populated canonical-base fixture with an existing request, and run the actual Worker activation CLI against the isolated database. Verify the exact descriptor digest and an activation conflict, then feed actual candidate RPC projections to the Edge admission helper. Regenerate all five schema views and Data API types twice. These local receipts do not replace the original public-100 Manager BuildV2/Storage/download qualification or hosted Preview, deployment and integration proof. No migration selects an algorithm identity automatically.
+
+
+## Final Result ZIP reader ACL
+
+After a blank rebuild, run `supabase/tests/20261102_final_result_zip_reader.sql` together with `supabase/tests/20260805_full_schema_cutover.sql`; the exact global RLS inventory is 126 after adding these five Storage policies. It verifies role flags/memberships, absence of application-schema and write privileges, actual RLS reads for both ZIP formats, and rejection of HDF5, malformed candidate keys, wrong prefixes/buckets and writes. Rollback-only tests also add permissive PUBLIC policies and wider test grants to prove the restrictive fences remain effective. Hosted qualification must separately verify the actual custom-role API key, positive single-object GET, read/write denials and cleanup of exact synthetic objects; pgTAP alone is not transport evidence. No business Result registration or publication is needed for these tests.
