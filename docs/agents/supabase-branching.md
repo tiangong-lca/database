@@ -23,7 +23,7 @@ checkPaths:
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
 lastReviewedAt: 2026-11-02
-lastReviewedCommit: a4e49df085d3793b985b5813dbaf38f0339e0995
+lastReviewedCommit: ccec2d845b0f555f8cffdab45a91f9f78e056b63
 lastReviewedNote: "Database #887: reviewed dedicated ZIP Storage role, restrictive path/write fences, unchanged branch deployment ownership and focused qualification requirements."
 related:
   - ../../AGENTS.md

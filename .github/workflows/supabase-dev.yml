@@ -125,8 +125,7 @@ jobs:
           supabase test db supabase/tests/20260920_portal_china_administrative_navigation.sql
           supabase test db supabase/tests/20260805_full_schema_cutover.sql
           supabase test db supabase/tests/20260806_api_contract_closure.sql
-          supabase test db supabase/tests/20261102_final_result_zip_reader.sql
-          supabase test db supabase/tests/20261102_final_result_zip_generation.sql
+          supabase test db supabase/tests/20261102_final_result_zip_retirement.sql
           supabase test db supabase/tests/20260611_dataset_create_version_rpc.sql
           supabase test db supabase/tests/20260902_process_model_version.sql
           supabase test db supabase/tests/20261009_model_bundle_process_references.sql

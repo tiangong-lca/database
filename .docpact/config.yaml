@@ -1,8 +1,8 @@
 version: 1
 layout: repo
 lastReviewedAt: "2026-11-02"
-lastReviewedCommit: "a4e49df085d3793b985b5813dbaf38f0339e0995"
-lastReviewedNote: "Database #887: reviewed dedicated ZIP role and focused validation routing; existing deployment boundaries remain unchanged."
+lastReviewedCommit: "057eec7991bbc2815d874df3d48838d108b9d543"
+lastReviewedNote: "Database #887: retire custom ZIP roles and policies; existing Edge server credentials own signing, with no business-data changes."
 
 # Keep deterministic governance facts here.
 # AGENTS.md remains the repo contract entrypoint.

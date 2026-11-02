@@ -38,8 +38,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-02
-lastReviewedCommit: a4e49df085d3793b985b5813dbaf38f0339e0995
-lastReviewedNote: "Database #887: reviewed dedicated ZIP Storage role, restrictive path/write fences, unchanged branch deployment ownership and focused qualification requirements."
+lastReviewedCommit: 057eec7991bbc2815d874df3d48838d108b9d543
+lastReviewedNote: "Database #887: retire custom ZIP roles and policies; existing Edge server credentials own signing, with no business-data changes."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-validation.md
