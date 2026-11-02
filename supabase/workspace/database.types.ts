@@ -255,6 +255,54 @@ export type Database = {
         }
         Returns: Json
       }
+      cmd_final_result_release_activate_v2: {
+        Args: {
+          p_approval_hash: string
+          p_approval_id: string
+          p_credential_fingerprint: string
+          p_idempotency_key: string
+          p_publish_plan_hash: string
+          p_release_run_id: string
+          p_verification_id: string
+        }
+        Returns: Json
+      }
+      cmd_final_result_release_approve_v2: {
+        Args: {
+          p_approval_id: string
+          p_expected_approval_id: string
+          p_expires_at: string
+          p_publish_plan_hash: string
+          p_reason: string
+          p_release_run_id: string
+          p_verification_id: string
+        }
+        Returns: Json
+      }
+      cmd_final_result_release_members_v2: {
+        Args: {
+          p_publish_plan_hash: string
+          p_release_run_id: string
+          p_rows: Json
+        }
+        Returns: Json
+      }
+      cmd_final_result_release_prepare_v2: {
+        Args: { p_idempotency_key: string; p_plan_text: string }
+        Returns: Json
+      }
+      cmd_final_result_release_readback_v2: {
+        Args: {
+          p_observation_text: string
+          p_publish_plan_hash: string
+          p_release_run_id: string
+        }
+        Returns: Json
+      }
+      cmd_final_result_release_seal_v2: {
+        Args: { p_publish_plan_hash: string; p_release_run_id: string }
+        Returns: Json
+      }
       cmd_lca_release_approve: {
         Args: {
           p_audit?: Json
@@ -2121,6 +2169,47 @@ export type Database = {
         Args: { proc: Database["public"]["Tables"]["processes"]["Row"] }
         Returns: string
       }
+      qry_final_result_download_v2: {
+        Args: { p_format: string; p_publication_id: string }
+        Returns: Json
+      }
+      qry_final_result_publication_head_v2: { Args: never; Returns: Json }
+      qry_final_result_query_v2: {
+        Args: {
+          p_publication_id?: string
+          p_result_id: string
+          p_result_version: string
+        }
+        Returns: Json
+      }
+      qry_final_result_release_approval_v2: {
+        Args: { p_approval_id: string; p_release_run_id: string }
+        Returns: Json
+      }
+      qry_final_result_release_probe_page_v2: {
+        Args: {
+          p_after_artifact_id?: string
+          p_limit?: number
+          p_publish_plan_hash: string
+          p_release_run_id: string
+          p_runtime_revision?: string
+        }
+        Returns: Json
+      }
+      qry_final_result_release_probe_v2: {
+        Args: {
+          p_publish_plan_hash: string
+          p_release_run_id: string
+          p_result_id: string
+          p_result_version: string
+          p_runtime_revision: string
+        }
+        Returns: Json
+      }
+      qry_final_result_release_v2: {
+        Args: { p_release_run_id: string }
+        Returns: Json
+      }
       qry_identity_get_mine: {
         Args: never
         Returns: {
@@ -2822,6 +2911,16 @@ export type Database = {
           submitted_revision_checksum: string
           target_table: string
         }[]
+      }
+      qry_source_final_results_v2: {
+        Args: {
+          p_after_key?: string
+          p_limit?: number
+          p_publication_id?: string
+          p_source_id: string
+          p_source_version: string
+        }
+        Returns: Json
       }
       qry_system_find_member_candidate_by_email: {
         Args: { p_email: string }
@@ -3565,6 +3664,22 @@ export type Database = {
         }
         Returns: Json
       }
+      svc_final_result_readiness_artifacts_v2: {
+        Args: { p_proofs: Json; p_verification_id: string }
+        Returns: Json
+      }
+      svc_final_result_readiness_begin_v2: {
+        Args: { p_header: Json }
+        Returns: Json
+      }
+      svc_final_result_readiness_describe_v2: {
+        Args: { p_verification_id: string }
+        Returns: Json
+      }
+      svc_final_result_readiness_seal_v2: {
+        Args: { p_verification_id: string }
+        Returns: Json
+      }
       svc_identity_desired_state_read: {
         Args: { p_keycloak_sub: string }
         Returns: Json
@@ -3685,8 +3800,33 @@ export type Database = {
         }
         Returns: Json
       }
+      svc_result_candidate_describe_v2: {
+        Args: { p_candidate_hash: string; p_target_hash: string }
+        Returns: Json
+      }
+      svc_result_candidate_register_v2: {
+        Args: {
+          p_candidate_text: string
+          p_catalog_text: string
+          p_receipt: Json
+        }
+        Returns: Json
+      }
+      svc_result_identity_register: { Args: { p_request: Json }; Returns: Json }
+      svc_result_identity_versions: {
+        Args: {
+          p_before_version?: string
+          p_limit?: number
+          p_result_id: string
+        }
+        Returns: Json
+      }
       svc_result_query_bind_release: {
         Args: { p_artifact_id: string; p_release_run_id: string }
+        Returns: Json
+      }
+      svc_result_query_describe_v2: {
+        Args: { p_artifact_id: string; p_target_hash: string }
         Returns: Json
       }
       svc_result_query_resolve: {
@@ -3697,7 +3837,23 @@ export type Database = {
         }
         Returns: Json
       }
+      svc_result_query_runtime_configure_v2: {
+        Args: {
+          p_enabled: boolean
+          p_expected_revision_id: string
+          p_reader_sha256: string
+          p_reason: string
+          p_revision_id: string
+          p_target_hash: string
+        }
+        Returns: Json
+      }
+      svc_result_query_runtime_read_v2: { Args: never; Returns: Json }
       svc_result_query_seal: { Args: { p_artifact_id: string }; Returns: Json }
+      svc_result_query_seal_v2: {
+        Args: { p_artifact_id: string; p_receipt: Json }
+        Returns: Json
+      }
       svc_result_query_stage: {
         Args: {
           p_artifact_ref: Json
@@ -3705,6 +3861,10 @@ export type Database = {
           p_package_id: string
           p_rows: Json
         }
+        Returns: Json
+      }
+      svc_result_query_stage_v2: {
+        Args: { p_artifact_ref: Json; p_manifest_text: string; p_rows: Json }
         Returns: Json
       }
       svc_schema_contract_status: { Args: never; Returns: Json }

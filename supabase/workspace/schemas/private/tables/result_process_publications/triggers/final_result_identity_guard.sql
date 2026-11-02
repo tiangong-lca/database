@@ -1,0 +1,1 @@
+CREATE OR REPLACE TRIGGER "final_result_identity_guard" AFTER INSERT OR DELETE OR UPDATE ON "private"."result_process_publications" FOR EACH ROW EXECUTE FUNCTION "private"."final_result_legacy_write_guard"();

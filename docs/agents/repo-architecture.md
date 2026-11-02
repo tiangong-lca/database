@@ -30,9 +30,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: "2026-10-30"
-lastReviewedCommit: "a6ddf4cbcb61c8360788ffcb514e1f38189e9da7"
-lastReviewedNote: "Database #877: user-approved removal of routine Dev PR Preview requirements. Reviewed job-boundary scope, retained Main hotfix checks, persistent-Dev promotion proof and unchanged local/ARM64/deployment gates; generated schema/type contracts are unchanged."
+lastReviewedAt: 2026-11-01
+lastReviewedCommit: fb69a78b88833f0f01fba5c1fea9b97df09fa4ad
+lastReviewedNote: "Database #879: reviewed immutable manager public-readback attestations, live publication/reader/ZIP admission, historical recovery, populated upgrade and identical local schema exports. No remote deployment."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -46,7 +46,312 @@ Allocation contract update (Database #789): `private.lcia_scope_closure_normaliz
 
 This repo is organized around one checked-in Supabase project plus a generated schema-inspection workspace.
 
-## Published HDF5 query bindings
+## Final Result content identity
+
+`private.final_result_identities` is the global Process UUID/version occupancy
+ledger. The service-only `api.svc_result_identity_register` independently checks
+the `tiangong.final-result-content.jcs.v1` envelope of the canonical Result hash
+and sorted exact semantic-dependency hashes. The trusted Release producer must
+verify those file hashes before registering; the database stores no numerics or
+source/background snapshots. Equal content reuses one immutable receipt;
+changed content requires a different version. Registration grants no visibility.
+
+Legacy `public.processes`, formal release dataset membership and manager Result
+publication writes claim the same unique key through AFTER triggers, after JSON
+version normalization. Legacy occupancy asserts no content equivalence, survives
+row deletion, and blocks automatic adoption. Existing rows are checked on
+registration; no large backfill or hash-domain reinterpretation is performed.
+All isolation levels arbitrate on the unique ledger; serialization failures are
+retryable only by repeating the exact request against fresh authoritative state.
+
+The two service RPCs return bounded identity metadata only. Browser/raw-table
+access remains closed. The later v2 Candidate/activation path must recheck the
+registered receipt; this registry alone does not implement publication.
+
+## Final Result query artifacts v2
+
+`final_result_query_artifacts`, `final_result_query_rows`,
+`final_result_query_sources` and `final_result_query_seals` are private,
+append-only metadata. The explicit `svc_result_query_stage_v2` and
+`svc_result_query_seal_v2` RPCs are service-only under `EDGE-DATA-PRODUCT-01`.
+They do not create calculation packages, public Process rows or publications.
+
+Stage accepts the exact UTF-8 manifest text and independently checks its byte
+size/SHA-256 before decoding. Duplicate JSON keys, unknown fields, dimensions,
+file roles, decompressed-index and total-file budgets fail closed. Batches are
+limited to 500 rows / 1 MiB, with at most 4,096 exact source identities per row.
+Each row binds the authoritative Result registration ID and content hash to one
+ordinal; direct Results require one source, while derived associations remain
+separate. Normalized source ordering does not alter the immutable content hash.
+An artifact advisory lock serializes stage/seal and exact retries. Stale
+repeatable-read/serializable snapshots may abort with a unique or serialization
+conflict; recover in a fresh transaction using the same artifact and metadata.
+
+Seal requires the complete contiguous axis and a trusted verifier's full-GET
+readback receipt for a target fingerprint, exact manifest, every file and the
+registered row mapping. The verifier must compare actual index bytes and
+identity receipts; ETag/upload success is insufficient. SQL cannot fetch S3.
+First admission requires a finite verification timestamp within 15 minutes and
+at most 30 seconds in the future. Exact receipt retries preserve the original
+seal, including after that admission window. Target-bound seal evidence does
+not grant visibility, current availability, reader compatibility or approval;
+activation must obtain independent fresh readiness evidence.
+
+The mapping hash is `tiangong.final-result-row-bindings.v1`: SHA-256 of a UTF-8
+domain line followed by lowercase block hashes, each ending LF. A block hashes
+up to 500 consecutive ordinal row hashes, each ending LF. Each row hashes the
+`tiangong.final-result-row.v1` domain line, ordinal, UUID, version, registration
+UUID, content hash, relation kind, then ASCII-sorted `source UUID@version` lines;
+every line ends LF. This is an ASCII metadata wire hash, not a new Result
+content hash domain or PostgreSQL JSONB canonicalization. Aggregates are bounded
+to 32,500 bytes per block and 260,000 bytes for the root's block list.
+
+This storage foundation has no actor resolver or activation path yet. The
+versioned publication adapter must bind Candidate/selection, multiple sealed
+artifacts, ZIP closure scope and fresh readiness into the existing
+`lca_release_publications` authority before exposing v2 results. It must not
+reuse the following v1 Bundle-only resolver as a v2 fallback.
+
+## Final Result Candidate storage evidence
+
+`final_result_candidates`, `final_result_candidate_artifacts`,
+`final_result_candidate_members` and `final_result_candidate_storage` are
+immutable private metadata. `svc_result_candidate_register_v2` binds the exact
+UTF-8 Candidate v3 and publication-catalog v1 byte hashes to complete registered
+Result rows across one or more sealed v2 artifacts. Each artifact must have the
+same final input hash and an independent seal on the specified storage target.
+The combined metadata budget is 128 MiB; receipts are bounded to 16 KiB.
+
+Only the Result-only two-ZIP profile is accepted. Catalog references use exact
+key strings, as emitted by Release. Exact roots, unique identities, registered
+canonical hashes, all reference targets and forward reachability are checked;
+unrelated documents cannot enlarge ZIP scope. Complete ZIP membership remains
+separate from the selected Result membership of a future publication.
+
+The trusted service verifier attests full GET hashes and actual package closure
+for `release-candidate.json`, `publication-catalog.json`, `result.ilcd.zip` and
+`result.tidas.zip`. SQL verifies their hashes/sizes against the bound metadata;
+it does not fetch ZIP bytes, rerun Toolkit or trust ETags as content proof.
+First admission uses the same 15-minute / 30-second timestamp window as query
+seals. A Candidate-hash transaction lock serializes registration. Exact retries
+recover the original receipt; another receipt cannot replace it. Independent
+storage targets can reuse one immutable Candidate after qualifying every query
+artifact on that target. Different Candidates may reuse identical registered
+Results and query files without copying or changing existing evidence.
+
+`svc_result_query_describe_v2` and `svc_result_candidate_describe_v2` return
+bounded metadata and the original target receipt for lost-ACK reconciliation.
+All three APIs are service-only under `EDGE-DATA-PRODUCT-01`; raw tables remain
+ACL-closed with RLS. Neither storage receipts nor reconciliation grants actor
+access or creates a release/current pointer. The versioned publication adapter,
+reader readiness, selection activation and full-ZIP authorization remain required.
+
+## Final Result publication selection
+
+Final Result runs reuse `lca_release_runs` and the existing publication authority.
+`publication_format` explicitly separates `legacy-four-zip.v1` from
+`final-result-pair.v2`. Existing runs retain the legacy format and its non-null
+Bundle, global scope and two-digit version contract. Final Result runs require
+null Bundle fields, `selected_final_results` scope and `YYYY.MM.N` release
+versions of at most 64 characters; their manifest and package-set hashes come
+from the qualified Candidate.
+The existing immutable-content and state-transition guards still apply.
+
+The authenticated-only `cmd_final_result_release_prepare_v2`,
+`cmd_final_result_release_members_v2`, `cmd_final_result_release_seal_v2` and
+`qry_final_result_release_v2` use `EDGE-REL-01` and recheck the live global manager
+role on every call, including retries. Service-role storage admission cannot
+approve or prepare an actor release. Prepare binds exact raw UTF-8 plan bytes,
+Candidate, storage target, selected count/hash, expected current publication and
+optional terminal rollback history. Actor/idempotency and run locks arbitrate
+concurrent requests; the same key cannot bind another run or changed plan bytes.
+
+`final_result_release_plans`, `final_result_release_members` and
+`final_result_release_selection_seals` are immutable, private and RLS-enabled.
+Member batches contain only exact Result UUID/version pairs (1–500, 1 MiB); SQL
+derives each artifact and ordinal from the Candidate's registered rows. Source
+Units, unselected parents and other file-contained Results acquire no membership.
+The selected count must be complete before sealing. Sort exact UUID@version keys
+as ASCII, hash LF-terminated groups of 500, then hash the LF-terminated domain
+`tiangong.final-result-selection.v1` followed by each block hash and LF. Seal
+recomputes this hash; duplicate retries preserve the original binding.
+
+Selection seal leaves the run `prepared` and creates no current publication.
+Fresh reader/permission readiness, exact actor approval, transactional
+expected-current activation, new-record rollback and actor-safe query/download
+remain required in the subsequent adapter. Stored files and sealed membership
+alone are not readiness or authorization. Rollback preparation only admits a
+terminal v2 publication referencing the exact retained Candidate; it never
+reactivates a historical row.
+
+## Final Result query runtime and private probes
+
+The service-only runtime configure/read APIs admit an explicit storage target
+fingerprint and reader executable SHA-256. `final_result_query_runtime_revisions`
+is immutable history; `final_result_query_runtime_head` is its single current
+pointer. Configuration uses a caller-supplied new revision UUID and expected
+previous revision. Exact retries recover their original revision and report
+whether it remains current. Reverting settings requires another new revision;
+replaying historical admission never revives stale readiness. No target is seeded
+by the migration. These two private RLS relations have closed raw ACLs; immutable
+revision history records service admission and reason without fabricating an
+actor in the human command audit log.
+
+`qry_final_result_release_probe_page_v2` and `qry_final_result_release_probe_v2`
+are manager-only `EDGE-REL-01` APIs. They require an exact unpublished v2 plan,
+sealed selection, enabled matching target, unchanged expected current and live
+manager role. Their context binds runtime revision, binary hash and an opaque
+manager-role precondition hash; deleting/recreating the grant changes that hash.
+Service storage credentials have no execute grant on these actor endpoints.
+
+Pages enumerate at most 100 selected artifacts with the first/last exact selected
+Result per artifact (deduplicated for a single selected row). The covering
+run/artifact/Result index supports keyset pagination. Continuations bind runtime
+revision; a runtime change requires restarting verification. Exact Result probes
+resolve only sealed membership and recheck registered content/receipt identity.
+They return Worker readiness scope and a bounded locator-free descriptor, never
+a source alias, arbitrary ordinal or whole index. Ordinary users cannot use this
+path to inspect staging. Public query/download authorization remains separate.
+
+Admission and descriptor enumeration do not query the Worker, attest numerical
+correctness, write a readiness receipt or advance a run. The run remains prepared
+until a later trusted verifier supplies complete file verification and successful
+runtime probe evidence. First/last probes are runtime qualification samples; they
+do not replace Release's complete independent final Result/HDF5/ZIP parity check.
+Fresh readiness, exact approval and atomic current activation are still required.
+
+## Final Result readiness evidence
+
+The four service-only `svc_final_result_readiness_*_v2` APIs register a bounded
+attempt, append artifact proofs, seal complete coverage and describe the original
+immutable evidence. All three new private relations have RLS and closed raw ACLs.
+An authenticated manager cannot self-attest file availability or reader success.
+The trusted verifier must actually perform full GET/hash checks and independent
+reader comparisons; SQL verifies their scope, identity, counts, timing and live
+preconditions, not the external computation itself.
+
+An attempt binds the same exact Candidate/target/selection/runtime/binary/actor/
+permission context returned by the manager probe API. It attests all four
+Candidate files. Each artifact proof must contain its complete sealed file set
+and exactly the first/last selected Result probes (deduplicated for one row),
+including registered content identity and the explicit v1 reader-probe evidence.
+LCI count determines the required first-one-then-1000 pagination count; LCIA
+capability/count and overview/query counts must agree. Batches allow 1–100
+artifacts within 1 MiB, each proof at most 64 KiB; invalid later members roll back
+the complete batch. One verification UUID cannot bind different evidence.
+
+The verifier starts the attempt clock before any file read. File qualification
+must complete within one hour of that start; reader evidence expires fifteen
+minutes after the oldest probe start. Both are explicit current policy bounds,
+not renewed by seal, retries or response recovery. Timestamps permit at most
+thirty seconds of future clock skew and reject non-finite values. Seal compares
+all selected-artifact coverage and returns the earlier expiration. Its coverage
+hash uses database JSONB proof hashes in sorted 500-artifact blocks under
+`tiangong.final-result-readiness-coverage.jsonb.v1`; this is not JCS or content
+identity and must not replace either domain.
+
+Same-identity retries may recover historical evidence after runtime drift; they
+do not make it fresh or current. New work rechecks live manager membership,
+permission precondition, enabled runtime revision/target and expected current.
+Readiness storage leaves the run `prepared` and `publicationAuthorized=false`.
+Actor approval and activation must independently check the exact bindings,
+current authority and receipt expiry while holding their transaction locks;
+the v2 approval/activation commands below implement these checks.
+No migration admits a runtime, certifies files or activates a publication.
+
+## Final Result approval, activation and read authorization
+
+`cmd_final_result_release_approve_v2` and `cmd_final_result_release_activate_v2`
+are authenticated manager operations under `EDGE-REL-01`; the service verifier
+cannot call them. They reuse the existing release run, approval and publication
+records. Approval binds exact plan/Candidate/selection/target/runtime/binary and
+approver permission identity, requires fresh sealed readiness and an expiration
+within 24 hours, and needs an explicit expected approval ID to replace an active
+approval. Its JSONB hash domain is `tiangong.final-result-approval.jsonb.v2`.
+A repeated approval UUID may recover only the original exact record; it never
+reactivates revoked, expired or consumed authority.
+
+Activation locks the run, approval, runtime head, approver/executor manager grants
+and global publication authority. It rechecks approval/readiness expiry after lock
+waits and requires the plan's exact current-publication precondition. Fresh
+readiness may replace the original verification only under the same approved
+context. The transaction supersedes the previous current, creates a new immutable
+publication binding, consumes approval and moves the run to `published` atomically.
+An exact execution retry returns the existing record, including its terminal
+status. Rollback creates a new publication with the same historical Candidate and
+selected Result set; it never revives the old row. The shared withdrawal command
+continues to remove a current v2 publication. Independent post-activation
+observation is separate; activation does not claim `readback_verified`.
+
+`qry_final_result_query_v2` accepts an exact selected Result identity and optional
+exact current publication ID. It exposes a narrow Worker descriptor with
+publication scope and current admitted reader identity. Numeric queries become
+available at activation commit, without waiting for post-activation observation.
+Unavailable runtime fails closed. A public Derived Result is independently
+readable, without granting access to its ancestors or unselected file rows.
+`qry_source_final_results_v2` first enforces source Process RLS, exact version and
+non-120 state, then returns only direct selected Results with bounded keyset
+pagination tied to the same current publication. The DTO explicitly identifies
+legacy/v2 format; callers must select the matching contract rather than falling
+back from a failed v2 request to a legacy reader.
+
+`qry_final_result_download_v2` returns an exact prebuilt TIDAS/ILCD ZIP descriptor
+only while that publication is current, every Candidate Result root is selected,
+and all non-result Candidate members are readable under existing dataset RLS.
+Missing/private support or a partial selection denies download; there is no ZIP
+cropping, dynamic archive construction or whole-HDF5 browser download. Edge owns
+configured-target verification and short-lived URL signing. Both RLS helpers run
+as the established NOLOGIN/NOBYPASSRLS internal executor. PL/pgSQL SPI plans retain
+policy invalidation even when an outer definer was already cached; tests add and
+remove restrictive policies after successful reads. The internal Candidate member
+SELECT policy exists only for this closed role, not browser or service raw access.
+
+Six legacy commands/readers reject v2 explicitly at verified dispatch boundaries.
+Legacy bodies, owners/configuration/ACLs otherwise retain their predecessor
+contracts. A migration never grants an actor permission, enables runtime, attests
+file bytes or activates a publication. Release aggregate verification/actor
+adapters, independent post-activation observation and Edge/Platform adoption remain
+separate implementation work.
+
+## Final Result manager recovery reads
+
+`qry_final_result_publication_head_v2` returns the one current publication or
+explicit null, with an explicit legacy/v2 format. Legacy rows have no final
+Candidate/target identity. `qry_final_result_release_v2` describes a single run,
+including its active approval pointer, exact execution/publication binding and
+post-observation receipt when one exists. `qry_final_result_release_approval_v2`
+requires both run and approval UUID and independently recovers the original
+approval, including revoked/consumed history. These bounded manager-only reads
+have `EDGE-REL-01` capability and no service/anonymous execution grant.
+
+An active approval row may already be expired or context-stale; recovery reads
+do not renew it or claim execution eligibility. They return existing timestamps
+and hashes, never credentials, whole selection indexes or readiness proof lists.
+`publicationAuthorized=false` on the run DTO means that the read itself grants
+no authority; actual approval/activation commands revalidate all live conditions.
+No recovery read recreates missing records or changes a terminal publication.
+
+## Final Result post-activation observation
+
+`cmd_final_result_release_readback_v2` records a bounded immutable manager
+attestation after public Edge numerical/ZIP readback. The text digest binds
+actor, exact run/plan, publication, Candidate/selection/target, enabled current
+reader revision/binary, complete selected Result count, observation digest and
+both ZIP outcomes. The actor must have a current manager role. End time must be
+within five minutes; start cannot precede activation. Complete authorized ZIPs
+require exact file descriptors; partial/private packages must be explicitly
+unavailable under the current caller's RLS.
+
+Recording locks and rechecks authority, advances only the existing run's audit
+status to `readback_verified`, and preserves the current publication. Visibility
+already begins atomically at qualified activation. The database verifies binding
+and admission, not external bytes: Release owns actual public queries, complete
+ZIP GETs and numerical comparisons. The immutable raw-text hash supports exact
+lost-ACK recovery after withdrawal without resurrection. Conflicting observations
+cannot replace history; service/anonymous roles cannot record them. A failed
+observation does not implicitly withdraw or roll back a publication.
+
+## Published HDF5 query bindings v1
 
 `private.result_query_artifacts`, `result_query_sources` and
 `result_query_release_bindings` contain immutable encoding receipts and exact
