@@ -38,7 +38,7 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-02
-lastReviewedCommit: ff306c42cecd3ea25ecc7e4be3b22f5639127904
+lastReviewedCommit: 394aab73e18e9885c7e17cc05e85213140d0ce5a
 lastReviewedNote: "Database #887: reviewed dedicated ZIP Storage role, restrictive path/write fences, unchanged branch deployment ownership and focused qualification requirements."
 related:
   - .docpact/config.yaml

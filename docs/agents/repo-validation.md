@@ -33,7 +33,7 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-02
-lastReviewedCommit: ff306c42cecd3ea25ecc7e4be3b22f5639127904
+lastReviewedCommit: 394aab73e18e9885c7e17cc05e85213140d0ce5a
 lastReviewedNote: "Database #887: reviewed dedicated ZIP Storage role, restrictive path/write fences, unchanged branch deployment ownership and focused qualification requirements."
 related:
   - ../../AGENTS.md
@@ -1643,4 +1643,4 @@ Also apply the migration to a populated canonical-base fixture with an existing 
 
 ## Final Result ZIP reader ACL
 
-After a blank rebuild, run `supabase/tests/20261102_final_result_zip_reader.sql`. It verifies role flags/memberships, absence of application-schema and write privileges, actual RLS reads for both ZIP formats, and rejection of HDF5, malformed candidate keys, wrong prefixes/buckets and writes. Rollback-only tests also add permissive PUBLIC policies and wider test grants to prove the restrictive fences remain effective. Hosted qualification must separately verify the actual custom-role API key, positive single-object GET, read/write denials and cleanup of exact synthetic objects; pgTAP alone is not transport evidence. No business Result registration or publication is needed for these tests.
+After a blank rebuild, run `supabase/tests/20261102_final_result_zip_reader.sql` together with `supabase/tests/20260805_full_schema_cutover.sql`; the exact global RLS inventory is 126 after adding these five Storage policies. It verifies role flags/memberships, absence of application-schema and write privileges, actual RLS reads for both ZIP formats, and rejection of HDF5, malformed candidate keys, wrong prefixes/buckets and writes. Rollback-only tests also add permissive PUBLIC policies and wider test grants to prove the restrictive fences remain effective. Hosted qualification must separately verify the actual custom-role API key, positive single-object GET, read/write denials and cleanup of exact synthetic objects; pgTAP alone is not transport evidence. No business Result registration or publication is needed for these tests.
