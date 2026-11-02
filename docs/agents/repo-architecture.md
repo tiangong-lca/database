@@ -46,6 +46,15 @@ Allocation contract update (Database #789): `private.lcia_scope_closure_normaliz
 
 This repo is organized around one checked-in Supabase project plus a generated schema-inspection workspace.
 
+## Proposed Study durable domain
+
+[LCA Study durable invariants v1](lca-study-durable-contract.md) owns the P0
+identity, revision, authorization, concurrency and report review/export/share
+contract with offline transition examples. It introduces no schema or runtime
+capability. Edge owns public Study wire schemas; Worker owns numerical contracts.
+Study/Run/Report remain distinct from LifecycleModel, worker_jobs and formal
+Final Result publication. Later implementation must prove SQL and runtime behavior.
+
 ## Final Result content identity
 
 `private.final_result_identities` is the global Process UUID/version occupancy

@@ -390,3 +390,7 @@ python3 scripts/test_check_auth_email_templates.py
 - `supabase migration list`
 - `supabase link --project-ref <ref>`
 - `supabase db push`
+
+## Study P0 离线合同检查
+
+现有 local-contract CI job 在数据库重建前运行 [Study 持久参考模型](lca-study-durable-contract.md)。该离线检查不增加迁移或 hosted 权限，Preview 与 persistent Dev 仍由原五类 deployable 输入判定；顺序样例不代表 SQL/RLS、真实并发或 Study API 已部署。

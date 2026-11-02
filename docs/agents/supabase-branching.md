@@ -465,3 +465,7 @@ Use the Supabase CLI in this repository.
 - `supabase migration list`
 - `supabase link --project-ref <ref>`
 - `supabase db push`
+
+## Study P0 offline contract check
+
+The existing local-contract CI job also runs the [Study durable reference model](lca-study-durable-contract.md) before database rebuild. This offline check adds no migration or hosted authority: the same five deployable-input families still determine Preview and persistent-Dev execution. Its sequential examples do not qualify SQL/RLS, actual concurrency or a deployed Study API.
