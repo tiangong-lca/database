@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-02
-lastReviewedCommit: 394aab73e18e9885c7e17cc05e85213140d0ce5a
-lastReviewedNote: "Database #887: reviewed dedicated ZIP Storage role, restrictive path/write fences, unchanged branch deployment ownership and focused qualification requirements."
+lastReviewedCommit: 057eec7991bbc2815d874df3d48838d108b9d543
+lastReviewedNote: "Database #887: retire custom ZIP roles and policies; existing Edge server credentials own signing, with no business-data changes."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1805,8 +1805,6 @@ Database #846 adds `api.svc_lca_calculation_export(uuid,uuid,text,boolean)`: ser
 New scope-closure execution fingerprints and ordinary snapshot-build queue keys include the active opaque identity independently of scanner and data-policy versions. Recorded actor/token retries return the original closure task even after activation; newly recorded tokens additionally reject a changed input payload. Existing immutable packages and historical task IDs stay readable. `api.svc_lca_snapshot_candidates` projects `calculationCurrent` and orders compatible candidates first so Edge can admit new compute without embedding algorithm knowledge. The unconfigured bootstrap preserves existing admission until explicit activation; after activation, a missing or different ready-snapshot identity is incompatible. Missing geography and factor coverage do not affect this contract.
 
 
-## Final Result ZIP signing role
+## Final Result ZIP signing
 
-`lca_result_zip_reader` is a NOLOGIN, NOINHERIT, NOBYPASSRLS Storage identity with no application-role membership. Its only explicit relation grant is SELECT on `storage.objects`; it has no `api`/`private` schema access or object/bucket DML. An exact permissive SELECT policy plus restrictive SELECT/INSERT/UPDATE/DELETE fences limit reads to the two final Result ZIP names under `lca_results/release-candidates/<64-lowercase-hex>/` in bucket `lca_results`, including against future permissive PUBLIC policies. HDF5, indexes, other prefixes and buckets remain outside this role. The gateway authenticator can SET the role without inheriting it.
-
-Edge owns actor/current/complete-Candidate authorization and single-object short-lived URLs. Operations issue server-only JWTs for a non-login generation role (initially `lca_result_zip_reader_g20261102`) and use a public API key only for gateway routing. A generation inherits only the base ZIP role, cannot SET the base, and is separately assumable by authenticator. JWTs expire within 90 days; no signing material, token or environment identity lives in migrations. This role does not activate Results or grant application access. Retire a generation by revoking it from authenticator and revoking its base-role membership. Never reuse a retired name: an unexpired old JWT must never regain access. Rotate by admitting a new reviewed generation, replacing the Edge credential, then retiring the previous generation; other service credentials and project signing keys remain unchanged.
+Edge reuses existing server credentials for native single-object, 60-second Storage links after actor/current/complete-Candidate checks. Database continues to own the exact authorized descriptor; no custom signing role is needed. Migration `20261102091416` retires only the two #887 roles, their grants/memberships and five named Storage policies. Earlier migrations remain intact. There is no application data mutation or CASCADE; unexpected dependencies stop retirement.
