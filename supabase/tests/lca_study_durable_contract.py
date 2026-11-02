@@ -90,6 +90,8 @@ class Model:
                 and preparation["inputArtifactRef"] is not None, "CAPABILITY_UNAVAILABLE")
         require(preparation["modelProducer"] == "solver-worker"
                 and preparation["modelRef"]["digestScope"] == "worker_prepared_model", "REFERENCE_MISMATCH")
+        if preparation["source"]["type"] == "scenarioRevision":
+            require(valid_hash(preparation["inputHash"]), "CAPABILITY_UNAVAILABLE")
         return preparation
 
     def execute(self, event):
@@ -130,6 +132,7 @@ class Model:
             require(body["originRef"]["type"] == "datasetRevision" and body["originRef"]["datasetType"] == "lifecyclemodel"
                     and bool(body["originRef"]["id"]) and bool(body["originRef"]["version"]), "REFERENCE_MISMATCH")
             require(body["sourceArtifactRef"]["type"] == "modelSource" and bool(body["sourceArtifactRef"]["id"]), "REFERENCE_MISMATCH")
+            require(body["sourceArtifactRef"]["digestScope"] == "artifact_bytes_sha256", "REFERENCE_MISMATCH")
             require(body["digestScope"] == "artifact_bytes_sha256" and valid_hash(body["contentHash"])
                     and body["contentHash"] == body["sourceArtifactRef"]["contentHash"], "REFERENCE_MISMATCH")
             identity, request_hash, previous = self.receipt(event)
@@ -146,16 +149,23 @@ class Model:
             require(body["modelRef"]["type"] == "modelRevision" and bool(body["modelRef"]["modelRevisionId"])
                     and valid_hash(body["modelRef"]["contentHash"]), "REFERENCE_MISMATCH")
             require(body["inputArtifactRef"]["type"] == "modelInput" and bool(body["inputArtifactRef"]["id"])
+                    and body["inputArtifactRef"]["digestScope"] == "artifact_bytes_sha256"
                     and valid_hash(body["inputArtifactRef"]["contentHash"]), "REFERENCE_MISMATCH")
+            require("inputHash" in body, "INVALID_REQUEST")
+            require(valid_hash(body["inputHash"]) or (preparation["source"]["type"] == "modelSourceSnapshot"
+                    and body["inputHash"] is None), "CAPABILITY_UNAVAILABLE")
             identity, request_hash, previous = self.receipt(event)
             if previous:
                 return copy.deepcopy(previous["result"])
             require(preparation["modelRef"] in (None, body["modelRef"])
                     and preparation["inputArtifactRef"] in (None, body["inputArtifactRef"]), "IDEMPOTENCY_CONFLICT")
+            if preparation["executionStatus"] == "completed":
+                require(preparation["inputHash"] == body["inputHash"], "IDEMPOTENCY_CONFLICT")
             preparation.update(executionStatus="completed", modelProducer=body["producer"],
                                modelRef=copy.deepcopy(body["modelRef"]),
-                               inputArtifactRef=copy.deepcopy(body["inputArtifactRef"]))
-            return self.remember(identity, request_hash, {"preparationId": body["preparationId"], "modelRef": preparation["modelRef"]})
+                               inputArtifactRef=copy.deepcopy(body["inputArtifactRef"]), inputHash=body["inputHash"])
+            return self.remember(identity, request_hash, {"preparationId": body["preparationId"],
+                                 "modelRef": preparation["modelRef"], "inputHash": preparation["inputHash"]})
         if operation == "source.revoke":
             require(actor == "service", "FORBIDDEN")
             # Trusted external disclosure-context change, not source mutation.
@@ -177,6 +187,7 @@ class Model:
             require(run["inputHash"] == body["inputHash"], "REFERENCE_MISMATCH")
             require(run["jobId"] == body["jobId"] and body["leaseCurrent"] is True, "FORBIDDEN")
             require(body["resultRef"]["type"] == "runResult"
+                    and body["resultRef"]["digestScope"] == "artifact_bytes_sha256"
                     and bool(body["resultRef"]["id"]) and valid_hash(body["resultRef"]["contentHash"]), "INVALID_REQUEST")
             identity, request_hash, previous = self.receipt(event)
             if previous:
@@ -227,7 +238,7 @@ class Model:
             else:
                 raise Rejected("CAPABILITY_UNAVAILABLE")
             self.state["preparations"][body["preparationId"]] = dict(copy.deepcopy(body), studyId=study_id,
-                executionStatus="queued", modelRef=None, inputArtifactRef=None)
+                executionStatus="queued", modelRef=None, inputArtifactRef=None, inputHash=None)
             return {"preparationId": body["preparationId"]}
         if operation == "member.set":
             self.cas(study, body["expectedRevision"])
@@ -310,6 +321,7 @@ class Model:
             require(body["calculationContractRef"] == preparation["calculationContractRef"]
                     and body["profileId"] == preparation["profileId"] and body["engineId"] == "solver-worker", "REFERENCE_MISMATCH")
             require(valid_hash(body["inputHash"]), "INVALID_REQUEST")
+            require(body["inputHash"] == preparation["inputHash"], "REFERENCE_MISMATCH")
             ref = body["calculationContractRef"]
             require(set(ref) == {"kind", "schema", "sha256"} and ref["kind"] == "calculation_contract"
                     and ref["schema"] == "lca.calculation-contract.v1" and valid_hash(ref["sha256"]), "REFERENCE_MISMATCH")

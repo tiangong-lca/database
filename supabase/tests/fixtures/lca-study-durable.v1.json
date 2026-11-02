@@ -56,7 +56,8 @@
         "sourceArtifactRef": {
           "type": "modelSource",
           "id": "authorized-model-export-1",
-          "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "digestScope": "artifact_bytes_sha256"
         },
         "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "digestScope": "artifact_bytes_sha256",
@@ -108,8 +109,10 @@
         "inputArtifactRef": {
           "type": "modelInput",
           "id": "input-prepare-base-1",
-          "contentHash": "3333333333333333333333333333333333333333333333333333333333333333"
-        }
+          "contentHash": "3333333333333333333333333333333333333333333333333333333333333333",
+          "digestScope": "artifact_bytes_sha256"
+        },
+        "inputHash": null
       }
     },
     {
@@ -134,17 +137,13 @@
               "type": "datasetRevision",
               "datasetType": "lciamethod",
               "id": "method-1",
-              "version": "01.00.000",
-              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
-              "licenseRef": "method-license-1"
+              "version": "01.00.000"
             },
             {
               "type": "datasetRevision",
               "datasetType": "lciamethod",
               "id": "method-2",
-              "version": "01.00.000",
-              "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
-              "licenseRef": "method-license-2"
+              "version": "01.00.000"
             }
           ]
         }
@@ -214,8 +213,10 @@
         "inputArtifactRef": {
           "type": "modelInput",
           "id": "input-prepare-scenario-1",
-          "contentHash": "3333333333333333333333333333333333333333333333333333333333333333"
-        }
+          "contentHash": "3333333333333333333333333333333333333333333333333333333333333333",
+          "digestScope": "artifact_bytes_sha256"
+        },
+        "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
       }
     },
     {
@@ -269,7 +270,8 @@
         "resultRef": {
           "type": "runResult",
           "id": "result-1",
-          "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+          "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "digestScope": "artifact_bytes_sha256"
         }
       }
     },
@@ -284,7 +286,8 @@
         "runResultRef": {
           "type": "runResult",
           "id": "result-1",
-          "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+          "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "digestScope": "artifact_bytes_sha256"
         },
         "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
       }
@@ -357,17 +360,13 @@
                   "type": "datasetRevision",
                   "datasetType": "lciamethod",
                   "id": "method-1",
-                  "version": "01.00.000",
-                  "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
-                  "licenseRef": "method-license-1"
+                  "version": "01.00.000"
                 },
                 {
                   "type": "datasetRevision",
                   "datasetType": "lciamethod",
                   "id": "method-2",
-                  "version": "01.00.000",
-                  "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
-                  "licenseRef": "method-license-2"
+                  "version": "01.00.000"
                 }
               ]
             }
@@ -427,17 +426,13 @@
                   "type": "datasetRevision",
                   "datasetType": "lciamethod",
                   "id": "method-1",
-                  "version": "01.00.000",
-                  "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
-                  "licenseRef": "method-license-1"
+                  "version": "01.00.000"
                 },
                 {
                   "type": "datasetRevision",
                   "datasetType": "lciamethod",
                   "id": "method-2",
-                  "version": "01.00.000",
-                  "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
-                  "licenseRef": "method-license-2"
+                  "version": "01.00.000"
                 }
               ]
             }
@@ -519,17 +514,13 @@
                   "type": "datasetRevision",
                   "datasetType": "lciamethod",
                   "id": "method-1",
-                  "version": "01.00.000",
-                  "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
-                  "licenseRef": "method-license-1"
+                  "version": "01.00.000"
                 },
                 {
                   "type": "datasetRevision",
                   "datasetType": "lciamethod",
                   "id": "method-2",
-                  "version": "01.00.000",
-                  "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
-                  "licenseRef": "method-license-2"
+                  "version": "01.00.000"
                 }
               ]
             }
@@ -740,17 +731,13 @@
                   "type": "datasetRevision",
                   "datasetType": "lciamethod",
                   "id": "method-1",
-                  "version": "01.00.000",
-                  "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
-                  "licenseRef": "method-license-1"
+                  "version": "01.00.000"
                 },
                 {
                   "type": "datasetRevision",
                   "datasetType": "lciamethod",
                   "id": "method-2",
-                  "version": "01.00.000",
-                  "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
-                  "licenseRef": "method-license-2"
+                  "version": "01.00.000"
                 }
               ]
             }
@@ -797,17 +784,13 @@
                   "type": "datasetRevision",
                   "datasetType": "lciamethod",
                   "id": "method-1",
-                  "version": "01.00.000",
-                  "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
-                  "licenseRef": "method-license-1"
+                  "version": "01.00.000"
                 },
                 {
                   "type": "datasetRevision",
                   "datasetType": "lciamethod",
                   "id": "method-2",
-                  "version": "01.00.000",
-                  "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
-                  "licenseRef": "method-license-2"
+                  "version": "01.00.000"
                 }
               ]
             }
@@ -908,17 +891,13 @@
                   "type": "datasetRevision",
                   "datasetType": "lciamethod",
                   "id": "method-1",
-                  "version": "01.00.000",
-                  "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
-                  "licenseRef": "method-license-1"
+                  "version": "01.00.000"
                 },
                 {
                   "type": "datasetRevision",
                   "datasetType": "lciamethod",
                   "id": "method-2",
-                  "version": "01.00.000",
-                  "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
-                  "licenseRef": "method-license-2"
+                  "version": "01.00.000"
                 }
               ]
             }
@@ -963,7 +942,8 @@
         "runs.run-1.resultRef": {
           "type": "runResult",
           "id": "result-1",
-          "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+          "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "digestScope": "artifact_bytes_sha256"
         }
       }
     },
@@ -983,7 +963,8 @@
             "resultRef": {
               "type": "runResult",
               "id": "result-1",
-              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "digestScope": "artifact_bytes_sha256"
             }
           },
           "expectError": "FORBIDDEN"
@@ -1027,7 +1008,8 @@
             "resultRef": {
               "type": "runResult",
               "id": "result-1",
-              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "digestScope": "artifact_bytes_sha256"
             }
           },
           "expectError": "FORBIDDEN"
@@ -1048,7 +1030,8 @@
             "runResultRef": {
               "type": "runResult",
               "id": "result-1",
-              "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "digestScope": "artifact_bytes_sha256"
             },
             "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           },
@@ -1106,7 +1089,8 @@
             "runResultRef": {
               "type": "runResult",
               "id": "result-1",
-              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "digestScope": "artifact_bytes_sha256"
             },
             "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
           }
@@ -1473,17 +1457,13 @@
                   "type": "datasetRevision",
                   "datasetType": "lciamethod",
                   "id": "method-1",
-                  "version": "01.00.000",
-                  "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
-                  "licenseRef": "method-license-1"
+                  "version": "01.00.000"
                 },
                 {
                   "type": "datasetRevision",
                   "datasetType": "lciamethod",
                   "id": "method-2",
-                  "version": "01.00.000",
-                  "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
-                  "licenseRef": "method-license-2"
+                  "version": "01.00.000"
                 }
               ]
             }
@@ -1517,7 +1497,8 @@
         "runs.run-1.resultRef": {
           "type": "runResult",
           "id": "result-1",
-          "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+          "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "digestScope": "artifact_bytes_sha256"
         }
       }
     },
@@ -1672,7 +1653,8 @@
             "resultRef": {
               "type": "runResult",
               "id": "result-2",
-              "contentHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+              "contentHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "digestScope": "artifact_bytes_sha256"
             }
           },
           "expectError": "IDEMPOTENCY_CONFLICT"
@@ -1758,7 +1740,8 @@
             "resultRef": {
               "type": "runResult",
               "id": "result-2",
-              "contentHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+              "contentHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "digestScope": "artifact_bytes_sha256"
             }
           },
           "expectError": "IDEMPOTENCY_CONFLICT"
@@ -1779,7 +1762,8 @@
             "resultRef": {
               "type": "runResult",
               "id": "result-1",
-              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "digestScope": "artifact_bytes_sha256"
             }
           }
         }
@@ -1801,7 +1785,8 @@
             "resultRef": {
               "type": "runResult",
               "id": "result-1",
-              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "digestScope": "artifact_bytes_sha256"
             }
           },
           "expect": {
@@ -1809,7 +1794,8 @@
             "resultRef": {
               "type": "runResult",
               "id": "result-1",
-              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "digestScope": "artifact_bytes_sha256"
             }
           }
         }
@@ -1825,7 +1811,8 @@
             "resultRef": {
               "type": "runResult",
               "id": "result-1",
-              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "digestScope": "artifact_bytes_sha256"
             }
           }
         }
@@ -1958,7 +1945,8 @@
             "resultRef": {
               "type": "analysisFacts",
               "id": "result-1",
-              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "digestScope": "artifact_bytes_sha256"
             }
           },
           "expectError": "INVALID_REQUEST"
@@ -1979,7 +1967,8 @@
             "runResultRef": {
               "type": "analysisFacts",
               "id": "result-1",
-              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "digestScope": "artifact_bytes_sha256"
             },
             "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           },
@@ -2044,8 +2033,10 @@
             "inputArtifactRef": {
               "type": "modelInput",
               "id": "input-prepare-scenario-2",
-              "contentHash": "3333333333333333333333333333333333333333333333333333333333333333"
-            }
+              "contentHash": "3333333333333333333333333333333333333333333333333333333333333333",
+              "digestScope": "artifact_bytes_sha256"
+            },
+            "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
           }
         },
         {
@@ -2129,8 +2120,10 @@
             "inputArtifactRef": {
               "type": "modelInput",
               "id": "input-prepare-scenario-2",
-              "contentHash": "3333333333333333333333333333333333333333333333333333333333333333"
-            }
+              "contentHash": "3333333333333333333333333333333333333333333333333333333333333333",
+              "digestScope": "artifact_bytes_sha256"
+            },
+            "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
           }
         },
         {
@@ -2201,7 +2194,8 @@
             "sourceArtifactRef": {
               "type": "modelSource",
               "id": "authorized-model-export-1",
-              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "digestScope": "artifact_bytes_sha256"
             },
             "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "digestScope": "artifact_bytes_sha256",
@@ -2253,8 +2247,10 @@
             "inputArtifactRef": {
               "type": "modelInput",
               "id": "input-prepare-base-1",
-              "contentHash": "3333333333333333333333333333333333333333333333333333333333333333"
-            }
+              "contentHash": "3333333333333333333333333333333333333333333333333333333333333333",
+              "digestScope": "artifact_bytes_sha256"
+            },
+            "inputHash": null
           }
         },
         {
@@ -2361,8 +2357,10 @@
             "inputArtifactRef": {
               "type": "modelInput",
               "id": "input-prepare-scenario-2",
-              "contentHash": "3333333333333333333333333333333333333333333333333333333333333333"
-            }
+              "contentHash": "3333333333333333333333333333333333333333333333333333333333333333",
+              "digestScope": "artifact_bytes_sha256"
+            },
+            "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
           },
           "expectError": "FORBIDDEN"
         }
@@ -2477,8 +2475,10 @@
             "inputArtifactRef": {
               "type": "modelInput",
               "id": "input-prepare-scenario-2",
-              "contentHash": "3333333333333333333333333333333333333333333333333333333333333333"
-            }
+              "contentHash": "3333333333333333333333333333333333333333333333333333333333333333",
+              "digestScope": "artifact_bytes_sha256"
+            },
+            "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
           },
           "expectError": "CAPABILITY_UNAVAILABLE"
         }
@@ -2531,7 +2531,8 @@
             "sourceArtifactRef": {
               "type": "modelSource",
               "id": "authorized-model-export-1",
-              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "digestScope": "artifact_bytes_sha256"
             },
             "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "digestScope": "artifact_bytes_sha256",
@@ -2564,7 +2565,8 @@
             "sourceArtifactRef": {
               "type": "modelSource",
               "id": "authorized-model-export-1",
-              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "digestScope": "artifact_bytes_sha256"
             },
             "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "digestScope": "artifact_bytes_sha256",
@@ -2621,20 +2623,251 @@
             "type": "datasetRevision",
             "datasetType": "lciamethod",
             "id": "method-1",
-            "version": "01.00.000",
-            "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
-            "licenseRef": "method-license-1"
+            "version": "01.00.000"
           },
           {
             "type": "datasetRevision",
             "datasetType": "lciamethod",
             "id": "method-2",
-            "version": "01.00.000",
-            "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
-            "licenseRef": "method-license-2"
+            "version": "01.00.000"
           }
         ]
       }
+    },
+    {
+      "id": "run-input-hash-must-equal-worker-issued-preparation-identity",
+      "steps": [
+        {
+          "operation": "run.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "client-invented-run-input-hash",
+          "body": {
+            "runId": "wrong-input-run",
+            "studyRevisionId": "revision-1",
+            "scenarioRevisionId": "scenario-revision-1",
+            "inputHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+            "calculationContractRef": {
+              "kind": "calculation_contract",
+              "schema": "lca.calculation-contract.v1",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            "jobId": "job-1",
+            "effectiveModelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-scenario-1",
+              "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
+              "digestScope": "worker_prepared_model"
+            },
+            "modelPreparationId": "prepare-scenario-1",
+            "profileId": "lca.study-deterministic-p0.v1",
+            "engineId": "solver-worker"
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
+    },
+    {
+      "id": "scenario-completion-cannot-omit-frozen-run-input-identity",
+      "steps": [
+        {
+          "operation": "model.complete",
+          "actor": "service",
+          "studyId": "study-1",
+          "idempotencyKey": "missing-worker-input-identity",
+          "body": {
+            "preparationId": "prepare-scenario-1",
+            "jobId": "job-prepare-scenario-1",
+            "leaseCurrent": true,
+            "producer": "solver-worker",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-scenario-1",
+              "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
+              "digestScope": "worker_prepared_model"
+            },
+            "inputArtifactRef": {
+              "type": "modelInput",
+              "id": "input-prepare-scenario-1",
+              "contentHash": "3333333333333333333333333333333333333333333333333333333333333333",
+              "digestScope": "artifact_bytes_sha256"
+            },
+            "inputHash": null
+          },
+          "expectError": "CAPABILITY_UNAVAILABLE"
+        }
+      ]
+    },
+    {
+      "id": "completion-cannot-replace-issued-run-input-identity",
+      "steps": [
+        {
+          "operation": "model.complete",
+          "actor": "service",
+          "studyId": "study-1",
+          "idempotencyKey": "change-issued-input-identity",
+          "body": {
+            "preparationId": "prepare-scenario-1",
+            "jobId": "job-prepare-scenario-1",
+            "leaseCurrent": true,
+            "producer": "solver-worker",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-scenario-1",
+              "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
+              "digestScope": "worker_prepared_model"
+            },
+            "inputArtifactRef": {
+              "type": "modelInput",
+              "id": "input-prepare-scenario-1",
+              "contentHash": "3333333333333333333333333333333333333333333333333333333333333333",
+              "digestScope": "artifact_bytes_sha256"
+            },
+            "inputHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+          },
+          "expectError": "IDEMPOTENCY_CONFLICT"
+        }
+      ],
+      "state": {
+        "preparations.prepare-scenario-1.inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    },
+    {
+      "id": "run-input-identity-is-not-input-artifact-byte-digest",
+      "steps": [],
+      "state": {
+        "preparations.prepare-base-1.inputHash": null,
+        "preparations.prepare-scenario-1.inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "preparations.prepare-scenario-1.inputArtifactRef.contentHash": "3333333333333333333333333333333333333333333333333333333333333333",
+        "runs.run-1.inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    },
+    {
+      "id": "historical-preparation-can-complete-after-draft-changes-but-cannot-freeze-it",
+      "steps": [
+        {
+          "operation": "scenario.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "new-draft-scenario",
+          "body": {
+            "scenarioRevisionId": "scenario-revision-2",
+            "studyRevisionId": "revision-1",
+            "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "effectiveModelRef": null,
+            "modelPreparationId": null
+          }
+        },
+        {
+          "operation": "model.prepare",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "prepare-prepare-scenario-2",
+          "body": {
+            "preparationId": "prepare-scenario-2",
+            "source": {
+              "type": "scenarioRevision",
+              "scenarioRevisionId": "scenario-revision-2",
+              "expectedRevision": 1,
+              "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            "profileId": "lca.study-deterministic-p0.v1",
+            "calculationContractRef": {
+              "kind": "calculation_contract",
+              "schema": "lca.calculation-contract.v1",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            "jobId": "job-prepare-scenario-2"
+          }
+        },
+        {
+          "operation": "scenario.update",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "change-after-preparation",
+          "body": {
+            "scenarioRevisionId": "scenario-revision-2",
+            "expectedRevision": 1,
+            "contentHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+          }
+        },
+        {
+          "operation": "model.complete",
+          "actor": "service",
+          "studyId": "study-1",
+          "idempotencyKey": "complete-prepare-scenario-2",
+          "body": {
+            "preparationId": "prepare-scenario-2",
+            "jobId": "job-prepare-scenario-2",
+            "leaseCurrent": true,
+            "producer": "solver-worker",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-scenario-2",
+              "contentHash": "4444444444444444444444444444444444444444444444444444444444444444",
+              "digestScope": "worker_prepared_model"
+            },
+            "inputArtifactRef": {
+              "type": "modelInput",
+              "id": "input-prepare-scenario-2",
+              "contentHash": "3333333333333333333333333333333333333333333333333333333333333333",
+              "digestScope": "artifact_bytes_sha256"
+            },
+            "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+          }
+        },
+        {
+          "operation": "scenario.freeze",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "freeze-prepared-scenario",
+          "body": {
+            "scenarioRevisionId": "scenario-revision-2",
+            "expectedRevision": 2,
+            "modelPreparationId": "prepare-scenario-2"
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ],
+      "state": {
+        "preparations.prepare-scenario-2.executionStatus": "completed",
+        "preparations.prepare-scenario-2.source.expectedRevision": 1,
+        "scenarios.scenario-revision-2.status": "draft",
+        "scenarios.scenario-revision-2.revision": 2
+      }
+    },
+    {
+      "id": "artifact-byte-digest-cannot-substitute-for-run-input-identity",
+      "steps": [
+        {
+          "operation": "run.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "byte-digest-is-not-run-input",
+          "body": {
+            "runId": "wrong-input-run",
+            "studyRevisionId": "revision-1",
+            "scenarioRevisionId": "scenario-revision-1",
+            "inputHash": "3333333333333333333333333333333333333333333333333333333333333333",
+            "calculationContractRef": {
+              "kind": "calculation_contract",
+              "schema": "lca.calculation-contract.v1",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            "jobId": "job-1",
+            "effectiveModelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-scenario-1",
+              "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
+              "digestScope": "worker_prepared_model"
+            },
+            "modelPreparationId": "prepare-scenario-1",
+            "profileId": "lca.study-deterministic-p0.v1",
+            "engineId": "solver-worker"
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
     }
   ]
 }

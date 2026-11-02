@@ -122,6 +122,17 @@ profile/calculation-contract reference and task. Only a trusted, currently
 fenced Worker completion may issue `modelRef` and `inputArtifactRef`; a client
 cannot construct a qualified receipt by supplying those fields.
 
+ModelPreparation also exposes `inputHash:null|<Worker-issued frozen Run-input
+identity>`. A completed Scenario preparation must have this identity, bound to
+the frozen StudyRevision functional unit/exact methodRefs, Scenario overrides
+and exact source; a base LifecycleModel preparation may still have null. Run
+admission requires exact equality with its ready preparation's `inputHash`,
+which the client can read rather than invent. This semantic input identity is
+distinct from `inputArtifactRef.contentHash`, the digest of artifact bytes.
+Database stores/compares the Worker-issued identity and never derives it from
+JSON, artifact bytes or the source digest. Conflicting completion cannot replace
+an already issued identity.
+
 The three identities remain separate: source export bytes use
 `artifact_bytes_sha256`; `modelRef:{type:"modelRevision",modelRevisionId,contentHash,digestScope:"worker_prepared_model"}`
 uses a Worker-owned prepared-model semantic domain; `inputArtifactRef` has
