@@ -1,0 +1,1325 @@
+{
+  "schemaVersion": "lca.study-durable-fixtures.v1",
+  "contractVersion": "lca.study-durable.v1",
+  "scope": "offline reference transitions; no wire schema, SQL/RLS or runtime proof",
+  "setup": [
+    {
+      "operation": "study.create",
+      "actor": "owner",
+      "studyId": "study-1",
+      "idempotencyKey": "study.create-1",
+      "body": {}
+    },
+    {
+      "operation": "member.set",
+      "actor": "owner",
+      "studyId": "study-1",
+      "idempotencyKey": "member.set-editor",
+      "body": {
+        "memberId": "editor",
+        "role": "editor",
+        "capabilities": [
+          "read",
+          "write"
+        ],
+        "expectedRevision": 1
+      }
+    },
+    {
+      "operation": "member.set",
+      "actor": "owner",
+      "studyId": "study-1",
+      "idempotencyKey": "member.set-reviewer",
+      "body": {
+        "memberId": "reviewer",
+        "role": "reviewer",
+        "capabilities": [
+          "read",
+          "review"
+        ],
+        "expectedRevision": 2
+      }
+    },
+    {
+      "operation": "revision.create",
+      "actor": "owner",
+      "studyId": "study-1",
+      "idempotencyKey": "revision.create-revision-1",
+      "body": {
+        "revisionId": "revision-1",
+        "parentRevisionId": null,
+        "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "operation": "revision.freeze",
+      "actor": "owner",
+      "studyId": "study-1",
+      "idempotencyKey": "revision.freeze-revision-1",
+      "body": {
+        "revisionId": "revision-1",
+        "expectedRevision": 1
+      }
+    },
+    {
+      "operation": "scenario.create",
+      "actor": "owner",
+      "studyId": "study-1",
+      "idempotencyKey": "scenario.create-1",
+      "body": {
+        "scenarioRevisionId": "scenario-revision-1",
+        "studyRevisionId": "revision-1",
+        "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "effectiveModelRef": {
+          "type": "modelRevision",
+          "id": "model-1",
+          "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      }
+    },
+    {
+      "operation": "scenario.freeze",
+      "actor": "owner",
+      "studyId": "study-1",
+      "idempotencyKey": "scenario.freeze-1",
+      "body": {
+        "scenarioRevisionId": "scenario-revision-1",
+        "expectedRevision": 1
+      }
+    },
+    {
+      "operation": "run.create",
+      "actor": "owner",
+      "studyId": "study-1",
+      "idempotencyKey": "run.create-run-1",
+      "body": {
+        "runId": "run-1",
+        "studyRevisionId": "revision-1",
+        "scenarioRevisionId": "scenario-revision-1",
+        "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "calculationContractRef": {
+          "kind": "calculation_contract",
+          "schema": "lca.calculation-contract.v1",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+        },
+        "jobId": "job-1"
+      }
+    },
+    {
+      "operation": "run.complete",
+      "actor": "service",
+      "studyId": "study-1",
+      "idempotencyKey": "run.complete-run-1",
+      "body": {
+        "runId": "run-1",
+        "jobId": "job-1",
+        "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "leaseCurrent": true,
+        "resultRef": {
+          "type": "analysisFactsBundle",
+          "id": "facts-1",
+          "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      }
+    },
+    {
+      "operation": "report.create",
+      "actor": "owner",
+      "studyId": "study-1",
+      "idempotencyKey": "report.create-run-1",
+      "body": {
+        "reportRevisionId": "report-1",
+        "runId": "run-1",
+        "factsRef": {
+          "type": "analysisFactsBundle",
+          "id": "facts-1",
+          "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        },
+        "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "operation": "report.freeze",
+      "actor": "owner",
+      "studyId": "study-1",
+      "idempotencyKey": "report.freeze-report-1",
+      "body": {
+        "reportRevisionId": "report-1",
+        "expectedRevision": 1
+      }
+    },
+    {
+      "operation": "export.create",
+      "actor": "owner",
+      "studyId": "study-1",
+      "idempotencyKey": "export.create-report-1",
+      "body": {
+        "exportId": "export-1",
+        "reportRevisionId": "report-1",
+        "projectionHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "grantEpoch": 3,
+        "trustedDisclosureDecision": "allowed",
+        "disclosureEpoch": 1,
+        "policyId": "test-disclosure.v1",
+        "disclosureContextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "operation": "share.create",
+      "actor": "owner",
+      "studyId": "study-1",
+      "idempotencyKey": "share.create-share-1",
+      "body": {
+        "shareId": "share-1",
+        "reportRevisionId": "report-1",
+        "exportId": "export-1",
+        "projectionHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "recipientId": "recipient",
+        "now": 100,
+        "expiresAt": 200
+      }
+    }
+  ],
+  "cases": [
+    {
+      "id": "cas-two-writers-one-wins",
+      "steps": [
+        {
+          "operation": "revision.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "cas-two-writers-one-wins:revision.create-revision-2",
+          "body": {
+            "revisionId": "revision-2",
+            "parentRevisionId": "revision-1",
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        {
+          "operation": "revision.update",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "cas-two-writers-one-wins:revision.update-revision-2",
+          "body": {
+            "revisionId": "revision-2",
+            "expectedRevision": 1,
+            "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        },
+        {
+          "operation": "revision.update",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "cas-two-writers-one-wins:second-writer",
+          "body": {
+            "revisionId": "revision-2",
+            "expectedRevision": 1,
+            "contentHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+          },
+          "expectError": "REVISION_CONFLICT"
+        }
+      ],
+      "state": {
+        "revisions.revision-2.contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "revisions.revision-2.revision": 2
+      }
+    },
+    {
+      "id": "freeze-wins-over-stale-update",
+      "steps": [
+        {
+          "operation": "revision.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "freeze-wins-over-stale-update:revision.create-revision-2",
+          "body": {
+            "revisionId": "revision-2",
+            "parentRevisionId": "revision-1",
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        {
+          "operation": "revision.freeze",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "freeze-wins-over-stale-update:revision.freeze-revision-2",
+          "body": {
+            "revisionId": "revision-2",
+            "expectedRevision": 1
+          }
+        },
+        {
+          "operation": "revision.update",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "freeze-wins-over-stale-update:revision.update-revision-2",
+          "body": {
+            "revisionId": "revision-2",
+            "expectedRevision": 1,
+            "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "expectError": "REVISION_CONFLICT"
+        }
+      ]
+    },
+    {
+      "id": "frozen-content-rejects-mutation",
+      "steps": [
+        {
+          "operation": "revision.update",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "frozen-content-rejects-mutation:revision.update-revision-1",
+          "body": {
+            "revisionId": "revision-1",
+            "expectedRevision": 2,
+            "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          },
+          "expectError": "FROZEN_REVISION"
+        }
+      ],
+      "state": {
+        "revisions.revision-1.contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "cross-study-parent-rejected",
+      "steps": [
+        {
+          "operation": "study.create",
+          "actor": "owner",
+          "studyId": "study-2",
+          "idempotencyKey": "cross-study-parent-rejected:study.create-1",
+          "body": {}
+        },
+        {
+          "operation": "revision.create",
+          "actor": "owner",
+          "studyId": "study-2",
+          "idempotencyKey": "cross-study-parent-rejected:revision.create-revision-2",
+          "body": {
+            "revisionId": "revision-2",
+            "parentRevisionId": "revision-1",
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
+    },
+    {
+      "id": "unknown-model-reference-kind-rejected",
+      "steps": [
+        {
+          "operation": "scenario.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "unknown-model-reference-kind-rejected:scenario.create-1",
+          "body": {
+            "scenarioRevisionId": "scenario-bad",
+            "studyRevisionId": "revision-1",
+            "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "effectiveModelRef": {
+              "type": "latest",
+              "id": "model-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            }
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
+    },
+    {
+      "id": "run-exact-idempotent-receipt",
+      "steps": [
+        {
+          "operation": "run.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "run.create-run-1",
+          "body": {
+            "runId": "run-1",
+            "studyRevisionId": "revision-1",
+            "scenarioRevisionId": "scenario-revision-1",
+            "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "calculationContractRef": {
+              "kind": "calculation_contract",
+              "schema": "lca.calculation-contract.v1",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            "jobId": "job-1"
+          },
+          "expect": {
+            "runId": "run-1",
+            "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+          }
+        }
+      ]
+    },
+    {
+      "id": "idempotency-content-change-rejected",
+      "steps": [
+        {
+          "operation": "run.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "run.create-run-1",
+          "body": {
+            "runId": "run-1",
+            "studyRevisionId": "revision-1",
+            "scenarioRevisionId": "scenario-revision-1",
+            "inputHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+            "calculationContractRef": {
+              "kind": "calculation_contract",
+              "schema": "lca.calculation-contract.v1",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            "jobId": "job-1"
+          },
+          "expectError": "IDEMPOTENCY_CONFLICT"
+        }
+      ]
+    },
+    {
+      "id": "permission-rechecked-before-idempotent-receipt",
+      "steps": [
+        {
+          "operation": "run.create",
+          "actor": "editor",
+          "studyId": "study-1",
+          "idempotencyKey": "permission-rechecked-before-idempotent-receipt:run.create-run-2",
+          "body": {
+            "runId": "run-2",
+            "studyRevisionId": "revision-1",
+            "scenarioRevisionId": "scenario-revision-1",
+            "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "calculationContractRef": {
+              "kind": "calculation_contract",
+              "schema": "lca.calculation-contract.v1",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            "jobId": "job-2"
+          }
+        },
+        {
+          "operation": "member.set",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "permission-rechecked-before-idempotent-receipt:revoke-editor",
+          "body": {
+            "memberId": "editor",
+            "role": null,
+            "capabilities": [],
+            "expectedRevision": 3
+          }
+        },
+        {
+          "operation": "run.create",
+          "actor": "editor",
+          "studyId": "study-1",
+          "idempotencyKey": "permission-rechecked-before-idempotent-receipt:run.create-run-2",
+          "body": {
+            "runId": "run-2",
+            "studyRevisionId": "revision-1",
+            "scenarioRevisionId": "scenario-revision-1",
+            "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "calculationContractRef": {
+              "kind": "calculation_contract",
+              "schema": "lca.calculation-contract.v1",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            "jobId": "job-2"
+          },
+          "expectError": "FORBIDDEN"
+        }
+      ]
+    },
+    {
+      "id": "capability-does-not-replace-role",
+      "steps": [
+        {
+          "operation": "member.set",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "capability-does-not-replace-role:member.set-viewer",
+          "body": {
+            "memberId": "viewer",
+            "role": "viewer",
+            "capabilities": [
+              "read",
+              "write"
+            ],
+            "expectedRevision": 3
+          }
+        },
+        {
+          "operation": "revision.create",
+          "actor": "viewer",
+          "studyId": "study-1",
+          "idempotencyKey": "capability-does-not-replace-role:revision.create-revision-2",
+          "body": {
+            "revisionId": "revision-2",
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "expectError": "FORBIDDEN"
+        }
+      ]
+    },
+    {
+      "id": "role-does-not-replace-capability",
+      "steps": [
+        {
+          "operation": "member.set",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "role-does-not-replace-capability:restrict-editor",
+          "body": {
+            "memberId": "editor",
+            "role": "editor",
+            "capabilities": [
+              "read"
+            ],
+            "expectedRevision": 3
+          }
+        },
+        {
+          "operation": "revision.create",
+          "actor": "editor",
+          "studyId": "study-1",
+          "idempotencyKey": "role-does-not-replace-capability:revision.create-revision-2",
+          "body": {
+            "revisionId": "revision-2",
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "expectError": "FORBIDDEN"
+        }
+      ]
+    },
+    {
+      "id": "opaque-calculation-reference-exact-schema",
+      "steps": [
+        {
+          "operation": "run.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "opaque-calculation-reference-exact-schema:run.create-run-2",
+          "body": {
+            "runId": "run-2",
+            "studyRevisionId": "revision-1",
+            "scenarioRevisionId": "scenario-revision-1",
+            "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "calculationContractRef": {
+              "kind": "calculation_contract",
+              "schema": "unknown",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            "jobId": "job-1"
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
+    },
+    {
+      "id": "opaque-calculation-reference-no-artifact-id",
+      "steps": [
+        {
+          "operation": "run.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "opaque-calculation-reference-no-artifact-id:run.create-run-2",
+          "body": {
+            "runId": "run-2",
+            "studyRevisionId": "revision-1",
+            "scenarioRevisionId": "scenario-revision-1",
+            "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "calculationContractRef": {
+              "kind": "calculation_contract",
+              "schema": "lca.calculation-contract.v1",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+              "artifactId": "invented"
+            },
+            "jobId": "job-1"
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
+    },
+    {
+      "id": "new-study-revision-preserves-frozen-run",
+      "steps": [
+        {
+          "operation": "revision.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "new-study-revision-preserves-frozen-run:revision.create-revision-2",
+          "body": {
+            "revisionId": "revision-2",
+            "parentRevisionId": "revision-1",
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          }
+        },
+        {
+          "operation": "revision.update",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "new-study-revision-preserves-frozen-run:revision.update-revision-2",
+          "body": {
+            "revisionId": "revision-2",
+            "expectedRevision": 1,
+            "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        }
+      ],
+      "state": {
+        "runs.run-1.studyRevisionId": "revision-1",
+        "runs.run-1.inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "runs.run-1.calculationContractRef.sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      }
+    },
+    {
+      "id": "validity-independent-from-success",
+      "steps": [
+        {
+          "operation": "run.withdraw",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "validity-independent-from-success:run.withdraw-run-1",
+          "body": {
+            "runId": "run-1",
+            "expectedRevision": 1
+          }
+        }
+      ],
+      "state": {
+        "runs.run-1.validity": "withdrawn",
+        "runs.run-1.executionStatus": "completed",
+        "runs.run-1.availability": "ready",
+        "runs.run-1.resultRef": {
+          "type": "analysisFactsBundle",
+          "id": "facts-1",
+          "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      }
+    },
+    {
+      "id": "stale-lease-cannot-record-result",
+      "steps": [
+        {
+          "operation": "run.complete",
+          "actor": "service",
+          "studyId": "study-1",
+          "idempotencyKey": "stale-lease-cannot-record-result:run.complete-run-1",
+          "body": {
+            "runId": "run-1",
+            "jobId": "job-1",
+            "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "leaseCurrent": false,
+            "resultRef": {
+              "type": "analysisFactsBundle",
+              "id": "facts-1",
+              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+            }
+          },
+          "expectError": "FORBIDDEN"
+        }
+      ]
+    },
+    {
+      "id": "service-does-not-gain-review-right",
+      "steps": [
+        {
+          "operation": "review.append",
+          "actor": "service",
+          "studyId": "study-1",
+          "idempotencyKey": "service-does-not-gain-review-right:review.append-review-1",
+          "body": {
+            "reviewId": "review-1",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "decision": "approved"
+          },
+          "expectError": "FORBIDDEN"
+        }
+      ]
+    },
+    {
+      "id": "actor-cannot-record-worker-result",
+      "steps": [
+        {
+          "operation": "run.complete",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "actor-cannot-record-worker-result:run.complete-run-1",
+          "body": {
+            "runId": "run-1",
+            "jobId": "job-1",
+            "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "leaseCurrent": true,
+            "resultRef": {
+              "type": "analysisFactsBundle",
+              "id": "facts-1",
+              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+            }
+          },
+          "expectError": "FORBIDDEN"
+        }
+      ]
+    },
+    {
+      "id": "report-cannot-substitute-facts",
+      "steps": [
+        {
+          "operation": "report.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "report-cannot-substitute-facts:report.create-run-1",
+          "body": {
+            "reportRevisionId": "report-2",
+            "runId": "run-1",
+            "factsRef": {
+              "type": "analysisFactsBundle",
+              "id": "facts-1",
+              "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
+    },
+    {
+      "id": "review-binds-report-content",
+      "steps": [
+        {
+          "operation": "review.append",
+          "actor": "reviewer",
+          "studyId": "study-1",
+          "idempotencyKey": "review-binds-report-content:review.append-review-1",
+          "body": {
+            "reviewId": "review-1",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-1",
+              "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            "decision": "approved"
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
+    },
+    {
+      "id": "new-report-does-not-inherit-review",
+      "steps": [
+        {
+          "operation": "review.append",
+          "actor": "reviewer",
+          "studyId": "study-1",
+          "idempotencyKey": "new-report-does-not-inherit-review:review.append-review-1",
+          "body": {
+            "reviewId": "review-1",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "decision": "approved"
+          }
+        },
+        {
+          "operation": "report.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "new-report-does-not-inherit-review:report.create-run-1",
+          "body": {
+            "reportRevisionId": "report-2",
+            "runId": "run-1",
+            "factsRef": {
+              "type": "analysisFactsBundle",
+              "id": "facts-1",
+              "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+            },
+            "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          }
+        },
+        {
+          "operation": "report.freeze",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "new-report-does-not-inherit-review:report.freeze-report-2",
+          "body": {
+            "reportRevisionId": "report-2",
+            "expectedRevision": 1
+          }
+        },
+        {
+          "operation": "report.finalize",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "new-report-does-not-inherit-review:report.finalize-report-2",
+          "body": {
+            "reportRevisionId": "report-2",
+            "expectedRevision": 2,
+            "reviewRequirement": "internal",
+            "profileId": "test-profile-internal",
+            "now": 150
+          },
+          "expectError": "REVIEW_REQUIRED"
+        }
+      ]
+    },
+    {
+      "id": "append-withdrawal-does-not-erase-decision",
+      "steps": [
+        {
+          "operation": "review.append",
+          "actor": "reviewer",
+          "studyId": "study-1",
+          "idempotencyKey": "append-withdrawal-does-not-erase-decision:review.append-review-1",
+          "body": {
+            "reviewId": "review-1",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "decision": "approved"
+          }
+        },
+        {
+          "operation": "review.append",
+          "actor": "reviewer",
+          "studyId": "study-1",
+          "idempotencyKey": "append-withdrawal-does-not-erase-decision:review.append-review-2",
+          "body": {
+            "reviewId": "review-2",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "decision": "withdrawn"
+          }
+        },
+        {
+          "operation": "report.finalize",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "append-withdrawal-does-not-erase-decision:report.finalize-report-1",
+          "body": {
+            "reportRevisionId": "report-1",
+            "expectedRevision": 2,
+            "reviewRequirement": "internal",
+            "profileId": "test-profile-internal",
+            "now": 150
+          },
+          "expectError": "REVIEW_REQUIRED"
+        }
+      ],
+      "state": {
+        "reviews.review-1.decision": "approved",
+        "reviews.review-2.decision": "withdrawn"
+      }
+    },
+    {
+      "id": "finalization-separate-from-frozen-content",
+      "steps": [
+        {
+          "operation": "report.finalize",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "finalization-separate-from-frozen-content:report.finalize-report-1",
+          "body": {
+            "reportRevisionId": "report-1",
+            "expectedRevision": 2,
+            "reviewRequirement": "none",
+            "profileId": "test-profile-none",
+            "now": 150
+          }
+        }
+      ],
+      "state": {
+        "reports.report-1.status": "frozen",
+        "reports.report-1.finalizationStatus": "finalized",
+        "reports.report-1.contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+      }
+    },
+    {
+      "id": "internal-review-permits-finalization",
+      "steps": [
+        {
+          "operation": "review.append",
+          "actor": "reviewer",
+          "studyId": "study-1",
+          "idempotencyKey": "internal-review-permits-finalization:review.append-review-1",
+          "body": {
+            "reviewId": "review-1",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "decision": "approved"
+          }
+        },
+        {
+          "operation": "report.finalize",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "internal-review-permits-finalization:report.finalize-report-1",
+          "body": {
+            "reportRevisionId": "report-1",
+            "expectedRevision": 2,
+            "reviewRequirement": "internal",
+            "profileId": "test-profile-internal",
+            "now": 150
+          }
+        }
+      ],
+      "state": {
+        "reports.report-1.finalizationStatus": "finalized"
+      }
+    },
+    {
+      "id": "independent-review-is-not-implied",
+      "steps": [
+        {
+          "operation": "report.finalize",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "independent-review-is-not-implied:report.finalize-report-1",
+          "body": {
+            "reportRevisionId": "report-1",
+            "expectedRevision": 2,
+            "reviewRequirement": "independent",
+            "profileId": "test-profile-independent",
+            "now": 150
+          },
+          "expectError": "CAPABILITY_UNAVAILABLE"
+        }
+      ]
+    },
+    {
+      "id": "disclosure-denial-no-export",
+      "steps": [
+        {
+          "operation": "export.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "disclosure-denial-no-export:export.create-report-1",
+          "body": {
+            "exportId": "export-2",
+            "reportRevisionId": "report-1",
+            "projectionHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "grantEpoch": 3,
+            "trustedDisclosureDecision": "denied",
+            "disclosureEpoch": 1,
+            "policyId": "test-disclosure.v1",
+            "disclosureContextHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "expectError": "DISCLOSURE_DENIED"
+        }
+      ]
+    },
+    {
+      "id": "share-cannot-change-export-projection",
+      "steps": [
+        {
+          "operation": "share.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "share-cannot-change-export-projection:share.create-share-2",
+          "body": {
+            "shareId": "share-2",
+            "reportRevisionId": "report-1",
+            "exportId": "export-1",
+            "projectionHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "recipientId": "recipient",
+            "now": 100,
+            "expiresAt": 200
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
+    },
+    {
+      "id": "recipient-only-projection-not-study",
+      "steps": [
+        {
+          "operation": "share.read",
+          "actor": "recipient",
+          "studyId": "study-1",
+          "idempotencyKey": "recipient-only-projection-not-study:share.read-share-1",
+          "body": {
+            "shareId": "share-1",
+            "now": 150
+          },
+          "expect": {
+            "projectionHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+            "reportRevisionId": "report-1"
+          }
+        },
+        {
+          "operation": "study.read",
+          "actor": "recipient",
+          "studyId": "study-1",
+          "idempotencyKey": "recipient-only-projection-not-study:study.read-1",
+          "body": {},
+          "expectError": "FORBIDDEN"
+        },
+        {
+          "operation": "share.read",
+          "actor": "outsider",
+          "studyId": "study-1",
+          "idempotencyKey": "recipient-only-projection-not-study:share.read-share-1",
+          "body": {
+            "shareId": "share-1",
+            "now": 150
+          },
+          "expectError": "FORBIDDEN"
+        }
+      ]
+    },
+    {
+      "id": "share-expiry-denies-new-access",
+      "steps": [
+        {
+          "operation": "share.read",
+          "actor": "recipient",
+          "studyId": "study-1",
+          "idempotencyKey": "share-expiry-denies-new-access:share.read-share-1",
+          "body": {
+            "shareId": "share-1",
+            "now": 200
+          },
+          "expectError": "FORBIDDEN"
+        }
+      ],
+      "state": {
+        "shares.share-1.status": "active"
+      }
+    },
+    {
+      "id": "share-revocation-preserves-export-history",
+      "steps": [
+        {
+          "operation": "share.revoke",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "share-revocation-preserves-export-history:share.revoke-share-1",
+          "body": {
+            "shareId": "share-1",
+            "expectedRevision": 1
+          }
+        },
+        {
+          "operation": "share.read",
+          "actor": "recipient",
+          "studyId": "study-1",
+          "idempotencyKey": "share-revocation-preserves-export-history:share.read-share-1",
+          "body": {
+            "shareId": "share-1",
+            "now": 150
+          },
+          "expectError": "FORBIDDEN"
+        }
+      ],
+      "state": {
+        "shares.share-1.status": "revoked",
+        "exports.export-1.projectionHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+      }
+    },
+    {
+      "id": "grant-revocation-fences-export-and-share",
+      "steps": [
+        {
+          "operation": "member.set",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "grant-revocation-fences-export-and-share:revoke-editor",
+          "body": {
+            "memberId": "editor",
+            "role": null,
+            "capabilities": [],
+            "expectedRevision": 3
+          }
+        },
+        {
+          "operation": "export.read",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "grant-revocation-fences-export-and-share:export.read-export-1",
+          "body": {
+            "exportId": "export-1"
+          },
+          "expectError": "FORBIDDEN"
+        },
+        {
+          "operation": "share.read",
+          "actor": "recipient",
+          "studyId": "study-1",
+          "idempotencyKey": "grant-revocation-fences-export-and-share:share.read-share-1",
+          "body": {
+            "shareId": "share-1",
+            "now": 150
+          },
+          "expectError": "FORBIDDEN"
+        }
+      ],
+      "state": {
+        "exports.export-1.grantEpoch": 3,
+        "studies.study-1.grantEpoch": 4
+      }
+    },
+    {
+      "id": "archive-preserves-history-rejects-new-work",
+      "steps": [
+        {
+          "operation": "study.archive",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "archive-preserves-history-rejects-new-work:study.archive-1",
+          "body": {
+            "expectedRevision": 3
+          }
+        },
+        {
+          "operation": "revision.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "archive-preserves-history-rejects-new-work:revision.create-revision-2",
+          "body": {
+            "revisionId": "revision-2",
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          },
+          "expectError": "FROZEN_REVISION"
+        },
+        {
+          "operation": "share.read",
+          "actor": "recipient",
+          "studyId": "study-1",
+          "idempotencyKey": "archive-preserves-history-rejects-new-work:share.read-share-1",
+          "body": {
+            "shareId": "share-1",
+            "now": 150
+          },
+          "expectError": "FORBIDDEN"
+        },
+        {
+          "operation": "study.read",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "archive-preserves-history-rejects-new-work:study.read-1",
+          "body": {},
+          "expect": {
+            "studyId": "study-1",
+            "revision": 4
+          }
+        }
+      ],
+      "state": {
+        "runs.run-1.resultRef": {
+          "type": "analysisFactsBundle",
+          "id": "facts-1",
+          "contentHash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+        }
+      }
+    },
+    {
+      "id": "unknown-transition-rejected",
+      "steps": [
+        {
+          "operation": "run.patch",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "unknown-transition-rejected:run.patch-run-1",
+          "body": {
+            "runId": "run-1",
+            "inputHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+          },
+          "expectError": "INVALID_REQUEST"
+        }
+      ]
+    },
+    {
+      "id": "study-create-exact-retry",
+      "steps": [
+        {
+          "operation": "study.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "study.create-1",
+          "body": {},
+          "expect": {
+            "studyId": "study-1"
+          }
+        }
+      ]
+    },
+    {
+      "id": "revoked-reviewer-does-not-satisfy-new-finalization",
+      "steps": [
+        {
+          "operation": "review.append",
+          "actor": "reviewer",
+          "studyId": "study-1",
+          "idempotencyKey": "approval-before-revoke",
+          "body": {
+            "reviewId": "review-revoked",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "decision": "approved"
+          }
+        },
+        {
+          "operation": "member.set",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "revoke-reviewer",
+          "body": {
+            "memberId": "reviewer",
+            "role": null,
+            "capabilities": [],
+            "expectedRevision": 3
+          }
+        },
+        {
+          "operation": "report.finalize",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "finalize-after-revoke",
+          "body": {
+            "reportRevisionId": "report-1",
+            "expectedRevision": 2,
+            "reviewRequirement": "internal",
+            "profileId": "test-profile-internal",
+            "now": 150
+          },
+          "expectError": "REVIEW_REQUIRED"
+        }
+      ]
+    },
+    {
+      "id": "later-review-withdrawal-preserves-finalization-snapshot",
+      "steps": [
+        {
+          "operation": "review.append",
+          "actor": "reviewer",
+          "studyId": "study-1",
+          "idempotencyKey": "approved-before-finalize",
+          "body": {
+            "reviewId": "review-finalize",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "decision": "approved"
+          }
+        },
+        {
+          "operation": "report.finalize",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "freeze-decision",
+          "body": {
+            "reportRevisionId": "report-1",
+            "expectedRevision": 2,
+            "reviewRequirement": "internal",
+            "profileId": "test-profile-internal",
+            "now": 150
+          }
+        },
+        {
+          "operation": "review.append",
+          "actor": "reviewer",
+          "studyId": "study-1",
+          "idempotencyKey": "withdraw-after-finalize",
+          "body": {
+            "reviewId": "review-withdraw",
+            "target": {
+              "type": "reportRevision",
+              "revisionId": "report-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "decision": "withdrawn"
+          }
+        }
+      ],
+      "state": {
+        "reports.report-1.finalization": {
+          "profileId": "test-profile-internal",
+          "reviewIds": [
+            "review-finalize"
+          ],
+          "finalizedAt": 150
+        },
+        "reviews.review-withdraw.decision": "withdrawn"
+      }
+    },
+    {
+      "id": "conflicting-terminal-result-is-rejected",
+      "steps": [
+        {
+          "operation": "run.complete",
+          "actor": "service",
+          "studyId": "study-1",
+          "idempotencyKey": "conflict-completion",
+          "body": {
+            "runId": "run-1",
+            "jobId": "job-1",
+            "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "leaseCurrent": true,
+            "resultRef": {
+              "type": "analysisFactsBundle",
+              "id": "facts-2",
+              "contentHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+            }
+          },
+          "expectError": "IDEMPOTENCY_CONFLICT"
+        }
+      ]
+    },
+    {
+      "id": "source-rights-change-denies-new-disclosure-without-changing-study-grants",
+      "steps": [
+        {
+          "operation": "source.revoke",
+          "actor": "service",
+          "studyId": "study-1",
+          "body": {}
+        },
+        {
+          "operation": "export.read",
+          "actor": "owner",
+          "studyId": "study-1",
+          "body": {
+            "exportId": "export-1"
+          },
+          "expectError": "DISCLOSURE_DENIED"
+        },
+        {
+          "operation": "share.read",
+          "actor": "recipient",
+          "studyId": "study-1",
+          "body": {
+            "shareId": "share-1",
+            "now": 150
+          },
+          "expectError": "DISCLOSURE_DENIED"
+        }
+      ],
+      "state": {
+        "studies.study-1.grantEpoch": 3,
+        "studies.study-1.disclosureEpoch": 2,
+        "exports.export-1.disclosureEpoch": 1,
+        "exports.export-1.actor": "owner"
+      }
+    }
+  ]
+}

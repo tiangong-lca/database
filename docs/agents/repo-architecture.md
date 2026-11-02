@@ -30,9 +30,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-01
-lastReviewedCommit: fb69a78b88833f0f01fba5c1fea9b97df09fa4ad
-lastReviewedNote: "Database #879: reviewed immutable manager public-readback attestations, live publication/reader/ZIP admission, historical recovery, populated upgrade and identical local schema exports. No remote deployment."
+lastReviewedAt: 2026-11-02
+lastReviewedCommit: ff306c42cecd3ea25ecc7e4be3b22f5639127904
+lastReviewedNote: "Database #885: reviewed the P0 Study durable contract, offline examples and CI check; schema, branch, grants and deployable inputs remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -45,6 +45,15 @@ Allocation contract update (Database #789): `private.lcia_scope_closure_normaliz
 ## Repo Shape
 
 This repo is organized around one checked-in Supabase project plus a generated schema-inspection workspace.
+
+## Proposed Study durable domain
+
+[LCA Study durable invariants v1](lca-study-durable-contract.md) owns the P0
+identity, revision, authorization, concurrency and report review/export/share
+contract with offline transition examples. It introduces no schema or runtime
+capability. Edge owns public Study wire schemas; Worker owns numerical contracts.
+Study/Run/Report remain distinct from LifecycleModel, worker_jobs and formal
+Final Result publication. Later implementation must prove SQL and runtime behavior.
 
 ## Final Result content identity
 

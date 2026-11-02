@@ -22,9 +22,9 @@ checkPaths:
   - .github/workflows/supabase-dev.yml
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
-lastReviewedAt: 2026-11-01
-lastReviewedCommit: cc36f78aa2efa18d25fc2efc057a4f2ec5680e01
-lastReviewedNote: "Database #879: reviewed bounded manager-only current/run/exact-approval recovery reads, historical authority preservation, explicit legacy format and populated upgrade proof. Reads do not authorize or mutate publication."
+lastReviewedAt: 2026-11-02
+lastReviewedCommit: ff306c42cecd3ea25ecc7e4be3b22f5639127904
+lastReviewedNote: "Database #885: reviewed the P0 Study durable contract, offline examples and CI check; schema, branch, grants and deployable inputs remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

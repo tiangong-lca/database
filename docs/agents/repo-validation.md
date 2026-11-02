@@ -32,9 +32,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-01
-lastReviewedCommit: fb69a78b88833f0f01fba5c1fea9b97df09fa4ad
-lastReviewedNote: "Database #879: reviewed immutable manager public-readback attestations, live publication/reader/ZIP admission, historical recovery, populated upgrade and identical local schema exports. No remote deployment."
+lastReviewedAt: 2026-11-02
+lastReviewedCommit: ff306c42cecd3ea25ecc7e4be3b22f5639127904
+lastReviewedNote: "Database #885: reviewed the P0 Study durable contract, offline examples and CI check; schema, branch, grants and deployable inputs remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -51,13 +51,32 @@ related:
 
 ## Default Baseline
 
-Unless the change is doc-only repo-maintenance work or the offline workflow/monitoring contract category below, the baseline local commands are:
+Unless the change is doc-only repo-maintenance work, the offline Study contract category below, or the offline workflow/monitoring contract category below, the baseline local commands are:
 
 ```bash
 supabase start
 supabase db reset
 supabase migration list
 ```
+
+## Offline LCA Study durable contract (P0)
+
+For Database #885, run `python3 -B supabase/tests/lca_study_durable_contract.py`
+from this repository. The checker executes sequential transition traces from
+`supabase/tests/fixtures/lca-study-durable.v1.json` against the Database-owned
+[durable contract](lca-study-durable-contract.md), including rejection rollback,
+CAS/freeze, idempotency, live authorization, Run evidence and review/export/share
+bindings. No dependency installation, database, container or credential is needed.
+
+Keep all five deployable input groups unchanged: `supabase/config.toml`,
+`supabase/migrations/`, `supabase/seed.sql`, `supabase/seeds/` and
+`supabase/functions/`. Run Docpact and `git diff --check`; retain the normal
+required PR CI. This category proves only the offline examples. It does not
+qualify SQL/RLS, actual concurrent transactions, lease fencing, team membership,
+real disclosure/exports/shares or deployment. P1 migration work must use the
+ordinary database baseline and independent runtime proof.
+
+## Existing database baseline details
 
 Open Data catalog or publication changes must additionally run the focused
 `supabase/tests/20260923_open_data_catalog_publications.sql` and

@@ -1,8 +1,8 @@
 version: 1
 layout: repo
-lastReviewedAt: "2026-11-01"
-lastReviewedCommit: "fb69a78b88833f0f01fba5c1fea9b97df09fa4ad"
-lastReviewedNote: "Database #879: reviewed immutable manager public-readback attestations, live publication/reader/ZIP admission, historical recovery, populated upgrade and identical local schema exports. No remote deployment."
+lastReviewedAt: 2026-11-02
+lastReviewedCommit: ff306c42cecd3ea25ecc7e4be3b22f5639127904
+lastReviewedNote: "Database #885: reviewed the P0 Study durable contract, offline examples and CI check; schema, branch, grants and deployable inputs remain unchanged."
 
 # Keep deterministic governance facts here.
 # AGENTS.md remains the repo contract entrypoint.
@@ -19,6 +19,7 @@ catalog:
         - docs/agents/dependency-maintenance.md
         - docs/agents/repo-architecture.md
         - docs/agents/portal-projection-migration-recovery.md
+        - docs/agents/lca-study-durable-contract.md
       workspaceIntegrationRequired: true
 
 ownership:
@@ -79,6 +80,7 @@ coverage:
     - README.zh-CN.md
     - .docpact/**
     - docs/agents/repo-validation.md
+    - docs/agents/lca-study-durable-contract.md
     - docs/agents/dependency-maintenance.md
     - docs/agents/repo-architecture.md
     - docs/agents/portal-projection-migration-recovery.md
@@ -113,6 +115,11 @@ freshness:
 
 routing:
   intents:
+    lca-study-durable:
+      paths:
+        - docs/agents/lca-study-durable-contract.md
+        - supabase/tests/lca_study_durable_contract.py
+        - supabase/tests/fixtures/lca-study-durable.v1.json
     schema-boundary:
       paths:
         - supabase/config.toml
@@ -273,6 +280,24 @@ repo:
   owner: database-engine
 
 rules:
+  - id: database-engine-lca-study-durable-contract
+    scope: repo
+    repo: database-engine
+    triggers:
+      - path: docs/agents/lca-study-durable-contract.md
+        kind: domain-contract
+      - path: supabase/tests/lca_study_durable_contract.py
+        kind: offline-reference-model
+      - path: supabase/tests/fixtures/lca-study-durable.v1.json
+        kind: domain-examples
+    requiredDocs:
+      - path: docs/agents/lca-study-durable-contract.md
+        mode: review_or_update
+      - path: docs/agents/repo-validation.md
+        mode: review_or_update
+      - path: .docpact/config.yaml
+        mode: review_or_update
+    reason: Study durable examples and reference transitions must preserve their Database-owned contract without implying a deployed schema or duplicating the Edge wire schema.
   - id: database-engine-bootstrap-contract
     scope: repo
     repo: database-engine
