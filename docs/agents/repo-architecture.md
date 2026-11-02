@@ -30,9 +30,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-01
-lastReviewedCommit: fb69a78b88833f0f01fba5c1fea9b97df09fa4ad
-lastReviewedNote: "Database #879: reviewed immutable manager public-readback attestations, live publication/reader/ZIP admission, historical recovery, populated upgrade and identical local schema exports. No remote deployment."
+lastReviewedAt: 2026-11-02
+lastReviewedCommit: ff306c42cecd3ea25ecc7e4be3b22f5639127904
+lastReviewedNote: "Database #887: reviewed dedicated ZIP Storage role, restrictive path/write fences, unchanged branch deployment ownership and focused qualification requirements."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1794,3 +1794,10 @@ Database #846 adds `api.svc_lca_calculation_export(uuid,uuid,text,boolean)`: ser
 `private.lca_calculation_contracts` stores exact Worker-authored descriptor bytes and SHA-256 identities. `private.lca_active_calculation_contract` holds the explicitly activated identity. The service-only private activation function uses a locked compare-and-set; application roles cannot mutate descriptors or activate identities. No algorithm version is selected by migrations or Worker startup. Worker owns descriptor semantics and the activation CLI; see its scope-closure contract for the rollout sequence.
 
 New scope-closure execution fingerprints and ordinary snapshot-build queue keys include the active opaque identity independently of scanner and data-policy versions. Recorded actor/token retries return the original closure task even after activation; newly recorded tokens additionally reject a changed input payload. Existing immutable packages and historical task IDs stay readable. `api.svc_lca_snapshot_candidates` projects `calculationCurrent` and orders compatible candidates first so Edge can admit new compute without embedding algorithm knowledge. The unconfigured bootstrap preserves existing admission until explicit activation; after activation, a missing or different ready-snapshot identity is incompatible. Missing geography and factor coverage do not affect this contract.
+
+
+## Final Result ZIP signing role
+
+`lca_result_zip_reader` is a NOLOGIN, NOINHERIT, NOBYPASSRLS Storage identity with no application-role membership. Its only explicit relation grant is SELECT on `storage.objects`; it has no `api`/`private` schema access or object/bucket DML. An exact permissive SELECT policy plus restrictive SELECT/INSERT/UPDATE/DELETE fences limit reads to the two final Result ZIP names under `lca_results/release-candidates/<64-lowercase-hex>/` in bucket `lca_results`, including against future permissive PUBLIC policies. HDF5, indexes, other prefixes and buckets remain outside this role. The gateway authenticator can SET the role without inheriting it.
+
+Edge owns actor/current/complete-Candidate authorization and single-object short-lived URLs. Operations provision separate secret API keys with this exact role template; no key material or environment identity lives in migrations. This role does not activate Results or grant application access. Retire credentials through API-key revocation, preserving existing publication semantics.
