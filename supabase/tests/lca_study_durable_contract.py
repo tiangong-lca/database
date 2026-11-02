@@ -43,7 +43,7 @@ class Model:
     """Small sequential reference model. Future SQL must independently prove it."""
     def __init__(self):
         self.state = {name: {} for name in (
-            "studies", "revisions", "scenarios", "runs", "reports", "reviews", "exports", "shares", "receipts")}
+            "studies", "sourceSnapshots", "preparations", "revisions", "scenarios", "runs", "reports", "reviews", "exports", "shares", "receipts")}
 
     def study(self, study_id):
         require(study_id in self.state["studies"], "REFERENCE_MISMATCH")
@@ -84,6 +84,14 @@ class Model:
         self.state["receipts"][identity] = {"requestHash": request_hash, "result": copy.deepcopy(result)}
         return copy.deepcopy(result)
 
+    def qualified_model(self, preparation_id, study_id):
+        preparation = self.record("preparations", preparation_id, study_id)
+        require(preparation["executionStatus"] == "completed" and preparation["modelRef"] is not None
+                and preparation["inputArtifactRef"] is not None, "CAPABILITY_UNAVAILABLE")
+        require(preparation["modelProducer"] == "solver-worker"
+                and preparation["modelRef"]["digestScope"] == "worker_prepared_model", "REFERENCE_MISMATCH")
+        return preparation
+
     def execute(self, event):
         """Atomic example transition, including rollback of rejected operations."""
         before = copy.deepcopy(self.state)
@@ -115,6 +123,39 @@ class Model:
             return copy.deepcopy(result)
 
         study = self.study(study_id)
+        if operation == "model.source.record":
+            require(actor == "service", "FORBIDDEN")
+            self.authorize(body["requestedBy"], study, "write")
+            require(body["authorizedExport"] is True, "CAPABILITY_UNAVAILABLE")
+            require(body["originRef"]["type"] == "datasetRevision" and body["originRef"]["datasetType"] == "lifecyclemodel"
+                    and bool(body["originRef"]["id"]) and bool(body["originRef"]["version"]), "REFERENCE_MISMATCH")
+            require(body["sourceArtifactRef"]["type"] == "modelSource" and bool(body["sourceArtifactRef"]["id"]), "REFERENCE_MISMATCH")
+            require(body["digestScope"] == "artifact_bytes_sha256" and valid_hash(body["contentHash"])
+                    and body["contentHash"] == body["sourceArtifactRef"]["contentHash"], "REFERENCE_MISMATCH")
+            identity, request_hash, previous = self.receipt(event)
+            if previous:
+                return copy.deepcopy(previous["result"])
+            require(body["snapshotId"] not in self.state["sourceSnapshots"], "REFERENCE_MISMATCH")
+            self.state["sourceSnapshots"][body["snapshotId"]] = dict(copy.deepcopy(body), studyId=study_id)
+            return self.remember(identity, request_hash, {"snapshotId": body["snapshotId"]})
+        if operation == "model.complete":
+            require(actor == "service", "FORBIDDEN")
+            preparation = self.record("preparations", body["preparationId"], study_id)
+            require(body["jobId"] == preparation["jobId"] and body["leaseCurrent"] is True, "FORBIDDEN")
+            require(body["producer"] == "solver-worker" and body["modelRef"]["digestScope"] == "worker_prepared_model", "CAPABILITY_UNAVAILABLE")
+            require(body["modelRef"]["type"] == "modelRevision" and bool(body["modelRef"]["modelRevisionId"])
+                    and valid_hash(body["modelRef"]["contentHash"]), "REFERENCE_MISMATCH")
+            require(body["inputArtifactRef"]["type"] == "modelInput" and bool(body["inputArtifactRef"]["id"])
+                    and valid_hash(body["inputArtifactRef"]["contentHash"]), "REFERENCE_MISMATCH")
+            identity, request_hash, previous = self.receipt(event)
+            if previous:
+                return copy.deepcopy(previous["result"])
+            require(preparation["modelRef"] in (None, body["modelRef"])
+                    and preparation["inputArtifactRef"] in (None, body["inputArtifactRef"]), "IDEMPOTENCY_CONFLICT")
+            preparation.update(executionStatus="completed", modelProducer=body["producer"],
+                               modelRef=copy.deepcopy(body["modelRef"]),
+                               inputArtifactRef=copy.deepcopy(body["inputArtifactRef"]))
+            return self.remember(identity, request_hash, {"preparationId": body["preparationId"], "modelRef": preparation["modelRef"]})
         if operation == "source.revoke":
             require(actor == "service", "FORBIDDEN")
             # Trusted external disclosure-context change, not source mutation.
@@ -168,6 +209,26 @@ class Model:
         return self.remember(receipt_key, request_hash, result)
 
     def transition(self, operation, actor, study_id, study, body):
+        if operation == "model.prepare":
+            require(body["preparationId"] not in self.state["preparations"], "REFERENCE_MISMATCH")
+            ref = body["calculationContractRef"]
+            require(set(ref) == {"kind", "schema", "sha256"} and ref["kind"] == "calculation_contract"
+                    and ref["schema"] == "lca.calculation-contract.v1" and valid_hash(ref["sha256"]), "REFERENCE_MISMATCH")
+            require(bool(body["profileId"]) and bool(body["jobId"]), "INVALID_REQUEST")
+            source = body["source"]
+            if source["type"] == "modelSourceSnapshot":
+                snapshot = self.record("sourceSnapshots", source["snapshotId"], study_id)
+                require(source["contentHash"] == snapshot["contentHash"]
+                        and source["digestScope"] == snapshot["digestScope"] == "artifact_bytes_sha256", "REFERENCE_MISMATCH")
+            elif source["type"] == "scenarioRevision":
+                scenario = self.record("scenarios", source["scenarioRevisionId"], study_id)
+                self.cas(scenario, source["expectedRevision"])
+                require(scenario["status"] == "draft" and scenario["contentHash"] == source["contentHash"], "REFERENCE_MISMATCH")
+            else:
+                raise Rejected("CAPABILITY_UNAVAILABLE")
+            self.state["preparations"][body["preparationId"]] = dict(copy.deepcopy(body), studyId=study_id,
+                executionStatus="queued", modelRef=None, inputArtifactRef=None)
+            return {"preparationId": body["preparationId"]}
         if operation == "member.set":
             self.cas(study, body["expectedRevision"])
             require(body["memberId"] != actor, "FORBIDDEN")
@@ -194,11 +255,13 @@ class Model:
             require(valid_hash(body["contentHash"]), "INVALID_REQUEST")
             if operation == "revision.create" and body.get("parentRevisionId"):
                 self.record("revisions", body["parentRevisionId"], study_id)
+            if operation == "revision.create":
+                preparation = self.qualified_model(body["modelPreparationId"], study_id)
+                require(body["modelRef"] == preparation["modelRef"], "REFERENCE_MISMATCH")
             if operation == "scenario.create":
                 base = self.record("revisions", body["studyRevisionId"], study_id)
                 require(base["status"] == "frozen", "FROZEN_REVISION")
-                require(body["effectiveModelRef"]["type"] == "modelRevision", "REFERENCE_MISMATCH")
-                require(valid_hash(body["effectiveModelRef"]["contentHash"]), "INVALID_REQUEST")
+                require(body["effectiveModelRef"] is None, "REFERENCE_MISMATCH")
             if operation == "report.create":
                 run = self.record("runs", body["runId"], study_id)
                 require(run["resultRef"] is not None and run["availability"] == "ready", "REFERENCE_MISMATCH")
@@ -210,18 +273,28 @@ class Model:
                 record["finalization"] = None
             self.state[table][body[key]] = record
             return {key: body[key], "revision": 1}
-        if operation in {"revision.update", "revision.freeze", "scenario.freeze", "report.freeze"}:
+        if operation in {"revision.update", "revision.freeze", "scenario.update", "scenario.freeze", "report.freeze"}:
             table, key = {"revision.update": ("revisions", "revisionId"),
                           "revision.freeze": ("revisions", "revisionId"),
+                          "scenario.update": ("scenarios", "scenarioRevisionId"),
                           "scenario.freeze": ("scenarios", "scenarioRevisionId"),
                           "report.freeze": ("reports", "reportRevisionId")}[operation]
             record = self.record(table, body[key], study_id)
             self.cas(record, body["expectedRevision"])
             require(record["status"] == "draft", "FROZEN_REVISION")
-            if operation == "revision.update":
+            if operation in {"revision.update", "scenario.update"}:
                 require(valid_hash(body["contentHash"]), "INVALID_REQUEST")
                 record["contentHash"] = body["contentHash"]
             else:
+                if operation == "revision.freeze":
+                    preparation = self.qualified_model(record["modelPreparationId"], study_id)
+                    require(record["modelRef"] == preparation["modelRef"], "REFERENCE_MISMATCH")
+                if operation == "scenario.freeze":
+                    preparation = self.qualified_model(body["modelPreparationId"], study_id)
+                    require(preparation["source"] == {"type": "scenarioRevision", "scenarioRevisionId": body[key],
+                        "expectedRevision": record["revision"], "contentHash": record["contentHash"]}, "REFERENCE_MISMATCH")
+                    record["modelPreparationId"] = body["modelPreparationId"]
+                    record["effectiveModelRef"] = copy.deepcopy(preparation["modelRef"])
                 record["status"] = "frozen"
             record["revision"] += 1
             return {key: body[key], "revision": record["revision"], "contentHash": record["contentHash"]}
@@ -231,6 +304,11 @@ class Model:
             scenario = self.record("scenarios", body["scenarioRevisionId"], study_id)
             require(base["status"] == scenario["status"] == "frozen", "FROZEN_REVISION")
             require(scenario["studyRevisionId"] == body["studyRevisionId"], "REFERENCE_MISMATCH")
+            preparation = self.qualified_model(scenario["modelPreparationId"], study_id)
+            require(body["modelPreparationId"] == scenario["modelPreparationId"]
+                    and body["effectiveModelRef"] == scenario["effectiveModelRef"] == preparation["modelRef"], "REFERENCE_MISMATCH")
+            require(body["calculationContractRef"] == preparation["calculationContractRef"]
+                    and body["profileId"] == preparation["profileId"] and body["engineId"] == "solver-worker", "REFERENCE_MISMATCH")
             require(valid_hash(body["inputHash"]), "INVALID_REQUEST")
             ref = body["calculationContractRef"]
             require(set(ref) == {"kind", "schema", "sha256"} and ref["kind"] == "calculation_contract"

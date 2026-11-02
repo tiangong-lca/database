@@ -41,6 +41,78 @@
       }
     },
     {
+      "operation": "model.source.record",
+      "actor": "service",
+      "studyId": "study-1",
+      "idempotencyKey": "source-record-1",
+      "body": {
+        "snapshotId": "source-snapshot-1",
+        "originRef": {
+          "type": "datasetRevision",
+          "datasetType": "lifecyclemodel",
+          "id": "existing-model-1",
+          "version": "01.00.000"
+        },
+        "sourceArtifactRef": {
+          "type": "modelSource",
+          "id": "authorized-model-export-1",
+          "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "digestScope": "artifact_bytes_sha256",
+        "licenseRef": "source-license-1",
+        "issuerId": "authorized-exporter",
+        "observedAt": 100,
+        "requestedBy": "owner",
+        "authorizedExport": true
+      }
+    },
+    {
+      "operation": "model.prepare",
+      "actor": "owner",
+      "studyId": "study-1",
+      "idempotencyKey": "prepare-prepare-base-1",
+      "body": {
+        "preparationId": "prepare-base-1",
+        "source": {
+          "type": "modelSourceSnapshot",
+          "snapshotId": "source-snapshot-1",
+          "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "digestScope": "artifact_bytes_sha256"
+        },
+        "profileId": "lca.study-deterministic-p0.v1",
+        "calculationContractRef": {
+          "kind": "calculation_contract",
+          "schema": "lca.calculation-contract.v1",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+        },
+        "jobId": "job-prepare-base-1"
+      }
+    },
+    {
+      "operation": "model.complete",
+      "actor": "service",
+      "studyId": "study-1",
+      "idempotencyKey": "complete-prepare-base-1",
+      "body": {
+        "preparationId": "prepare-base-1",
+        "jobId": "job-prepare-base-1",
+        "leaseCurrent": true,
+        "producer": "solver-worker",
+        "modelRef": {
+          "type": "modelRevision",
+          "modelRevisionId": "model-base-1",
+          "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+          "digestScope": "worker_prepared_model"
+        },
+        "inputArtifactRef": {
+          "type": "modelInput",
+          "id": "input-prepare-base-1",
+          "contentHash": "3333333333333333333333333333333333333333333333333333333333333333"
+        }
+      }
+    },
+    {
       "operation": "revision.create",
       "actor": "owner",
       "studyId": "study-1",
@@ -48,7 +120,34 @@
       "body": {
         "revisionId": "revision-1",
         "parentRevisionId": null,
-        "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "modelPreparationId": "prepare-base-1",
+        "modelRef": {
+          "type": "modelRevision",
+          "modelRevisionId": "model-base-1",
+          "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+          "digestScope": "worker_prepared_model"
+        },
+        "definition": {
+          "methodRefs": [
+            {
+              "type": "datasetRevision",
+              "datasetType": "lciamethod",
+              "id": "method-1",
+              "version": "01.00.000",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "licenseRef": "method-license-1"
+            },
+            {
+              "type": "datasetRevision",
+              "datasetType": "lciamethod",
+              "id": "method-2",
+              "version": "01.00.000",
+              "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
+              "licenseRef": "method-license-2"
+            }
+          ]
+        }
       }
     },
     {
@@ -70,10 +169,52 @@
         "scenarioRevisionId": "scenario-revision-1",
         "studyRevisionId": "revision-1",
         "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-        "effectiveModelRef": {
+        "effectiveModelRef": null,
+        "modelPreparationId": null
+      }
+    },
+    {
+      "operation": "model.prepare",
+      "actor": "owner",
+      "studyId": "study-1",
+      "idempotencyKey": "prepare-prepare-scenario-1",
+      "body": {
+        "preparationId": "prepare-scenario-1",
+        "source": {
+          "type": "scenarioRevision",
+          "scenarioRevisionId": "scenario-revision-1",
+          "expectedRevision": 1,
+          "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        },
+        "profileId": "lca.study-deterministic-p0.v1",
+        "calculationContractRef": {
+          "kind": "calculation_contract",
+          "schema": "lca.calculation-contract.v1",
+          "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+        },
+        "jobId": "job-prepare-scenario-1"
+      }
+    },
+    {
+      "operation": "model.complete",
+      "actor": "service",
+      "studyId": "study-1",
+      "idempotencyKey": "complete-prepare-scenario-1",
+      "body": {
+        "preparationId": "prepare-scenario-1",
+        "jobId": "job-prepare-scenario-1",
+        "leaseCurrent": true,
+        "producer": "solver-worker",
+        "modelRef": {
           "type": "modelRevision",
-          "id": "model-1",
-          "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          "modelRevisionId": "model-scenario-1",
+          "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
+          "digestScope": "worker_prepared_model"
+        },
+        "inputArtifactRef": {
+          "type": "modelInput",
+          "id": "input-prepare-scenario-1",
+          "contentHash": "3333333333333333333333333333333333333333333333333333333333333333"
         }
       }
     },
@@ -84,7 +225,8 @@
       "idempotencyKey": "scenario.freeze-1",
       "body": {
         "scenarioRevisionId": "scenario-revision-1",
-        "expectedRevision": 1
+        "expectedRevision": 1,
+        "modelPreparationId": "prepare-scenario-1"
       }
     },
     {
@@ -102,7 +244,16 @@
           "schema": "lca.calculation-contract.v1",
           "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
         },
-        "jobId": "job-1"
+        "jobId": "job-1",
+        "effectiveModelRef": {
+          "type": "modelRevision",
+          "modelRevisionId": "model-scenario-1",
+          "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
+          "digestScope": "worker_prepared_model"
+        },
+        "modelPreparationId": "prepare-scenario-1",
+        "profileId": "lca.study-deterministic-p0.v1",
+        "engineId": "solver-worker"
       }
     },
     {
@@ -192,7 +343,34 @@
           "body": {
             "revisionId": "revision-2",
             "parentRevisionId": "revision-1",
-            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000",
+                  "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+                  "licenseRef": "method-license-1"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000",
+                  "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
+                  "licenseRef": "method-license-2"
+                }
+              ]
+            }
           }
         },
         {
@@ -235,7 +413,34 @@
           "body": {
             "revisionId": "revision-2",
             "parentRevisionId": "revision-1",
-            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000",
+                  "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+                  "licenseRef": "method-license-1"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000",
+                  "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
+                  "licenseRef": "method-license-2"
+                }
+              ]
+            }
           }
         },
         {
@@ -300,7 +505,34 @@
           "body": {
             "revisionId": "revision-2",
             "parentRevisionId": "revision-1",
-            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000",
+                  "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+                  "licenseRef": "method-license-1"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000",
+                  "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
+                  "licenseRef": "method-license-2"
+                }
+              ]
+            }
           },
           "expectError": "REFERENCE_MISMATCH"
         }
@@ -346,7 +578,16 @@
               "schema": "lca.calculation-contract.v1",
               "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
             },
-            "jobId": "job-1"
+            "jobId": "job-1",
+            "effectiveModelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-scenario-1",
+              "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
+              "digestScope": "worker_prepared_model"
+            },
+            "modelPreparationId": "prepare-scenario-1",
+            "profileId": "lca.study-deterministic-p0.v1",
+            "engineId": "solver-worker"
           },
           "expect": {
             "runId": "run-1",
@@ -373,7 +614,16 @@
               "schema": "lca.calculation-contract.v1",
               "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
             },
-            "jobId": "job-1"
+            "jobId": "job-1",
+            "effectiveModelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-scenario-1",
+              "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
+              "digestScope": "worker_prepared_model"
+            },
+            "modelPreparationId": "prepare-scenario-1",
+            "profileId": "lca.study-deterministic-p0.v1",
+            "engineId": "solver-worker"
           },
           "expectError": "IDEMPOTENCY_CONFLICT"
         }
@@ -397,7 +647,16 @@
               "schema": "lca.calculation-contract.v1",
               "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
             },
-            "jobId": "job-2"
+            "jobId": "job-2",
+            "effectiveModelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-scenario-1",
+              "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
+              "digestScope": "worker_prepared_model"
+            },
+            "modelPreparationId": "prepare-scenario-1",
+            "profileId": "lca.study-deterministic-p0.v1",
+            "engineId": "solver-worker"
           }
         },
         {
@@ -427,7 +686,16 @@
               "schema": "lca.calculation-contract.v1",
               "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
             },
-            "jobId": "job-2"
+            "jobId": "job-2",
+            "effectiveModelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-scenario-1",
+              "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
+              "digestScope": "worker_prepared_model"
+            },
+            "modelPreparationId": "prepare-scenario-1",
+            "profileId": "lca.study-deterministic-p0.v1",
+            "engineId": "solver-worker"
           },
           "expectError": "FORBIDDEN"
         }
@@ -458,7 +726,34 @@
           "idempotencyKey": "capability-does-not-replace-role:revision.create-revision-2",
           "body": {
             "revisionId": "revision-2",
-            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000",
+                  "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+                  "licenseRef": "method-license-1"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000",
+                  "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
+                  "licenseRef": "method-license-2"
+                }
+              ]
+            }
           },
           "expectError": "FORBIDDEN"
         }
@@ -488,7 +783,34 @@
           "idempotencyKey": "role-does-not-replace-capability:revision.create-revision-2",
           "body": {
             "revisionId": "revision-2",
-            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000",
+                  "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+                  "licenseRef": "method-license-1"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000",
+                  "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
+                  "licenseRef": "method-license-2"
+                }
+              ]
+            }
           },
           "expectError": "FORBIDDEN"
         }
@@ -512,7 +834,16 @@
               "schema": "unknown",
               "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
             },
-            "jobId": "job-1"
+            "jobId": "job-1",
+            "effectiveModelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-scenario-1",
+              "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
+              "digestScope": "worker_prepared_model"
+            },
+            "modelPreparationId": "prepare-scenario-1",
+            "profileId": "lca.study-deterministic-p0.v1",
+            "engineId": "solver-worker"
           },
           "expectError": "REFERENCE_MISMATCH"
         }
@@ -537,7 +868,16 @@
               "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
               "artifactId": "invented"
             },
-            "jobId": "job-1"
+            "jobId": "job-1",
+            "effectiveModelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-scenario-1",
+              "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
+              "digestScope": "worker_prepared_model"
+            },
+            "modelPreparationId": "prepare-scenario-1",
+            "profileId": "lca.study-deterministic-p0.v1",
+            "engineId": "solver-worker"
           },
           "expectError": "REFERENCE_MISMATCH"
         }
@@ -554,7 +894,34 @@
           "body": {
             "revisionId": "revision-2",
             "parentRevisionId": "revision-1",
-            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000",
+                  "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+                  "licenseRef": "method-license-1"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000",
+                  "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
+                  "licenseRef": "method-license-2"
+                }
+              ]
+            }
           }
         },
         {
@@ -1092,7 +1459,34 @@
           "idempotencyKey": "archive-preserves-history-rejects-new-work:revision.create-revision-2",
           "body": {
             "revisionId": "revision-2",
-            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "modelPreparationId": "prepare-base-1",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "definition": {
+              "methodRefs": [
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-1",
+                  "version": "01.00.000",
+                  "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+                  "licenseRef": "method-license-1"
+                },
+                {
+                  "type": "datasetRevision",
+                  "datasetType": "lciamethod",
+                  "id": "method-2",
+                  "version": "01.00.000",
+                  "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
+                  "licenseRef": "method-license-2"
+                }
+              ]
+            }
           },
           "expectError": "FROZEN_REVISION"
         },
@@ -1339,7 +1733,16 @@
               "schema": "lca.calculation-contract.v1",
               "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
             },
-            "jobId": "job-2"
+            "jobId": "job-2",
+            "effectiveModelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-scenario-1",
+              "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
+              "digestScope": "worker_prepared_model"
+            },
+            "modelPreparationId": "prepare-scenario-1",
+            "profileId": "lca.study-deterministic-p0.v1",
+            "engineId": "solver-worker"
           }
         },
         {
@@ -1583,6 +1986,655 @@
           "expectError": "REFERENCE_MISMATCH"
         }
       ]
+    },
+    {
+      "id": "draft-scenario-two-phase-prepare-freeze",
+      "steps": [
+        {
+          "operation": "scenario.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "new-draft-scenario",
+          "body": {
+            "scenarioRevisionId": "scenario-revision-2",
+            "studyRevisionId": "revision-1",
+            "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "effectiveModelRef": null,
+            "modelPreparationId": null
+          }
+        },
+        {
+          "operation": "model.prepare",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "prepare-prepare-scenario-2",
+          "body": {
+            "preparationId": "prepare-scenario-2",
+            "source": {
+              "type": "scenarioRevision",
+              "scenarioRevisionId": "scenario-revision-2",
+              "expectedRevision": 1,
+              "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            "profileId": "lca.study-deterministic-p0.v1",
+            "calculationContractRef": {
+              "kind": "calculation_contract",
+              "schema": "lca.calculation-contract.v1",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            "jobId": "job-prepare-scenario-2"
+          }
+        },
+        {
+          "operation": "model.complete",
+          "actor": "service",
+          "studyId": "study-1",
+          "idempotencyKey": "complete-prepare-scenario-2",
+          "body": {
+            "preparationId": "prepare-scenario-2",
+            "jobId": "job-prepare-scenario-2",
+            "leaseCurrent": true,
+            "producer": "solver-worker",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-scenario-2",
+              "contentHash": "4444444444444444444444444444444444444444444444444444444444444444",
+              "digestScope": "worker_prepared_model"
+            },
+            "inputArtifactRef": {
+              "type": "modelInput",
+              "id": "input-prepare-scenario-2",
+              "contentHash": "3333333333333333333333333333333333333333333333333333333333333333"
+            }
+          }
+        },
+        {
+          "operation": "scenario.freeze",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "freeze-prepared-scenario",
+          "body": {
+            "scenarioRevisionId": "scenario-revision-2",
+            "expectedRevision": 1,
+            "modelPreparationId": "prepare-scenario-2"
+          }
+        }
+      ],
+      "state": {
+        "scenarios.scenario-revision-2.status": "frozen",
+        "scenarios.scenario-revision-2.revision": 2,
+        "scenarios.scenario-revision-2.effectiveModelRef": {
+          "type": "modelRevision",
+          "modelRevisionId": "model-scenario-2",
+          "contentHash": "4444444444444444444444444444444444444444444444444444444444444444",
+          "digestScope": "worker_prepared_model"
+        },
+        "scenarios.scenario-revision-2.modelPreparationId": "prepare-scenario-2"
+      }
+    },
+    {
+      "id": "scenario-source-cas-change-invalidates-old-preparation",
+      "steps": [
+        {
+          "operation": "scenario.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "new-draft-scenario",
+          "body": {
+            "scenarioRevisionId": "scenario-revision-2",
+            "studyRevisionId": "revision-1",
+            "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "effectiveModelRef": null,
+            "modelPreparationId": null
+          }
+        },
+        {
+          "operation": "model.prepare",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "prepare-prepare-scenario-2",
+          "body": {
+            "preparationId": "prepare-scenario-2",
+            "source": {
+              "type": "scenarioRevision",
+              "scenarioRevisionId": "scenario-revision-2",
+              "expectedRevision": 1,
+              "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            "profileId": "lca.study-deterministic-p0.v1",
+            "calculationContractRef": {
+              "kind": "calculation_contract",
+              "schema": "lca.calculation-contract.v1",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            "jobId": "job-prepare-scenario-2"
+          }
+        },
+        {
+          "operation": "model.complete",
+          "actor": "service",
+          "studyId": "study-1",
+          "idempotencyKey": "complete-prepare-scenario-2",
+          "body": {
+            "preparationId": "prepare-scenario-2",
+            "jobId": "job-prepare-scenario-2",
+            "leaseCurrent": true,
+            "producer": "solver-worker",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-scenario-2",
+              "contentHash": "4444444444444444444444444444444444444444444444444444444444444444",
+              "digestScope": "worker_prepared_model"
+            },
+            "inputArtifactRef": {
+              "type": "modelInput",
+              "id": "input-prepare-scenario-2",
+              "contentHash": "3333333333333333333333333333333333333333333333333333333333333333"
+            }
+          }
+        },
+        {
+          "operation": "scenario.update",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "change-after-preparation",
+          "body": {
+            "scenarioRevisionId": "scenario-revision-2",
+            "expectedRevision": 1,
+            "contentHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+          }
+        },
+        {
+          "operation": "scenario.freeze",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "freeze-prepared-scenario",
+          "body": {
+            "scenarioRevisionId": "scenario-revision-2",
+            "expectedRevision": 2,
+            "modelPreparationId": "prepare-scenario-2"
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ],
+      "state": {
+        "scenarios.scenario-revision-2.status": "draft",
+        "scenarios.scenario-revision-2.effectiveModelRef": null
+      }
+    },
+    {
+      "id": "cross-study-preparation-binding-rejected",
+      "steps": [
+        {
+          "operation": "scenario.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "new-draft-scenario",
+          "body": {
+            "scenarioRevisionId": "scenario-revision-2",
+            "studyRevisionId": "revision-1",
+            "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "effectiveModelRef": null,
+            "modelPreparationId": null
+          }
+        },
+        {
+          "operation": "study.create",
+          "actor": "owner",
+          "studyId": "study-2",
+          "idempotencyKey": "study-two",
+          "body": {}
+        },
+        {
+          "operation": "model.source.record",
+          "actor": "service",
+          "studyId": "study-2",
+          "idempotencyKey": "foreign-source",
+          "body": {
+            "snapshotId": "foreign-source",
+            "originRef": {
+              "type": "datasetRevision",
+              "datasetType": "lifecyclemodel",
+              "id": "existing-model-1",
+              "version": "01.00.000"
+            },
+            "sourceArtifactRef": {
+              "type": "modelSource",
+              "id": "authorized-model-export-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "digestScope": "artifact_bytes_sha256",
+            "licenseRef": "source-license-1",
+            "issuerId": "authorized-exporter",
+            "observedAt": 100,
+            "requestedBy": "owner",
+            "authorizedExport": true
+          }
+        },
+        {
+          "operation": "model.prepare",
+          "actor": "owner",
+          "studyId": "study-2",
+          "idempotencyKey": "foreign-prepare",
+          "body": {
+            "preparationId": "foreign-prepare",
+            "source": {
+              "type": "modelSourceSnapshot",
+              "snapshotId": "foreign-source",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "digestScope": "artifact_bytes_sha256"
+            },
+            "profileId": "lca.study-deterministic-p0.v1",
+            "calculationContractRef": {
+              "kind": "calculation_contract",
+              "schema": "lca.calculation-contract.v1",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            "jobId": "foreign-job"
+          }
+        },
+        {
+          "operation": "model.complete",
+          "actor": "service",
+          "studyId": "study-2",
+          "idempotencyKey": "foreign-complete",
+          "body": {
+            "preparationId": "foreign-prepare",
+            "jobId": "foreign-job",
+            "leaseCurrent": true,
+            "producer": "solver-worker",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "inputArtifactRef": {
+              "type": "modelInput",
+              "id": "input-prepare-base-1",
+              "contentHash": "3333333333333333333333333333333333333333333333333333333333333333"
+            }
+          }
+        },
+        {
+          "operation": "scenario.freeze",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "freeze-prepared-scenario",
+          "body": {
+            "scenarioRevisionId": "scenario-revision-2",
+            "expectedRevision": 1,
+            "modelPreparationId": "foreign-prepare"
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
+    },
+    {
+      "id": "run-cannot-substitute-another-prepared-model",
+      "steps": [
+        {
+          "operation": "run.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "wrong-effective-model",
+          "body": {
+            "runId": "wrong-model-run",
+            "studyRevisionId": "revision-1",
+            "scenarioRevisionId": "scenario-revision-1",
+            "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "calculationContractRef": {
+              "kind": "calculation_contract",
+              "schema": "lca.calculation-contract.v1",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            "jobId": "job-1",
+            "effectiveModelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-base-1",
+              "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+              "digestScope": "worker_prepared_model"
+            },
+            "modelPreparationId": "prepare-scenario-1",
+            "profileId": "lca.study-deterministic-p0.v1",
+            "engineId": "solver-worker"
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
+    },
+    {
+      "id": "model-receipt-cannot-be-self-issued",
+      "steps": [
+        {
+          "operation": "scenario.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "new-draft-scenario",
+          "body": {
+            "scenarioRevisionId": "scenario-revision-2",
+            "studyRevisionId": "revision-1",
+            "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "effectiveModelRef": null,
+            "modelPreparationId": null
+          }
+        },
+        {
+          "operation": "model.prepare",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "prepare-prepare-scenario-2",
+          "body": {
+            "preparationId": "prepare-scenario-2",
+            "source": {
+              "type": "scenarioRevision",
+              "scenarioRevisionId": "scenario-revision-2",
+              "expectedRevision": 1,
+              "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            "profileId": "lca.study-deterministic-p0.v1",
+            "calculationContractRef": {
+              "kind": "calculation_contract",
+              "schema": "lca.calculation-contract.v1",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            "jobId": "job-prepare-scenario-2"
+          }
+        },
+        {
+          "operation": "model.complete",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "complete-prepare-scenario-2",
+          "body": {
+            "preparationId": "prepare-scenario-2",
+            "jobId": "job-prepare-scenario-2",
+            "leaseCurrent": true,
+            "producer": "solver-worker",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-scenario-2",
+              "contentHash": "4444444444444444444444444444444444444444444444444444444444444444",
+              "digestScope": "worker_prepared_model"
+            },
+            "inputArtifactRef": {
+              "type": "modelInput",
+              "id": "input-prepare-scenario-2",
+              "contentHash": "3333333333333333333333333333333333333333333333333333333333333333"
+            }
+          },
+          "expectError": "FORBIDDEN"
+        }
+      ]
+    },
+    {
+      "id": "queued-preparation-cannot-freeze-scenario",
+      "steps": [
+        {
+          "operation": "scenario.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "new-draft-scenario",
+          "body": {
+            "scenarioRevisionId": "scenario-revision-2",
+            "studyRevisionId": "revision-1",
+            "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "effectiveModelRef": null,
+            "modelPreparationId": null
+          }
+        },
+        {
+          "operation": "model.prepare",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "prepare-prepare-scenario-2",
+          "body": {
+            "preparationId": "prepare-scenario-2",
+            "source": {
+              "type": "scenarioRevision",
+              "scenarioRevisionId": "scenario-revision-2",
+              "expectedRevision": 1,
+              "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            "profileId": "lca.study-deterministic-p0.v1",
+            "calculationContractRef": {
+              "kind": "calculation_contract",
+              "schema": "lca.calculation-contract.v1",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            "jobId": "job-prepare-scenario-2"
+          }
+        },
+        {
+          "operation": "scenario.freeze",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "freeze-prepared-scenario",
+          "body": {
+            "scenarioRevisionId": "scenario-revision-2",
+            "expectedRevision": 1,
+            "modelPreparationId": "prepare-scenario-2"
+          },
+          "expectError": "CAPABILITY_UNAVAILABLE"
+        }
+      ]
+    },
+    {
+      "id": "source-bytes-domain-cannot-issue-prepared-model",
+      "steps": [
+        {
+          "operation": "scenario.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "new-draft-scenario",
+          "body": {
+            "scenarioRevisionId": "scenario-revision-2",
+            "studyRevisionId": "revision-1",
+            "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "effectiveModelRef": null,
+            "modelPreparationId": null
+          }
+        },
+        {
+          "operation": "model.prepare",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "prepare-prepare-scenario-2",
+          "body": {
+            "preparationId": "prepare-scenario-2",
+            "source": {
+              "type": "scenarioRevision",
+              "scenarioRevisionId": "scenario-revision-2",
+              "expectedRevision": 1,
+              "contentHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+            },
+            "profileId": "lca.study-deterministic-p0.v1",
+            "calculationContractRef": {
+              "kind": "calculation_contract",
+              "schema": "lca.calculation-contract.v1",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            "jobId": "job-prepare-scenario-2"
+          }
+        },
+        {
+          "operation": "model.complete",
+          "actor": "service",
+          "studyId": "study-1",
+          "idempotencyKey": "complete-prepare-scenario-2",
+          "body": {
+            "preparationId": "prepare-scenario-2",
+            "jobId": "job-prepare-scenario-2",
+            "leaseCurrent": true,
+            "producer": "solver-worker",
+            "modelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-scenario-2",
+              "contentHash": "4444444444444444444444444444444444444444444444444444444444444444",
+              "digestScope": "artifact_bytes_sha256"
+            },
+            "inputArtifactRef": {
+              "type": "modelInput",
+              "id": "input-prepare-scenario-2",
+              "contentHash": "3333333333333333333333333333333333333333333333333333333333333333"
+            }
+          },
+          "expectError": "CAPABILITY_UNAVAILABLE"
+        }
+      ]
+    },
+    {
+      "id": "source-snapshot-hash-cannot-be-substituted",
+      "steps": [
+        {
+          "operation": "model.prepare",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "wrong-source-hash",
+          "body": {
+            "preparationId": "wrong-source",
+            "source": {
+              "type": "modelSourceSnapshot",
+              "snapshotId": "source-snapshot-1",
+              "contentHash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              "digestScope": "artifact_bytes_sha256"
+            },
+            "profileId": "lca.study-deterministic-p0.v1",
+            "calculationContractRef": {
+              "kind": "calculation_contract",
+              "schema": "lca.calculation-contract.v1",
+              "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+            },
+            "jobId": "job-prepare-base-1"
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
+    },
+    {
+      "id": "source-producer-must-be-available-and-authorized",
+      "steps": [
+        {
+          "operation": "model.source.record",
+          "actor": "service",
+          "studyId": "study-1",
+          "idempotencyKey": "no-source-producer",
+          "body": {
+            "snapshotId": "no-export",
+            "originRef": {
+              "type": "datasetRevision",
+              "datasetType": "lifecyclemodel",
+              "id": "existing-model-1",
+              "version": "01.00.000"
+            },
+            "sourceArtifactRef": {
+              "type": "modelSource",
+              "id": "authorized-model-export-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "digestScope": "artifact_bytes_sha256",
+            "licenseRef": "source-license-1",
+            "issuerId": "authorized-exporter",
+            "observedAt": 100,
+            "requestedBy": "owner",
+            "authorizedExport": false
+          },
+          "expectError": "CAPABILITY_UNAVAILABLE"
+        }
+      ]
+    },
+    {
+      "id": "source-snapshot-cannot-be-self-issued",
+      "steps": [
+        {
+          "operation": "model.source.record",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "foreign-source",
+          "body": {
+            "snapshotId": "foreign-source",
+            "originRef": {
+              "type": "datasetRevision",
+              "datasetType": "lifecyclemodel",
+              "id": "existing-model-1",
+              "version": "01.00.000"
+            },
+            "sourceArtifactRef": {
+              "type": "modelSource",
+              "id": "authorized-model-export-1",
+              "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+            },
+            "contentHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "digestScope": "artifact_bytes_sha256",
+            "licenseRef": "source-license-1",
+            "issuerId": "authorized-exporter",
+            "observedAt": 100,
+            "requestedBy": "owner",
+            "authorizedExport": true
+          },
+          "expectError": "FORBIDDEN"
+        }
+      ]
+    },
+    {
+      "id": "run-cannot-change-preparation-calculation-identity",
+      "steps": [
+        {
+          "operation": "run.create",
+          "actor": "owner",
+          "studyId": "study-1",
+          "idempotencyKey": "wrong-calculation-identity",
+          "body": {
+            "runId": "wrong-contract-run",
+            "studyRevisionId": "revision-1",
+            "scenarioRevisionId": "scenario-revision-1",
+            "inputHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "calculationContractRef": {
+              "kind": "calculation_contract",
+              "schema": "lca.calculation-contract.v1",
+              "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+            },
+            "jobId": "job-1",
+            "effectiveModelRef": {
+              "type": "modelRevision",
+              "modelRevisionId": "model-scenario-1",
+              "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
+              "digestScope": "worker_prepared_model"
+            },
+            "modelPreparationId": "prepare-scenario-1",
+            "profileId": "lca.study-deterministic-p0.v1",
+            "engineId": "solver-worker"
+          },
+          "expectError": "REFERENCE_MISMATCH"
+        }
+      ]
+    },
+    {
+      "id": "study-revision-preserves-qualified-preparation-and-multiple-methods",
+      "steps": [],
+      "state": {
+        "revisions.revision-1.modelPreparationId": "prepare-base-1",
+        "revisions.revision-1.definition.methodRefs": [
+          {
+            "type": "datasetRevision",
+            "datasetType": "lciamethod",
+            "id": "method-1",
+            "version": "01.00.000",
+            "contentHash": "1111111111111111111111111111111111111111111111111111111111111111",
+            "licenseRef": "method-license-1"
+          },
+          {
+            "type": "datasetRevision",
+            "datasetType": "lciamethod",
+            "id": "method-2",
+            "version": "01.00.000",
+            "contentHash": "2222222222222222222222222222222222222222222222222222222222222222",
+            "licenseRef": "method-license-2"
+          }
+        ]
+      }
     }
   ]
 }

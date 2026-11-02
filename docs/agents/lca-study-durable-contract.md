@@ -48,6 +48,7 @@ OAuth capability grant.
 | Study | Stable `studyId`, server-derived owner/scope, member grants and mutable head. `active`/`archived` is a research lifecycle, never dataset publication state. A personal scope is `{kind:"personal"}`; a team scope is `{kind:"team",teamId}` and requires current team authorization. |
 | StudyRevision | `revisionId`, exact `studyId`, nullable exact `parentRevisionId`, draft/frozen content and its content hash. Frozen definition binds goal, scope, functional unit, model and methods. A new frozen definition uses a new identity; no latest alias is persisted. |
 | ModelRevision | Exact versioned model reference, content hash and source identity; layout is presentation. Worker owns normalized effective model semantics. Existing LifecycleModel is an input mapping, not a Study or authorization substitute. |
+| ModelSourceSnapshot / ModelPreparation | A source snapshot binds an authorized exact LifecycleModel export; a preparation binds that source or an exact draft Scenario CAS/hash to a task, numerical profile/contract and Worker-issued model/input references. Neither is a client-issued model receipt. |
 | ScenarioRevision | `scenarioRevisionId` within Study; exact frozen `studyRevisionId`, explicit differences and an effective model reference. A second scenario is a research alternative, not a boundary-product output projection. |
 | Run | `runId`, exact frozen Study/Scenario/Model references, immutable input identity, opaque calculation reference, engine/profile and task/result links. A Run is not a renamed `worker_jobs` row. |
 | Analysis | Exact input Run identities, analysis profile/configuration and result evidence. Worker defines numerical and comparability semantics; Database preserves the bindings. |
@@ -72,6 +73,7 @@ and qualified. Worker remains the content/schema owner for both kinds.
 | --- | --- |
 | Run `resultRef` | Run `resultRef`, with exact `type:"runResult"`, ID and content hash |
 | Report `runId` + `runResultRef` | Report `runIds:[runId]`, `analysisIds:[]`, `factsRefs:[runResultRef]`; the referenced Run is completed in the same Study |
+| Preparation `jobId` / internal execution projection | ModelPreparation `execution:{jobId,status}` from existing `worker_jobs`; source and emitted references keep the same meaning |
 | Review `decision:"approved"` | Review `decision:"approve"` |
 | Review `decision:"changes_requested"` | Review `decision:"request_changes"` |
 | Review `decision:"withdrawn"` | Review `decision:"withdraw"` |
@@ -96,6 +98,56 @@ production belongs to the relevant content owner; Database stores and verifies
 trusted bindings, not an alternative LCA canonicalization algorithm.
 
 ## Authorization and concurrency
+
+### Model source, preparation and freeze
+
+The W03 Database contract preserves these producer relationships for W04 Edge
+and W05 Worker compiler implementation. No new producer is executed in P0.
+
+An authorized `model.source.resolve` must first issue a ModelSourceSnapshot
+binding exact `originRef:{type:"datasetRevision",datasetType:"lifecyclemodel",id,version}`,
+the authorized export `sourceArtifactRef`, source rights/license reference,
+issuer and observation time. Its preparation reference is
+`{type:"modelSourceSnapshot",snapshotId,contentHash,digestScope:"artifact_bytes_sha256"}`.
+The content hash denotes the exact immutable export bytes, not API wrapper JSON,
+the dataset UUID/version alone, Worker snapshot/cache `source-fingerprint:v5`,
+or a consumer reconstruction. Missing authorized export/producer is unavailable.
+
+Alternatively, a preparation source is
+`{type:"scenarioRevision",scenarioRevisionId,expectedRevision,contentHash}`,
+which binds the current draft Scenario generation and definition hash. A draft
+Scenario may have `modelPreparationId:null` and `effectiveModelRef:null` while
+its changes are prepared. `model.prepare` records exact source, Study,
+profile/calculation-contract reference and task. Only a trusted, currently
+fenced Worker completion may issue `modelRef` and `inputArtifactRef`; a client
+cannot construct a qualified receipt by supplying those fields.
+
+The three identities remain separate: source export bytes use
+`artifact_bytes_sha256`; `modelRef:{type:"modelRevision",modelRevisionId,contentHash,digestScope:"worker_prepared_model"}`
+uses a Worker-owned prepared-model semantic domain; `inputArtifactRef` has
+`type:"modelInput"` and hashes frozen input artifact bytes. Even coincidentally
+equal digests do not make their types/domains interchangeable. Database stores
+these bindings; W05 owns the eventual schema, compilation and hash algorithm.
+
+A StudyRevision references a ready preparation in the same Study and its exact
+Worker-issued model. Freezing a Scenario requires its explicit
+`modelPreparationId`, current target CAS and a completed preparation whose
+source is that exact draft Scenario ID/generation/hash. Freeze copies the
+qualified effective model, retains the preparation reference and advances the
+Scenario generation by one. A changed draft invalidates reuse of its older
+preparation. A Run then binds that same preparation/model; an unrelated ready
+model, a source snapshot or an input artifact cannot substitute for it.
+
+The executable model's `model.source.record` is a trusted synthetic event after
+authorized export, not a public resolve API. Its `authorizedExport` and
+`leaseCurrent` inputs stand in for future independent producer/lease evidence.
+The traces do not fetch, hash or validate a real TIDAS export, compile a model,
+verify source licensing or run a Worker. Later implementation must independently
+prove those boundaries. Method references are stored as an exact `methodRefs`
+array under the Edge-owned definition; Database does not collapse multiple
+indicators to one method or interpret method content.
+
+### Resource authorization
 
 Authorization combines the current actor, client capability and live resource
 grant. A role alone or a capability alone is insufficient. Server/service
