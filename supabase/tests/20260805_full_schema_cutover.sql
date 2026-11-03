@@ -96,7 +96,8 @@ select is(
   -- Database #877 adds one HDF5 query evidence immutability helper.
   -- Database #894 adds nineteen closed Study persistence/authorization/structural helpers.
   -- Database #895 adds eighteen closed task/source/disclosure helpers and two moved core delegates.
-  660::bigint,
+  -- Database #900 adds four closed review metadata validation/cleanup helpers.
+  664::bigint,
   'Twenty-five navigation helpers plus: private contains the active helpers, including the Open Data filter and three dataset display helpers, the reviewer Contact reference-readiness helper, the review rejection-reason extractor, rejected-report exact-reference matcher, submitted-decision sync helper and shared reviewer workload classifier, the twenty-five exact-version, thirteen composite-name and one review-search internals, two partial-import helpers, two whole-package helpers, the example write guard, the two state-120 candidate-cache helpers, the state-120 lifecycle guard, the seven manager-attested Result publication helpers, the nineteen versioned v2 Time-alias helpers (four exact-numeric, ten leaf/derivation helpers, the guarded v2 batch executor, the plan key set, the six-key derivative-target checker, the guarded v2 plan executor and the deterministic derivative-chunk partition), and the eight closed Length*time profile helpers (the closed discriminator, the plan key set, the factor constant, the exact multiply, the instance rewrite, the guarded Length*time executor, the null-safe required-scalar check and the null-safe required-count check), the two Database #689 batch queue-cache helpers (the dispatch-body candidate-id extractor and the per-batch queue cache builder), the Database #703 internal derivative scheduler picker, and the Database #828 owner-only AI deadline expiry helper'
 );
 
@@ -141,7 +142,8 @@ select is(
   -- Database #807 adds 15 display synchronization triggers; legacy inventory remains included.
   -- Database #877 adds three HDF5 artifact/source/release-binding immutability triggers.
   -- Database #894 adds seven Study immutable binding/evidence guards.
-  177::bigint,
+  -- Database #900 adds the private comment metadata admission trigger.
+  178::bigint,
   'Two private navigation writers and one seed guard plus: all active application triggers and two Process composite-name sync triggers plus seven example write guards remain present, including the review submitted-decision sync trigger, the Result lifecycle guard and the append-only Result guard and seven dataset display source-cleanup triggers'
 );
 

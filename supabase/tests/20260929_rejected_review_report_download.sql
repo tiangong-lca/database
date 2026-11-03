@@ -108,6 +108,7 @@ values
     null, null, null, null
   );
 
+-- Active approvals use complete metadata; rejected legacy fixtures stay unchanged.
 insert into private.comments (review_id, reviewer_id, json, state_code)
 values
   (
@@ -119,7 +120,7 @@ values
   (
     '59629000-0000-0000-0000-000000000002',
     '19629000-0000-0000-0000-000000000002',
-    '{"modellingAndValidation":{"validation":{"review":[{"common:referenceToCompleteReviewReport":[{"@refObjectId":"39629000-0000-0000-0000-000000000001","@version":"01.01.000"}]}]}}}',
+    '{"modellingAndValidation":{"validation":{"review":[{"@type":"Not reviewed","common:referenceToCompleteReviewReport":[{"@type":"source data set","@refObjectId":"39629000-0000-0000-0000-000000000001","@version":"01.01.000","@uri":"../sources/39629000-0000-0000-0000-000000000001.xml","common:shortDescription":{"@xml:lang":"en","#text":"Synthetic report"}}]}]}}}',
     1
   ),
   (

@@ -47,14 +47,14 @@ values ('59601000-0000-0000-0000-000000000001',
  'root','processes',repeat('a',64),'19601000-0000-0000-0000-000000000002');
 
 create temporary table opinion(payload jsonb);
-insert into opinion values ('{"modellingAndValidation":{"validation":{"review":[{"common:referenceToCompleteReviewReport":{"@type":"source data set","@refObjectId":"39601000-0000-0000-0000-000000000001","@version":"01.01.000"}}]}}}');
+insert into opinion values ('{"modellingAndValidation":{"validation":{"review":[{"@type":"Not reviewed","common:referenceToCompleteReviewReport":{"@type":"source data set","@refObjectId":"39601000-0000-0000-0000-000000000001","@version":"01.01.000","@uri":"../sources/39601000-0000-0000-0000-000000000001.xml","common:shortDescription":{"@xml:lang":"en","#text":"Synthetic report"}}}]}}}');
 select set_config('request.jwt.claim.role','authenticated',true);
 select set_config('request.jwt.claim.sub','19601000-0000-0000-0000-000000000001',true);
 set local role authenticated;
 -- Real reviewer rejection follows the same path as the observed failure.
 select is(api.cmd_review_submit_comment(
  '59601000-0000-0000-0000-000000000001',
- '{"modellingAndValidation":{"validation":{"review":[{"common:referenceToCompleteReviewReport":{"@type":"source data set","@refObjectId":"39601000-0000-0000-0000-000000000001","@version":"01.01.000"}}]}}}',
+ '{"modellingAndValidation":{"validation":{"review":[{"@type":"Not reviewed","common:referenceToCompleteReviewReport":{"@type":"source data set","@refObjectId":"39601000-0000-0000-0000-000000000001","@version":"01.01.000","@uri":"../sources/39601000-0000-0000-0000-000000000001.xml","common:shortDescription":{"@xml:lang":"en","#text":"Synthetic report"}}}]}}}',
  -3,'{}')->>'ok','true','assigned member submits rejection opinion');
 select lives_ok($$select * from api.qry_root_review_reference_progress_v2(
  '59601000-0000-0000-0000-000000000001')$$,
@@ -123,7 +123,7 @@ where review_id='59601000-0000-0000-0000-000000000001';
 set local role authenticated;
 select is(api.cmd_review_submit_comment(
  '59601000-0000-0000-0000-000000000001',
- '{"modellingAndValidation":{"validation":{"review":[{"common:referenceToCompleteReviewReport":{"@type":"source data set","@refObjectId":"39601000-0000-0000-0000-000000000001","@version":"01.01.000"}}]}}}',
+ '{"modellingAndValidation":{"validation":{"review":[{"@type":"Not reviewed","common:referenceToCompleteReviewReport":{"@type":"source data set","@refObjectId":"39601000-0000-0000-0000-000000000001","@version":"01.01.000","@uri":"../sources/39601000-0000-0000-0000-000000000001.xml","common:shortDescription":{"@xml:lang":"en","#text":"Synthetic report"}}}]}}}',
  1,'{}')->>'ok','true','subsequent approving submission provisions required references');
 reset role;
 select is((select count(*)::integer from private.review_derive_current_references_v1(

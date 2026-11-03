@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-03
-lastReviewedCommit: 2b8959360fe39205b4ab11d0d40acf32df3e66ac
-lastReviewedNote: "Database #895: reviewed default-off canonical Study admission, exact RLS source capture/history rights, opaque disclosure intents and scoped cancellation/reconciliation; local runtime evidence and owned reconstruction are distinct from hosted activation."
+lastReviewedCommit: aebe79da1a92904ffbb2c3b03444c396343f2739
+lastReviewedNote: "Database #900: reviewed versioned review metadata schema admission and final writeback guard, isolated PG17 proof and generated schema inventory. Existing rows, API authority, branch deployment and integration policy remain unchanged."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -997,3 +997,10 @@ python3 -B supabase/tests/regression/20261103_study_source_concurrency.py --repo
 恢复原 source-enabled 标记，并仅保留专用合成命名空间供明确的任务 reset。
 input-parity SQL 套件另行覆盖非字符串来源 ID、规范化整数代际及普通任务类型归一化。
 这些测试不授予 hosted 操作或业务数据权限。
+
+## 审核元数据 Schema 检查
+
+`python3 scripts/check_review_metadata_contract.py` 检查 Schema 引用是否完全本地化，
+以及迁移内嵌内容是否与契约一致。可选参数 `--sdk-assets <directory>` 从已安装的
+SDK 0.5.0 资源重新生成投影并核对来源哈希。此命令不访问网络、不操作数据库、
+不安装依赖，也不修改文件。

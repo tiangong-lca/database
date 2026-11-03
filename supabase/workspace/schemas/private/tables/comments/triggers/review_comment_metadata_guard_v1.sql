@@ -1,0 +1,1 @@
+CREATE OR REPLACE TRIGGER "review_comment_metadata_guard_v1" BEFORE INSERT OR UPDATE OF "json", "state_code" ON "private"."comments" FOR EACH ROW EXECUTE FUNCTION "private"."review_guard_comment_metadata_v1"();
