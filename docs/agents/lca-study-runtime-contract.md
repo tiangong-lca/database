@@ -20,7 +20,7 @@ checkPaths:
   - scripts/*study_runtime*.py
   - docs/agents/lca-study-runtime-contract.md
 lastReviewedAt: 2026-11-04
-lastReviewedCommit: f75058aab16340ad09e9dc04ab9e5e0c88827665
+lastReviewedCommit: 97b06712ac75f08eeeb886c41d7fdb4f19a6373f
 lastReviewedNote: "Database #906: reviewed exact V4 domain references, current Study/core and archived action availability, review/finalization/share replay, sole legacy-list filter and isolated upgrade/SQL/HTTP/concurrency/generated proof. Actual bytes, UI/CLI, hosted enablement and source integration remain separate."
 related:
   - ./lca-study-durable-contract.md

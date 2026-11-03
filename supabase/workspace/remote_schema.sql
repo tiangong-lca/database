@@ -86414,7 +86414,7 @@ CREATE OR REPLACE FUNCTION "private"."study_review_envelope"("p_request" "jsonb"
     and private.study_text(p_request->field->'id',36,pattern),'INVALID_REQUEST');
   end if;
  end loop;
- foreach field in array array['reportRevisionId','shareId','exportId','delegationId','finalizationId','predecessorReviewId'] loop
+ foreach field in array array['reportRevisionId','shareId','exportId','delegationId','finalizationId','predecessorReviewId','memberId','recipientId'] loop
   if not p_request ? field then continue;end if;value:=p_request->field;
   if value='null'::jsonb and ((field='predecessorReviewId' and p_request->>'operation' in ('review.record','review.delegation.issue'))
    or (field='delegationId' and p_request->>'operation'='review.record')) then continue;end if;
