@@ -37,6 +37,11 @@ def main():
         return {'target':{'type':'reportRevision','id':REPORT,'expectedRevision':3},'expectedContentHash':'b'*64,'profileId':profile,
                 'expectedReviewStateHash':st['reviewStateHash'],'acceptedReviewIds':st['acceptedReviewIds'] if profile.endswith('internal-review.v1') else []}
     receipts=[]
+    initial='90600000-0000-4000-8000-000000000009'
+    sql("insert into private.study_report_revisions(id,study_id,author_id,revision,status,content_hash,content_artifact_id,template_id,run_ids,analysis_ids,facts_refs,validity_snapshot,validation_evidence) select '"+initial+"',study_id,author_id,revision,status,content_hash,content_artifact_id,template_id,run_ids,analysis_ids,facts_refs,validity_snapshot,validation_evidence from private.study_report_revisions where id='"+REPORT+"';")
+    r=race('initial-approval-versus-null-withdrawal',cmd('review.record',{**review('approve',None),'reportRevisionId':initial},'race-first-approve'),cmd('review.record',{**review('withdraw',None),'reportRevisionId':initial},'race-first-withdraw'),claim(2),claim(2))
+    assert r['first']['ok'] and r['second']['code']=='REVISION_CONFLICT',r
+    assert sql("select count(*) from private.study_report_reviews where report_id='"+initial+"';")=='1';receipts.append(r)
     exact=cmd('review.record',review('approve',head()),'race-exact-review')
     r=race('same-key-review-recovery',exact,exact,claim(2),claim(2))
     assert r['first']['ok'] and r['first']['data']['value']==r['second']['data']['value'],r
@@ -112,7 +117,7 @@ def main():
     args.report.write_text(json.dumps({'schemaVersion':'lca.study-review-concurrency-receipt.v1','project':'study906','ownership':ownership,'races':receipts,
       'retainedHttpShareId':http_share,'ownedSessionsReleased':True,'classification':'observed PG17 SQL transaction/source fences with synthetic content/signatures; no real byte/UI qualification',
       'disposition':'exact synthetic fixture namespace retained for owned HTTP proof then explicit reset'},indent=2)+'\n')
-    print('Study906: 8 independent-session review/finalization/grant/share/source races passed with observed locks.')
+    print('Study906: 9 independent-session review/finalization/grant/share/source races passed with observed locks.')
 
 
 if __name__=='__main__':main()

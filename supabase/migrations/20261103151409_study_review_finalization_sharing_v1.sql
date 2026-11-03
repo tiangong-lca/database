@@ -1,8 +1,15 @@
 -- Database #906 / Edge #550: additive V4. Existing V2/V3 routines, snapshots
--- and manifests retain their historical definitions and interpretation.
+-- and manifests retain their historical interpretation. The sole legacy
+-- definition delta filters eligible V2 list roles before pagination; its
+-- per-resource read guard, owner, ACL and settings remain unchanged.
 begin;
 alter table private.study_members drop constraint study_members_role_check;
 alter table private.study_members add constraint study_members_role_check check(role in ('owner','editor','reviewer','viewer'));
+do $$declare definition text;needle text:='where m.actor_id=actor and private.study_team_member(actor,s.team_id) and (after_id is null or s.id>after_id)';begin
+ select pg_get_functiondef('private.study_qry_core_v1(jsonb)'::regprocedure) into definition;
+ perform private.study_require((length(definition)-length(replace(definition,needle,'')))/length(needle)=1,'REFERENCE_MISMATCH');
+ execute replace(definition,needle,'where m.actor_id=actor and m.role in (''owner'',''editor'',''viewer'') and private.study_team_member(actor,s.team_id) and (after_id is null or s.id>after_id)');
+end$$;
 create table private.study_review_config (
  singleton boolean primary key default true check(singleton), revision bigint not null default 1 check(revision>0),
  enabled boolean not null default false, qualification_evidence_ref text
@@ -374,6 +381,7 @@ begin
   perform private.study_require(p_request->>'reviewClass'='internal' and p_request->>'decision' in ('approve','reject','withdraw'),'INVALID_REQUEST');
   select review_id into head from private.study_report_review_heads where report_id=r.id and actor_id=actor and review_class='internal';
   perform private.study_require(head is not distinct from (p_request->>'predecessorReviewId')::uuid,'REVISION_CONFLICT');
+  perform private.study_require(p_request->>'decision'<>'withdraw' or head is not null,'REVISION_CONFLICT');
   if op='review.delegation.issue' then
    perform private.study_require((p_request->>'clientId') ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' and private.study_client_allowed(p_request->>'clientId','STUDY-WRITE-01'),'FORBIDDEN');
    ts:=(p_request->>'expiresAt')::timestamptz;perform private.study_require(ts>clock_timestamp() and ts<=clock_timestamp()+interval '15 minutes','INVALID_REQUEST');
@@ -475,7 +483,8 @@ language plpgsql security definer set search_path='' as $$declare r private.stud
    ops:=ops||jsonb_build_array('report.finalize','share.list');st:=private.study_review_state(r.id);
    if st->>'acceptance'='current' then
     if (select export_enabled and export_profile is not null from private.study_reporting_config where singleton) and not exists(select 1 from private.study_runs where id in(select jsonb_array_elements_text(r.run_ids)::uuid) and validity<>'current') then ops:=ops||jsonb_build_array('export.request');end if;
-    if exists(select 1 from private.study_review_exports where report_id=r.id and finalization_id=(st->'finalization'->>'finalizationId')::uuid and actor_id=p_actor and grant_epoch=(select grant_epoch from private.studies where id=r.study_id)) then ops:=ops||jsonb_build_array('share.create');end if;
+    if exists(select 1 from private.study_review_exports e where e.report_id=r.id and e.finalization_id=(st->'finalization'->>'finalizationId')::uuid and e.actor_id=p_actor
+     and e.grant_epoch=(select grant_epoch from private.studies where id=r.study_id) and private.study_client_allowed(e.client_id,'STUDY-WRITE-01')) then ops:=ops||jsonb_build_array('share.create');end if;
    end if;
   end if;
  end if;return ops;

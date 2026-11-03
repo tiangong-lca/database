@@ -72,6 +72,10 @@ def main():
         return body
     binding={'reportRevisionId':REPORT,'expectedContentHash':'b'*64}
     check('owner-current-report',rpc('report.current',binding))
+    legacy={'schemaVersion':'lca.study-api.v2','requestId':'mixed-owner-reviewer','operation':'study.list','limit':1,'cursor':None}
+    firstpage=check('legacy-mixed-role-first-page',http('rpc/qry_study_v1',{'p_request':legacy},actor=2))['data'];assert firstpage['items'][0]['studyId']=='89300000-0000-4000-8000-000000000001'
+    secondpage=check('legacy-mixed-role-cursor-page',http('rpc/qry_study_v1',{'p_request':{**legacy,'cursor':firstpage['nextCursor']}},actor=2))['data'];assert secondpage['items'][0]['studyId']=='89500000-0000-4000-8000-000000000001' and secondpage['nextCursor'] is None
+    check('legacy-reviewer-explicit-read-still-denied',http('rpc/qry_study_v1',{'p_request':{'schemaVersion':'lca.study-api.v2','requestId':'reviewer-direct','operation':'study.read','studyId':STUDY}},actor=2),False,'FORBIDDEN')
     check('reviewer-summary-without-core-read',rpc('report.current',binding,actor=2,client=client))
     v3=http('rpc/qry_study_reporting_v1',{'p_request':{'schemaVersion':'lca.study-api.v3','requestId':'legacy','operation':'report.read','reportRevisionId':REPORT}},actor=2)
     check('reviewer-no-V3-escalation',v3,False,'FORBIDDEN')
@@ -125,6 +129,37 @@ def main():
     shortshare=check('short-share-creation',rpc('share.create',short,'http-short-share',True))['data']['value']
     time.sleep(2.1)
     replay=check('share-create-replay-current-expiry',rpc('share.create',short,'http-short-share',True));assert replay['data']['value']['shareId']==shortshare['shareId'] and replay['data']['value']['status']=='expired'
+    actionreport='90600000-0000-4000-8000-000000000004'
+    sql("insert into private.study_report_revisions(id,study_id,author_id,revision,status,content_hash,content_artifact_id,template_id,run_ids,analysis_ids,facts_refs,validity_snapshot,validation_evidence) select '"+actionreport+"',study_id,author_id,revision,status,content_hash,content_artifact_id,template_id,run_ids,analysis_ids,facts_refs,validity_snapshot,validation_evidence from private.study_report_revisions where id='"+REPORT+"';")
+    actionbinding={**binding,'reportRevisionId':actionreport}
+    check('first-withdrawal-denied',rpc('review.record',{**actionbinding,'reviewClass':'internal','decision':'withdraw','comment':'No prior decision','predecessorReviewId':None,'delegationId':None},'http-first-withdraw',True,actor=2),False,'REVISION_CONFLICT')
+    check('first-withdrawal-delegation-denied',rpc('review.delegation.issue',{**actionbinding,'reviewClass':'internal','decision':'withdraw','clientId':client,'predecessorReviewId':None,'expiresAt':json.loads(sql("select to_jsonb(clock_timestamp()+interval '5 minutes');"))},'http-first-withdraw-grant',True,actor=2),False,'REVISION_CONFLICT')
+    assert sql("select count(*) from private.study_report_reviews where report_id='"+actionreport+"';")=='0'
+    assert sql("select count(*) from private.study_review_delegations where report_id='"+actionreport+"';")=='0'
+    actionstate=check('action-report-current',rpc('report.current',actionbinding))['data']['value']
+    f=check('action-report-unreviewed-finalization',rpc('report.finalize',{'target':{'type':'reportRevision','id':actionreport,'expectedRevision':3},'expectedContentHash':'b'*64,'expectedReviewStateHash':actionstate['reviewStateHash'],'profileId':'lca.study-report-unreviewed.v1','acceptedReviewIds':[]},'http-action-finalization',True))['data']['value']
+    def produce_export(key,exportclient=None):
+        fields={**actionbinding,'finalizationId':f['finalizationId'],'expectedReviewStateHash':actionstate['reviewStateHash'],'rendererVersion':'1.0.0','viewModelVersion':'lca.study-report-view.v1'}
+        iid=check(key+'-intent',rpc('export.request',fields,key,True,client=exportclient))['data']['intentId']
+        context=check(key+'-context',resolve(iid))['data'];c=context['producerContext']
+        manifest={'schemaVersion':'lca.study-export-manifest.v2','issuerId':'study906-test','exportId':c['exportId'],'studyId':STUDY,'reportRevisionId':actionreport,'reportContentHash':'b'*64,'actorId':context['actorId'],'clientId':context['clientId'],'grantEpoch':c['grantEpoch'],'policyId':'lca.study-report-disclosure.v1','disclosureContextHash':c['disclosureContextHash'],'generatedAt':c['generatedAt'],'validitySnapshot':c['report']['validitySnapshot'],'reviewIds':f['acceptedReviewIds'],'finalization':f,'renderer':{'version':'1.0.0','viewModelVersion':'lca.study-report-view.v1','artifactHash':'a'*64},'files':[{'path':'report.html','mediaType':'text/html','sha256':'d'*64,'byteSize':2},{'path':'projection.json','mediaType':'application/json','sha256':'e'*64,'byteSize':2}]}
+        raw=json.dumps(manifest,sort_keys=True,separators=(',',':')).encode()
+        def artifact(field,kind,schema,name,digest,size=2):
+            aid=c[field]
+            return {'studyId':STUDY,'artifactRef':{'type':kind,'id':aid,'contentHash':digest,'digestScope':'artifact_bytes_sha256','byteSize':size,'mediaType':'application/json','schemaVersion':schema},'storageBucket':'study-artifacts','storageObjectPath':f'study/{STUDY}/{aid}/{name}.json'}
+        completion={'kind':'validatedReviewExport','projectionArtifact':artifact('projectionArtifactId','reportProjection','lca.study-report-view.v1','projection','e'*64),'resourcesArtifact':artifact('resourcesArtifactId','renderResources','lca.study-export-manifest.v2','resources',hashlib.sha256(raw).hexdigest(),len(raw)),'bundleArtifact':artifact('bundleArtifactId','reportExportBundle','lca.study-export-bundle.v2','bundle','f'*64),'manifest':manifest,'receipt':{'schemaVersion':'lca.study-export-receipt.v2','manifestHash':hashlib.sha256(b'lca.study-export-signature.v1\0'+raw).hexdigest(),'keyId':'study906-key','algorithm':'Ed25519','signature':'A'*86}}
+        return check(key+'-consume',http('rpc/svc_study_review_intent_consume_v1',{'p_intent_id':iid,'p_completion':completion},actor=None,role='service_role'))['data']['value']
+    oauth_export=produce_export('http-action-OAuth-export',client)
+    actions={'resource':{'type':'reportRevision','id':actionreport}}
+    a=check('original-client-current-actions',rpc('resource.actions',actions));assert 'share.create' in a['data']['actions']
+    try:
+        sql("update private.oauth_client_registry set enabled=false,disabled_at=clock_timestamp() where client_id='"+client+"';")
+        a=check('original-client-revoked-actions',rpc('resource.actions',actions));assert 'share.create' not in a['data']['actions']
+        check('revoked-export-share-command-denied',rpc('share.create',{**actionbinding,'exportId':oauth_export['exportId'],'recipientId':'89400000-0000-4000-8000-000000000003','disclosurePolicyId':'lca.study-report-summary-share.v1','expiresAt':json.loads(sql("select to_jsonb(clock_timestamp()+interval '1 hour');"))},'http-action-denied-share',True),False,'DISCLOSURE_DENIED')
+        produce_export('http-action-fresh-export')
+        a=check('fresh-export-restores-share-action',rpc('resource.actions',actions));assert 'share.create' in a['data']['actions']
+    finally:
+        sql("update private.oauth_client_registry set enabled=true,disabled_at=null where client_id='"+client+"';")
     # Same immutable report under an explicitly personal fixture scope; every
     # admission/decision is a real HTTP operation, never a direct grant insert.
     sql("update private.studies set team_id=null where id='"+STUDY+"';")

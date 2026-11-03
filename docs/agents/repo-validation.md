@@ -140,7 +140,7 @@ before producer or artifact operations are advertised.
 ## Study P3 review/finalization/named sharing (Database #906)
 
 Retain the ordinary blank PG17 migration-ledger baseline and every P1/P2 suite.
-Add `supabase/tests/20261103_study_review_finalization_sharing.sql`:114 assertions
+Add `supabase/tests/20261103_study_review_finalization_sharing.sql`:130 assertions
 cover reviewer isolation, comments without approval, exact heads/replays,
 self-approval exclusion, role/team/client changes, one-use grants and expiry,
 immutable finalization, manifest v2, named recipient projection/download and
@@ -151,6 +151,10 @@ The suite includes personal reviewer-only admission, server-derived member-role
 policy, owner bundle download and replaying immutable outcomes beside current
 acceptance/share/delegation metadata. Current state may refer to a later
 finalization than the original command outcome.
+It rejects first withdrawal and withdrawal grants without a substantive head,
+proves mixed owner/reviewer legacy lists before pagination/cursors while keeping
+explicit reviewer reads denied, and compares share actions against current
+original export client authority and fresh-export recovery.
 
 Use `scripts/prepare_study_review_project.py --destination <new-owned-dir>/study906`
 with pinned CLI2.117.0. This creates a separate PG17 project on API56621/DB56622
@@ -158,10 +162,15 @@ and an ownership receipt. It never changes or operates the retained P2 study894
 project. Start only that project and keep startup keys in private logs.
 `STUDY_REVIEW_ALLOW_RESET=owned-study906` permits
 `scripts/test_study_review_upgrade.py --workdir <owned-study906> --report <new-json>`
-to prove populated predecessor `20261103110002`, unchanged prior rows/functions/
-owners/ACLs/manifest/configuration and an exact blank candidate ledger with all
+to prove populated predecessor `20261103110002`, unchanged prior rows/authority/
+manifest/configuration and an exact blank candidate ledger with all
 P1/P2/P3 gates off. Existing P2 upgrade qualification still examines its exact
 pair, then rebuilds the complete current candidate including later migrations.
+The only prior routine definition allowed to change is
+`private.study_qry_core_v1(jsonb)`, with precisely the owner/editor/viewer
+membership filter before its legacy list limit/cursor. The runner compares that
+exact replacement and proves every prior routine's ACL, owner and settings
+unchanged, with no other definition delta.
 
 On that blank owned project run
 `supabase/tests/regression/20261103_study_review_concurrency.py --workdir
@@ -169,11 +178,11 @@ On that blank owned project run
 `supabase/tests/regression/20261103_study_review_transport.py --workdir
 <owned-study906> --race-receipt <race-json> --report <new-json>`.
 Both are Python3 entrypoints; transport also requires `SUPABASE_CLI` to identify
-the pinned underlying executable. Eight real independent-session races observe
+the pinned underlying executable. Nine real independent-session races observe
 advisory/domain waits and actual row contention for heads, receipt retry,
 finalization/withdrawal, role demotion, grant consumption/revoke and share revoke;
 the source-ownership withdrawal case observes the NOWAIT rejection instead of a
-wait. The transport runner makes57 actual PostgREST assertions with signed local
+wait. The transport runner makes74 actual PostgREST assertions with signed local
 fixture claims and no credential/raw-error logging. It proves neither GoTrue
 login/consent nor deployed Edge/Storage byte behavior.
 

@@ -61,7 +61,9 @@ do $$declare t record;v jsonb;begin
 end$$;
 select jsonb_build_object(
  'allPopulatedP2RowsPreserved',not exists(select 1 from study906_prior_data p full join study906_upgraded_data a using(name) where p.value is distinct from a.value),
- 'allExistingFunctionsAndAuthorityUnchanged',not exists(select 1 from study906_prior_functions b left join pg_proc p on p.oid=b.oid where p.oid is null or b.def<>pg_get_functiondef(p.oid) or b.proacl is distinct from p.proacl or b.proowner<>p.proowner or b.proconfig is distinct from p.proconfig),
+ 'onlyReviewedLegacyListDefinitionChanged',(select array_agg(p.oid::regprocedure::text order by p.oid::regprocedure::text) from study906_prior_functions b left join pg_proc p on p.oid=b.oid where p.oid is null or b.def<>pg_get_functiondef(p.oid))=array['private.study_qry_core_v1(jsonb)'],
+ 'legacyListDeltaIsExactRoleFilter',(select pg_get_functiondef(b.oid)=replace(b.def,'where m.actor_id=actor and private.study_team_member(actor,s.team_id) and (after_id is null or s.id>after_id)','where m.actor_id=actor and m.role in (''owner'',''editor'',''viewer'') and private.study_team_member(actor,s.team_id) and (after_id is null or s.id>after_id)') from study906_prior_functions b where b.oid='private.study_qry_core_v1(jsonb)'::regprocedure),
+ 'allPriorRoutineAclOwnerAndSettingsUnchanged',not exists(select 1 from study906_prior_functions b left join pg_proc p on p.oid=b.oid where p.oid is null or b.proacl is distinct from p.proacl or b.proowner<>p.proowner or b.proconfig is distinct from p.proconfig),
  'existingManifestPreserved',not exists(select 1 from study906_prior_manifest b left join private.api_capability_grants a using(routine_identity) where to_jsonb(b) is distinct from to_jsonb(a)),
  'newRuntimeDefaultOff',(select not enabled and revision=1 from private.study_review_config),
  'noPhantomFinalizationOrShare',(select count(*)=0 from private.study_report_finalizations) and(select count(*)=0 from private.study_report_shares));
@@ -79,7 +81,7 @@ select jsonb_build_object(
     args.report.write_text(json.dumps({'schemaVersion':'lca.study-review-upgrade-receipt.v1','project':'study906','predecessor':PREDECESSOR,'candidate':candidate,
       'migrationHashes':migrations,'populatedP2Upgrade':proof,'blankMigrationLedgerRebuild':True,'allP1P2P3GatesDefaultOff':True,'accountsAndClientsEmpty':True,
       'resourceOwnership':ownership,'classification':'owned PG17 SQL proof; no hosted, actual-byte or UI qualification'},indent=2)+'\n')
-    print('Study906 populated P2 upgrade preserved every prior row/function/ACL/manifest; blank ledger rebuilt with all gates off.')
+    print('Study906 populated P2 upgrade preserved every prior row/authority/manifest; only the exact legacy-list role filter changed, with unchanged ACL/owner/settings. Blank ledger gates remain off.')
 
 
 if __name__=='__main__':main()

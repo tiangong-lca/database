@@ -412,8 +412,13 @@ cleanup; uncertain bytes remain retained for a separately owned disposition.
 ## P3 revision review, finalization and named summary disclosure
 
 Database #906 negotiates `lca.study-api.v4` through separate
-`cmd_study_review_v1` and `qry_study_review_v1` façades. No V2/V3 routine,
-frozen report, historical export or signature meaning is rewritten.
+`cmd_study_review_v1` and `qry_study_review_v1` façades. Frozen reports,
+historical exports and signature meanings are unchanged. The sole legacy
+definition delta is `private.study_qry_core_v1(jsonb)`: `study.list` filters
+membership to owner/editor/viewer before ordering, limit and cursor selection.
+Reviewer-only memberships cannot hide another actor-owned Study or consume a
+page. Its existing per-resource read authorization, owner, ACL and settings
+remain unchanged; reviewer membership still grants no legacy raw/core read.
 `study_review_config.enabled` defaults false. Its service-only CAS configuration
 requires `lca.study-review-qualification.v1` and an evidence reference; it grants
 no OAuth client a capability. The initial policies are explicit unreviewed and
@@ -432,7 +437,9 @@ Comments are append-only and never approve.
 Substantive `approve`, `reject` and `withdraw` decisions bind exact frozen report
 ID/hash, actor, class and predecessor. One head per actor/class prevents forks;
 at most64 heads keep accepted evidence renderable. A new report ID inherits no
-approvals, even if its bytes are identical.
+approvals, even if its bytes are identical. Withdrawal cannot start a chain:
+both direct decisions and withdrawal delegation issuance require a current
+substantive head and its exact predecessor identity.
 
 First-party decisions are labelled `first_party_actor`, without inferred human
 or independent certification. An OAuth decision requires a first-party grant
@@ -500,6 +507,9 @@ are at most64 outstanding intents per actor. Resolver timestamps are pinned to
 the intent for repeatable context comparison; scientific check time remains its
 persisted observation. Histories use actor/client/selection/access-bound opaque
 cursors with a100-row maximum. No locator or raw relation becomes actor-readable.
+Report share actions use the same original export client's live
+`STUDY-WRITE-01` predicate as `share.create`. A revoked client's sole export
+cannot advertise that action; a fresh eligible export can restore it.
 
 The owned study906 suites prove actual SQL/RLS/PostgREST and observed transaction
 fences with synthetic content/facts/signatures. They do not prove GoTrue OAuth
