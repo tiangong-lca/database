@@ -9,11 +9,17 @@ begin
     when 'modelSourceAcquisition' then select study_id,job_id into sid,bound_job from private.study_source_acquisitions where id=p_resource_id;
     when 'modelPreparation' then select study_id,job_id into sid,bound_job from private.study_model_preparations where id=p_resource_id;
     when 'run' then select study_id,job_id into sid,bound_job from private.study_runs where id=p_resource_id;
+ when 'analysis' then select study_id,job_id into sid,bound_job from private.study_analyses where id=p_resource_id;
     else perform private.study_require(false,'INVALID_REQUEST');
   end case;
   perform private.study_require(sid is not null and bound_job=p_job_id,'REFERENCE_MISMATCH');
   perform 1 from private.studies where id=sid for update;
   select * into j from private.worker_jobs where id=p_job_id for update;
+ if p_resource_type='analysis' then
+  perform private.study_require(j.job_kind='study.analysis' and j.worker_runtime='calculator' and j.worker_queue='solver' and j.subject_type='study' and j.subject_id=p_resource_id
+   and j.payload_schema_version='study.analysis.request.v1' and j.payload_json=jsonb_build_object('schemaVersion','study.analysis.request.v1','studyId',sid,'analysisId',p_resource_id)
+   and exists(select 1 from private.study_analyses a where a.id=p_resource_id and a.study_id=sid and a.job_id=p_job_id and a.requested_by=j.requested_by),'REFERENCE_MISMATCH');
+ end if;
   perform private.study_require(p_lease_token is not null and (j.lease_token=p_lease_token or exists(
     select 1 from private.worker_job_events where job_id=p_job_id and lease_token=p_lease_token)),'FORBIDDEN');
   select * into receipt from private.study_service_receipts where operation=p_resource_type and study_id=sid and idempotency_key=p_idempotency_key;

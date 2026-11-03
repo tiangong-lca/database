@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-03
-lastReviewedCommit: aebe79da1a92904ffbb2c3b03444c396343f2739
-lastReviewedNote: "Database #900: reviewed versioned review metadata schema admission and final writeback guard, isolated PG17 proof and generated schema inventory. Existing rows, API authority, branch deployment and integration policy remain unchanged."
+lastReviewedCommit: 294f37366522e41a303860eb0badb29cae2375a5
+lastReviewedNote: "Database #904: reviewed independent v3 analysis/report/export persistence, exact source/lease/producer fences, default-off gates, isolated SQL/upgrade/concurrency proof and generated schema workflow. Hosted/runtime/signer qualification remains separate; no Production client grants change."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -136,6 +136,51 @@ trusted source/Worker evidence with real canonical jobs and lease tokens; they
 do not qualify actual exports, licensing, artifact bytes, solver execution or
 disclosure. W06 must add those real actor/queue/Worker/storage/transport proofs
 before producer or artifact operations are advertised.
+
+## Study P2 analysis/report/export (Database #904)
+
+Use the ordinary PG17 blank migration-ledger baseline and retain all P1 suites.
+Add `supabase/tests/20261103_study_analysis_reporting.sql` and
+`supabase/tests/20261103_study_report_producer.sql`. They verify exact Worker
+config hashing/order, private ACL/FORCE RLS, current source/actor/client checks,
+canonical job subject/lease fencing, NOWAIT source-lock/withdrawal ordering,
+cancellation, producer intents, CAS,
+immutable content/export, detached manifest bindings, locator-free unknown-upload
+reconciliation, and replay after revocation. Synthetic initial noncurrent Run
+fixtures prove that scientific validity gates fresh production independently of
+authorized historical reads, without disabling immutability or changing source
+rights.
+Numerical artifacts and signature strings in these SQL suites are synthetic;
+passing SQL does not prove issued bytes or a cryptographic signer.
+
+Use `scripts/test_study_runtime_reporting_upgrade.py --workdir <owned-study894>
+--ownership-manifest <exact-owned-project-json> --report <new-json>` with
+`STUDY_RUNTIME_UPGRADE_ALLOW_RESET=isolated` and the pinned Supabase2.117.0 CLI.
+The runner refuses accounts/clients/active jobs before its first reset, checks
+project/port/PG17/ownership, resets only that explicitly reserved project to
+`20261103110000`, populates P1 evidence, verifies preserved data/authority and the
+exact three extended service routines, then reconstructs candidate migrations
+`20261103110001` and `20261103110002` from a blank ledger. All P1/P2 producer flags
+must be off, with no users or client grants left after reconstruction.
+
+For observed independent-session races, use
+`supabase/tests/regression/20261103_study_analysis_concurrency.py` and
+`supabase/tests/regression/20261103_study_report_concurrency.py`, each with
+`--database <owned-study904_clone> --report <new-json>`. They never clone/reset/drop
+a database, verify the exact retained container/port, and require an empty reserved
+fixture namespace. Report races include a save consume holding the Study lock
+while a new save/freeze admission has already started: after the wait, stale CAS
+must reject without any intent/receipt, and exact committed retries still recover.
+The explicit `--expect-stale-admission` mode preserves a pre-fix reproduction
+receipt only; CI always requires rejection. These proofs retain synthetic rows in an explicitly owned
+clone; preserve receipts and release those exact clones before the final blank
+rebuild. CI may select `--database postgres --owned-ci-project <workdir>` only
+with `CI=true` and the exact disposable project ownership receipt; the workflow
+resets that dedicated project between suites and retains the bounded receipts. A restored scoped clone is not full Supabase bootstrap proof. Real
+PostgREST/client grants, actual Worker facts, Edge validation/export signatures
+and installed CLI evidence must be recorded separately. Regenerate all five
+schema views and Data API types twice from the final blank candidate and require
+zero drift. Never change Production/default client grants for local proof.
 
 ## Study task/source/disclosure adapter (Database #895)
 
