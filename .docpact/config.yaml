@@ -1,8 +1,8 @@
 version: 1
 layout: repo
 lastReviewedAt: "2026-11-04"
-lastReviewedCommit: "eb3fbaf5d6de868c8562516b2980bdc968322121"
-lastReviewedNote: "Database #906: reviewed V4 revision review, one-use actor delegation, immutable finalization and named summary-share authority, exact additive upgrade, SQL/HTTP/concurrency proof and deterministic generated schema. Actual bytes, UI/CLI, hosted enablement and source integration remain separately qualified."
+lastReviewedCommit: "edd84a5f95db1d323207e9fda51f5c804d9beb67"
+lastReviewedNote: "Database #906: reviewed V4 current Study/core and report authority, review/finalization/share and replay boundaries, sole legacy-list role filter, isolated upgrade/SQL/HTTP/concurrency proof and deterministic schema. Actual bytes, UI/CLI, hosted enablement and source integration remain separately qualified."
 
 # Keep deterministic governance facts here.
 # AGENTS.md remains the repo contract entrypoint.

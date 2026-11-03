@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-04
-lastReviewedCommit: 75a5841c35fa4d8b947545f6c31e5aa6c17e921d
-lastReviewedNote: "Database #906: reviewed V4 revision review, one-use actor delegation, immutable finalization and named summary-share authority, exact additive upgrade, SQL/HTTP/concurrency proof and deterministic generated schema. Actual bytes, UI/CLI, hosted enablement and source integration remain separately qualified."
+lastReviewedCommit: edd84a5f95db1d323207e9fda51f5c804d9beb67
+lastReviewedNote: "Database #906: reviewed V4 current Study/core and report authority, review/finalization/share and replay boundaries, sole legacy-list role filter, isolated upgrade/SQL/HTTP/concurrency proof and deterministic schema. Actual bytes, UI/CLI, hosted enablement and source integration remain separately qualified."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
