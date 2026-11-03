@@ -6,6 +6,7 @@ CREATE OR REPLACE FUNCTION "private"."study_review_intent_check"("p_id" "uuid") 
  perform 1 from private.studies where id=i.study_id for update;
  select * into i from private.study_review_intents where id=p_id;
  if i.share_id is not null then perform private.study_review_share_check(i.share_id,i.actor_id,i.client_id,true);
+ elsif i.operation='export.download' then perform private.study_review_export_check(i.export_id,i.actor_id,i.client_id);
  else perform private.study_review_authorize(i.study_id,i.actor_id,i.client_id,case when i.operation='export.request' then 'manage' else 'read' end);perform private.study_review_disclosure(i.report_id);end if;
  if i.response is not null then return i;end if;
  select * into cfg from private.study_review_config where singleton for share;

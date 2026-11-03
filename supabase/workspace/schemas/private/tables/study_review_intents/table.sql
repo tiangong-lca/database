@@ -20,7 +20,7 @@ CREATE TABLE IF NOT EXISTS "private"."study_review_intents" (
     "created_at" timestamp with time zone DEFAULT "clock_timestamp"() NOT NULL,
     "expires_at" timestamp with time zone DEFAULT ("clock_timestamp"() + '00:02:00'::interval) NOT NULL,
     "response" "jsonb",
-    CONSTRAINT "study_review_intents_operation_check" CHECK (("operation" = ANY (ARRAY['report.view'::"text", 'export.request'::"text", 'share.view'::"text", 'share.download'::"text"])))
+    CONSTRAINT "study_review_intents_operation_check" CHECK (("operation" = ANY (ARRAY['report.view'::"text", 'export.request'::"text", 'export.download'::"text", 'share.view'::"text", 'share.download'::"text"])))
 );
 
 ALTER TABLE ONLY "private"."study_review_intents" FORCE ROW LEVEL SECURITY;

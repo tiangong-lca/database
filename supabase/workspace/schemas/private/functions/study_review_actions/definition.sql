@@ -1,7 +1,7 @@
 CREATE OR REPLACE FUNCTION "private"."study_review_actions"("p_type" "text", "p_id" "uuid", "p_actor" "uuid", "p_client" "text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
-    AS $$declare r private.study_report_revisions%rowtype;role text;ops jsonb:='[]'::jsonb;st jsonb;s private.study_report_shares%rowtype;e private.study_review_exports%rowtype;begin
+    AS $$declare r private.study_report_revisions%rowtype;role text;ops jsonb:='[]'::jsonb;st jsonb;s private.study_report_shares%rowtype;begin
  if p_type='share' then
   s:=private.study_review_share_check(p_id,p_actor,p_client,false);ops:='["share.read"]';
   if s.issuer_id=p_actor and private.study_client_allowed(p_client,'STUDY-WRITE-01') then
@@ -12,9 +12,7 @@ CREATE OR REPLACE FUNCTION "private"."study_review_actions"("p_type" "text", "p_
   role:=private.study_review_authorize(p_id,p_actor,p_client,'read');
   if role='owner' and private.study_client_allowed(p_client,'STUDY-WRITE-01') then ops:=jsonb_build_array('member.set');end if;return ops;
  elsif p_type='export' then
-  select * into e from private.study_review_exports where id=p_id;
-  perform private.study_review_authorize(e.study_id,p_actor,p_client,'manage');perform private.study_review_disclosure(e.report_id);
-  perform private.study_require(e.actor_id=p_actor and private.study_client_allowed(e.client_id,'STUDY-WRITE-01') and e.grant_epoch=(select grant_epoch from private.studies where id=e.study_id),'FORBIDDEN');return '["export.read"]'::jsonb;
+  perform private.study_review_export_check(p_id,p_actor,p_client);return '["export.read","export.download"]'::jsonb;
  end if;
  perform private.study_require(p_type='reportRevision','INVALID_REQUEST');select * into r from private.study_report_revisions where id=p_id;
  role:=private.study_review_authorize(r.study_id,p_actor,p_client,'read');perform private.study_review_disclosure(r.id);

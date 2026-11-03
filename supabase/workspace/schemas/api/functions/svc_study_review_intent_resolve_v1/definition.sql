@@ -6,7 +6,10 @@ CREATE OR REPLACE FUNCTION "api"."svc_study_review_intent_resolve_v1"("p_intent_
  perform private.study_require(coalesce(util.is_service_request(),false),'FORBIDDEN');i:=private.study_review_intent_check(p_intent_id);
  if i.response is not null then return i.response;end if;
  select * into r from private.study_report_revisions where id=i.report_id;st:=jsonb_set(private.study_review_state(r.id),'{checkedAt}',to_jsonb(i.created_at));
- if i.share_id is null then
+ if i.operation='export.download' then
+  select * into e from private.study_review_exports where id=i.export_id;
+  artifact:=private.study_private_artifact(i.study_id,e.bundle_artifact_id)||jsonb_build_object('kind','artifactCapability');
+ elsif i.share_id is null then
   select owner_id into issuer from private.studies where id=i.study_id;
   select jsonb_agg(jsonb_build_object('run',private.study_record('run',rn.id),'revision',private.study_record('studyRevision',rn.study_revision_id),
    'scenario',private.study_record('scenarioRevision',rn.scenario_id),'preparation',private.study_record('modelPreparation',rn.preparation_id),

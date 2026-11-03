@@ -42,7 +42,7 @@ begin
   end if;
   if op='export.request' and prev.response->'data'->>'kind'='studyReviewIntent' then
    declare oldintent private.study_review_intents%rowtype;begin oldintent:=private.study_review_intent_check((prev.response->'data'->>'intentId')::uuid);if oldintent.response is not null then return oldintent.response;end if;end;
-  end if;return prev.response;
+  end if;return private.study_review_refresh(prev.response);
  end if;
  perform private.study_require(study.status='active','FROZEN_REVISION');
  perform 1 from private.study_review_config where singleton and enabled for share;perform private.study_require(found,'CAPABILITY_UNAVAILABLE');
@@ -50,10 +50,12 @@ begin
   perform private.study_require(private.study_keys(p_request->'target',array['type','id','expectedRevision']) and p_request->'target'->>'type'='study'
    and jsonb_typeof(p_request->'target'->'expectedRevision')='number' and (p_request->'target'->>'expectedRevision')::numeric=study.revision,'REVISION_CONFLICT');
   member:=(p_request->>'memberId')::uuid;
-  perform private.study_require(study.team_id is not null and member<>study.owner_id,'FORBIDDEN');
+  perform private.study_require(member<>study.owner_id,'FORBIDDEN');
   perform private.study_require(p_request->'role'='null'::jsonb or p_request->>'role' in ('editor','reviewer','viewer'),'INVALID_REQUEST');
+  perform private.study_require(study.team_id is not null or p_request->'role'='null'::jsonb or p_request->>'role'='reviewer','CAPABILITY_UNAVAILABLE');
   if p_request->'role'='null'::jsonb then delete from private.study_members where study_id=sid and actor_id=member;
-  else perform 1 from private.roles where user_id=member and team_id=study.team_id and role in ('owner','admin','member') for share;perform private.study_require(found,'FORBIDDEN');
+  else
+   if study.team_id is not null then perform 1 from private.roles where user_id=member and team_id=study.team_id and role in ('owner','admin','member') for share;perform private.study_require(found,'FORBIDDEN');end if;
    insert into private.study_members values(sid,member,p_request->>'role') on conflict(study_id,actor_id) do update set role=excluded.role;end if;
   update private.studies set revision=revision+1,grant_epoch=grant_epoch+1 where id=sid returning * into study;
   value:=jsonb_build_object('type','member','studyId',sid,'studyRevision',study.revision,'memberId',member,'role',p_request->'role');
@@ -84,7 +86,7 @@ begin
     values(sid,r.id,r.content_hash,actor,client,'internal',p_request->>'decision',p_request->>'comment',head,d.id) returning id into newid;
    insert into private.study_report_review_heads values(r.id,actor,'internal',newid) on conflict(report_id,actor_id,review_class) do update set review_id=excluded.review_id;
    if d.id is not null then update private.study_review_delegations set consumed_review_id=newid where id=d.id;end if;
-   value:=jsonb_build_object('type','review','value',private.study_review_record(newid));
+   value:=jsonb_build_object('type','review','value',private.study_review_record(newid),'state',private.study_review_state(r.id));
   end if;
  elsif op='review.delegation.revoke' then
   update private.study_review_delegations set revoked_at=coalesce(revoked_at,clock_timestamp()) where id=d.id;

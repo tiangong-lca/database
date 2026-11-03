@@ -4,7 +4,7 @@ CREATE OR REPLACE FUNCTION "api"."qry_study_review_v1"("p_request" "jsonb") RETU
     SET "statement_timeout" TO '15s'
     AS $$
 declare op text:=p_request->>'operation';actor uuid:=auth.uid();client text:=nullif(auth.jwt()->>'client_id','');allowed text[];rid uuid;r private.study_report_revisions%rowtype;
- s private.study_report_shares%rowtype;e private.study_review_exports%rowtype;value jsonb;ops jsonb;kind text;lim integer;afterid uuid;nextid uuid;ids uuid[];resource_id uuid;
+ s private.study_report_shares%rowtype;e private.study_review_exports%rowtype;value jsonb;ops jsonb;allowed_member_roles jsonb:='[]'::jsonb;kind text;lim integer;afterid uuid;nextid uuid;ids uuid[];resource_id uuid;
  selection jsonb;epoch text;cur private.study_cursors%rowtype;items jsonb:='[]'::jsonb;more boolean;
 begin
  perform private.study_review_envelope(p_request,false);perform private.study_require(private.study_client_allowed(client,'STUDY-READ-01'),'FORBIDDEN');
@@ -13,7 +13,7 @@ begin
   if not(select enabled from private.study_review_config where singleton) then
    value:=jsonb_build_object('type','capabilities','contractVersion','4.0.0','runtimeEnabled',false,'operations',jsonb_build_array('capability.read'),'finalizationProfiles','[]'::jsonb,'reviewClasses','[]'::jsonb,'disclosurePolicies','[]'::jsonb);
   else
-   ops:='["capability.read","resource.actions","comment.list","review.list","review.delegation.list","report.current","report.view","export.read","share.read","share.view","share.download","share.list"]';
+   ops:='["capability.read","resource.actions","comment.list","review.list","review.delegation.list","report.current","report.view","export.read","export.download","share.read","share.view","share.download","share.list"]';
    if private.study_client_allowed(client,'STUDY-WRITE-01') then
     ops:=ops||'["member.set","comment.append","review.record","report.finalize","export.request","share.create","share.revoke"]'::jsonb;
     if client is null then ops:=ops||'["review.delegation.issue","review.delegation.revoke"]'::jsonb;end if;
@@ -27,17 +27,21 @@ begin
  when 'resource.actions' then
   perform private.study_require(private.study_keys(p_request,array['schemaVersion','requestId','operation','resource']) and private.study_keys(p_request->'resource',array['type','id'])
    and p_request->'resource'->>'type' in ('study','reportRevision','share','export'),'INVALID_REQUEST');
-  return jsonb_build_object('ok',true,'data',jsonb_build_object('type','actions','resource',p_request->'resource','actions',private.study_review_actions(p_request->'resource'->>'type',(p_request->'resource'->>'id')::uuid,actor,client)));
+  ops:=private.study_review_actions(p_request->'resource'->>'type',(p_request->'resource'->>'id')::uuid,actor,client);
+  if p_request->'resource'->>'type'='study' and ops ? 'member.set' then
+   select case when team_id is null then '["reviewer"]'::jsonb else '["editor","reviewer","viewer"]'::jsonb end into allowed_member_roles
+    from private.studies where id=(p_request->'resource'->>'id')::uuid;
+  end if;
+  return jsonb_build_object('ok',true,'data',jsonb_build_object('type','actions','resource',p_request->'resource','actions',ops,'allowedMemberRoles',allowed_member_roles));
  when 'share.read','share.view','share.download' then
   perform private.study_require(private.study_keys(p_request,array['schemaVersion','requestId','operation','shareId']),'INVALID_REQUEST');
   s:=private.study_review_share_check((p_request->>'shareId')::uuid,actor,client,op<>'share.read');
   if op='share.read' then value:=jsonb_build_object('type','share','value',private.study_review_share_record(s.id));else return private.study_review_new_intent(p_request,s.report_id,s.id);end if;
   return jsonb_build_object('ok',true,'data',value);
- when 'export.read' then
+ when 'export.read','export.download' then
   perform private.study_require(private.study_keys(p_request,array['schemaVersion','requestId','operation','exportId']),'INVALID_REQUEST');
-  select * into e from private.study_review_exports where study_review_exports.id=(p_request->>'exportId')::uuid;
-  perform private.study_review_authorize(e.study_id,actor,client,'manage');perform private.study_review_disclosure(e.report_id);
-  perform private.study_require(e.actor_id=actor and private.study_client_allowed(e.client_id,'STUDY-WRITE-01') and e.grant_epoch=(select grant_epoch from private.studies where id=e.study_id),'FORBIDDEN');
+  e:=private.study_review_export_check((p_request->>'exportId')::uuid,actor,client);
+  if op='export.download' then return private.study_review_new_intent(p_request,e.report_id,null,e.id);end if;
   return jsonb_build_object('ok',true,'data',jsonb_build_object('type','export','value',e.record));
  when 'report.current','report.view' then allowed:=array['reportRevisionId','expectedContentHash'];
  when 'comment.list','review.list','review.delegation.list','share.list' then allowed:=array['reportRevisionId','expectedContentHash','cursor','limit'];
