@@ -20,9 +20,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-01
-lastReviewedCommit: fb69a78b88833f0f01fba5c1fea9b97df09fa4ad
-lastReviewedNote: "Database #879: reviewed immutable manager public-readback attestations, live publication/reader/ZIP admission, historical recovery, populated upgrade and identical local schema exports. No remote deployment."
+lastReviewedAt: 2026-11-03
+lastReviewedCommit: 2b8959360fe39205b4ab11d0d40acf32df3e66ac
+lastReviewedNote: "Database #895: reviewed default-off canonical Study admission, exact RLS source capture/history rights, opaque disclosure intents and scoped cancellation/reconciliation; local runtime evidence and owned reconstruction are distinct from hosted activation."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -635,6 +635,36 @@ Notes:
 - You can override the destination with `--schema-file`
 - `--environment local` without `--db-url` uses Supabase CLI `db dump --local`; an explicit `--db-url` still uses that URL
 
+### Isolated Study runtime proof (Database #894/#895)
+
+`prepare_study_runtime_project.py --destination <new-owned-directory>/study894`
+copies the pinned migrations/templates/seeds and rewrites a separate project
+configuration for API56421/DB56422/PG17, strips remote bindings and records an
+ownership manifest. It performs no database operation and refuses an existing
+destination. Tracked configuration and the shared database-engine project remain
+untouched.
+
+After starting only that owned project with Supabase2.117.0, run:
+
+```sh
+STUDY_RUNTIME_UPGRADE_ALLOW_RESET=isolated python3 -B scripts/test_study_runtime_upgrade.py \
+  --workdir <owned-study894> --report <new-upgrade-json>
+python3 -B supabase/tests/regression/20261103_study_runtime_concurrency.py \
+  --report <new-concurrency-json>
+```
+
+The upgrade proof resets the verified task project to its exact predecessor,
+preserves a legacy dataset/job and persistent Study across W03→W06, binds the
+exact13 reviewed routine changes and unchanged surrounding authority/manifest,
+then reconstructs the complete candidate migration ledger. Producer/disclosure
+flags must remain off after reconstruction.
+The concurrency proof observes two real sessions waiting on controlled advisory
+and row locks; it retains exact synthetic fixtures for the owner's later reset.
+It never resets a database itself. Preserve both receipts and release/adopt exact
+task resources through the workspace resource workflow. CLI startup logs contain
+generated local keys and must remain private; do not publish raw status/env/logs.
+These SQL proofs do not qualify real source export, compilation or disclosure.
+
 ### `build_schema_workspace.py`
 
 Refreshes the human-readable schema workspace under:
@@ -1129,3 +1159,15 @@ or writer cost and does not establish hosted p95.
 ### Calculation export upgrade qualification
 
 `render_calculation_export_upgrade.py <output.sql>` renders the exact canonical-base populated fixture without connecting to a database. `test_calculation_export_upgrade.sh` runs that fixture only in the matching ephemeral GitHub-hosted workspace, with explicit isolated-reset admission. It verifies historical jobs/results/packages/snapshots, native export leases and immutable admission; see the validation guide for the pinned base and restore sequence.
+
+### Study source replay regression
+
+Run the owned PG17 same-lease first-read check after the canonical rebuild:
+```sh
+python3 -B supabase/tests/regression/20261103_study_source_concurrency.py --report <new-source-concurrency-json>
+```
+It observes two sessions on real Study/job locks, expects one immutable packet,
+restores the prior source-enabled flag and retains its distinct synthetic
+namespace for the explicit owned reset. The input-parity SQL suite separately
+covers numeric source IDs, canonical Scenario generations and normalized generic
+job-kind routing. Neither test grants hosted or business-data authority.

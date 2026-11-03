@@ -30,9 +30,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-02
-lastReviewedCommit: 057eec7991bbc2815d874df3d48838d108b9d543
-lastReviewedNote: "Database #887: retire custom ZIP roles and policies; existing Edge server credentials own signing, with no business-data changes."
+lastReviewedAt: 2026-11-03
+lastReviewedCommit: 2b8959360fe39205b4ab11d0d40acf32df3e66ac
+lastReviewedNote: "Database #895: reviewed default-off canonical Study admission, exact RLS source capture/history rights, opaque disclosure intents and scoped cancellation/reconciliation; local runtime evidence and owned reconstruction are distinct from hosted activation."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -46,14 +46,22 @@ Allocation contract update (Database #789): `private.lcia_scope_closure_normaliz
 
 This repo is organized around one checked-in Supabase project plus a generated schema-inspection workspace.
 
-## Proposed Study durable domain
+## Study durable domain
 
 [LCA Study durable invariants v1](lca-study-durable-contract.md) owns the P0
 identity, revision, authorization, concurrency and report review/export/share
-contract with offline transition examples. It introduces no schema or runtime
-capability. Edge owns public Study wire schemas; Worker owns numerical contracts.
+contract with offline transition examples. The P0 examples introduce no runtime
+capability. The additive [Study runtime contract](lca-study-runtime-contract.md)
+owns private persistent Study/grant/source/preparation/revision/scenario/Run
+identities, actor façades, atomic validation intents and fenced service seams.
+W06 adds canonical queue admission, immutable actual-row JSON capture, scoped
+task control and opaque artifact-disclosure intents behind default-off service
+qualification flags. Installation alone activates no source or numerical profile;
+real actor/queue/Worker/storage qualification remains environment-specific.
+Edge owns public Study wire schemas; Worker owns numerical contracts.
 Study/Run/Report remain distinct from LifecycleModel, worker_jobs and formal
-Final Result publication. Later implementation must prove SQL and runtime behavior.
+Final Result publication. Later report/review/export/share structures remain
+additive work governed by P0; W03 does not publish datasets or Results.
 
 ## Final Result content identity
 

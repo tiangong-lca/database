@@ -723,6 +723,7 @@ export type Database = {
         }
         Returns: Json
       }
+      cmd_study_v1: { Args: { p_request: Json }; Returns: Json }
       cmd_system_change_member_role: {
         Args: {
           p_action?: string
@@ -2922,6 +2923,7 @@ export type Database = {
         }
         Returns: Json
       }
+      qry_study_v1: { Args: { p_request: Json }; Returns: Json }
       qry_system_find_member_candidate_by_email: {
         Args: { p_email: string }
         Returns: {
@@ -3868,6 +3870,90 @@ export type Database = {
         Returns: Json
       }
       svc_schema_contract_status: { Args: never; Returns: Json }
+      svc_study_artifact_read_resolve_v1: {
+        Args: { p_intent_id: string }
+        Returns: Json
+      }
+      svc_study_model_preparation_complete_v1: {
+        Args: {
+          p_completion: Json
+          p_idempotency_key: string
+          p_job_id: string
+          p_lease_token: string
+          p_preparation_id: string
+        }
+        Returns: Json
+      }
+      svc_study_model_preparation_read_input_v1: {
+        Args: {
+          p_job_id: string
+          p_lease_token: string
+          p_preparation_id: string
+        }
+        Returns: Json
+      }
+      svc_study_revision_freeze_consume_v1: {
+        Args: { p_error_code?: string; p_intent_id: string; p_outcome: string }
+        Returns: Json
+      }
+      svc_study_run_complete_v1: {
+        Args: {
+          p_completion: Json
+          p_idempotency_key: string
+          p_job_id: string
+          p_lease_token: string
+          p_run_id: string
+        }
+        Returns: Json
+      }
+      svc_study_run_read_input_v1: {
+        Args: { p_job_id: string; p_lease_token: string; p_run_id: string }
+        Returns: Json
+      }
+      svc_study_runtime_configure_v1: {
+        Args: { p_configuration: Json; p_expected_revision: number }
+        Returns: Json
+      }
+      svc_study_source_acquisition_read_input_v1: {
+        Args: {
+          p_acquisition_id: string
+          p_job_id: string
+          p_lease_token: string
+        }
+        Returns: Json
+      }
+      svc_study_source_record_v1: {
+        Args: {
+          p_acquisition_id: string
+          p_completion: Json
+          p_idempotency_key: string
+          p_job_id: string
+          p_lease_token: string
+        }
+        Returns: Json
+      }
+      svc_study_task_fail_v1: {
+        Args: {
+          p_error_code: string
+          p_idempotency_key: string
+          p_job_id: string
+          p_lease_token: string
+          p_resource_id: string
+          p_resource_type: string
+        }
+        Returns: Json
+      }
+      svc_study_task_reconcile_v1: {
+        Args: {
+          p_artifact_id?: string
+          p_idempotency_key: string
+          p_job_id: string
+          p_lease_token: string
+          p_resource_id: string
+          p_resource_type: string
+        }
+        Returns: Json
+      }
       svc_tidas_package_export_enqueue: {
         Args: {
           p_idempotency_key: string

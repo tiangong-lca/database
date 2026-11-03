@@ -17830,6 +17830,19 @@ $$;
 ALTER FUNCTION "api"."cmd_simple_review_submit_decision"("p_review_id" "uuid", "p_decision" "text", "p_reason" "text", "p_audit" "jsonb") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "api"."cmd_study_v1"("p_request" "jsonb") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$ begin
+  if p_request->>'operation'='task.cancel' then return private.study_task_control(p_request); end if;
+  if p_request->>'operation' in ('model.source.resolve','model.prepare','run.submit','run.cancel') then return private.study_task_command(p_request); end if;
+  return private.study_cmd_core_v1(p_request);
+end $$;
+
+
+ALTER FUNCTION "api"."cmd_study_v1"("p_request" "jsonb") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "api"."cmd_system_change_member_role"("p_user_id" "uuid", "p_role" "text" DEFAULT NULL::"text", "p_action" "text" DEFAULT 'set'::"text", "p_audit" "jsonb" DEFAULT '{}'::"jsonb") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'api', 'private', 'public', 'util', 'extensions', 'pg_temp'
@@ -30396,6 +30409,38 @@ $_$;
 ALTER FUNCTION "api"."qry_source_final_results_v2"("p_source_id" "uuid", "p_source_version" "text", "p_after_key" "text", "p_limit" integer, "p_publication_id" "uuid") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "api"."qry_study_v1"("p_request" "jsonb") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare result jsonb; ops jsonb; profiles jsonb:='[]'; cfg private.study_runtime_config%rowtype; client text:=nullif(auth.jwt()->>'client_id','');
+begin
+  if p_request->>'operation'='task.read' then return private.study_task_control(p_request); end if;
+  if p_request->>'operation'='artifact.read' then return private.study_artifact_capability(p_request); end if;
+  result:=private.study_qry_core_v1(p_request);
+  if p_request->>'operation'='capability.read' and result->>'ok'='true' then
+    select * into cfg from private.study_runtime_config where singleton;
+    ops:=result->'data'->'operations'||jsonb_build_array('task.read');
+    if private.study_client_allowed(client,'STUDY-WRITE-01') then
+      ops:=ops||jsonb_build_array('run.cancel','task.cancel');
+      if private.study_client_allowed(client,'DB-CORE-READ-01') then
+        if cfg.source_enabled then ops:=ops||jsonb_build_array('model.source.resolve'); end if;
+        if cfg.compute_enabled then ops:=ops||jsonb_build_array('model.prepare','run.submit'); end if;
+      end if;
+    end if;
+    if cfg.disclosure_enabled and private.study_client_allowed(client,'DB-CORE-READ-01') then ops:=ops||jsonb_build_array('artifact.read'); end if;
+    if cfg.compute_enabled then
+      select coalesce(jsonb_agg(jsonb_build_object('profileId',profile_id,'calculationContractRef',jsonb_build_object('kind','calculation_contract','schema','lca.calculation-contract.v1','sha256',calculation_fingerprint))),'[]') into profiles from private.study_profiles where enabled;
+    end if;
+    result:=jsonb_set(jsonb_set(result,'{data,operations}',ops),'{data,profiles}',profiles);
+  end if;
+  return result;
+end $$;
+
+
+ALTER FUNCTION "api"."qry_study_v1"("p_request" "jsonb") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "api"."qry_system_find_member_candidate_by_email"("p_email" "text") RETURNS TABLE("id" "uuid", "email" "text", "display_name" "text")
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -34817,6 +34862,232 @@ $$;
 
 
 ALTER FUNCTION "api"."svc_schema_contract_status"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "api"."svc_study_artifact_read_resolve_v1"("p_intent_id" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$ declare i private.study_artifact_read_intents%rowtype; capability jsonb; begin
+  perform private.study_require(coalesce(util.is_service_request(),false),'FORBIDDEN');
+  select * into i from private.study_artifact_read_intents where id=p_intent_id;
+  perform private.study_require(found and i.expires_at>clock_timestamp(),'CAPABILITY_UNAVAILABLE');
+  capability:=private.study_artifact_authorize(i.study_id,i.artifact_ref,i.actor_id,i.client_id);
+  return jsonb_build_object('ok',true,'data',capability);
+exception when raise_exception then return jsonb_build_object('ok',false,'code',sqlerrm);
+end $$;
+
+
+ALTER FUNCTION "api"."svc_study_artifact_read_resolve_v1"("p_intent_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "api"."svc_study_model_preparation_complete_v1"("p_preparation_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid", "p_completion" "jsonb", "p_idempotency_key" "text") RETURNS "jsonb"
+    LANGUAGE "sql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$ select private.study_complete('modelPreparation',p_preparation_id,p_job_id,p_lease_token,p_completion,p_idempotency_key) $$;
+
+
+ALTER FUNCTION "api"."svc_study_model_preparation_complete_v1"("p_preparation_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid", "p_completion" "jsonb", "p_idempotency_key" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "api"."svc_study_model_preparation_read_input_v1"("p_preparation_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid") RETURNS "jsonb"
+    LANGUAGE "sql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$ select private.study_read_worker_input('modelPreparation',p_preparation_id,p_job_id,p_lease_token) $$;
+
+
+ALTER FUNCTION "api"."svc_study_model_preparation_read_input_v1"("p_preparation_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "api"."svc_study_revision_freeze_consume_v1"("p_intent_id" "uuid", "p_outcome" "text", "p_error_code" "text" DEFAULT NULL::"text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    SET "statement_timeout" TO '15s'
+    AS $$
+declare i private.study_validation_intents%rowtype; r private.study_revisions%rowtype; prep private.study_model_preparations%rowtype; current_binding jsonb; v_response jsonb;
+begin
+  perform private.study_require(coalesce(util.is_service_request(),false),'FORBIDDEN');
+  select * into i from private.study_validation_intents where id=p_intent_id;
+  perform private.study_require(found,'FORBIDDEN');
+  -- Shared ordering: Study, intent, revision, then preparation/job. No service
+  -- function acquires a worker row before its owning Study row.
+  perform private.study_authorize(i.study_id,i.actor_id,i.client_id,'write');
+  select * into i from private.study_validation_intents where id=p_intent_id for update;
+  if i.response is not null then
+    perform private.study_require(p_outcome='passed','IDEMPOTENCY_CONFLICT'); return i.response;
+  end if;
+  perform private.study_require(i.expires_at>clock_timestamp(),'CAPABILITY_UNAVAILABLE');
+  perform private.study_require((select status='active' from private.studies where id=i.study_id),'FROZEN_REVISION');
+  select * into r from private.study_revisions where id=i.revision_id for update;
+  perform private.study_require(r.revision=(i.binding->>'expectedRevision')::bigint,'REVISION_CONFLICT');
+  perform private.study_require(r.status='draft','FROZEN_REVISION');
+  prep:=private.study_qualified_preparation(i.study_id,r.preparation_id);
+  current_binding:=jsonb_build_object('revisionId',r.id,'expectedRevision',r.revision,'contentHash',r.content_hash,'modelPreparationId',r.preparation_id,'modelRef',r.model_ref,'definition',r.definition);
+  perform private.study_require(current_binding=i.binding and r.model_ref=prep.model_ref and r.definition->'methodRefs'=prep.method_refs,'REFERENCE_MISMATCH');
+  perform private.study_require(p_outcome<>'unavailable','CAPABILITY_UNAVAILABLE');
+  perform private.study_require(p_outcome='passed' and p_error_code is null,'INVALID_REQUEST');
+  update private.study_revisions set status='frozen',validation='passed',revision=revision+1,
+    validation_evidence=jsonb_build_object('schemaVersion','lca.study-validation.v1','intentId',i.id,'binding',i.binding,'validatedAt',clock_timestamp()) where id=r.id;
+  v_response:=jsonb_build_object('ok',true,'data',jsonb_build_object('type','studyRevision','value',private.study_record('studyRevision',r.id)));
+  update private.study_validation_intents set response=v_response,consumed_at=clock_timestamp() where id=i.id;
+  return v_response;
+exception when raise_exception then return jsonb_build_object('ok',false,'code',sqlerrm);
+end $$;
+
+
+ALTER FUNCTION "api"."svc_study_revision_freeze_consume_v1"("p_intent_id" "uuid", "p_outcome" "text", "p_error_code" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "api"."svc_study_run_complete_v1"("p_run_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid", "p_completion" "jsonb", "p_idempotency_key" "text") RETURNS "jsonb"
+    LANGUAGE "sql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$ select private.study_complete('run',p_run_id,p_job_id,p_lease_token,p_completion,p_idempotency_key) $$;
+
+
+ALTER FUNCTION "api"."svc_study_run_complete_v1"("p_run_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid", "p_completion" "jsonb", "p_idempotency_key" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "api"."svc_study_run_read_input_v1"("p_run_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid") RETURNS "jsonb"
+    LANGUAGE "sql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$ select private.study_read_worker_input('run',p_run_id,p_job_id,p_lease_token) $$;
+
+
+ALTER FUNCTION "api"."svc_study_run_read_input_v1"("p_run_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "api"."svc_study_runtime_configure_v1"("p_expected_revision" bigint, "p_configuration" "jsonb") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$ declare cfg private.study_runtime_config%rowtype; enabled boolean; v_fingerprint text; begin
+  perform private.study_require(coalesce(util.is_service_request(),false),'FORBIDDEN');
+  perform private.study_require(private.study_keys(p_configuration,array['schemaVersion','sourceEnabled','computeEnabled','disclosureEnabled','profileId','calculationContractRef','compilerVersion','qualificationEvidenceRef','methodRefs'])
+    and p_configuration->>'schemaVersion'='lca.study-runtime-qualification.v1' and p_configuration->>'compilerVersion'='study.compiler.v1'
+    and p_configuration->>'profileId'='lca.study-explicit-v1' and private.study_text(p_configuration->'qualificationEvidenceRef',128,'^[A-Za-z0-9][A-Za-z0-9._:-]*$')
+    and jsonb_typeof(p_configuration->'sourceEnabled')='boolean' and jsonb_typeof(p_configuration->'computeEnabled')='boolean'
+    and jsonb_typeof(p_configuration->'disclosureEnabled')='boolean','INVALID_REQUEST');
+  v_fingerprint:=p_configuration->'calculationContractRef'->>'sha256'; enabled:=(p_configuration->>'computeEnabled')::boolean;
+  perform private.study_require(private.study_keys(p_configuration->'calculationContractRef',array['kind','schema','sha256'])
+    and p_configuration->'calculationContractRef'->>'kind'='calculation_contract' and p_configuration->'calculationContractRef'->>'schema'='lca.calculation-contract.v1'
+    and exists(select 1 from private.lca_calculation_contracts where lca_calculation_contracts.fingerprint=v_fingerprint),'REFERENCE_MISMATCH');
+  if enabled then perform private.study_require(private.study_method_refs_valid(p_configuration->'methodRefs') and jsonb_array_length(p_configuration->'methodRefs')<=25,'INVALID_REQUEST');
+  else perform private.study_require(jsonb_typeof(p_configuration->'methodRefs')='array','INVALID_REQUEST'); end if;
+  select * into cfg from private.study_runtime_config where singleton for update;
+  perform private.study_require(cfg.revision=p_expected_revision,'REVISION_CONFLICT');
+  insert into private.study_profiles(profile_id,calculation_fingerprint,enabled) values('lca.study-explicit-v1',v_fingerprint,enabled)
+    on conflict(profile_id) do update set calculation_fingerprint=excluded.calculation_fingerprint,enabled=excluded.enabled;
+  update private.study_runtime_config set revision=revision+1,source_enabled=(p_configuration->>'sourceEnabled')::boolean,
+    compute_enabled=enabled,disclosure_enabled=(p_configuration->>'disclosureEnabled')::boolean,
+    qualification_evidence_ref=p_configuration->>'qualificationEvidenceRef',method_refs=p_configuration->'methodRefs' where singleton;
+  return jsonb_build_object('ok',true,'data',jsonb_build_object('revision',cfg.revision+1));
+exception when raise_exception then return jsonb_build_object('ok',false,'code',sqlerrm);
+end $_$;
+
+
+ALTER FUNCTION "api"."svc_study_runtime_configure_v1"("p_expected_revision" bigint, "p_configuration" "jsonb") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "api"."svc_study_source_acquisition_read_input_v1"("p_acquisition_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    SET "statement_timeout" TO '15s'
+    AS $$
+declare a private.study_source_acquisitions%rowtype; packet jsonb;
+begin
+  perform private.study_require(coalesce(util.is_service_request(),false),'FORBIDDEN');
+  select * into a from private.study_source_acquisitions where id=p_acquisition_id;
+  perform private.study_require(a.job_id=p_job_id,'REFERENCE_MISMATCH');
+  perform private.study_authorize(a.study_id,a.requested_by,a.requested_client_id,'write');
+  perform private.study_lock_job(a.study_id,p_job_id,p_lease_token,'study.source_acquire','acquisitionId',a.id);
+  -- A same-lease request may have captured while this caller waited for the
+  -- ordered Study/job locks. Use the committed packet, never the pre-lock row.
+  select * into a from private.study_source_acquisitions where id=p_acquisition_id;
+  perform private.study_require(found and a.job_id=p_job_id,'REFERENCE_MISMATCH');
+  if a.source_packet is null then
+    packet:=private.study_capture_source(a.origin_ref,a.requested_by,a.requested_client_id);
+    perform private.study_require(octet_length(packet::text)<=4194304,'CAPABILITY_UNAVAILABLE');
+    update private.study_source_acquisitions set source_packet=packet where id=a.id;
+  else packet:=a.source_packet; perform private.study_source_rights(packet->'sourceAuthorization'->'sourceScope',a.requested_by,a.requested_client_id); end if;
+  return jsonb_build_object('ok',true,'data',jsonb_build_object('acquisition',private.study_record('modelSourceAcquisition',a.id),'sourcePacket',packet));
+exception when raise_exception then return jsonb_build_object('ok',false,'code',sqlerrm);
+when invalid_text_representation or numeric_value_out_of_range or invalid_parameter_value then return jsonb_build_object('ok',false,'code','INVALID_REQUEST');
+end $$;
+
+
+ALTER FUNCTION "api"."svc_study_source_acquisition_read_input_v1"("p_acquisition_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "api"."svc_study_source_record_v1"("p_acquisition_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid", "p_completion" "jsonb", "p_idempotency_key" "text") RETURNS "jsonb"
+    LANGUAGE "sql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$ select private.study_complete('modelSourceAcquisition',p_acquisition_id,p_job_id,p_lease_token,p_completion,p_idempotency_key) $$;
+
+
+ALTER FUNCTION "api"."svc_study_source_record_v1"("p_acquisition_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid", "p_completion" "jsonb", "p_idempotency_key" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "api"."svc_study_task_fail_v1"("p_resource_type" "text", "p_resource_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid", "p_error_code" "text", "p_idempotency_key" "text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare sid uuid; job uuid; kind text; subject text; result jsonb; old_context text; receipt private.study_service_receipts%rowtype; request jsonb;
+begin
+  perform private.study_require(coalesce(util.is_service_request(),false),'FORBIDDEN');
+  perform private.study_require(p_error_code=any(array['source_invalid','boundary_undeclared','normalization_underflow','normalization_overflow','numeric_invalid','resource_limit','model_not_solvable','native_execution_failed','job_timeout','job_lease_lost','runtime_unavailable','runtime_failed']) and length(p_idempotency_key) between 1 and 128,'INVALID_REQUEST');
+  case p_resource_type
+    when 'modelSourceAcquisition' then select study_id,job_id into sid,job from private.study_source_acquisitions where id=p_resource_id; kind:='study.source_acquire'; subject:='acquisitionId';
+    when 'modelPreparation' then select study_id,job_id into sid,job from private.study_model_preparations where id=p_resource_id; kind:='study.model_prepare'; subject:='preparationId';
+    when 'run' then select study_id,job_id into sid,job from private.study_runs where id=p_resource_id; kind:='study.run'; subject:='runId';
+    else perform private.study_require(false,'INVALID_REQUEST');
+  end case;
+  perform private.study_require(sid is not null and job=p_job_id,'REFERENCE_MISMATCH'); perform 1 from private.studies where id=sid for update;
+  request:=jsonb_build_object('id',p_resource_id,'jobId',p_job_id,'leaseToken',p_lease_token,'errorCode',p_error_code);
+  select * into receipt from private.study_service_receipts where operation=p_resource_type and study_id=sid and idempotency_key=p_idempotency_key;
+  if found then perform private.study_require(receipt.request=request,'IDEMPOTENCY_CONFLICT'); return receipt.response; end if;
+  perform private.study_lock_job(sid,p_job_id,p_lease_token,kind,subject,p_resource_id);
+  old_context:=current_setting('app.study.task_context',true); perform set_config('app.study.task_context','complete',true);
+  result:=private.worker_record_job_result(p_job_id,p_lease_token,'failed',jsonb_build_object('schemaVersion','lca.study-job-receipt.v1','studyId',sid,'resourceType',p_resource_type,'resourceId',p_resource_id),
+    'lca.study-job-receipt.v1',null,null,p_error_code,'Study task failed',null,null,null,false);
+  perform set_config('app.study.task_context',coalesce(old_context,''),true); perform private.study_require((result->>'ok')::boolean,'FORBIDDEN');
+  result:=jsonb_build_object('ok',true,'data',jsonb_build_object('type',p_resource_type,'value',private.study_record(p_resource_type,p_resource_id)));
+  insert into private.study_service_receipts values(p_resource_type,sid,p_idempotency_key,p_job_id,p_lease_token,request,result); return result;
+exception when raise_exception then return jsonb_build_object('ok',false,'code',sqlerrm);
+end $$;
+
+
+ALTER FUNCTION "api"."svc_study_task_fail_v1"("p_resource_type" "text", "p_resource_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid", "p_error_code" "text", "p_idempotency_key" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "api"."svc_study_task_reconcile_v1"("p_resource_type" "text", "p_resource_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid", "p_idempotency_key" "text", "p_artifact_id" "uuid" DEFAULT NULL::"uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare sid uuid; bound_job uuid; j private.worker_jobs%rowtype; receipt private.study_service_receipts%rowtype; state text; resource jsonb;
+begin
+  perform private.study_require(coalesce(util.is_service_request(),false),'FORBIDDEN');
+  case p_resource_type
+    when 'modelSourceAcquisition' then select study_id,job_id into sid,bound_job from private.study_source_acquisitions where id=p_resource_id;
+    when 'modelPreparation' then select study_id,job_id into sid,bound_job from private.study_model_preparations where id=p_resource_id;
+    when 'run' then select study_id,job_id into sid,bound_job from private.study_runs where id=p_resource_id;
+    else perform private.study_require(false,'INVALID_REQUEST');
+  end case;
+  perform private.study_require(sid is not null and bound_job=p_job_id,'REFERENCE_MISMATCH');
+  perform 1 from private.studies where id=sid for update;
+  select * into j from private.worker_jobs where id=p_job_id for update;
+  perform private.study_require(p_lease_token is not null and (j.lease_token=p_lease_token or exists(
+    select 1 from private.worker_job_events where job_id=p_job_id and lease_token=p_lease_token)),'FORBIDDEN');
+  select * into receipt from private.study_service_receipts where operation=p_resource_type and study_id=sid and idempotency_key=p_idempotency_key;
+  if found then
+    perform private.study_require(receipt.job_id=p_job_id and receipt.lease_token=p_lease_token and receipt.request->>'id'=p_resource_id::text,'IDEMPOTENCY_CONFLICT');
+    state:='committed'; resource:=receipt.response->'data';
+  elsif p_artifact_id is not null and exists(select 1 from private.study_artifacts where id=p_artifact_id) then state:='referenced';
+  elsif j.status in ('completed','failed','cancelled','blocked') and j.lease_token is null then state:='unreferenced';
+  else state:='pending'; end if;
+  return jsonb_build_object('ok',true,'data',jsonb_build_object('state',state,'resource',resource,'jobStatus',j.status));
+exception when raise_exception then return jsonb_build_object('ok',false,'code',sqlerrm);
+end $$;
+
+
+ALTER FUNCTION "api"."svc_study_task_reconcile_v1"("p_resource_type" "text", "p_resource_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid", "p_idempotency_key" "text", "p_artifact_id" "uuid") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "api"."svc_tidas_package_export_enqueue"("p_requested_by" "uuid", "p_scope" "text", "p_roots" "jsonb", "p_request_key" "text", "p_request_payload" "jsonb", "p_job_id" "uuid", "p_idempotency_key" "text") RETURNS "jsonb"
@@ -66966,7 +67237,7 @@ begin
             cp.result_set_id,
             ck.result_set_id
           )
-        where j.requested_by = a
+        where j.job_kind not like 'study.%' and j.requested_by = a
           and (
             j.visibility = 'user'
             or (
@@ -83554,6 +83825,1291 @@ $$;
 ALTER FUNCTION "private"."sources_sync_jsonb_version"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "private"."study_access_epoch"("p_actor" "uuid", "p_study" "uuid") RETURNS "text"
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+  select private.study_content_hash('lca.study-access-epoch.v1',coalesce(jsonb_agg(jsonb_build_object(
+    'studyId',s.id,'grantEpoch',s.grant_epoch,'studyRole',m.role,'teamRole',r.role) order by s.id),'[]'::jsonb))
+  from private.study_members m join private.studies s on s.id=m.study_id
+  left join private.roles r on r.user_id=p_actor and r.team_id=s.team_id
+  where m.actor_id=p_actor and (p_study is null or s.id=p_study)
+$$;
+
+
+ALTER FUNCTION "private"."study_access_epoch"("p_actor" "uuid", "p_study" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_artifact_authorize"("p_study" "uuid", "p_ref" "jsonb", "p_actor" "uuid", "p_client" "text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare a private.study_artifacts%rowtype; snapshot uuid; p uuid;
+begin
+  perform private.study_authorize(p_study,p_actor,p_client,'read');
+  perform private.study_require((select disclosure_enabled from private.study_runtime_config where singleton),'CAPABILITY_UNAVAILABLE');
+  perform private.study_require(p_ref->>'type' in ('modelInput','runResult'),'DISCLOSURE_DENIED');
+  select * into a from private.study_artifacts where study_id=p_study and id=(p_ref->>'id')::uuid;
+  perform private.study_require(found and a.ref=p_ref,'REFERENCE_MISMATCH');
+  if a.ref->>'type'='modelInput' then select id into p from private.study_model_preparations where study_id=p_study and input_artifact_id=a.id;
+  else select preparation_id into p from private.study_runs where study_id=p_study and result_artifact_id=a.id; end if;
+  perform private.study_require(p is not null,'DISCLOSURE_DENIED'); snapshot:=private.study_preparation_snapshot(p_study,p);
+  perform private.study_snapshot_rights(snapshot,p_actor,p_client);
+  return jsonb_build_object('kind','artifactCapability','studyId',p_study,'artifactRef',a.ref,'storageBucket',a.bucket,'storageObjectPath',a.object_path);
+end $$;
+
+
+ALTER FUNCTION "private"."study_artifact_authorize"("p_study" "uuid", "p_ref" "jsonb", "p_actor" "uuid", "p_client" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_artifact_capability"("p_request" "jsonb") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare actor uuid:=auth.uid(); client text:=nullif(auth.jwt()->>'client_id',''); sid uuid:=(p_request->>'studyId')::uuid; capability jsonb; intent uuid; expiry timestamptz;
+begin
+  perform private.study_require(actor is not null and not coalesce(util.is_service_request(),false),'AUTH_REQUIRED');
+  perform private.study_require(private.study_keys(p_request,array['schemaVersion','requestId','operation','studyId','artifactRef'])
+    and p_request->>'schemaVersion'='lca.study-api.v2' and p_request->>'operation'='artifact.read','INVALID_REQUEST');
+  capability:=private.study_artifact_authorize(sid,p_request->'artifactRef',actor,client);
+  perform pg_advisory_xact_lock(hashtextextended('study-artifact-intent:'||actor::text,895));
+  with expired as (select id from private.study_artifact_read_intents where expires_at<=clock_timestamp()
+    order by expires_at,id limit 256 for update skip locked)
+    delete from private.study_artifact_read_intents i using expired e where i.id=e.id;
+  perform private.study_require((select count(*) from private.study_artifact_read_intents where actor_id=actor and expires_at>clock_timestamp())<64,'CAPABILITY_UNAVAILABLE');
+  insert into private.study_artifact_read_intents(study_id,artifact_id,artifact_ref,actor_id,client_id)
+    values(sid,(p_request->'artifactRef'->>'id')::uuid,p_request->'artifactRef',actor,client) returning id,expires_at into intent,expiry;
+  return jsonb_build_object('ok',true,'data',jsonb_build_object('kind','artifactReadIntent','intentId',intent,'expiresAt',expiry,'studyId',sid,'artifactRef',p_request->'artifactRef'));
+exception when raise_exception then return jsonb_build_object('ok',false,'code',sqlerrm);
+when invalid_text_representation then return jsonb_build_object('ok',false,'code','INVALID_REQUEST');
+end $$;
+
+
+ALTER FUNCTION "private"."study_artifact_capability"("p_request" "jsonb") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_assert_provenance"("p_study" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+begin
+  perform private.study_require(not exists(
+    with recursive edges(a,b) as (
+      select 'r:'||id,'p:'||preparation_id from private.study_revisions where study_id=p_study
+      union all select 'r:'||id,'r:'||parent_revision_id from private.study_revisions where study_id=p_study and parent_revision_id is not null
+      union all select 's:'||id,'r:'||study_revision_id from private.study_scenarios where study_id=p_study
+      union all select 's:'||id,'s:'||parent_scenario_id from private.study_scenarios where study_id=p_study and parent_scenario_id is not null
+      union all select 's:'||id,'p:'||preparation_id from private.study_scenarios where study_id=p_study and preparation_id is not null
+      -- Captured draft source edges exclude the later frozen Scenario's own preparation.
+      union all select 'p:'||id,'r:'||source_study_revision_id from private.study_model_preparations where study_id=p_study and source_study_revision_id is not null
+      union all select 'p:'||id,'s:'||source_parent_scenario_id from private.study_model_preparations where study_id=p_study and source_parent_scenario_id is not null
+    ), reach(a,b) as (
+      select a,b from edges
+      union select r.a,e.b from reach r join edges e on e.a=r.b
+    ) select 1 from reach where a=b
+  ),'REFERENCE_MISMATCH');
+end $$;
+
+
+ALTER FUNCTION "private"."study_assert_provenance"("p_study" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_authorize"("p_study" "uuid", "p_actor" "uuid", "p_client" "text", "p_action" "text") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare s private.studies%rowtype; r text;
+begin
+  perform private.study_require(p_actor is not null,'AUTH_REQUIRED');
+  perform private.study_require(private.study_client_allowed(p_client,case when p_action='read' then 'STUDY-READ-01' else 'STUDY-WRITE-01' end),'FORBIDDEN');
+  select * into s from private.studies where id=p_study for update;
+  perform private.study_require(found,'FORBIDDEN');
+  select role into r from private.study_members where study_id=p_study and actor_id=p_actor;
+  if s.team_id is not null then
+    -- SHARE also fences non-key role demotions/deletion until this transaction
+    -- commits. KEY SHARE would not fence an UPDATE of the role column.
+    perform 1 from private.roles where user_id=p_actor and team_id=s.team_id and role in ('owner','admin','member') for share;
+    perform private.study_require(found,'FORBIDDEN');
+  end if;
+  perform private.study_require(
+    case p_action when 'read' then r in ('owner','editor','viewer') when 'write' then r in ('owner','editor') when 'manage' then r='owner' else false end,'FORBIDDEN');
+end $$;
+
+
+ALTER FUNCTION "private"."study_authorize"("p_study" "uuid", "p_actor" "uuid", "p_client" "text", "p_action" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_capture_source"("p_origin" "jsonb", "p_actor" "uuid", "p_client" "text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare queue jsonb:=jsonb_build_array(jsonb_build_object('kind','lifecyclemodel','id',p_origin->>'id','version',p_origin->>'version'));
+  seen text[]:='{}'; item jsonb; doc jsonb; data jsonb; x jsonb; selected jsonb; docs jsonb:='[]'; scope jsonb; key text; pivot text; count_items integer; root_key text; size_bytes bigint:=0;
+begin
+  perform private.study_require(private.study_keys(p_origin,array['type','datasetType','id','version']) and p_origin->>'type'='datasetRevision'
+    and p_origin->>'datasetType'='lifecyclemodel','REFERENCE_MISMATCH');
+  while jsonb_array_length(queue)>0 loop
+    item:=queue->0; queue:=queue-0; key:=(item->>'kind')||':'||(item->>'id')||':'||(item->>'version');
+    if key=any(seen) then continue; end if;
+    perform private.study_require(cardinality(seen)<512,'CAPABILITY_UNAVAILABLE'); seen:=seen||key;
+    doc:=private.study_source_document(item->>'kind',item->>'id',item->>'version',p_actor,p_client);
+    size_bytes:=size_bytes+octet_length(doc->>'json'); perform private.study_require(size_bytes<=4194304,'CAPABILITY_UNAVAILABLE');
+    docs:=docs||jsonb_build_array(doc); data:=(doc->>'json')::jsonb;
+    case item->>'kind'
+    when 'lifecyclemodel' then
+      select count(*) into count_items from private.study_source_items(data#>'{lifeCycleModelDataSet,lifeCycleModelInformation,technology,processes,processInstance}');
+      perform private.study_require(count_items between 1 and 64,'CAPABILITY_UNAVAILABLE');
+      for x in select * from private.study_source_items(data#>'{lifeCycleModelDataSet,lifeCycleModelInformation,technology,processes,processInstance}') loop
+        queue:=queue||jsonb_build_array(private.study_source_ref('process',x->'referenceToProcess'));
+      end loop;
+    when 'process' then
+      for x in select * from private.study_source_items(data#>'{processDataSet,exchanges,exchange}') loop
+        queue:=queue||jsonb_build_array(private.study_source_ref('flow',x->'referenceToFlowDataSet'));
+      end loop;
+    when 'flow' then
+      pivot:=data#>>'{flowDataSet,flowInformation,quantitativeReference,referenceToReferenceFlowProperty}';
+      select count(*),jsonb_agg(v) into count_items,selected from private.study_source_items(data#>'{flowDataSet,flowProperties,flowProperty}')v where v->>'@dataSetInternalID'=pivot;
+      perform private.study_require(count_items=1,'REFERENCE_MISMATCH');
+      queue:=queue||jsonb_build_array(private.study_source_ref('flowproperty',selected->0->'referenceToFlowPropertyDataSet'));
+    when 'flowproperty' then
+      queue:=queue||jsonb_build_array(private.study_source_ref('unitgroup',data#>'{flowPropertyDataSet,flowPropertiesInformation,quantitativeReference,referenceToReferenceUnitGroup}'));
+    when 'unitgroup' then null;
+    end case;
+    perform private.study_require(jsonb_array_length(queue)<=8192,'CAPABILITY_UNAVAILABLE');
+  end loop;
+  select jsonb_agg(v order by v->>'kind',v->'identity'->>'id',v->'identity'->>'version') into docs from jsonb_array_elements(docs)v;
+  select jsonb_agg((v-'json')||jsonb_build_object('id',v->'identity'->>'id','version',v->'identity'->>'version',
+    'sourceEncoding','postgresql.json-text.utf8.v1','licenseEvidence',coalesce((v->>'json')::jsonb#>array[case v->>'kind' when 'lifecyclemodel' then 'lifeCycleModelDataSet' when 'process' then 'processDataSet' when 'flow' then 'flowDataSet' when 'flowproperty' then 'flowPropertyDataSet' when 'unitgroup' then 'unitGroupDataSet' end,'administrativeInformation','publicationAndOwnership'],'{}'::jsonb)))
+    into scope from jsonb_array_elements(docs)v;
+  return jsonb_build_object('schemaVersion','lca.study-source-snapshot.v1','originRef',p_origin,'licenseRef','study-source-access.actor-data-rights.v1',
+    'issuerId','database.study-source.v1','observedAt',clock_timestamp(),'sourceAuthorization',jsonb_build_object('schemaVersion','lca.study-source-authorization.v1',
+      'requestedBy',p_actor,'originRef',p_origin,'sourceEncoding','postgresql.json-text.utf8.v1','sourceScope',scope),
+    'source',jsonb_build_object('schemaVersion','lca.study-source.v1','origin',jsonb_build_object('id',p_origin->>'id','version',p_origin->>'version'),
+      'actorId',p_actor,'documents',docs,'methodRefs','[]'::jsonb,'cutoffs','[]'::jsonb,'overrides','[]'::jsonb,'studyBinding',null,'qualityFindings','[]'::jsonb));
+end $$;
+
+
+ALTER FUNCTION "private"."study_capture_source"("p_origin" "jsonb", "p_actor" "uuid", "p_client" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_client_allowed"("p_client" "text", "p_capability" "text") RETURNS boolean
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$ begin
+  if p_client is null then return true; end if;
+  perform 1 from private.oauth_client_registry where client_id=p_client and enabled for share;
+  if not found then return false; end if;
+  perform 1 from private.oauth_client_capability_grants where client_id=p_client and allowed and capability_id=p_capability for share;
+  return found;
+end $$;
+
+
+ALTER FUNCTION "private"."study_client_allowed"("p_client" "text", "p_capability" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_cmd_core_v1"("p_request" "jsonb") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    SET "statement_timeout" TO '15s'
+    AS $_$
+declare
+  op text:=p_request->>'operation'; actor uuid:=auth.uid(); client text:=nullif(auth.jwt()->>'client_id','');
+  sid uuid; rid uuid; pid uuid; parent uuid; result jsonb; response jsonb; previous private.study_command_receipts%rowtype;
+  req jsonb:=p_request-'requestId'-'schemaVersion'-'idempotencyKey'; allowed text[]; s private.studies%rowtype;
+  r private.study_revisions%rowtype; c private.study_scenarios%rowtype; prep private.study_model_preparations%rowtype;
+  replay_intent private.study_validation_intents%rowtype;
+  intent uuid; normalized jsonb; key text:=p_request->>'idempotencyKey'; scope_key text; member uuid; field text;
+begin
+  perform private.study_require(actor is not null and not coalesce(util.is_service_request(),false),'AUTH_REQUIRED');
+  perform private.study_require(private.study_client_allowed(client,'STUDY-WRITE-01'),'FORBIDDEN');
+  perform private.study_require(p_request->>'schemaVersion'='lca.study-api.v2' and jsonb_typeof(p_request)='object'
+    and octet_length(p_request::text)<=262144 and length(key) between 1 and 128
+    and private.study_text(p_request->'requestId',128,'^[A-Za-z0-9][A-Za-z0-9._:-]*$')
+    and private.study_text(p_request->'idempotencyKey',128,'^[A-Za-z0-9][A-Za-z0-9._:-]*$'),'INVALID_REQUEST');
+  case op
+    when 'study.create' then allowed:=array['scope','title'];
+    when 'member.set' then allowed:=array['target','memberId','role'];
+    when 'study.archive' then allowed:=array['target'];
+    when 'study.select_revision' then allowed:=array['target','revisionId'];
+    when 'revision.create' then allowed:=array['studyId','parentRevisionId','definition','modelPreparationId','modelRef'];
+    when 'revision.save' then allowed:=array['target','definition','modelPreparationId','modelRef'];
+    when 'revision.freeze' then allowed:=array['target','expectedContentHash'];
+    when 'scenario.create' then allowed:=array['studyRevisionId','parentScenarioRevisionId','overrides'];
+    when 'scenario.save' then allowed:=array['target','overrides'];
+    when 'scenario.freeze' then allowed:=array['target','expectedContentHash','modelPreparationId'];
+    else perform private.study_require(false,'CAPABILITY_UNAVAILABLE');
+  end case;
+  perform private.study_require(not exists(select 1 from jsonb_object_keys(p_request) k where k<>all(allowed||array['operation','schemaVersion','requestId','idempotencyKey'])),'INVALID_REQUEST');
+  perform private.study_require(p_request ?& allowed,'INVALID_REQUEST');
+  foreach field in array allowed loop
+    if right(field,2)='Id' then
+      perform private.study_require((left(field,6)='parent' and p_request->field='null'::jsonb)
+        or private.study_text(p_request->field,128,'^[A-Za-z0-9][A-Za-z0-9._:-]*$'),'INVALID_REQUEST');
+    elsif right(field,4)='Hash' then
+      perform private.study_require(private.study_text(p_request->field,64,'^[0-9a-f]{64}$'),'INVALID_REQUEST');
+    end if;
+  end loop;
+  if p_request ? 'target' then
+    perform private.study_require(private.study_keys(p_request->'target',array['type','id','expectedRevision'])
+      and private.study_text(p_request->'target'->'id',128,'^[A-Za-z0-9][A-Za-z0-9._:-]*$')
+      and jsonb_typeof(p_request->'target'->'expectedRevision')='number','INVALID_REQUEST');
+    perform private.study_require((p_request->'target'->>'expectedRevision')::numeric between 1 and 9007199254740991
+      and trunc((p_request->'target'->>'expectedRevision')::numeric)=(p_request->'target'->>'expectedRevision')::numeric,'INVALID_REQUEST');
+  end if;
+  if op='study.create' then
+    perform private.study_require(p_request->'scope'->>'kind' in ('personal','team') and private.study_text(p_request->'title',512)
+      and private.study_keys(p_request->'scope',case when p_request->'scope'->>'kind'='personal' then array['kind'] else array['kind','teamId'] end),'INVALID_REQUEST');
+    if p_request->'scope'->>'kind'='team' then
+      perform private.study_require(private.study_text(p_request->'scope'->'teamId',128,'^[A-Za-z0-9][A-Za-z0-9._:-]*$'),'INVALID_REQUEST');
+      sid:=(p_request->'scope'->>'teamId')::uuid;
+      perform 1 from private.roles where user_id=actor and team_id=sid and role in ('owner','admin') for share;
+      perform private.study_require(found,'FORBIDDEN');
+    end if;
+    scope_key:='create';
+    perform pg_advisory_xact_lock(hashtextextended('study:create:'||actor::text||':'||key,894));
+  else
+    if p_request ? 'studyId' then sid:=(p_request->>'studyId')::uuid;
+    elsif op like 'revision.%' then rid:=(p_request->'target'->>'id')::uuid; select study_id into sid from private.study_revisions where id=rid;
+    elsif op='scenario.create' then rid:=(p_request->>'studyRevisionId')::uuid; select study_id into sid from private.study_revisions where id=rid;
+    elsif op like 'scenario.%' then rid:=(p_request->'target'->>'id')::uuid; select study_id into sid from private.study_scenarios where id=rid;
+    else sid:=(p_request->'target'->>'id')::uuid; end if;
+    perform private.study_authorize(sid,actor,client,case when op in ('study.archive','member.set') then 'manage' else 'write' end);
+    select * into s from private.studies where id=sid;
+    scope_key:=sid::text;
+  end if;
+  select * into previous from private.study_command_receipts where actor_id=actor and operation=op and scope=scope_key and idempotency_key=key;
+  if found then
+    perform private.study_require(previous.request=req,'IDEMPOTENCY_CONFLICT');
+    -- Creation replay also rechecks current access to the originally allocated Study.
+    if op='study.create' then perform private.study_authorize((previous.response->'data'->'value'->>'studyId')::uuid,actor,client,'manage'); end if;
+    if op='revision.freeze' and previous.response->'data'->>'kind'='revisionValidationIntent' then
+      select * into replay_intent from private.study_validation_intents
+        where id=(previous.response->'data'->>'intentId')::uuid and study_id=sid and actor_id=actor for update;
+      perform private.study_require(found,'CAPABILITY_UNAVAILABLE');
+      -- The initial receipt is an intermediate acknowledgement. A committed
+      -- freeze supersedes that response for recovery, even after intent TTL.
+      -- Current caller authorization above still precedes every replay.
+      if replay_intent.response is not null then return replay_intent.response; end if;
+      perform private.study_require(replay_intent.expires_at>clock_timestamp(),'CAPABILITY_UNAVAILABLE');
+    end if;
+    return previous.response;
+  end if;
+  if op<>'study.create' then perform private.study_require(s.status='active','FROZEN_REVISION'); end if;
+  if p_request ? 'target' then
+    perform private.study_require(jsonb_typeof(p_request->'target'->'expectedRevision')='number','INVALID_REQUEST');
+    if op like 'revision.%' then
+      perform private.study_require(p_request->'target'->>'type'='studyRevision','REFERENCE_MISMATCH');
+      select * into r from private.study_revisions where id=rid for update;
+      perform private.study_require(r.revision=(p_request->'target'->>'expectedRevision')::numeric::bigint,'REVISION_CONFLICT');
+      perform private.study_require(r.status='draft','FROZEN_REVISION');
+    elsif op like 'scenario.%' then
+      perform private.study_require(p_request->'target'->>'type'='scenarioRevision','REFERENCE_MISMATCH');
+      select * into c from private.study_scenarios where id=rid for update;
+      perform private.study_require(c.revision=(p_request->'target'->>'expectedRevision')::numeric::bigint,'REVISION_CONFLICT');
+      perform private.study_require(c.status='draft','FROZEN_REVISION');
+    else
+      perform private.study_require(p_request->'target'->>'type'='study','REFERENCE_MISMATCH');
+      perform private.study_require(s.revision=(p_request->'target'->>'expectedRevision')::numeric::bigint,'REVISION_CONFLICT');
+    end if;
+  end if;
+  case op
+  when 'study.create' then
+    insert into private.studies(owner_id,team_id,title) values(actor,sid,p_request->>'title') returning id into sid;
+    insert into private.study_members values(sid,actor,'owner');
+    result:=jsonb_build_object('type','study','value',private.study_record('study',sid));
+  when 'member.set' then
+    member:=(p_request->>'memberId')::uuid;
+    perform private.study_require(s.team_id is not null and member<>s.owner_id,'FORBIDDEN');
+    perform private.study_require(p_request->'role'='null'::jsonb or p_request->>'role' in ('editor','viewer'),'INVALID_REQUEST');
+    if p_request->'role'='null'::jsonb then delete from private.study_members where study_id=sid and actor_id=member;
+    else
+      perform 1 from private.roles where user_id=member and team_id=s.team_id and role in ('owner','admin','member') for share;
+      perform private.study_require(found,'FORBIDDEN');
+      insert into private.study_members values(sid,member,p_request->>'role') on conflict(study_id,actor_id) do update set role=excluded.role;
+    end if;
+    update private.studies set revision=revision+1,grant_epoch=grant_epoch+1 where id=sid;
+    result:=jsonb_build_object('type','study','value',private.study_record('study',sid));
+  when 'study.archive' then
+    update private.studies set revision=revision+1,status='archived' where id=sid;
+    result:=jsonb_build_object('type','study','value',private.study_record('study',sid));
+  when 'study.select_revision' then
+    perform private.study_require(exists(select 1 from private.study_revisions where study_id=sid and id=(p_request->>'revisionId')::uuid and status='frozen'),'REFERENCE_MISMATCH');
+    update private.studies set revision=revision+1,current_revision_id=(p_request->>'revisionId')::uuid where id=sid;
+    result:=jsonb_build_object('type','study','value',private.study_record('study',sid));
+  when 'revision.create','revision.save' then
+    prep:=private.study_qualified_preparation(sid,(p_request->>'modelPreparationId')::uuid);
+    perform private.study_require(prep.model_ref=p_request->'modelRef','REFERENCE_MISMATCH');
+    perform private.study_require(private.study_definition_valid(p_request->'definition'),'INVALID_REQUEST');
+    perform private.study_require(prep.method_refs=p_request->'definition'->'methodRefs','REFERENCE_MISMATCH');
+    normalized:=jsonb_build_object('definition',p_request->'definition','modelPreparationId',prep.id,'modelRef',prep.model_ref);
+    if op='revision.create' then
+      parent:=nullif(p_request->>'parentRevisionId','')::uuid;
+      if parent is not null then perform private.study_require(exists(select 1 from private.study_revisions where study_id=sid and id=parent and status='frozen'),'REFERENCE_MISMATCH'); end if;
+      insert into private.study_revisions(study_id,parent_revision_id,content_hash,definition,preparation_id,model_ref)
+        values(sid,parent,private.study_content_hash('lca.study-definition.v1',normalized),p_request->'definition',prep.id,prep.model_ref) returning id into rid;
+    else
+      update private.study_revisions set revision=revision+1,content_hash=private.study_content_hash('lca.study-definition.v1',normalized),definition=p_request->'definition',preparation_id=prep.id,model_ref=prep.model_ref where id=rid;
+    end if;
+    perform private.study_assert_provenance(sid);
+    result:=jsonb_build_object('type','studyRevision','value',private.study_record('studyRevision',rid));
+  when 'revision.freeze' then
+    perform private.study_require(r.content_hash=p_request->>'expectedContentHash','REFERENCE_MISMATCH');
+    prep:=private.study_qualified_preparation(sid,r.preparation_id);
+    normalized:=jsonb_build_object('revisionId',rid,'expectedRevision',r.revision,'contentHash',r.content_hash,'modelPreparationId',r.preparation_id,'modelRef',r.model_ref,'definition',r.definition);
+    insert into private.study_validation_intents(study_id,revision_id,actor_id,client_id,binding) values(sid,rid,actor,client,normalized) returning id into intent;
+    result:=jsonb_build_object('kind','revisionValidationIntent','intentId',intent,'expiresAt',(select expires_at from private.study_validation_intents where id=intent),'revision',private.study_record('studyRevision',rid),'preparation',private.study_record('modelPreparation',prep.id));
+  when 'scenario.create','scenario.save' then
+    perform private.study_require(private.study_overrides_valid(p_request->'overrides'),'INVALID_REQUEST');
+    if op='scenario.create' then
+      select * into r from private.study_revisions where id=(p_request->>'studyRevisionId')::uuid;
+      perform private.study_require(r.study_id=sid and r.status='frozen','REFERENCE_MISMATCH');
+      parent:=nullif(p_request->>'parentScenarioRevisionId','')::uuid;
+      if parent is not null then
+        select * into c from private.study_scenarios where id=parent and study_id=sid and status='frozen';
+        perform private.study_require(found,'REFERENCE_MISMATCH');
+      end if;
+      insert into private.study_scenarios(scenario_id,study_id,study_revision_id,parent_scenario_id,overrides,content_hash)
+        values(case when parent is null then gen_random_uuid() else c.scenario_id end,sid,r.id,parent,p_request->'overrides',private.study_content_hash('lca.study-scenario.v1',jsonb_build_object('studyRevisionId',r.id,'overrides',p_request->'overrides'))) returning id into rid;
+    else update private.study_scenarios set revision=revision+1,overrides=p_request->'overrides',content_hash=private.study_content_hash('lca.study-scenario.v1',jsonb_build_object('studyRevisionId',c.study_revision_id,'overrides',p_request->'overrides')) where id=rid; end if;
+    perform private.study_assert_provenance(sid);
+    result:=jsonb_build_object('type','scenarioRevision','value',private.study_record('scenarioRevision',rid));
+  when 'scenario.freeze' then
+    perform private.study_require(c.content_hash=p_request->>'expectedContentHash','REFERENCE_MISMATCH');
+    prep:=private.study_qualified_preparation(sid,(p_request->>'modelPreparationId')::uuid);
+    perform private.study_require(prep.source=jsonb_build_object('type','scenarioRevision','scenarioRevisionId',rid,'expectedRevision',c.revision,'contentHash',c.content_hash) and prep.input_hash is not null,'REFERENCE_MISMATCH');
+    update private.study_scenarios set revision=revision+1,status='frozen',preparation_id=prep.id,effective_model_ref=prep.model_ref where id=rid;
+    perform private.study_assert_provenance(sid);
+    result:=jsonb_build_object('type','scenarioRevision','value',private.study_record('scenarioRevision',rid));
+  end case;
+  response:=jsonb_build_object('ok',true,'data',result);
+  insert into private.study_command_receipts values(actor,op,scope_key,key,req,response,clock_timestamp());
+  return response;
+exception when raise_exception then return jsonb_build_object('ok',false,'code',sqlerrm);
+when invalid_text_representation or invalid_parameter_value or numeric_value_out_of_range or not_null_violation or check_violation then return jsonb_build_object('ok',false,'code','INVALID_REQUEST');
+when foreign_key_violation or unique_violation then return jsonb_build_object('ok',false,'code','REFERENCE_MISMATCH');
+end $_$;
+
+
+ALTER FUNCTION "private"."study_cmd_core_v1"("p_request" "jsonb") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_complete"("p_kind" "text", "p_id" "uuid", "p_job" "uuid", "p_token" "uuid", "p_completion" "jsonb", "p_key" "text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$
+declare sid uuid; job uuid; expected_kind text; subject text; artifact_kind text; artifact_key text;
+  p private.study_model_preparations%rowtype; a private.study_source_acquisitions%rowtype; r private.study_runs%rowtype;
+  previous private.study_service_receipts%rowtype; request jsonb; response jsonb; result jsonb; artifact uuid; snapshot uuid; jresult jsonb;
+begin
+  perform private.study_require(coalesce(util.is_service_request(),false),'FORBIDDEN');
+  perform private.study_require(length(p_key) between 1 and 128 and jsonb_typeof(p_completion)='object','INVALID_REQUEST');
+  case p_kind
+    when 'modelPreparation' then
+      select * into p from private.study_model_preparations where id=p_id;
+      sid:=p.study_id; job:=p.job_id; expected_kind:='study.model_prepare'; subject:='preparationId'; artifact_kind:='modelInput'; artifact_key:='inputArtifactRef';
+    when 'modelSourceAcquisition' then
+      select * into a from private.study_source_acquisitions where id=p_id;
+      sid:=a.study_id; job:=a.job_id; expected_kind:='study.source_acquire'; subject:='acquisitionId'; artifact_kind:='modelSource'; artifact_key:='sourceArtifactRef';
+    when 'run' then
+      select * into r from private.study_runs where id=p_id;
+      sid:=r.study_id; job:=r.job_id; expected_kind:='study.run'; subject:='runId'; artifact_kind:='runResult'; artifact_key:='resultRef';
+    else perform private.study_require(false,'INVALID_REQUEST');
+  end case;
+  perform private.study_require(sid is not null and job=p_job,'REFERENCE_MISMATCH');
+  perform 1 from private.studies where id=sid for update;
+  request:=jsonb_build_object('id',p_id,'jobId',p_job,'leaseToken',p_token,'completion',p_completion);
+  select * into previous from private.study_service_receipts where operation=p_kind and study_id=sid and idempotency_key=p_key;
+  if found then
+    perform private.study_require(previous.request=request,'IDEMPOTENCY_CONFLICT');
+    -- A terminal acknowledgement may be recovered using its original exact lease;
+    -- a fresh or foreign lease cannot impersonate the committed completion.
+    perform private.study_require(previous.job_id=p_job and previous.lease_token=p_token,'FORBIDDEN');
+    return previous.response;
+  end if;
+  perform private.study_validate_task_completion(p_kind,p_id,p_completion);
+  perform private.study_lock_job(sid,p_job,p_token,expected_kind,subject,p_id);
+  if p_kind='modelPreparation' then
+    perform private.study_require(p.model_ref is null,'IDEMPOTENCY_CONFLICT');
+    perform private.study_require(p_completion->'calculationContractRef'=p.calculation_contract_ref and p_completion->>'profileId'=p.profile_id,'REFERENCE_MISMATCH');
+    perform private.study_require(private.study_keys(p_completion->'modelRef',array['type','modelRevisionId','contentHash','digestScope'])
+      and p_completion->'modelRef'->>'type'='modelRevision' and p_completion->'modelRef'->>'digestScope'='worker_prepared_model'
+      and private.study_text(p_completion->'modelRef'->'contentHash',64,'^[0-9a-f]{64}$')
+      and private.study_text(p_completion->'modelRef'->'modelRevisionId',128,'^[A-Za-z0-9][A-Za-z0-9._:-]*$'),'REFERENCE_MISMATCH');
+    perform private.study_require(p_completion->>'inputHash' is null or p_completion->>'inputHash' ~ '^[0-9a-f]{64}$','REFERENCE_MISMATCH');
+    perform private.study_require(p.source->>'type'<>'scenarioRevision' or p_completion->>'inputHash' is not null,'REFERENCE_MISMATCH');
+  elsif p_kind='modelSourceAcquisition' then
+    perform private.study_require(a.snapshot_id is null,'IDEMPOTENCY_CONFLICT');
+    perform private.study_require(p_completion->'originRef'=a.origin_ref and length(p_completion->>'licenseRef') between 1 and 128
+      and length(p_completion->>'issuerId') between 1 and 128 and p_completion->>'observedAt' is not null,'REFERENCE_MISMATCH');
+    perform private.study_require(p_completion->'sourceAuthorization'->>'schemaVersion'='lca.study-source-authorization.v1'
+      and p_completion->'sourceAuthorization'->>'requestedBy'=a.requested_by::text
+      and p_completion->'sourceAuthorization'->'originRef'=a.origin_ref
+      and jsonb_typeof(p_completion->'sourceAuthorization'->'sourceScope')='array','REFERENCE_MISMATCH');
+  else
+    perform private.study_require(r.result_artifact_id is null,'IDEMPOTENCY_CONFLICT');
+    perform private.study_require(p_completion->>'inputHash'=r.input_hash and p_completion->'calculationContractRef'=r.calculation_contract_ref,'REFERENCE_MISMATCH');
+  end if;
+  artifact:=private.study_store_artifact(sid,p_completion->artifact_key,p_completion->>'storageBucket',p_completion->>'storageObjectPath',artifact_kind);
+  if p_kind='modelPreparation' then
+    update private.study_model_preparations set model_ref=p_completion->'modelRef',input_artifact_id=artifact,input_hash=p_completion->>'inputHash' where id=p_id;
+  elsif p_kind='modelSourceAcquisition' then
+    snapshot:=(p_completion->>'snapshotId')::uuid;
+    insert into private.study_source_snapshots(id,study_id,acquisition_id,origin_ref,artifact_id,license_ref,issuer_id,observed_at,source_authorization)
+      values(snapshot,sid,p_id,a.origin_ref,artifact,p_completion->>'licenseRef',p_completion->>'issuerId',(p_completion->>'observedAt')::timestamptz,p_completion->'sourceAuthorization');
+    update private.study_source_acquisitions set snapshot_id=snapshot where id=p_id;
+  else update private.study_runs set result_artifact_id=artifact where id=p_id; end if;
+  -- Generic worker_job_payload(false) includes result_json. Never place private
+  -- source scope, model/numerics or storage locators in that shared projection.
+  perform set_config('app.study.task_context','complete',true);
+  jresult:=private.worker_record_job_result(p_job,p_token,'completed',
+    jsonb_build_object('schemaVersion','lca.study-job-receipt.v1','studyId',sid,'resourceType',p_kind,'resourceId',p_id),
+    'lca.study-job-receipt.v1',p_completion->artifact_key);
+  perform set_config('app.study.task_context','',true);
+  perform private.study_require((jresult->>'ok')::boolean,'FORBIDDEN');
+  perform private.study_assert_provenance(sid);
+  response:=jsonb_build_object('ok',true,'data',jsonb_build_object('type',p_kind,'value',private.study_record(p_kind,p_id)));
+  insert into private.study_service_receipts values(p_kind,sid,p_key,p_job,p_token,request,response);
+  return response;
+exception when raise_exception then return jsonb_build_object('ok',false,'code',sqlerrm);
+when invalid_text_representation or numeric_value_out_of_range or not_null_violation or check_violation or invalid_datetime_format then return jsonb_build_object('ok',false,'code','INVALID_REQUEST');
+when foreign_key_violation or unique_violation then return jsonb_build_object('ok',false,'code','REFERENCE_MISMATCH');
+end $_$;
+
+
+ALTER FUNCTION "private"."study_complete"("p_kind" "text", "p_id" "uuid", "p_job" "uuid", "p_token" "uuid", "p_completion" "jsonb", "p_key" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_content_hash"("p_domain" "text", "p_document" "jsonb") RETURNS "text"
+    LANGUAGE "sql" IMMUTABLE
+    SET "search_path" TO ''
+    AS $$
+  select encode(extensions.digest(convert_to(p_domain || chr(10) || p_document::text,'UTF8'),'sha256'),'hex')
+$$;
+
+
+ALTER FUNCTION "private"."study_content_hash"("p_domain" "text", "p_document" "jsonb") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_cutoffs_valid"("p_value" "jsonb") RETURNS boolean
+    LANGUAGE "plpgsql" IMMUTABLE
+    SET "search_path" TO ''
+    AS $_$ declare x jsonb; seen text[]:='{}'; k text; begin
+  if jsonb_typeof(p_value) is distinct from 'array' or jsonb_array_length(p_value)>256 then return false; end if;
+  for x in select * from jsonb_array_elements(p_value) loop
+    if not private.study_keys(x,array['port','reason']) or not private.study_keys(x->'port',array['instanceId','exchangeId'])
+      or not private.study_text(x->'port'->'instanceId',128,'^[A-Za-z0-9_-]+$')
+      or not private.study_text(x->'port'->'exchangeId',128,'^[A-Za-z0-9_-]+$') or not private.study_text(x->'reason',1024) then return false; end if;
+    k:=x->'port'->>'instanceId'||':'||(x->'port'->>'exchangeId');
+    if k=any(seen) then return false; end if; seen:=seen||k;
+  end loop; return true;
+end $_$;
+
+
+ALTER FUNCTION "private"."study_cutoffs_valid"("p_value" "jsonb") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_definition_valid"("p_definition" "jsonb") RETURNS boolean
+    LANGUAGE "plpgsql" IMMUTABLE
+    SET "search_path" TO ''
+    AS $_$ declare f jsonb; a jsonb; begin
+  if not private.study_keys(p_definition,array['goal','functionalUnit','systemBoundary','methodRefs','assumptions'])
+    or not private.study_text(p_definition->'goal',4096) or not private.study_text(p_definition->'systemBoundary',4096)
+    or not private.study_method_refs_valid(p_definition->'methodRefs')
+    or jsonb_typeof(p_definition->'assumptions') is distinct from 'array' then return false; end if;
+  f:=p_definition->'functionalUnit';
+  if not private.study_keys(f,array['amount','unit','referenceFlowId'])
+    or not private.study_text(f->'amount',64,'^([1-9][0-9]*(\.[0-9]+)?|0\.[0-9]*[1-9][0-9]*)$')
+    or not private.study_text(f->'unit',128) or not private.study_text(f->'referenceFlowId',128,'^[A-Za-z0-9][A-Za-z0-9._:-]*$')
+    or jsonb_array_length(p_definition->'assumptions')>128 then return false; end if;
+  for a in select * from jsonb_array_elements(p_definition->'assumptions') loop
+    if not private.study_keys(a,array['id','statement','evidenceRef'])
+      or not private.study_text(a->'id',128,'^[A-Za-z0-9][A-Za-z0-9._:-]*$')
+      or not private.study_text(a->'statement',4096)
+      or not private.study_text(a->'evidenceRef',128,'^[A-Za-z0-9][A-Za-z0-9._:-]*$') then return false; end if;
+  end loop;
+  return true;
+end $_$;
+
+
+ALTER FUNCTION "private"."study_definition_valid"("p_definition" "jsonb") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_enqueue"("p_kind" "text", "p_study" "uuid", "p_resource" "uuid", "p_actor" "uuid", "p_team" "uuid", "p_key" "text", "p_request" "jsonb") RETURNS "uuid"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare old_role text:=current_setting('request.jwt.claim.role',true); old_context text:=current_setting('app.study.task_context',true); result jsonb; subject text;
+begin
+  subject:=case p_kind when 'study.source_acquire' then 'acquisitionId' when 'study.model_prepare' then 'preparationId' when 'study.run' then 'runId' end;
+  perform private.study_require(subject is not null,'INVALID_REQUEST');
+  -- This closed postgres-only helper is reached only after actor admission.
+  -- Reuse the canonical enqueuer under scoped service context, restoring it
+  -- before returning; public requests cannot select either context setting.
+  perform set_config('request.jwt.claim.role','service_role',true); perform set_config('app.study.task_context','enqueue',true);
+  result:=private.worker_enqueue_job(p_kind,jsonb_build_object('schemaVersion',p_kind||'.request.v1','studyId',p_study,subject,p_resource),
+    p_kind||'.request.v1','study',p_resource,null,p_actor,'user',p_team,p_actor::text||':'||p_study::text||':'||p_kind||':'||p_key,
+    private.study_content_hash('lca.study-job-request.v1',p_request),null,0,null,null,'user');
+  perform set_config('request.jwt.claim.role',coalesce(old_role,''),true); perform set_config('app.study.task_context',coalesce(old_context,''),true);
+  perform private.study_require((result->>'ok')::boolean,'CAPABILITY_UNAVAILABLE');
+  return (result->'data'->>'id')::uuid;
+exception when others then
+  perform set_config('request.jwt.claim.role',coalesce(old_role,''),true); perform set_config('app.study.task_context',coalesce(old_context,''),true); raise;
+end $$;
+
+
+ALTER FUNCTION "private"."study_enqueue"("p_kind" "text", "p_study" "uuid", "p_resource" "uuid", "p_actor" "uuid", "p_team" "uuid", "p_key" "text", "p_request" "jsonb") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_generic_job_allowed"("p_kind" "text", "p_job" "uuid", "p_action" "text") RETURNS boolean
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$ declare kind text:=p_kind; begin
+  if kind is null and p_job is not null then select job_kind into kind from private.worker_jobs where id=p_job; end if;
+  -- Match the canonical enqueuer's normalization before classifying its route.
+  kind:=lower(trim(kind));
+  return kind is null or kind not like 'study.%' or coalesce(current_setting('app.study.task_context',true)=p_action,false);
+end $$;
+
+
+ALTER FUNCTION "private"."study_generic_job_allowed"("p_kind" "text", "p_job" "uuid", "p_action" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_guard_immutable"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+begin
+  if tg_op='DELETE' then raise exception 'FROZEN_REVISION'; end if;
+  if tg_table_name in ('study_revisions','study_scenarios') then
+    if old.status='frozen' then raise exception 'FROZEN_REVISION'; end if;
+    if tg_table_name='study_revisions' then
+      if old.parent_revision_id is distinct from new.parent_revision_id then raise exception 'REFERENCE_MISMATCH'; end if;
+    else
+      if old.parent_scenario_id is distinct from new.parent_scenario_id or old.study_revision_id<>new.study_revision_id then raise exception 'REFERENCE_MISMATCH'; end if;
+    end if;
+  elsif tg_table_name='study_model_preparations' then
+    if (to_jsonb(old)-'model_ref'-'input_artifact_id'-'input_hash') is distinct from (to_jsonb(new)-'model_ref'-'input_artifact_id'-'input_hash') then raise exception 'REFERENCE_MISMATCH'; end if;
+    if old.model_ref is not null and to_jsonb(old) is distinct from to_jsonb(new) then raise exception 'FROZEN_REVISION'; end if;
+  elsif tg_table_name='study_source_acquisitions' then
+    if (to_jsonb(old)-'snapshot_id'-'source_packet') is distinct from (to_jsonb(new)-'snapshot_id'-'source_packet') then raise exception 'REFERENCE_MISMATCH'; end if;
+    if old.snapshot_id is not null and old.snapshot_id is distinct from new.snapshot_id then raise exception 'FROZEN_REVISION'; end if; if old.source_packet is not null and old.source_packet is distinct from new.source_packet then raise exception 'FROZEN_REVISION'; end if;
+  elsif tg_table_name='study_runs' then
+    if (to_jsonb(old)-'result_artifact_id') is distinct from (to_jsonb(new)-'result_artifact_id') then raise exception 'REFERENCE_MISMATCH'; end if;
+    if old.result_artifact_id is not null and old.result_artifact_id is distinct from new.result_artifact_id then raise exception 'FROZEN_REVISION'; end if;
+  else raise exception 'FROZEN_REVISION'; end if;
+  return new;
+end $$;
+
+
+ALTER FUNCTION "private"."study_guard_immutable"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_keys"("p_value" "jsonb", "p_keys" "text"[]) RETURNS boolean
+    LANGUAGE "plpgsql" IMMUTABLE
+    SET "search_path" TO ''
+    AS $$ begin
+  if jsonb_typeof(p_value) is distinct from 'object' then return false; end if;
+  return p_value ?& p_keys and not exists(select 1 from jsonb_object_keys(p_value) k where k<>all(p_keys));
+end $$;
+
+
+ALTER FUNCTION "private"."study_keys"("p_value" "jsonb", "p_keys" "text"[]) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_lock_job"("p_study" "uuid", "p_job" "uuid", "p_token" "uuid", "p_kind" "text", "p_subject" "text", "p_id" "uuid") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare j private.worker_jobs%rowtype;
+begin
+  perform private.study_require(coalesce(util.is_service_request(),false),'FORBIDDEN');
+  perform 1 from private.studies where id=p_study for update;
+  perform private.study_require(found,'REFERENCE_MISMATCH');
+  select * into j from private.worker_jobs where id=p_job for update;
+  perform private.study_require(found and j.job_kind=p_kind and j.worker_runtime='calculator'
+    and j.payload_json->>'studyId'=p_study::text and j.payload_json->>p_subject=p_id::text,'REFERENCE_MISMATCH');
+  perform private.study_require(j.status='running' and j.lease_token=p_token and j.lease_expires_at>clock_timestamp(),'FORBIDDEN');
+end $$;
+
+
+ALTER FUNCTION "private"."study_lock_job"("p_study" "uuid", "p_job" "uuid", "p_token" "uuid", "p_kind" "text", "p_subject" "text", "p_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_method_refs_valid"("p_refs" "jsonb") RETURNS boolean
+    LANGUAGE "plpgsql" IMMUTABLE
+    SET "search_path" TO ''
+    AS $_$ declare r jsonb; ids text[]:='{}'; begin
+  if jsonb_typeof(p_refs) is distinct from 'array' then return false; end if;
+  if jsonb_array_length(p_refs) not between 1 and 32 then return false; end if;
+  for r in select * from jsonb_array_elements(p_refs) loop
+    if not private.study_keys(r,array['type','datasetType','id','version'])
+      or r->>'type' is distinct from 'datasetRevision' or r->>'datasetType' is distinct from 'lciamethod'
+      or not private.study_text(r->'id',128,'^[A-Za-z0-9][A-Za-z0-9._:-]*$')
+      or not private.study_text(r->'version',128,'^[0-9]{2}\.[0-9]{2}\.[0-9]{3}$')
+      or r->>'id'=any(ids) then return false; end if;
+    ids:=ids||(r->>'id');
+  end loop;
+  return true;
+end $_$;
+
+
+ALTER FUNCTION "private"."study_method_refs_valid"("p_refs" "jsonb") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_overrides_valid"("p_overrides" "jsonb") RETURNS boolean
+    LANGUAGE "plpgsql" IMMUTABLE
+    SET "search_path" TO ''
+    AS $_$ declare o jsonb; paths text[]:='{}'; amount double precision; begin
+  if jsonb_typeof(p_overrides) is distinct from 'array' then return false; end if;
+  if jsonb_array_length(p_overrides)>256 then return false; end if;
+  for o in select * from jsonb_array_elements(p_overrides) loop
+    if not private.study_keys(o,array['path','value'])
+      or not private.study_text(o->'path',256,'^/instances/[A-Za-z0-9_-]+/exchanges/[A-Za-z0-9_-]+/amount$')
+      or jsonb_typeof(o->'value') is distinct from 'number' or o->>'path'=any(paths) then return false; end if;
+    amount:=(o->>'value')::double precision;
+    if amount='Infinity'::double precision or amount='-Infinity'::double precision or amount='NaN'::double precision then return false; end if;
+    paths:=paths||(o->>'path');
+  end loop;
+  return true;
+exception when data_exception then return false;
+end $_$;
+
+
+ALTER FUNCTION "private"."study_overrides_valid"("p_overrides" "jsonb") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_preparation_snapshot"("p_study" "uuid", "p_preparation" "uuid") RETURNS "uuid"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare p private.study_model_preparations%rowtype; v_id uuid:=p_preparation; seen uuid[]:='{}'; result uuid;
+begin
+  loop
+    perform private.study_require(v_id is not null and not v_id=any(seen) and cardinality(seen)<512,'REFERENCE_MISMATCH'); seen:=seen||v_id;
+    select * into p from private.study_model_preparations where study_id=p_study and study_model_preparations.id=v_id;
+    perform private.study_require(found,'REFERENCE_MISMATCH');
+    if p.source_snapshot_id is not null then return p.source_snapshot_id; end if;
+    select preparation_id into v_id from private.study_revisions where study_id=p_study and study_revisions.id=p.source_study_revision_id and status='frozen';
+  end loop;
+end $$;
+
+
+ALTER FUNCTION "private"."study_preparation_snapshot"("p_study" "uuid", "p_preparation" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_private_artifact"("p_study" "uuid", "p_id" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$ declare v jsonb; begin
+  select jsonb_build_object('studyId',study_id,'artifactRef',ref,'storageBucket',bucket,'storageObjectPath',object_path)
+    into v from private.study_artifacts where study_id=p_study and id=p_id;
+  perform private.study_require(v is not null,'REFERENCE_MISMATCH'); return v;
+end $$;
+
+
+ALTER FUNCTION "private"."study_private_artifact"("p_study" "uuid", "p_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_qry_core_v1"("p_request" "jsonb") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    SET "statement_timeout" TO '15s'
+    AS $_$
+declare op text:=p_request->>'operation'; actor uuid:=auth.uid(); client text:=nullif(auth.jwt()->>'client_id',''); sid uuid; rid uuid; kind text; v jsonb; items jsonb; lim integer; after_id uuid; ids uuid[]; more boolean; cursor_row private.study_cursors%rowtype; cursor_id uuid; selection jsonb; epoch text; operations jsonb; allowed text[];
+begin
+  perform private.study_require(actor is not null and not coalesce(util.is_service_request(),false),'AUTH_REQUIRED');
+  perform private.study_require(private.study_client_allowed(client,'STUDY-READ-01'),'FORBIDDEN');
+  perform private.study_require(jsonb_typeof(p_request)='object' and p_request->>'schemaVersion'='lca.study-api.v2'
+    and octet_length(p_request::text)<=262144 and length(p_request->>'requestId') between 1 and 128,'INVALID_REQUEST');
+  case op
+    when 'capability.read' then allowed:='{}';
+    when 'study.list' then allowed:=array['cursor','limit'];
+    when 'study.read' then allowed:=array['studyId'];
+    when 'study.resources.list' then allowed:=array['studyId','kind','cursor','limit'];
+    when 'revision.read' then allowed:=array['revisionId'];
+    when 'scenario.read' then allowed:=array['scenarioRevisionId'];
+    when 'model.read' then allowed:=array['preparationId'];
+    when 'model.source.read' then allowed:=array['acquisitionId'];
+    when 'run.read' then allowed:=array['runId'];
+    else perform private.study_require(false,'CAPABILITY_UNAVAILABLE');
+  end case;
+  perform private.study_require(not exists(select 1 from jsonb_object_keys(p_request) k where k<>all(allowed||array['operation','schemaVersion','requestId'])),'INVALID_REQUEST');
+  if op='capability.read' then
+    operations:=jsonb_build_array('capability.read','study.read','study.list','study.resources.list','revision.read','scenario.read','model.read','model.source.read','run.read');
+    if private.study_client_allowed(client,'STUDY-WRITE-01') then
+      operations:=operations||jsonb_build_array('study.create','study.archive','study.select_revision','member.set','revision.create','revision.save','revision.freeze','scenario.create','scenario.save','scenario.freeze');
+    end if;
+    return jsonb_build_object('ok',true,'data',jsonb_build_object('type','capabilities','contractVersion','2.0.0','runtimeEnabled',true,
+      'operations',operations,'profiles','[]'::jsonb));
+  end if;
+  if op in ('study.list','study.resources.list') then
+    lim:=(p_request->>'limit')::integer; perform private.study_require(lim between 1 and 100,'INVALID_REQUEST');
+    if op='study.resources.list' then sid:=(p_request->>'studyId')::uuid; perform private.study_authorize(sid,actor,client,'read'); end if;
+    selection:=p_request-'requestId'-'cursor'; epoch:=private.study_access_epoch(actor,sid);
+    if p_request->>'cursor' is not null then
+      perform private.study_require(p_request->>'cursor' ~ '^[0-9a-f]{32}$','INVALID_REQUEST');
+      select * into cursor_row from private.study_cursors where id=(p_request->>'cursor')::uuid;
+      perform private.study_require(found and cursor_row.actor_id=actor and cursor_row.client_id is not distinct from client
+        and cursor_row.selection=selection and cursor_row.access_epoch=epoch and cursor_row.expires_at>clock_timestamp(),'FORBIDDEN');
+      after_id:=cursor_row.after_id;
+    end if;
+  end if;
+  if op='study.list' then
+    select array_agg(id order by id) into ids from(select s.id from private.studies s join private.study_members m on m.study_id=s.id where m.actor_id=actor and private.study_team_member(actor,s.team_id) and (after_id is null or s.id>after_id) order by s.id limit lim+1)t;
+    more:=cardinality(ids)>lim; ids:=ids[1:lim];
+    -- Recheck and lock every selected Study before returning its current projection.
+    foreach rid in array coalesce(ids,'{}') loop perform private.study_authorize(rid,actor,client,'read'); end loop;
+    select coalesce(jsonb_agg(private.study_record('study',id) order by id),'[]'::jsonb) into items from unnest(ids)id;
+    if more then insert into private.study_cursors(actor_id,client_id,selection,access_epoch,after_id) values(actor,client,selection,epoch,ids[lim]) returning id into cursor_id; end if;
+    v:=jsonb_build_object('type','studyPage','items',items,'nextCursor',case when more then replace(cursor_id::text,'-','') else null end);
+  else
+    case op
+      when 'study.read','study.resources.list' then sid:=(p_request->>'studyId')::uuid; kind:='study'; rid:=sid;
+      when 'revision.read' then rid:=(p_request->>'revisionId')::uuid; select study_id into sid from private.study_revisions where id=rid; kind:='studyRevision';
+      when 'scenario.read' then rid:=(p_request->>'scenarioRevisionId')::uuid; select study_id into sid from private.study_scenarios where id=rid; kind:='scenarioRevision';
+      when 'model.read' then rid:=(p_request->>'preparationId')::uuid; select study_id into sid from private.study_model_preparations where id=rid; kind:='modelPreparation';
+      when 'model.source.read' then rid:=(p_request->>'acquisitionId')::uuid; select study_id into sid from private.study_source_acquisitions where id=rid; kind:='modelSourceAcquisition';
+      when 'run.read' then rid:=(p_request->>'runId')::uuid; select study_id into sid from private.study_runs where id=rid; kind:='run';
+      else perform private.study_require(false,'CAPABILITY_UNAVAILABLE');
+    end case;
+    perform private.study_authorize(sid,actor,client,'read');
+    if op='study.resources.list' then
+      kind:=p_request->>'kind';
+      select array_agg(id order by id) into ids from (
+        select id from (
+          select id from private.study_revisions where study_id=sid and kind='studyRevision'
+          union all select id from private.study_scenarios where study_id=sid and kind='scenarioRevision'
+          union all select id from private.study_source_snapshots where study_id=sid and kind='modelSourceSnapshot'
+          union all select id from private.study_source_acquisitions where study_id=sid and kind='modelSourceAcquisition'
+          union all select id from private.study_model_preparations where study_id=sid and kind='modelPreparation'
+          union all select id from private.study_runs where study_id=sid and kind='run'
+        )u where after_id is null or id>after_id order by id limit lim+1)t;
+      perform private.study_require(kind in ('studyRevision','scenarioRevision','modelSourceSnapshot','modelSourceAcquisition','modelPreparation','run'),'CAPABILITY_UNAVAILABLE');
+      more:=cardinality(ids)>lim; ids:=ids[1:lim];
+      select coalesce(jsonb_agg(jsonb_build_object('type',kind,'value',private.study_record(kind,id)) order by id),'[]'::jsonb) into items from unnest(ids)id;
+      if more then insert into private.study_cursors(actor_id,client_id,selection,access_epoch,after_id) values(actor,client,selection,epoch,ids[lim]) returning id into cursor_id; end if;
+      v:=jsonb_build_object('type','resourcePage','studyId',sid,'kind',kind,'items',items,'nextCursor',case when more then replace(cursor_id::text,'-','') else null end);
+    else v:=jsonb_build_object('type',kind,'value',private.study_record(kind,rid)); end if;
+  end if;
+  return jsonb_build_object('ok',true,'data',v);
+exception when raise_exception then return jsonb_build_object('ok',false,'code',sqlerrm);
+when invalid_text_representation or invalid_parameter_value or numeric_value_out_of_range then return jsonb_build_object('ok',false,'code','INVALID_REQUEST');
+end $_$;
+
+
+ALTER FUNCTION "private"."study_qry_core_v1"("p_request" "jsonb") OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "private"."study_model_preparations" (
+    "id" "uuid" NOT NULL,
+    "study_id" "uuid" NOT NULL,
+    "source" "jsonb" NOT NULL,
+    "source_document" "jsonb" NOT NULL,
+    "source_snapshot_id" "uuid",
+    "source_scenario_id" "uuid",
+    "source_study_revision_id" "uuid",
+    "source_parent_scenario_id" "uuid",
+    "method_refs" "jsonb" NOT NULL,
+    "profile_id" "text" NOT NULL,
+    "calculation_contract_ref" "jsonb" NOT NULL,
+    "job_id" "uuid" NOT NULL,
+    "model_ref" "jsonb",
+    "input_artifact_id" "uuid",
+    "input_hash" "text",
+    "requested_client_id" "text",
+    CONSTRAINT "study_model_preparations_calculation_contract_ref_check" CHECK (((("calculation_contract_ref" ->> 'kind'::"text") = 'calculation_contract'::"text") AND (("calculation_contract_ref" ->> 'schema'::"text") = 'lca.calculation-contract.v1'::"text") AND (("calculation_contract_ref" ->> 'sha256'::"text") ~ '^[0-9a-f]{64}$'::"text"))),
+    CONSTRAINT "study_model_preparations_check" CHECK ((("model_ref" IS NULL) = ("input_artifact_id" IS NULL))),
+    CONSTRAINT "study_model_preparations_check1" CHECK ((("model_ref" IS NOT NULL) OR ("input_hash" IS NULL))),
+    CONSTRAINT "study_model_preparations_check2" CHECK (COALESCE((((("source" ->> 'type'::"text") = 'modelSourceSnapshot'::"text") AND ("source_snapshot_id" IS NOT NULL) AND ("source_scenario_id" IS NULL) AND (("source" ->> 'snapshotId'::"text") = ("source_snapshot_id")::"text")) OR ((("source" ->> 'type'::"text") = 'scenarioRevision'::"text") AND ("source_scenario_id" IS NOT NULL) AND ("source_snapshot_id" IS NULL) AND ("source_study_revision_id" IS NOT NULL) AND (("source" ->> 'scenarioRevisionId'::"text") = ("source_scenario_id")::"text"))), false)),
+    CONSTRAINT "study_model_preparations_input_hash_check" CHECK (("input_hash" ~ '^[0-9a-f]{64}$'::"text")),
+    CONSTRAINT "study_model_preparations_method_refs_check" CHECK (("jsonb_typeof"("method_refs") = 'array'::"text")),
+    CONSTRAINT "study_model_preparations_method_refs_check1" CHECK ("private"."study_method_refs_valid"("method_refs"))
+);
+
+ALTER TABLE ONLY "private"."study_model_preparations" FORCE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_model_preparations" OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_qualified_preparation"("p_study" "uuid", "p_id" "uuid") RETURNS "private"."study_model_preparations"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare p private.study_model_preparations%rowtype;
+begin
+  select * into p from private.study_model_preparations where study_id=p_study and id=p_id;
+  perform private.study_require(found,'REFERENCE_MISMATCH');
+  perform private.study_require(p.model_ref is not null and p.input_artifact_id is not null
+    and exists(select 1 from private.worker_jobs where id=p.job_id and status='completed'),'CAPABILITY_UNAVAILABLE');
+  perform private.study_require(exists(select 1 from private.study_profiles where profile_id=p.profile_id and enabled
+    and calculation_fingerprint=p.calculation_contract_ref->>'sha256'),'CAPABILITY_UNAVAILABLE');
+  return p;
+end $$;
+
+
+ALTER FUNCTION "private"."study_qualified_preparation"("p_study" "uuid", "p_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_read_worker_input"("p_kind" "text", "p_id" "uuid", "p_job" "uuid", "p_token" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare p private.study_model_preparations%rowtype; r private.study_runs%rowtype; sid uuid; actor uuid; client text; snapshot uuid; result jsonb;
+begin
+  perform private.study_require(coalesce(util.is_service_request(),false),'FORBIDDEN');
+  if p_kind='modelPreparation' then
+    select * into p from private.study_model_preparations where id=p_id; sid:=p.study_id; client:=p.requested_client_id;
+    perform private.study_require(p.job_id=p_job,'REFERENCE_MISMATCH');
+  else
+    select * into r from private.study_runs where id=p_id; sid:=r.study_id; client:=r.requested_client_id;
+    perform private.study_require(r.job_id=p_job,'REFERENCE_MISMATCH');
+  end if;
+  select requested_by into actor from private.worker_jobs where id=p_job;
+  perform private.study_authorize(sid,actor,client,'write');
+  perform private.study_lock_job(sid,p_job,p_token,case p_kind when 'modelPreparation' then 'study.model_prepare' else 'study.run' end,
+    case p_kind when 'modelPreparation' then 'preparationId' else 'runId' end,p_id);
+  if p_kind='modelPreparation' then
+    snapshot:=case when p.source_snapshot_id is not null then p.source_snapshot_id else private.study_preparation_snapshot(sid,(select preparation_id from private.study_revisions where id=p.source_study_revision_id)) end;
+    perform private.study_snapshot_rights(snapshot,actor,client);
+    result:=jsonb_build_object('preparation',private.study_record('modelPreparation',p.id),'sourceDocument',p.source_document,'methodRefs',p.method_refs);
+  else
+    snapshot:=private.study_preparation_snapshot(sid,r.preparation_id); perform private.study_snapshot_rights(snapshot,actor,client);
+    result:=jsonb_build_object('run',private.study_record('run',r.id),'preparation',private.study_record('modelPreparation',r.preparation_id),
+      'revision',private.study_record('studyRevision',r.study_revision_id),'scenario',private.study_record('scenarioRevision',r.scenario_id),
+      'preparedArtifact',private.study_private_artifact(sid,(select input_artifact_id from private.study_model_preparations where id=r.preparation_id)));
+  end if;
+  return jsonb_build_object('ok',true,'data',result);
+exception when raise_exception then return jsonb_build_object('ok',false,'code',sqlerrm);
+end $$;
+
+
+ALTER FUNCTION "private"."study_read_worker_input"("p_kind" "text", "p_id" "uuid", "p_job" "uuid", "p_token" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_record"("p_kind" "text", "p_id" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare v jsonb;
+begin
+  case p_kind
+  when 'study' then select jsonb_build_object('studyId',id,'revision',revision,'scope',case when team_id is null then jsonb_build_object('kind','user','id',owner_id) else jsonb_build_object('kind','team','id',team_id) end,'title',title,'status',status,'currentRevisionId',current_revision_id) into v from private.studies where id=p_id;
+  when 'studyRevision' then select jsonb_build_object('revisionId',id,'studyId',study_id,'revision',revision,'parentRevisionId',parent_revision_id,'status',status,'contentHash',content_hash,'definition',definition,'modelPreparationId',preparation_id,'modelRef',model_ref,'validation',validation) into v from private.study_revisions where id=p_id;
+  when 'scenarioRevision' then select jsonb_build_object('scenarioId',scenario_id,'scenarioRevisionId',id,'studyId',study_id,'studyRevisionId',study_revision_id,'parentScenarioRevisionId',parent_scenario_id,'revision',revision,'status',status,'contentHash',content_hash,'overrides',overrides,'modelPreparationId',preparation_id,'effectiveModelRef',effective_model_ref) into v from private.study_scenarios where id=p_id;
+  when 'modelPreparation' then select jsonb_build_object('preparationId',p.id,'studyId',p.study_id,'source',p.source,'methodRefs',p.method_refs,'profileId',p.profile_id,'calculationContractRef',p.calculation_contract_ref,'execution',jsonb_build_object('jobId',p.job_id,'status',j.status),'modelRef',p.model_ref,'inputArtifactRef',a.ref,'inputHash',p.input_hash) into v from private.study_model_preparations p join private.worker_jobs j on j.id=p.job_id left join private.study_artifacts a on a.id=p.input_artifact_id where p.id=p_id;
+  when 'modelSourceSnapshot' then select jsonb_build_object('snapshotId',s.id,'studyId',s.study_id,'originRef',s.origin_ref,'sourceArtifactRef',a.ref,'digestScope','artifact_bytes_sha256','licenseRef',s.license_ref,'issuerId',s.issuer_id,'observedAt',s.observed_at) into v from private.study_source_snapshots s join private.study_artifacts a on a.id=s.artifact_id where s.id=p_id;
+  when 'modelSourceAcquisition' then select jsonb_build_object('acquisitionId',a.id,'studyId',a.study_id,'originRef',a.origin_ref,'execution',jsonb_build_object('jobId',a.job_id,'status',j.status),'snapshot',case when a.snapshot_id is null then null else private.study_record('modelSourceSnapshot',a.snapshot_id) end) into v from private.study_source_acquisitions a join private.worker_jobs j on j.id=a.job_id where a.id=p_id;
+  when 'run' then select jsonb_build_object('runId',r.id,'studyId',r.study_id,'studyRevisionId',r.study_revision_id,'scenarioRevisionId',r.scenario_id,'modelPreparationId',r.preparation_id,'effectiveModelRef',r.model_ref,'inputHash',r.input_hash,'profileId',r.profile_id,'calculationContractRef',r.calculation_contract_ref,'engineId','solver-worker','execution',jsonb_build_object('jobId',r.job_id,'status',j.status),'resultRef',a.ref,'validity',jsonb_build_object('status',r.validity,'checkedAt',r.validity_checked_at,'reasonCodes','[]'::jsonb)) into v from private.study_runs r join private.worker_jobs j on j.id=r.job_id left join private.study_artifacts a on a.id=r.result_artifact_id where r.id=p_id;
+  else perform private.study_require(false,'CAPABILITY_UNAVAILABLE');
+  end case;
+  perform private.study_require(v is not null,'FORBIDDEN');
+  return v;
+end $$;
+
+
+ALTER FUNCTION "private"."study_record"("p_kind" "text", "p_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_require"("p_condition" boolean, "p_code" "text") RETURNS "void"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$ begin
+  if p_condition is not true then raise exception using errcode='P0001',message=p_code; end if;
+end $$;
+
+
+ALTER FUNCTION "private"."study_require"("p_condition" boolean, "p_code" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_resource_job"("p_study" "uuid", "p_type" "text", "p_id" "uuid") RETURNS "uuid"
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$ declare job uuid; begin
+  case p_type
+    when 'modelSourceAcquisition' then select job_id into job from private.study_source_acquisitions where study_id=p_study and id=p_id;
+    when 'modelPreparation' then select job_id into job from private.study_model_preparations where study_id=p_study and id=p_id;
+    when 'run' then select job_id into job from private.study_runs where study_id=p_study and id=p_id;
+    else perform private.study_require(false,'INVALID_REQUEST');
+  end case;
+  perform private.study_require(job is not null,'FORBIDDEN'); return job;
+end $$;
+
+
+ALTER FUNCTION "private"."study_resource_job"("p_study" "uuid", "p_type" "text", "p_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_snapshot_rights"("p_snapshot" "uuid", "p_actor" "uuid", "p_client" "text") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$ declare s private.study_source_snapshots%rowtype; begin
+  select * into s from private.study_source_snapshots where id=p_snapshot;
+  perform private.study_require(found,'REFERENCE_MISMATCH');
+  perform private.study_source_rights(s.source_authorization->'sourceScope',p_actor,p_client);
+end $$;
+
+
+ALTER FUNCTION "private"."study_snapshot_rights"("p_snapshot" "uuid", "p_actor" "uuid", "p_client" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_source_document"("p_kind" "text", "p_id" "text", "p_version" "text", "p_actor" "uuid", "p_client" "text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$
+declare t text; raw text; state integer; owner_id uuid; visible jsonb; claims text; sub text; role_claim text; root_key text; body jsonb;
+begin
+  perform private.study_require(private.study_client_allowed(p_client,'DB-CORE-READ-01'),'FORBIDDEN');
+  perform private.study_require(p_version ~ '^[0-9]{2}\.[0-9]{2}\.[0-9]{3}$','REFERENCE_MISMATCH');
+  t:=case p_kind when 'lifecyclemodel' then 'lifecyclemodels' when 'process' then 'processes'
+    when 'flow' then 'flows' when 'flowproperty' then 'flowproperties' when 'unitgroup' then 'unitgroups' end;
+  perform private.study_require(t is not null,'REFERENCE_MISMATCH');
+  execute format('select json_ordered::text,state_code,user_id from public.%I where id=$1 and version=$2 for share',t)
+    into raw,state,owner_id using p_id::uuid,p_version;
+  perform private.study_require(found and raw is not null and(state=100 or(state=0 and owner_id=p_actor)),'DISCLOSURE_DENIED');
+  -- Bound a single stored row before JSONB projection, parsing or hashing.
+  perform private.study_require(octet_length(raw)<=4194304,'CAPABILITY_UNAVAILABLE');
+  claims:=current_setting('request.jwt.claims',true); sub:=current_setting('request.jwt.claim.sub',true); role_claim:=current_setting('request.jwt.claim.role',true);
+  perform set_config('request.jwt.claims',jsonb_strip_nulls(jsonb_build_object('sub',p_actor,'role','authenticated','client_id',p_client))::text,true);
+  perform set_config('request.jwt.claim.sub',p_actor::text,true); perform set_config('request.jwt.claim.role','authenticated',true);
+  visible:=private.study_source_visible_row(p_kind,p_id::uuid,p_version);
+  perform set_config('request.jwt.claims',coalesce(claims,''),true); perform set_config('request.jwt.claim.sub',coalesce(sub,''),true); perform set_config('request.jwt.claim.role',coalesce(role_claim,''),true);
+  perform private.study_require(visible is not null and visible->>'text'=raw and (visible->>'stateCode')::integer=state
+    and nullif(visible->>'ownerActorId','')::uuid is not distinct from owner_id,'DISCLOSURE_DENIED');
+  body:=raw::jsonb; perform private.study_require(jsonb_typeof(body)='object','INVALID_REQUEST');
+  root_key:=case p_kind when 'lifecyclemodel' then 'lifeCycleModelDataSet' when 'process' then 'processDataSet'
+    when 'flow' then 'flowDataSet' when 'flowproperty' then 'flowPropertyDataSet' when 'unitgroup' then 'unitGroupDataSet' end;
+  perform private.study_require(jsonb_typeof(body->root_key)='object','REFERENCE_MISMATCH');
+  return jsonb_build_object('kind',p_kind,'identity',jsonb_build_object('id',p_id,'version',p_version),'stateCode',state,
+    'ownerActorId',owner_id,'sha256',encode(extensions.digest(convert_to(raw,'UTF8'),'sha256'),'hex'),'json',raw);
+exception when others then
+  if claims is not null then perform set_config('request.jwt.claims',claims,true); end if;
+  if sub is not null then perform set_config('request.jwt.claim.sub',sub,true); end if;
+  if role_claim is not null then perform set_config('request.jwt.claim.role',role_claim,true); end if;
+  raise;
+end $_$;
+
+
+ALTER FUNCTION "private"."study_source_document"("p_kind" "text", "p_id" "text", "p_version" "text", "p_actor" "uuid", "p_client" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_source_items"("p_value" "jsonb") RETURNS SETOF "jsonb"
+    LANGUAGE "plpgsql" IMMUTABLE
+    SET "search_path" TO ''
+    AS $$ begin
+  if p_value is null or p_value='null'::jsonb then return; end if;
+  if jsonb_typeof(p_value)='array' then return query select * from jsonb_array_elements(p_value);
+  elsif jsonb_typeof(p_value)='object' then return next p_value;
+  else raise exception 'INVALID_REQUEST'; end if;
+end $$;
+
+
+ALTER FUNCTION "private"."study_source_items"("p_value" "jsonb") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_source_ref"("p_kind" "text", "p_ref" "jsonb") RETURNS "jsonb"
+    LANGUAGE "plpgsql" IMMUTABLE
+    SET "search_path" TO ''
+    AS $_$ begin
+  perform private.study_require(jsonb_typeof(p_ref)='object' and private.study_text(p_ref->'@refObjectId',128,'^[A-Za-z0-9][A-Za-z0-9._:-]*$')
+    and private.study_text(p_ref->'@version',9,'^[0-9]{2}\.[0-9]{2}\.[0-9]{3}$'),'REFERENCE_MISMATCH');
+  return jsonb_build_object('kind',p_kind,'id',p_ref->>'@refObjectId','version',p_ref->>'@version');
+end $_$;
+
+
+ALTER FUNCTION "private"."study_source_ref"("p_kind" "text", "p_ref" "jsonb") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_source_rights"("p_scope" "jsonb", "p_actor" "uuid", "p_client" "text") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$ declare d jsonb; actual jsonb; captured_owner uuid; begin
+  perform private.study_require(jsonb_typeof(p_scope)='array' and jsonb_array_length(p_scope) between 1 and 512,'DISCLOSURE_DENIED');
+  for d in select * from jsonb_array_elements(p_scope) loop
+    actual:=private.study_source_document(d->>'kind',coalesce(d->>'id',d->'identity'->>'id'),coalesce(d->>'version',d->'identity'->>'version'),p_actor,p_client);
+    captured_owner:=nullif(d->>'ownerActorId','')::uuid;
+    -- Current visibility does not retroactively publish historical draft bytes.
+    -- Captured private data remains owner-bound. A nonowner may read captured
+    -- public bytes only while the exact captured bytes are still public now.
+    perform private.study_require(
+      ((d->>'stateCode')::integer=0 and captured_owner=p_actor and nullif(actual->>'ownerActorId','')::uuid=p_actor)
+      or ((d->>'stateCode')::integer=100 and (
+        ((actual->>'stateCode')::integer=100 and actual->>'sha256'=d->>'sha256')
+        or (captured_owner=p_actor and nullif(actual->>'ownerActorId','')::uuid=p_actor))),
+      'DISCLOSURE_DENIED');
+  end loop;
+end $$;
+
+
+ALTER FUNCTION "private"."study_source_rights"("p_scope" "jsonb", "p_actor" "uuid", "p_client" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_source_visible_row"("p_kind" "text", "p_id" "uuid", "p_version" "text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$
+declare t text; v jsonb;
+begin
+  t:=case p_kind when 'lifecyclemodel' then 'lifecyclemodels' when 'process' then 'processes'
+    when 'flow' then 'flows' when 'flowproperty' then 'flowproperties' when 'unitgroup' then 'unitgroups' end;
+  if t is null then return null; end if;
+  execute format('select jsonb_build_object(''text'',json_ordered::text,''stateCode'',state_code,''ownerActorId'',user_id) from public.%I where id=$1 and version=$2',t)
+    into v using p_id,p_version;
+  return v;
+end $_$;
+
+
+ALTER FUNCTION "private"."study_source_visible_row"("p_kind" "text", "p_id" "uuid", "p_version" "text") OWNER TO "api_internal_executor";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_store_artifact"("p_study" "uuid", "p_ref" "jsonb", "p_bucket" "text", "p_path" "text", "p_type" "text") RETURNS "uuid"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$
+declare aid uuid:=(p_ref->>'id')::uuid;
+begin
+  perform private.study_require(p_ref->>'type'=p_type and p_ref->>'digestScope'='artifact_bytes_sha256'
+    and private.study_keys(p_ref,array['type','id','contentHash','digestScope','byteSize','mediaType','schemaVersion'])
+    and private.study_text(p_ref->'id',128,'^[A-Za-z0-9][A-Za-z0-9._:-]*$')
+    and private.study_text(p_ref->'contentHash',64,'^[0-9a-f]{64}$')
+    and jsonb_typeof(p_ref->'byteSize')='number' and (p_ref->>'byteSize')::numeric=trunc((p_ref->>'byteSize')::numeric)
+    and (p_ref->>'byteSize')::numeric between 1 and 4194304
+    and p_ref->>'mediaType' in ('application/json','application/zip','text/html')
+    and length(p_ref->>'schemaVersion') between 1 and 128,'REFERENCE_MISMATCH');
+  perform private.study_require(p_bucket='study-artifacts' and p_path ~ ('^study/'||p_study::text||'/'||aid::text||'/[A-Za-z0-9_-]+\.(json|zip|html)$'),'REFERENCE_MISMATCH');
+  insert into private.study_artifacts(id,study_id,ref,bucket,object_path) values(aid,p_study,p_ref,p_bucket,p_path)
+    on conflict(id) do nothing;
+  perform private.study_require(exists(select 1 from private.study_artifacts where id=aid and study_id=p_study and ref=p_ref and bucket=p_bucket and object_path=p_path),'IDEMPOTENCY_CONFLICT');
+  return aid;
+end $_$;
+
+
+ALTER FUNCTION "private"."study_store_artifact"("p_study" "uuid", "p_ref" "jsonb", "p_bucket" "text", "p_path" "text", "p_type" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_task_command"("p_request" "jsonb") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    SET "statement_timeout" TO '15s'
+    AS $_$
+declare op text:=p_request->>'operation'; actor uuid:=auth.uid(); client text:=nullif(auth.jwt()->>'client_id',''); req jsonb:=p_request-'requestId'-'schemaVersion'-'idempotencyKey';
+  sid uuid; id uuid:=gen_random_uuid(); job uuid; snapshot uuid; p private.study_model_preparations%rowtype; base private.study_model_preparations%rowtype;
+  r private.study_revisions%rowtype; c private.study_scenarios%rowtype; run private.study_runs%rowtype; s private.studies%rowtype; cfg private.study_runtime_config%rowtype;
+  previous private.study_command_receipts%rowtype; methods jsonb; cuts jsonb; document jsonb; source_ref jsonb:=p_request->'source'; result jsonb; response jsonb; allowed text[]; key text:=p_request->>'idempotencyKey'; old_role text; old_context text;
+begin
+  perform private.study_require(actor is not null and not coalesce(util.is_service_request(),false),'AUTH_REQUIRED');
+  perform private.study_require(private.study_client_allowed(client,'STUDY-WRITE-01'),'FORBIDDEN');
+  perform private.study_require(p_request->>'schemaVersion'='lca.study-api.v2' and octet_length(p_request::text)<=262144
+    and private.study_text(p_request->'requestId',128,'^[A-Za-z0-9][A-Za-z0-9._:-]*$')
+    and private.study_text(p_request->'idempotencyKey',128,'^[A-Za-z0-9][A-Za-z0-9._:-]*$'),'INVALID_REQUEST');
+  case op
+    when 'model.source.resolve' then allowed:=array['studyId','originRef']; sid:=(p_request->>'studyId')::uuid;
+    when 'model.prepare' then
+      allowed:=array['studyId','source','profileId','calculationContractRef']; sid:=(p_request->>'studyId')::uuid;
+      if p_request->'source'->>'type'='modelSourceSnapshot' then
+        allowed:=allowed||array['methodRefs','cutoffs']; cuts:=coalesce(p_request->'cutoffs','[]'::jsonb); req:=jsonb_set(req,'{cutoffs}',cuts);
+        perform private.study_require(p_request ? 'methodRefs' and private.study_method_refs_valid(p_request->'methodRefs') and private.study_cutoffs_valid(cuts),'INVALID_REQUEST');
+      else perform private.study_require(not(p_request ? 'methodRefs') and not(p_request ? 'cutoffs'),'INVALID_REQUEST'); end if;
+    when 'run.submit' then
+      allowed:=array['studyRevisionId','scenarioRevisionId','expectedInputHash','calculationContractRef','profileId'];
+      select * into r from private.study_revisions where study_revisions.id=(p_request->>'studyRevisionId')::uuid; sid:=r.study_id;
+    when 'run.cancel' then
+      allowed:=array['runId','reason']; select * into run from private.study_runs where study_runs.id=(p_request->>'runId')::uuid; sid:=run.study_id;
+    else perform private.study_require(false,'CAPABILITY_UNAVAILABLE');
+  end case;
+  perform private.study_require(not exists(select 1 from jsonb_object_keys(p_request)k where k<>all(allowed||array['schemaVersion','requestId','idempotencyKey','operation'])),'INVALID_REQUEST');
+  perform private.study_authorize(sid,actor,client,'write'); select * into s from private.studies where studies.id=sid;
+  select * into previous from private.study_command_receipts where actor_id=actor and operation=op and scope=sid::text and idempotency_key=key;
+  if found then perform private.study_require(previous.request=req,'IDEMPOTENCY_CONFLICT'); return previous.response; end if;
+  if op<>'run.cancel' then perform private.study_require(s.status='active','FROZEN_REVISION'); end if;
+  select * into cfg from private.study_runtime_config where singleton;
+  case op
+  when 'model.source.resolve' then
+    perform private.study_require(cfg.source_enabled,'CAPABILITY_UNAVAILABLE');
+    perform private.study_require(jsonb_typeof(p_request->'originRef'->'id')='string'
+      and jsonb_typeof(p_request->'originRef'->'version')='string','INVALID_REQUEST');
+    perform private.study_require(private.study_keys(p_request->'originRef',array['type','datasetType','id','version'])
+      and p_request->'originRef'->>'type'='datasetRevision' and p_request->'originRef'->>'datasetType'='lifecyclemodel','REFERENCE_MISMATCH');
+    perform private.study_source_document('lifecyclemodel',p_request->'originRef'->>'id',p_request->'originRef'->>'version',actor,client);
+    job:=private.study_enqueue('study.source_acquire',sid,id,actor,s.team_id,key,req);
+    insert into private.study_source_acquisitions(id,study_id,origin_ref,requested_by,job_id,requested_client_id) values(id,sid,p_request->'originRef',actor,job,client);
+    result:=jsonb_build_object('type','modelSourceAcquisition','value',private.study_record('modelSourceAcquisition',id));
+  when 'model.prepare' then
+    perform private.study_require(cfg.compute_enabled,'CAPABILITY_UNAVAILABLE');
+    if p_request->'source'->>'type'='modelSourceSnapshot' then
+      perform private.study_require(private.study_keys(p_request->'source',array['type','snapshotId','contentHash','digestScope']),'INVALID_REQUEST');
+      snapshot:=(p_request->'source'->>'snapshotId')::uuid;
+      perform private.study_require(exists(select 1 from private.study_source_snapshots ss join private.study_artifacts a on a.id=ss.artifact_id
+        where ss.id=snapshot and ss.study_id=sid and a.ref->>'contentHash'=p_request->'source'->>'contentHash' and p_request->'source'->>'digestScope'='artifact_bytes_sha256'),'REFERENCE_MISMATCH');
+      methods:=p_request->'methodRefs';
+      document:=jsonb_build_object('schemaVersion','lca.study-preparation-input.v1','sourceSnapshot',private.study_record('modelSourceSnapshot',snapshot),
+        'sourceArtifact',private.study_private_artifact(sid,(select artifact_id from private.study_source_snapshots where study_source_snapshots.id=snapshot)),
+        'basePreparedArtifact',null,'basePreparedPreparationId',null,'studyBinding',null,'overrides','[]'::jsonb,'cutoffs',cuts);
+    elsif p_request->'source'->>'type'='scenarioRevision' then
+      perform private.study_require(private.study_keys(p_request->'source',array['type','scenarioRevisionId','expectedRevision','contentHash'])
+        and jsonb_typeof(p_request->'source'->'expectedRevision')='number','INVALID_REQUEST');
+      perform private.study_require((p_request->'source'->>'expectedRevision')::numeric between 1 and 9007199254740991
+        and trunc((p_request->'source'->>'expectedRevision')::numeric)=(p_request->'source'->>'expectedRevision')::numeric,'INVALID_REQUEST');
+      select * into c from private.study_scenarios where study_scenarios.id=(p_request->'source'->>'scenarioRevisionId')::uuid and study_id=sid for update;
+      perform private.study_require(found and c.status='draft','REFERENCE_MISMATCH');
+      perform private.study_require(c.revision=(p_request->'source'->>'expectedRevision')::numeric,'REVISION_CONFLICT');
+      -- Persist the same integer spelling consumed by typed Worker/API clients.
+      source_ref:=jsonb_set(source_ref,'{expectedRevision}',to_jsonb(c.revision));
+      perform private.study_require(c.content_hash=p_request->'source'->>'contentHash','REFERENCE_MISMATCH');
+      select * into r from private.study_revisions where study_revisions.id=c.study_revision_id and status='frozen';
+      base:=private.study_qualified_preparation(sid,r.preparation_id); snapshot:=private.study_preparation_snapshot(sid,base.id);
+      methods:=r.definition->'methodRefs'; cuts:=coalesce(base.source_document->'cutoffs','[]'::jsonb);
+      document:=jsonb_build_object('schemaVersion','lca.study-preparation-input.v1','sourceSnapshot',private.study_record('modelSourceSnapshot',snapshot),
+        'sourceArtifact',private.study_private_artifact(sid,(select artifact_id from private.study_source_snapshots where study_source_snapshots.id=snapshot)),
+        'basePreparedArtifact',private.study_private_artifact(sid,base.input_artifact_id),'basePreparedPreparationId',base.id,
+        'studyBinding',jsonb_build_object('studyRevisionId',r.id,'studyRevisionContentHash',r.content_hash,'definition',r.definition),'overrides',c.overrides,'cutoffs',cuts);
+    else perform private.study_require(false,'INVALID_REQUEST'); end if;
+    perform private.study_snapshot_rights(snapshot,actor,client);
+    perform private.study_require(private.study_method_refs_valid(methods) and jsonb_array_length(methods)<=25,'CAPABILITY_UNAVAILABLE');
+    perform private.study_require(not exists(select 1 from jsonb_array_elements(methods)m where not cfg.method_refs @> jsonb_build_array(m)),'CAPABILITY_UNAVAILABLE');
+    perform private.study_require(exists(select 1 from private.study_profiles where enabled and profile_id=p_request->>'profileId'
+      and calculation_fingerprint=p_request->'calculationContractRef'->>'sha256') and private.study_keys(p_request->'calculationContractRef',array['kind','schema','sha256'])
+      and p_request->'calculationContractRef'->>'kind'='calculation_contract' and p_request->'calculationContractRef'->>'schema'='lca.calculation-contract.v1','REFERENCE_MISMATCH');
+    job:=private.study_enqueue('study.model_prepare',sid,id,actor,s.team_id,key,req);
+    insert into private.study_model_preparations(id,study_id,source,source_document,source_snapshot_id,source_scenario_id,source_study_revision_id,source_parent_scenario_id,method_refs,profile_id,calculation_contract_ref,job_id,requested_client_id)
+      values(id,sid,source_ref,document,case when c.id is null then snapshot else null end,c.id,c.study_revision_id,c.parent_scenario_id,methods,p_request->>'profileId',p_request->'calculationContractRef',job,client);
+    perform private.study_assert_provenance(sid);
+    result:=jsonb_build_object('type','modelPreparation','value',private.study_record('modelPreparation',id));
+  when 'run.submit' then
+    perform private.study_require(cfg.compute_enabled,'CAPABILITY_UNAVAILABLE');
+    select * into c from private.study_scenarios where study_scenarios.id=(p_request->>'scenarioRevisionId')::uuid and study_id=sid;
+    perform private.study_require(r.status='frozen' and c.status='frozen' and c.study_revision_id=r.id,'REFERENCE_MISMATCH');
+    p:=private.study_qualified_preparation(sid,c.preparation_id); snapshot:=private.study_preparation_snapshot(sid,p.id);
+    perform private.study_snapshot_rights(snapshot,actor,client);
+    perform private.study_require(p.input_hash=p_request->>'expectedInputHash' and p.model_ref=c.effective_model_ref
+      and p.profile_id=p_request->>'profileId' and p.calculation_contract_ref=p_request->'calculationContractRef','REFERENCE_MISMATCH');
+    job:=private.study_enqueue('study.run',sid,id,actor,s.team_id,key,req);
+    insert into private.study_runs(id,study_id,study_revision_id,scenario_id,preparation_id,input_hash,model_ref,profile_id,calculation_contract_ref,job_id,requested_client_id)
+      values(id,sid,r.id,c.id,p.id,p.input_hash,p.model_ref,p.profile_id,p.calculation_contract_ref,job,client);
+    result:=jsonb_build_object('type','run','value',private.study_record('run',id));
+  when 'run.cancel' then
+    perform private.study_require(private.study_text(p_request->'reason',512),'INVALID_REQUEST');
+    old_role:=current_setting('request.jwt.claim.role',true); old_context:=current_setting('app.study.task_context',true);
+    perform set_config('request.jwt.claim.role','service_role',true); perform set_config('app.study.task_context','cancel',true);
+    response:=private.worker_cancel_job(run.job_id,actor,'Study task cancelled');
+    perform set_config('request.jwt.claim.role',coalesce(old_role,''),true); perform set_config('app.study.task_context',coalesce(old_context,''),true);
+    perform private.study_require((response->>'ok')::boolean,'REVISION_CONFLICT');
+    result:=jsonb_build_object('type','run','value',private.study_record('run',run.id));
+  end case;
+  response:=jsonb_build_object('ok',true,'data',result);
+  insert into private.study_command_receipts values(actor,op,sid::text,key,req,response,clock_timestamp()); return response;
+exception when raise_exception then return jsonb_build_object('ok',false,'code',sqlerrm);
+when invalid_text_representation or invalid_parameter_value or numeric_value_out_of_range or not_null_violation or check_violation then return jsonb_build_object('ok',false,'code','INVALID_REQUEST');
+when foreign_key_violation or unique_violation then return jsonb_build_object('ok',false,'code','REFERENCE_MISMATCH');
+end $_$;
+
+
+ALTER FUNCTION "private"."study_task_command"("p_request" "jsonb") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_task_control"("p_request" "jsonb") RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $_$
+declare actor uuid:=auth.uid(); client text:=nullif(auth.jwt()->>'client_id',''); sid uuid:=(p_request->>'studyId')::uuid;
+  op text:=p_request->>'operation'; rid uuid:=(p_request->'resource'->>'id')::uuid; typ text:=p_request->'resource'->>'type'; job uuid;
+  j private.worker_jobs%rowtype; old_role text; old_context text; result jsonb; previous private.study_command_receipts%rowtype;
+  request jsonb:=p_request-'schemaVersion'-'requestId'-'idempotencyKey'; key text:=p_request->>'idempotencyKey';
+begin
+  perform private.study_require(actor is not null and not coalesce(util.is_service_request(),false),'AUTH_REQUIRED');
+  perform private.study_require(p_request->>'schemaVersion'='lca.study-api.v2' and private.study_keys(p_request->'resource',array['type','id'])
+    and op in ('task.read','task.cancel'),'INVALID_REQUEST');
+  perform private.study_authorize(sid,actor,client,case op when 'task.read' then 'read' else 'write' end);
+  job:=private.study_resource_job(sid,typ,rid);
+  if op='task.cancel' then
+    perform private.study_require(private.study_keys(p_request,array['schemaVersion','requestId','operation','idempotencyKey','studyId','resource','reason'])
+      and private.study_text(p_request->'reason',512) and private.study_text(p_request->'idempotencyKey',128,'^[A-Za-z0-9][A-Za-z0-9._:-]*$'),'INVALID_REQUEST');
+    select * into previous from private.study_command_receipts where actor_id=actor and operation=op and scope=sid::text and idempotency_key=key;
+    if found then perform private.study_require(previous.request=request,'IDEMPOTENCY_CONFLICT'); return previous.response; end if;
+    old_role:=current_setting('request.jwt.claim.role',true); old_context:=current_setting('app.study.task_context',true);
+    perform set_config('request.jwt.claim.role','service_role',true); perform set_config('app.study.task_context','cancel',true);
+    result:=private.worker_cancel_job(job,actor,'Study task cancelled');
+    perform set_config('request.jwt.claim.role',coalesce(old_role,''),true); perform set_config('app.study.task_context',coalesce(old_context,''),true);
+    perform private.study_require((result->>'ok')::boolean,'REVISION_CONFLICT');
+  else
+    perform private.study_require(private.study_keys(p_request,array['schemaVersion','requestId','operation','studyId','resource']),'INVALID_REQUEST');
+  end if;
+  select * into j from private.worker_jobs where id=job;
+  result:=jsonb_build_object('ok',true,'data',jsonb_build_object('type','task','value',jsonb_build_object('studyId',sid,'resource',p_request->'resource',
+    'execution',jsonb_build_object('jobId',job,'status',j.status,'phase',case when j.phase in ('queued','source_capture','model_prepare','solve','complete','cancelled','study_start','study_native','study_artifact','study_publish') then j.phase else null end,'progress',j.progress),
+    'errorCode',case when j.error_code=any(array['source_invalid','boundary_undeclared','normalization_underflow','normalization_overflow','numeric_invalid','resource_limit','model_not_solvable','native_execution_failed','job_timeout','job_lease_lost','runtime_unavailable','runtime_failed']) then j.error_code else null end)));
+  if op='task.cancel' then insert into private.study_command_receipts values(actor,op,sid::text,key,request,result,clock_timestamp()); end if;
+  return result;
+exception when raise_exception then return jsonb_build_object('ok',false,'code',sqlerrm);
+when invalid_text_representation or invalid_parameter_value then return jsonb_build_object('ok',false,'code','INVALID_REQUEST');
+end $_$;
+
+
+ALTER FUNCTION "private"."study_task_control"("p_request" "jsonb") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_team_member"("p_actor" "uuid", "p_team" "uuid") RETURNS boolean
+    LANGUAGE "sql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+  select p_team is null or exists(select 1 from private.roles r where r.user_id=p_actor
+    and r.team_id=p_team and r.role in ('owner','admin','member'))
+$$;
+
+
+ALTER FUNCTION "private"."study_team_member"("p_actor" "uuid", "p_team" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_text"("p_value" "jsonb", "p_max" integer, "p_pattern" "text" DEFAULT NULL::"text") RETURNS boolean
+    LANGUAGE "plpgsql" IMMUTABLE
+    SET "search_path" TO ''
+    AS $$ declare v text; begin
+  if jsonb_typeof(p_value) is distinct from 'string' then return false; end if;
+  v:=p_value#>>'{}';
+  -- Edge's qualified Zod4 text bounds count Unicode code points. Retain its
+  -- separate UTF8 byte bound; do not substitute JS UTF16 string.length here.
+  if length(v) not between 1 and p_max
+    or octet_length(v)>p_max*4 or btrim(v,U&'\0009\000A\000B\000C\000D\0020\00A0\1680\2000\2001\2002\2003\2004\2005\2006\2007\2008\2009\200A\2028\2029\202F\205F\3000\FEFF')=''
+    or v ~ U&'[\0001-\0008\000B\000C\000E-\001F\007F]' then return false; end if;
+  return p_pattern is null or v ~ p_pattern;
+end $$;
+
+
+ALTER FUNCTION "private"."study_text"("p_value" "jsonb", "p_max" integer, "p_pattern" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."study_validate_task_completion"("p_kind" "text", "p_id" "uuid", "p_completion" "jsonb") RETURNS "void"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare sid uuid; actor uuid; client text; snapshot uuid; a private.study_source_acquisitions%rowtype; p private.study_model_preparations%rowtype; r private.study_runs%rowtype;
+begin
+  if p_kind='modelSourceAcquisition' then
+    select * into a from private.study_source_acquisitions where id=p_id; sid:=a.study_id; actor:=a.requested_by; client:=a.requested_client_id;
+    perform private.study_authorize(sid,actor,client,'write');
+    perform private.study_require(a.source_packet is not null and p_completion->'sourceAuthorization'=a.source_packet->'sourceAuthorization'
+      and p_completion->'originRef'=a.source_packet->'originRef' and p_completion->>'licenseRef'=a.source_packet->>'licenseRef'
+      and p_completion->>'issuerId'=a.source_packet->>'issuerId' and p_completion->>'observedAt'=a.source_packet->>'observedAt'
+      and p_completion->'sourceArtifactRef'->>'schemaVersion'='lca.study-source-snapshot.v1'
+      and p_completion->'sourceArtifactRef'->>'mediaType'='application/json','REFERENCE_MISMATCH');
+    perform private.study_source_rights(a.source_packet->'sourceAuthorization'->'sourceScope',actor,client);
+  elsif p_kind='modelPreparation' then
+    select * into p from private.study_model_preparations where id=p_id; sid:=p.study_id; client:=p.requested_client_id;
+    select requested_by into actor from private.worker_jobs where id=p.job_id;
+    perform private.study_authorize(sid,actor,client,'write');
+    snapshot:=case when p.source_snapshot_id is not null then p.source_snapshot_id else private.study_preparation_snapshot(sid,(select preparation_id from private.study_revisions where id=p.source_study_revision_id)) end;
+    perform private.study_snapshot_rights(snapshot,actor,client);
+  elsif p_kind='run' then
+    select * into r from private.study_runs where id=p_id; sid:=r.study_id; client:=r.requested_client_id;
+    select requested_by into actor from private.worker_jobs where id=r.job_id;
+    perform private.study_authorize(sid,actor,client,'write'); snapshot:=private.study_preparation_snapshot(sid,r.preparation_id);
+    perform private.study_snapshot_rights(snapshot,actor,client);
+  else perform private.study_require(false,'INVALID_REQUEST'); end if;
+end $$;
+
+
+ALTER FUNCTION "private"."study_validate_task_completion"("p_kind" "text", "p_id" "uuid", "p_completion" "jsonb") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "private"."svc_lca_calculation_contract_activate"("p_descriptor" "text", "p_expected_fingerprint" "text") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -90214,6 +91770,7 @@ CREATE OR REPLACE FUNCTION "private"."worker_cancel_job"("p_job_id" "uuid", "p_c
 declare
   v_job private.worker_jobs%rowtype;
 begin
+  if not private.study_generic_job_allowed(null,p_job_id,'cancel') then return jsonb_build_object('ok',false,'code','STUDY_SCOPED_ROUTE_REQUIRED','status',403,'message','Study task requires scoped authorization'); end if;
   if not coalesce(util.is_service_request(), false) then
     return jsonb_build_object(
       'ok', false,
@@ -90499,6 +92056,7 @@ declare
   v_concurrency_key text := nullif(trim(p_concurrency_key), '');
   v_queue_key text := nullif(trim(p_queue_key), '');
 begin
+  if not private.study_generic_job_allowed(p_job_kind,null,'enqueue') then return jsonb_build_object('ok',false,'code','STUDY_SCOPED_ROUTE_REQUIRED','status',403,'message','Study task requires scoped authorization'); end if;
   if not coalesce(util.is_service_request(), false) then
     return jsonb_build_object(
       'ok', false,
@@ -91079,7 +92637,8 @@ begin
   from (
     select *
     from private.worker_jobs
-    where (p_requested_by is null or requested_by = p_requested_by)
+    where job_kind not like 'study.%'
+      and (p_requested_by is null or requested_by = p_requested_by)
       and (p_subject_type is null or subject_type = p_subject_type)
       and (p_subject_id is null or subject_id = p_subject_id)
       and (p_visibility is null or visibility = p_visibility)
@@ -91106,6 +92665,7 @@ CREATE OR REPLACE FUNCTION "private"."worker_read_job"("p_job_id" "uuid", "p_inc
 declare
   v_job private.worker_jobs%rowtype;
 begin
+  if not private.study_generic_job_allowed(null,p_job_id,'read') then return jsonb_build_object('ok',false,'code','STUDY_SCOPED_ROUTE_REQUIRED','status',403,'message','Study task requires scoped authorization'); end if;
   if not coalesce(util.is_service_request(), false) then
     return jsonb_build_object(
       'ok', false,
@@ -91185,7 +92745,7 @@ begin
   select *
     into v_job
   from private.worker_jobs
-  where (p_requested_by is null or requested_by = p_requested_by)
+  where job_kind not like 'study.%' and (p_requested_by is null or requested_by = p_requested_by)
     and (v_subject_type is null or subject_type = v_subject_type)
     and (p_subject_id is null or subject_id = p_subject_id)
     and (v_subject_version is null or subject_version = v_subject_version)
@@ -91218,6 +92778,7 @@ declare
   v_blocker_codes text[] := coalesce(p_blocker_codes, '{}'::text[]);
   v_job private.worker_jobs%rowtype;
 begin
+  if not private.study_generic_job_allowed(null,p_job_id,'complete') then return jsonb_build_object('ok',false,'code','STUDY_SCOPED_ROUTE_REQUIRED','status',403,'message','Study task requires scoped authorization'); end if;
   if not coalesce(util.is_service_request(), false) then
     return jsonb_build_object(
       'ok', false,
@@ -91459,6 +93020,7 @@ declare
   v_job private.worker_jobs%rowtype;
   v_retry_at timestamptz;
 begin
+  if not private.study_generic_job_allowed(null,p_job_id,'retry') then return jsonb_build_object('ok',false,'code','STUDY_SCOPED_ROUTE_REQUIRED','status',403,'message','Study task requires scoped authorization'); end if;
   if not coalesce(util.is_service_request(), false) then
     return jsonb_build_object(
       'ok', false,
@@ -102903,6 +104465,297 @@ CREATE TABLE IF NOT EXISTS "private"."roles" (
 ALTER TABLE "private"."roles" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "private"."studies" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "owner_id" "uuid" NOT NULL,
+    "team_id" "uuid",
+    "title" "text" NOT NULL,
+    "status" "text" DEFAULT 'active'::"text" NOT NULL,
+    "revision" bigint DEFAULT 1 NOT NULL,
+    "grant_epoch" bigint DEFAULT 1 NOT NULL,
+    "current_revision_id" "uuid",
+    "created_at" timestamp with time zone DEFAULT "clock_timestamp"() NOT NULL,
+    CONSTRAINT "studies_grant_epoch_check" CHECK (("grant_epoch" > 0)),
+    CONSTRAINT "studies_revision_check" CHECK ((("revision" >= 1) AND ("revision" <= '9007199254740991'::bigint))),
+    CONSTRAINT "studies_status_check" CHECK (("status" = ANY (ARRAY['active'::"text", 'archived'::"text"]))),
+    CONSTRAINT "studies_title_check" CHECK ((("length"("btrim"("title")) >= 1) AND ("length"("btrim"("title")) <= 512)))
+);
+
+ALTER TABLE ONLY "private"."studies" FORCE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."studies" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "private"."study_artifact_read_intents" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "study_id" "uuid" NOT NULL,
+    "artifact_id" "uuid" NOT NULL,
+    "artifact_ref" "jsonb" NOT NULL,
+    "actor_id" "uuid" NOT NULL,
+    "client_id" "text",
+    "expires_at" timestamp with time zone DEFAULT ("clock_timestamp"() + '00:02:00'::interval) NOT NULL
+);
+
+ALTER TABLE ONLY "private"."study_artifact_read_intents" FORCE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_artifact_read_intents" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "private"."study_artifacts" (
+    "id" "uuid" NOT NULL,
+    "study_id" "uuid" NOT NULL,
+    "ref" "jsonb" NOT NULL,
+    "bucket" "text" NOT NULL,
+    "object_path" "text" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "clock_timestamp"() NOT NULL,
+    CONSTRAINT "study_artifacts_bucket_check" CHECK ((("length"("bucket") >= 1) AND ("length"("bucket") <= 128))),
+    CONSTRAINT "study_artifacts_check" CHECK ((("ref" ->> 'id'::"text") = ("id")::"text")),
+    CONSTRAINT "study_artifacts_object_path_check" CHECK ((("length"("object_path") >= 1) AND ("length"("object_path") <= 1024))),
+    CONSTRAINT "study_artifacts_ref_check" CHECK (("jsonb_typeof"("ref") = 'object'::"text")),
+    CONSTRAINT "study_artifacts_ref_check1" CHECK ((("ref" ->> 'digestScope'::"text") = 'artifact_bytes_sha256'::"text")),
+    CONSTRAINT "study_artifacts_ref_check2" CHECK ((("ref" ->> 'contentHash'::"text") ~ '^[0-9a-f]{64}$'::"text")),
+    CONSTRAINT "study_artifacts_ref_check3" CHECK ((((("ref" ->> 'byteSize'::"text"))::bigint >= 1) AND ((("ref" ->> 'byteSize'::"text"))::bigint <= 4194304)))
+);
+
+ALTER TABLE ONLY "private"."study_artifacts" FORCE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_artifacts" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "private"."study_command_receipts" (
+    "actor_id" "uuid" NOT NULL,
+    "operation" "text" NOT NULL,
+    "scope" "text" NOT NULL,
+    "idempotency_key" "text" NOT NULL,
+    "request" "jsonb" NOT NULL,
+    "response" "jsonb" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "clock_timestamp"() NOT NULL,
+    CONSTRAINT "study_command_receipts_idempotency_key_check" CHECK ((("length"("idempotency_key") >= 1) AND ("length"("idempotency_key") <= 128)))
+);
+
+ALTER TABLE ONLY "private"."study_command_receipts" FORCE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_command_receipts" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "private"."study_cursors" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "actor_id" "uuid" NOT NULL,
+    "client_id" "text",
+    "selection" "jsonb" NOT NULL,
+    "access_epoch" "text" NOT NULL,
+    "after_id" "uuid" NOT NULL,
+    "expires_at" timestamp with time zone DEFAULT ("clock_timestamp"() + '00:05:00'::interval) NOT NULL
+);
+
+ALTER TABLE ONLY "private"."study_cursors" FORCE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_cursors" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "private"."study_members" (
+    "study_id" "uuid" NOT NULL,
+    "actor_id" "uuid" NOT NULL,
+    "role" "text" NOT NULL,
+    CONSTRAINT "study_members_role_check" CHECK (("role" = ANY (ARRAY['owner'::"text", 'editor'::"text", 'viewer'::"text"])))
+);
+
+ALTER TABLE ONLY "private"."study_members" FORCE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_members" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "private"."study_profiles" (
+    "profile_id" "text" NOT NULL,
+    "calculation_fingerprint" "text" NOT NULL,
+    "enabled" boolean DEFAULT false NOT NULL,
+    CONSTRAINT "study_profiles_profile_id_check" CHECK (("profile_id" = 'lca.study-explicit-v1'::"text"))
+);
+
+ALTER TABLE ONLY "private"."study_profiles" FORCE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_profiles" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "private"."study_revisions" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "study_id" "uuid" NOT NULL,
+    "parent_revision_id" "uuid",
+    "revision" bigint DEFAULT 1 NOT NULL,
+    "status" "text" DEFAULT 'draft'::"text" NOT NULL,
+    "content_hash" "text" NOT NULL,
+    "definition" "jsonb" NOT NULL,
+    "preparation_id" "uuid" NOT NULL,
+    "model_ref" "jsonb" NOT NULL,
+    "validation" "text" DEFAULT 'not_checked'::"text" NOT NULL,
+    "validation_evidence" "jsonb",
+    CONSTRAINT "study_revisions_check" CHECK (("parent_revision_id" IS DISTINCT FROM "id")),
+    CONSTRAINT "study_revisions_check1" CHECK ((("status" = 'frozen'::"text") = ("validation" = 'passed'::"text"))),
+    CONSTRAINT "study_revisions_check2" CHECK ((("validation" = 'passed'::"text") = ("validation_evidence" IS NOT NULL))),
+    CONSTRAINT "study_revisions_content_hash_check" CHECK (("content_hash" ~ '^[0-9a-f]{64}$'::"text")),
+    CONSTRAINT "study_revisions_definition_check" CHECK ("private"."study_definition_valid"("definition")),
+    CONSTRAINT "study_revisions_revision_check" CHECK ((("revision" >= 1) AND ("revision" <= '9007199254740991'::bigint))),
+    CONSTRAINT "study_revisions_status_check" CHECK (("status" = ANY (ARRAY['draft'::"text", 'frozen'::"text"]))),
+    CONSTRAINT "study_revisions_validation_check" CHECK (("validation" = ANY (ARRAY['not_checked'::"text", 'passed'::"text"])))
+);
+
+ALTER TABLE ONLY "private"."study_revisions" FORCE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_revisions" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "private"."study_runs" (
+    "id" "uuid" NOT NULL,
+    "study_id" "uuid" NOT NULL,
+    "study_revision_id" "uuid" NOT NULL,
+    "scenario_id" "uuid" NOT NULL,
+    "preparation_id" "uuid" NOT NULL,
+    "input_hash" "text" NOT NULL,
+    "model_ref" "jsonb" NOT NULL,
+    "profile_id" "text" NOT NULL,
+    "calculation_contract_ref" "jsonb" NOT NULL,
+    "job_id" "uuid" NOT NULL,
+    "result_artifact_id" "uuid",
+    "validity" "text" DEFAULT 'current'::"text" NOT NULL,
+    "validity_checked_at" timestamp with time zone DEFAULT "clock_timestamp"() NOT NULL,
+    "requested_client_id" "text",
+    CONSTRAINT "study_runs_input_hash_check" CHECK (("input_hash" ~ '^[0-9a-f]{64}$'::"text")),
+    CONSTRAINT "study_runs_validity_check" CHECK (("validity" = ANY (ARRAY['current'::"text", 'superseded'::"text", 'withdrawn'::"text", 'unknown'::"text"])))
+);
+
+ALTER TABLE ONLY "private"."study_runs" FORCE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_runs" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "private"."study_runtime_config" (
+    "singleton" boolean DEFAULT true NOT NULL,
+    "revision" bigint DEFAULT 1 NOT NULL,
+    "source_enabled" boolean DEFAULT false NOT NULL,
+    "compute_enabled" boolean DEFAULT false NOT NULL,
+    "disclosure_enabled" boolean DEFAULT false NOT NULL,
+    "qualification_evidence_ref" "text",
+    "method_refs" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "compiler_version" "text" DEFAULT 'study.compiler.v1'::"text" NOT NULL,
+    CONSTRAINT "study_runtime_config_compiler_version_check" CHECK (("compiler_version" = 'study.compiler.v1'::"text")),
+    CONSTRAINT "study_runtime_config_method_refs_check" CHECK (("jsonb_typeof"("method_refs") = 'array'::"text")),
+    CONSTRAINT "study_runtime_config_revision_check" CHECK (("revision" > 0)),
+    CONSTRAINT "study_runtime_config_singleton_check" CHECK ("singleton")
+);
+
+ALTER TABLE ONLY "private"."study_runtime_config" FORCE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_runtime_config" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "private"."study_scenarios" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "scenario_id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "study_id" "uuid" NOT NULL,
+    "study_revision_id" "uuid" NOT NULL,
+    "parent_scenario_id" "uuid",
+    "revision" bigint DEFAULT 1 NOT NULL,
+    "status" "text" DEFAULT 'draft'::"text" NOT NULL,
+    "content_hash" "text" NOT NULL,
+    "overrides" "jsonb" NOT NULL,
+    "preparation_id" "uuid",
+    "effective_model_ref" "jsonb",
+    CONSTRAINT "study_scenarios_check" CHECK (("parent_scenario_id" IS DISTINCT FROM "id")),
+    CONSTRAINT "study_scenarios_check1" CHECK ((("status" = 'frozen'::"text") = (("preparation_id" IS NOT NULL) AND ("effective_model_ref" IS NOT NULL)))),
+    CONSTRAINT "study_scenarios_content_hash_check" CHECK (("content_hash" ~ '^[0-9a-f]{64}$'::"text")),
+    CONSTRAINT "study_scenarios_overrides_check" CHECK ((("jsonb_typeof"("overrides") = 'array'::"text") AND ("jsonb_array_length"("overrides") <= 256))),
+    CONSTRAINT "study_scenarios_overrides_check1" CHECK ("private"."study_overrides_valid"("overrides")),
+    CONSTRAINT "study_scenarios_revision_check" CHECK ((("revision" >= 1) AND ("revision" <= '9007199254740991'::bigint))),
+    CONSTRAINT "study_scenarios_status_check" CHECK (("status" = ANY (ARRAY['draft'::"text", 'frozen'::"text"])))
+);
+
+ALTER TABLE ONLY "private"."study_scenarios" FORCE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_scenarios" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "private"."study_service_receipts" (
+    "operation" "text" NOT NULL,
+    "study_id" "uuid" NOT NULL,
+    "idempotency_key" "text" NOT NULL,
+    "job_id" "uuid" NOT NULL,
+    "lease_token" "uuid" NOT NULL,
+    "request" "jsonb" NOT NULL,
+    "response" "jsonb" NOT NULL,
+    CONSTRAINT "study_service_receipts_idempotency_key_check" CHECK ((("length"("idempotency_key") >= 1) AND ("length"("idempotency_key") <= 128)))
+);
+
+ALTER TABLE ONLY "private"."study_service_receipts" FORCE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_service_receipts" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "private"."study_source_acquisitions" (
+    "id" "uuid" NOT NULL,
+    "study_id" "uuid" NOT NULL,
+    "origin_ref" "jsonb" NOT NULL,
+    "requested_by" "uuid" NOT NULL,
+    "job_id" "uuid" NOT NULL,
+    "snapshot_id" "uuid",
+    "requested_client_id" "text",
+    "source_packet" "jsonb"
+);
+
+ALTER TABLE ONLY "private"."study_source_acquisitions" FORCE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_source_acquisitions" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "private"."study_source_snapshots" (
+    "id" "uuid" NOT NULL,
+    "study_id" "uuid" NOT NULL,
+    "acquisition_id" "uuid" NOT NULL,
+    "origin_ref" "jsonb" NOT NULL,
+    "artifact_id" "uuid" NOT NULL,
+    "license_ref" "text" NOT NULL,
+    "issuer_id" "text" NOT NULL,
+    "observed_at" timestamp with time zone NOT NULL,
+    "source_authorization" "jsonb" NOT NULL,
+    CONSTRAINT "study_source_snapshots_source_authorization_check" CHECK (("jsonb_typeof"("source_authorization") = 'object'::"text"))
+);
+
+ALTER TABLE ONLY "private"."study_source_snapshots" FORCE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_source_snapshots" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "private"."study_validation_intents" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "study_id" "uuid" NOT NULL,
+    "revision_id" "uuid" NOT NULL,
+    "actor_id" "uuid" NOT NULL,
+    "client_id" "text",
+    "binding" "jsonb" NOT NULL,
+    "expires_at" timestamp with time zone DEFAULT ("clock_timestamp"() + '00:02:00'::interval) NOT NULL,
+    "response" "jsonb",
+    "consumed_at" timestamp with time zone
+);
+
+ALTER TABLE ONLY "private"."study_validation_intents" FORCE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_validation_intents" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "private"."teams" (
     "id" "uuid" NOT NULL,
     "json" "jsonb",
@@ -104886,6 +106739,141 @@ ALTER TABLE ONLY "private"."roles"
 
 
 
+ALTER TABLE ONLY "private"."studies"
+    ADD CONSTRAINT "studies_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "private"."study_artifact_read_intents"
+    ADD CONSTRAINT "study_artifact_read_intents_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "private"."study_artifacts"
+    ADD CONSTRAINT "study_artifacts_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "private"."study_artifacts"
+    ADD CONSTRAINT "study_artifacts_study_id_id_key" UNIQUE ("study_id", "id");
+
+
+
+ALTER TABLE ONLY "private"."study_command_receipts"
+    ADD CONSTRAINT "study_command_receipts_pkey" PRIMARY KEY ("actor_id", "operation", "scope", "idempotency_key");
+
+
+
+ALTER TABLE ONLY "private"."study_cursors"
+    ADD CONSTRAINT "study_cursors_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "private"."study_members"
+    ADD CONSTRAINT "study_members_pkey" PRIMARY KEY ("study_id", "actor_id");
+
+
+
+ALTER TABLE ONLY "private"."study_model_preparations"
+    ADD CONSTRAINT "study_model_preparations_job_id_key" UNIQUE ("job_id");
+
+
+
+ALTER TABLE ONLY "private"."study_model_preparations"
+    ADD CONSTRAINT "study_model_preparations_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "private"."study_model_preparations"
+    ADD CONSTRAINT "study_model_preparations_study_id_id_key" UNIQUE ("study_id", "id");
+
+
+
+ALTER TABLE ONLY "private"."study_profiles"
+    ADD CONSTRAINT "study_profiles_pkey" PRIMARY KEY ("profile_id");
+
+
+
+ALTER TABLE ONLY "private"."study_revisions"
+    ADD CONSTRAINT "study_revisions_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "private"."study_revisions"
+    ADD CONSTRAINT "study_revisions_study_id_id_key" UNIQUE ("study_id", "id");
+
+
+
+ALTER TABLE ONLY "private"."study_runs"
+    ADD CONSTRAINT "study_runs_job_id_key" UNIQUE ("job_id");
+
+
+
+ALTER TABLE ONLY "private"."study_runs"
+    ADD CONSTRAINT "study_runs_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "private"."study_runs"
+    ADD CONSTRAINT "study_runs_study_id_id_key" UNIQUE ("study_id", "id");
+
+
+
+ALTER TABLE ONLY "private"."study_runtime_config"
+    ADD CONSTRAINT "study_runtime_config_pkey" PRIMARY KEY ("singleton");
+
+
+
+ALTER TABLE ONLY "private"."study_scenarios"
+    ADD CONSTRAINT "study_scenarios_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "private"."study_scenarios"
+    ADD CONSTRAINT "study_scenarios_study_id_id_key" UNIQUE ("study_id", "id");
+
+
+
+ALTER TABLE ONLY "private"."study_service_receipts"
+    ADD CONSTRAINT "study_service_receipts_pkey" PRIMARY KEY ("operation", "study_id", "idempotency_key");
+
+
+
+ALTER TABLE ONLY "private"."study_source_acquisitions"
+    ADD CONSTRAINT "study_source_acquisitions_job_id_key" UNIQUE ("job_id");
+
+
+
+ALTER TABLE ONLY "private"."study_source_acquisitions"
+    ADD CONSTRAINT "study_source_acquisitions_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "private"."study_source_acquisitions"
+    ADD CONSTRAINT "study_source_acquisitions_study_id_id_key" UNIQUE ("study_id", "id");
+
+
+
+ALTER TABLE ONLY "private"."study_source_snapshots"
+    ADD CONSTRAINT "study_source_snapshots_acquisition_id_key" UNIQUE ("acquisition_id");
+
+
+
+ALTER TABLE ONLY "private"."study_source_snapshots"
+    ADD CONSTRAINT "study_source_snapshots_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "private"."study_source_snapshots"
+    ADD CONSTRAINT "study_source_snapshots_study_id_id_key" UNIQUE ("study_id", "id");
+
+
+
+ALTER TABLE ONLY "private"."study_validation_intents"
+    ADD CONSTRAINT "study_validation_intents_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "private"."teams"
     ADD CONSTRAINT "teams_pkey" PRIMARY KEY ("id");
 
@@ -105983,6 +107971,134 @@ CREATE INDEX "roles_team_id_user_id_role_idx" ON "private"."roles" USING "btree"
 
 
 
+CREATE INDEX "study_acquisition_actor_idx" ON "private"."study_source_acquisitions" USING "btree" ("requested_by");
+
+
+
+CREATE INDEX "study_acquisition_snapshot_idx" ON "private"."study_source_acquisitions" USING "btree" ("snapshot_id");
+
+
+
+CREATE INDEX "study_artifact_intent_actor_idx" ON "private"."study_artifact_read_intents" USING "btree" ("actor_id");
+
+
+
+CREATE INDEX "study_artifact_intent_artifact_idx" ON "private"."study_artifact_read_intents" USING "btree" ("study_id", "artifact_id");
+
+
+
+CREATE INDEX "study_artifact_intent_expiry_idx" ON "private"."study_artifact_read_intents" USING "btree" ("expires_at", "id");
+
+
+
+CREATE INDEX "study_current_revision_idx" ON "private"."studies" USING "btree" ("current_revision_id");
+
+
+
+CREATE INDEX "study_cursor_actor_idx" ON "private"."study_cursors" USING "btree" ("actor_id");
+
+
+
+CREATE INDEX "study_cursor_expiry_idx" ON "private"."study_cursors" USING "btree" ("expires_at");
+
+
+
+CREATE INDEX "study_intent_actor_idx" ON "private"."study_validation_intents" USING "btree" ("actor_id");
+
+
+
+CREATE INDEX "study_intent_revision_idx" ON "private"."study_validation_intents" USING "btree" ("revision_id");
+
+
+
+CREATE INDEX "study_member_actor_idx" ON "private"."study_members" USING "btree" ("actor_id", "study_id");
+
+
+
+CREATE INDEX "study_owner_idx" ON "private"."studies" USING "btree" ("owner_id");
+
+
+
+CREATE INDEX "study_preparation_input_idx" ON "private"."study_model_preparations" USING "btree" ("input_artifact_id");
+
+
+
+CREATE INDEX "study_preparation_profile_idx" ON "private"."study_model_preparations" USING "btree" ("profile_id");
+
+
+
+CREATE INDEX "study_preparation_source_parent_idx" ON "private"."study_model_preparations" USING "btree" ("source_parent_scenario_id");
+
+
+
+CREATE INDEX "study_preparation_source_revision_idx" ON "private"."study_model_preparations" USING "btree" ("source_study_revision_id");
+
+
+
+CREATE INDEX "study_preparation_source_scenario_idx" ON "private"."study_model_preparations" USING "btree" ("source_scenario_id");
+
+
+
+CREATE INDEX "study_preparation_source_snapshot_idx" ON "private"."study_model_preparations" USING "btree" ("source_snapshot_id");
+
+
+
+CREATE INDEX "study_profile_calculation_idx" ON "private"."study_profiles" USING "btree" ("calculation_fingerprint");
+
+
+
+CREATE INDEX "study_revision_parent_idx" ON "private"."study_revisions" USING "btree" ("parent_revision_id");
+
+
+
+CREATE INDEX "study_revision_preparation_idx" ON "private"."study_revisions" USING "btree" ("preparation_id");
+
+
+
+CREATE INDEX "study_run_preparation_idx" ON "private"."study_runs" USING "btree" ("preparation_id");
+
+
+
+CREATE INDEX "study_run_result_idx" ON "private"."study_runs" USING "btree" ("result_artifact_id");
+
+
+
+CREATE INDEX "study_run_revision_idx" ON "private"."study_runs" USING "btree" ("study_revision_id");
+
+
+
+CREATE INDEX "study_run_scenario_idx" ON "private"."study_runs" USING "btree" ("scenario_id");
+
+
+
+CREATE INDEX "study_scenario_parent_idx" ON "private"."study_scenarios" USING "btree" ("parent_scenario_id");
+
+
+
+CREATE INDEX "study_scenario_preparation_idx" ON "private"."study_scenarios" USING "btree" ("preparation_id");
+
+
+
+CREATE INDEX "study_scenario_revision_idx" ON "private"."study_scenarios" USING "btree" ("study_revision_id");
+
+
+
+CREATE INDEX "study_service_receipt_job_idx" ON "private"."study_service_receipts" USING "btree" ("job_id");
+
+
+
+CREATE INDEX "study_service_receipt_study_idx" ON "private"."study_service_receipts" USING "btree" ("study_id");
+
+
+
+CREATE INDEX "study_snapshot_artifact_idx" ON "private"."study_source_snapshots" USING "btree" ("artifact_id");
+
+
+
+CREATE INDEX "study_team_idx" ON "private"."studies" USING "btree" ("team_id");
+
+
+
 CREATE INDEX "worker_job_artifacts_job_created_idx" ON "private"."worker_job_artifacts" USING "btree" ("job_id", "created_at" DESC);
 
 
@@ -106948,6 +109064,34 @@ CREATE OR REPLACE TRIGGER "reviews_v2_kind_guard" BEFORE INSERT OR UPDATE ON "pr
 
 
 CREATE OR REPLACE TRIGGER "roles_set_modified_at_trigger" BEFORE UPDATE ON "private"."roles" FOR EACH ROW EXECUTE FUNCTION "private"."update_modified_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "study_acquisition_immutable" BEFORE DELETE OR UPDATE ON "private"."study_source_acquisitions" FOR EACH ROW EXECUTE FUNCTION "private"."study_guard_immutable"();
+
+
+
+CREATE OR REPLACE TRIGGER "study_artifact_immutable" BEFORE DELETE OR UPDATE ON "private"."study_artifacts" FOR EACH ROW EXECUTE FUNCTION "private"."study_guard_immutable"();
+
+
+
+CREATE OR REPLACE TRIGGER "study_preparation_immutable" BEFORE DELETE OR UPDATE ON "private"."study_model_preparations" FOR EACH ROW EXECUTE FUNCTION "private"."study_guard_immutable"();
+
+
+
+CREATE OR REPLACE TRIGGER "study_revision_immutable" BEFORE DELETE OR UPDATE ON "private"."study_revisions" FOR EACH ROW EXECUTE FUNCTION "private"."study_guard_immutable"();
+
+
+
+CREATE OR REPLACE TRIGGER "study_run_immutable" BEFORE DELETE OR UPDATE ON "private"."study_runs" FOR EACH ROW EXECUTE FUNCTION "private"."study_guard_immutable"();
+
+
+
+CREATE OR REPLACE TRIGGER "study_scenario_immutable" BEFORE DELETE OR UPDATE ON "private"."study_scenarios" FOR EACH ROW EXECUTE FUNCTION "private"."study_guard_immutable"();
+
+
+
+CREATE OR REPLACE TRIGGER "study_snapshot_immutable" BEFORE DELETE OR UPDATE ON "private"."study_source_snapshots" FOR EACH ROW EXECUTE FUNCTION "private"."study_guard_immutable"();
 
 
 
@@ -108048,6 +110192,231 @@ ALTER TABLE ONLY "private"."roles"
 
 
 
+ALTER TABLE ONLY "private"."studies"
+    ADD CONSTRAINT "studies_id_current_revision_id_fkey" FOREIGN KEY ("id", "current_revision_id") REFERENCES "private"."study_revisions"("study_id", "id");
+
+
+
+ALTER TABLE ONLY "private"."studies"
+    ADD CONSTRAINT "studies_owner_id_fkey" FOREIGN KEY ("owner_id") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "private"."studies"
+    ADD CONSTRAINT "studies_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "private"."teams"("id");
+
+
+
+ALTER TABLE ONLY "private"."study_artifact_read_intents"
+    ADD CONSTRAINT "study_artifact_read_intents_actor_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "private"."study_artifact_read_intents"
+    ADD CONSTRAINT "study_artifact_read_intents_study_id_artifact_id_fkey" FOREIGN KEY ("study_id", "artifact_id") REFERENCES "private"."study_artifacts"("study_id", "id");
+
+
+
+ALTER TABLE ONLY "private"."study_artifact_read_intents"
+    ADD CONSTRAINT "study_artifact_read_intents_study_id_fkey" FOREIGN KEY ("study_id") REFERENCES "private"."studies"("id");
+
+
+
+ALTER TABLE ONLY "private"."study_artifacts"
+    ADD CONSTRAINT "study_artifacts_study_id_fkey" FOREIGN KEY ("study_id") REFERENCES "private"."studies"("id");
+
+
+
+ALTER TABLE ONLY "private"."study_command_receipts"
+    ADD CONSTRAINT "study_command_receipts_actor_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "private"."study_cursors"
+    ADD CONSTRAINT "study_cursors_actor_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "private"."study_members"
+    ADD CONSTRAINT "study_members_actor_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "private"."study_members"
+    ADD CONSTRAINT "study_members_study_id_fkey" FOREIGN KEY ("study_id") REFERENCES "private"."studies"("id");
+
+
+
+ALTER TABLE ONLY "private"."study_model_preparations"
+    ADD CONSTRAINT "study_model_preparations_job_id_fkey" FOREIGN KEY ("job_id") REFERENCES "private"."worker_jobs"("id");
+
+
+
+ALTER TABLE ONLY "private"."study_model_preparations"
+    ADD CONSTRAINT "study_model_preparations_profile_id_fkey" FOREIGN KEY ("profile_id") REFERENCES "private"."study_profiles"("profile_id");
+
+
+
+ALTER TABLE ONLY "private"."study_model_preparations"
+    ADD CONSTRAINT "study_model_preparations_study_id_fkey" FOREIGN KEY ("study_id") REFERENCES "private"."studies"("id");
+
+
+
+ALTER TABLE ONLY "private"."study_model_preparations"
+    ADD CONSTRAINT "study_model_preparations_study_id_input_artifact_id_fkey" FOREIGN KEY ("study_id", "input_artifact_id") REFERENCES "private"."study_artifacts"("study_id", "id");
+
+
+
+ALTER TABLE ONLY "private"."study_model_preparations"
+    ADD CONSTRAINT "study_model_preparations_study_id_source_parent_scenario_i_fkey" FOREIGN KEY ("study_id", "source_parent_scenario_id") REFERENCES "private"."study_scenarios"("study_id", "id");
+
+
+
+ALTER TABLE ONLY "private"."study_model_preparations"
+    ADD CONSTRAINT "study_model_preparations_study_id_source_scenario_id_fkey" FOREIGN KEY ("study_id", "source_scenario_id") REFERENCES "private"."study_scenarios"("study_id", "id");
+
+
+
+ALTER TABLE ONLY "private"."study_model_preparations"
+    ADD CONSTRAINT "study_model_preparations_study_id_source_snapshot_id_fkey" FOREIGN KEY ("study_id", "source_snapshot_id") REFERENCES "private"."study_source_snapshots"("study_id", "id");
+
+
+
+ALTER TABLE ONLY "private"."study_model_preparations"
+    ADD CONSTRAINT "study_model_preparations_study_id_source_study_revision_id_fkey" FOREIGN KEY ("study_id", "source_study_revision_id") REFERENCES "private"."study_revisions"("study_id", "id");
+
+
+
+ALTER TABLE ONLY "private"."study_profiles"
+    ADD CONSTRAINT "study_profiles_calculation_fingerprint_fkey" FOREIGN KEY ("calculation_fingerprint") REFERENCES "private"."lca_calculation_contracts"("fingerprint");
+
+
+
+ALTER TABLE ONLY "private"."study_revisions"
+    ADD CONSTRAINT "study_revisions_study_id_fkey" FOREIGN KEY ("study_id") REFERENCES "private"."studies"("id");
+
+
+
+ALTER TABLE ONLY "private"."study_revisions"
+    ADD CONSTRAINT "study_revisions_study_id_parent_revision_id_fkey" FOREIGN KEY ("study_id", "parent_revision_id") REFERENCES "private"."study_revisions"("study_id", "id");
+
+
+
+ALTER TABLE ONLY "private"."study_revisions"
+    ADD CONSTRAINT "study_revisions_study_id_preparation_id_fkey" FOREIGN KEY ("study_id", "preparation_id") REFERENCES "private"."study_model_preparations"("study_id", "id");
+
+
+
+ALTER TABLE ONLY "private"."study_runs"
+    ADD CONSTRAINT "study_runs_job_id_fkey" FOREIGN KEY ("job_id") REFERENCES "private"."worker_jobs"("id");
+
+
+
+ALTER TABLE ONLY "private"."study_runs"
+    ADD CONSTRAINT "study_runs_study_id_fkey" FOREIGN KEY ("study_id") REFERENCES "private"."studies"("id");
+
+
+
+ALTER TABLE ONLY "private"."study_runs"
+    ADD CONSTRAINT "study_runs_study_id_preparation_id_fkey" FOREIGN KEY ("study_id", "preparation_id") REFERENCES "private"."study_model_preparations"("study_id", "id");
+
+
+
+ALTER TABLE ONLY "private"."study_runs"
+    ADD CONSTRAINT "study_runs_study_id_result_artifact_id_fkey" FOREIGN KEY ("study_id", "result_artifact_id") REFERENCES "private"."study_artifacts"("study_id", "id");
+
+
+
+ALTER TABLE ONLY "private"."study_runs"
+    ADD CONSTRAINT "study_runs_study_id_scenario_id_fkey" FOREIGN KEY ("study_id", "scenario_id") REFERENCES "private"."study_scenarios"("study_id", "id");
+
+
+
+ALTER TABLE ONLY "private"."study_runs"
+    ADD CONSTRAINT "study_runs_study_id_study_revision_id_fkey" FOREIGN KEY ("study_id", "study_revision_id") REFERENCES "private"."study_revisions"("study_id", "id");
+
+
+
+ALTER TABLE ONLY "private"."study_scenarios"
+    ADD CONSTRAINT "study_scenarios_study_id_fkey" FOREIGN KEY ("study_id") REFERENCES "private"."studies"("id");
+
+
+
+ALTER TABLE ONLY "private"."study_scenarios"
+    ADD CONSTRAINT "study_scenarios_study_id_parent_scenario_id_fkey" FOREIGN KEY ("study_id", "parent_scenario_id") REFERENCES "private"."study_scenarios"("study_id", "id");
+
+
+
+ALTER TABLE ONLY "private"."study_scenarios"
+    ADD CONSTRAINT "study_scenarios_study_id_preparation_id_fkey" FOREIGN KEY ("study_id", "preparation_id") REFERENCES "private"."study_model_preparations"("study_id", "id");
+
+
+
+ALTER TABLE ONLY "private"."study_scenarios"
+    ADD CONSTRAINT "study_scenarios_study_id_study_revision_id_fkey" FOREIGN KEY ("study_id", "study_revision_id") REFERENCES "private"."study_revisions"("study_id", "id");
+
+
+
+ALTER TABLE ONLY "private"."study_service_receipts"
+    ADD CONSTRAINT "study_service_receipts_job_id_fkey" FOREIGN KEY ("job_id") REFERENCES "private"."worker_jobs"("id");
+
+
+
+ALTER TABLE ONLY "private"."study_service_receipts"
+    ADD CONSTRAINT "study_service_receipts_study_id_fkey" FOREIGN KEY ("study_id") REFERENCES "private"."studies"("id");
+
+
+
+ALTER TABLE ONLY "private"."study_source_acquisitions"
+    ADD CONSTRAINT "study_source_acquisitions_job_id_fkey" FOREIGN KEY ("job_id") REFERENCES "private"."worker_jobs"("id");
+
+
+
+ALTER TABLE ONLY "private"."study_source_acquisitions"
+    ADD CONSTRAINT "study_source_acquisitions_requested_by_fkey" FOREIGN KEY ("requested_by") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "private"."study_source_acquisitions"
+    ADD CONSTRAINT "study_source_acquisitions_study_id_fkey" FOREIGN KEY ("study_id") REFERENCES "private"."studies"("id");
+
+
+
+ALTER TABLE ONLY "private"."study_source_acquisitions"
+    ADD CONSTRAINT "study_source_acquisitions_study_id_snapshot_id_fkey" FOREIGN KEY ("study_id", "snapshot_id") REFERENCES "private"."study_source_snapshots"("study_id", "id");
+
+
+
+ALTER TABLE ONLY "private"."study_source_snapshots"
+    ADD CONSTRAINT "study_source_snapshots_study_id_acquisition_id_fkey" FOREIGN KEY ("study_id", "acquisition_id") REFERENCES "private"."study_source_acquisitions"("study_id", "id");
+
+
+
+ALTER TABLE ONLY "private"."study_source_snapshots"
+    ADD CONSTRAINT "study_source_snapshots_study_id_artifact_id_fkey" FOREIGN KEY ("study_id", "artifact_id") REFERENCES "private"."study_artifacts"("study_id", "id");
+
+
+
+ALTER TABLE ONLY "private"."study_source_snapshots"
+    ADD CONSTRAINT "study_source_snapshots_study_id_fkey" FOREIGN KEY ("study_id") REFERENCES "private"."studies"("id");
+
+
+
+ALTER TABLE ONLY "private"."study_validation_intents"
+    ADD CONSTRAINT "study_validation_intents_actor_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "auth"."users"("id");
+
+
+
+ALTER TABLE ONLY "private"."study_validation_intents"
+    ADD CONSTRAINT "study_validation_intents_study_id_fkey" FOREIGN KEY ("study_id") REFERENCES "private"."studies"("id");
+
+
+
+ALTER TABLE ONLY "private"."study_validation_intents"
+    ADD CONSTRAINT "study_validation_intents_study_id_revision_id_fkey" FOREIGN KEY ("study_id", "revision_id") REFERENCES "private"."study_revisions"("study_id", "id");
+
+
+
 ALTER TABLE ONLY "private"."tidas_import_groups_v2"
     ADD CONSTRAINT "tidas_import_groups_v2_worker_job_id_fkey" FOREIGN KEY ("worker_job_id") REFERENCES "private"."tidas_import_plans_v2"("worker_job_id");
 
@@ -108779,6 +111148,54 @@ CREATE POLICY "select by self and team and admin" ON "private"."users" FOR SELEC
            FROM "private"."roles" "r"
           WHERE (("r"."user_id" = ( SELECT "auth"."uid"() AS "uid")) AND (("r"."role")::"text" <> 'rejected'::"text")))))) OR "api"."policy_is_current_user_in_roles"('00000000-0000-0000-0000-000000000000'::"uuid", ARRAY['admin'::"text", 'review-admin'::"text", 'review-member'::"text"])));
 
+
+
+ALTER TABLE "private"."studies" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_artifact_read_intents" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_artifacts" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_command_receipts" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_cursors" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_members" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_model_preparations" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_profiles" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_revisions" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_runs" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_runtime_config" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_scenarios" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_service_receipts" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_source_acquisitions" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_source_snapshots" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."study_validation_intents" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "private"."teams" ENABLE ROW LEVEL SECURITY;
@@ -109747,6 +112164,11 @@ GRANT ALL ON FUNCTION "api"."cmd_reviewer_submit_decision"("p_review_id" "uuid",
 REVOKE ALL ON FUNCTION "api"."cmd_simple_review_submit_decision"("p_review_id" "uuid", "p_decision" "text", "p_reason" "text", "p_audit" "jsonb") FROM PUBLIC;
 GRANT ALL ON FUNCTION "api"."cmd_simple_review_submit_decision"("p_review_id" "uuid", "p_decision" "text", "p_reason" "text", "p_audit" "jsonb") TO "api_internal_executor";
 GRANT ALL ON FUNCTION "api"."cmd_simple_review_submit_decision"("p_review_id" "uuid", "p_decision" "text", "p_reason" "text", "p_audit" "jsonb") TO "authenticated";
+
+
+
+REVOKE ALL ON FUNCTION "api"."cmd_study_v1"("p_request" "jsonb") FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."cmd_study_v1"("p_request" "jsonb") TO "authenticated";
 
 
 
@@ -110938,6 +113360,11 @@ GRANT ALL ON FUNCTION "api"."qry_source_final_results_v2"("p_source_id" "uuid", 
 
 
 
+REVOKE ALL ON FUNCTION "api"."qry_study_v1"("p_request" "jsonb") FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."qry_study_v1"("p_request" "jsonb") TO "authenticated";
+
+
+
 REVOKE ALL ON FUNCTION "api"."qry_system_find_member_candidate_by_email"("p_email" "text") FROM PUBLIC;
 GRANT ALL ON FUNCTION "api"."qry_system_find_member_candidate_by_email"("p_email" "text") TO "authenticated";
 
@@ -111351,6 +113778,61 @@ GRANT ALL ON FUNCTION "api"."svc_result_query_stage_v2"("p_artifact_ref" "jsonb"
 
 REVOKE ALL ON FUNCTION "api"."svc_schema_contract_status"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "api"."svc_schema_contract_status"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "api"."svc_study_artifact_read_resolve_v1"("p_intent_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."svc_study_artifact_read_resolve_v1"("p_intent_id" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "api"."svc_study_model_preparation_complete_v1"("p_preparation_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid", "p_completion" "jsonb", "p_idempotency_key" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."svc_study_model_preparation_complete_v1"("p_preparation_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid", "p_completion" "jsonb", "p_idempotency_key" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "api"."svc_study_model_preparation_read_input_v1"("p_preparation_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."svc_study_model_preparation_read_input_v1"("p_preparation_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "api"."svc_study_revision_freeze_consume_v1"("p_intent_id" "uuid", "p_outcome" "text", "p_error_code" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."svc_study_revision_freeze_consume_v1"("p_intent_id" "uuid", "p_outcome" "text", "p_error_code" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "api"."svc_study_run_complete_v1"("p_run_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid", "p_completion" "jsonb", "p_idempotency_key" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."svc_study_run_complete_v1"("p_run_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid", "p_completion" "jsonb", "p_idempotency_key" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "api"."svc_study_run_read_input_v1"("p_run_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."svc_study_run_read_input_v1"("p_run_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "api"."svc_study_runtime_configure_v1"("p_expected_revision" bigint, "p_configuration" "jsonb") FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."svc_study_runtime_configure_v1"("p_expected_revision" bigint, "p_configuration" "jsonb") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "api"."svc_study_source_acquisition_read_input_v1"("p_acquisition_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."svc_study_source_acquisition_read_input_v1"("p_acquisition_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "api"."svc_study_source_record_v1"("p_acquisition_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid", "p_completion" "jsonb", "p_idempotency_key" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."svc_study_source_record_v1"("p_acquisition_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid", "p_completion" "jsonb", "p_idempotency_key" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "api"."svc_study_task_fail_v1"("p_resource_type" "text", "p_resource_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid", "p_error_code" "text", "p_idempotency_key" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."svc_study_task_fail_v1"("p_resource_type" "text", "p_resource_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid", "p_error_code" "text", "p_idempotency_key" "text") TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "api"."svc_study_task_reconcile_v1"("p_resource_type" "text", "p_resource_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid", "p_idempotency_key" "text", "p_artifact_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."svc_study_task_reconcile_v1"("p_resource_type" "text", "p_resource_id" "uuid", "p_job_id" "uuid", "p_lease_token" "uuid", "p_idempotency_key" "text", "p_artifact_id" "uuid") TO "service_role";
 
 
 
@@ -114063,6 +116545,163 @@ GRANT ALL ON FUNCTION "private"."semantic_simple_dataset_search"("p_table" "regc
 REVOKE ALL ON FUNCTION "private"."sources_sync_jsonb_version"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "private"."sources_sync_jsonb_version"() TO "service_role";
 GRANT ALL ON FUNCTION "private"."sources_sync_jsonb_version"() TO "api_internal_executor";
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_access_epoch"("p_actor" "uuid", "p_study" "uuid") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_artifact_authorize"("p_study" "uuid", "p_ref" "jsonb", "p_actor" "uuid", "p_client" "text") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_artifact_capability"("p_request" "jsonb") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_assert_provenance"("p_study" "uuid") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_authorize"("p_study" "uuid", "p_actor" "uuid", "p_client" "text", "p_action" "text") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_capture_source"("p_origin" "jsonb", "p_actor" "uuid", "p_client" "text") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_client_allowed"("p_client" "text", "p_capability" "text") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_cmd_core_v1"("p_request" "jsonb") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_complete"("p_kind" "text", "p_id" "uuid", "p_job" "uuid", "p_token" "uuid", "p_completion" "jsonb", "p_key" "text") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_content_hash"("p_domain" "text", "p_document" "jsonb") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_cutoffs_valid"("p_value" "jsonb") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_definition_valid"("p_definition" "jsonb") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_enqueue"("p_kind" "text", "p_study" "uuid", "p_resource" "uuid", "p_actor" "uuid", "p_team" "uuid", "p_key" "text", "p_request" "jsonb") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_generic_job_allowed"("p_kind" "text", "p_job" "uuid", "p_action" "text") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_guard_immutable"() FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_keys"("p_value" "jsonb", "p_keys" "text"[]) FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_lock_job"("p_study" "uuid", "p_job" "uuid", "p_token" "uuid", "p_kind" "text", "p_subject" "text", "p_id" "uuid") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_method_refs_valid"("p_refs" "jsonb") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_overrides_valid"("p_overrides" "jsonb") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_preparation_snapshot"("p_study" "uuid", "p_preparation" "uuid") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_private_artifact"("p_study" "uuid", "p_id" "uuid") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_qry_core_v1"("p_request" "jsonb") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_qualified_preparation"("p_study" "uuid", "p_id" "uuid") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_read_worker_input"("p_kind" "text", "p_id" "uuid", "p_job" "uuid", "p_token" "uuid") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_record"("p_kind" "text", "p_id" "uuid") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_require"("p_condition" boolean, "p_code" "text") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_resource_job"("p_study" "uuid", "p_type" "text", "p_id" "uuid") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_snapshot_rights"("p_snapshot" "uuid", "p_actor" "uuid", "p_client" "text") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_source_document"("p_kind" "text", "p_id" "text", "p_version" "text", "p_actor" "uuid", "p_client" "text") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_source_items"("p_value" "jsonb") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_source_ref"("p_kind" "text", "p_ref" "jsonb") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_source_rights"("p_scope" "jsonb", "p_actor" "uuid", "p_client" "text") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_source_visible_row"("p_kind" "text", "p_id" "uuid", "p_version" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "private"."study_source_visible_row"("p_kind" "text", "p_id" "uuid", "p_version" "text") TO "postgres";
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_store_artifact"("p_study" "uuid", "p_ref" "jsonb", "p_bucket" "text", "p_path" "text", "p_type" "text") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_task_command"("p_request" "jsonb") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_task_control"("p_request" "jsonb") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_team_member"("p_actor" "uuid", "p_team" "uuid") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_text"("p_value" "jsonb", "p_max" integer, "p_pattern" "text") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."study_validate_task_completion"("p_kind" "text", "p_id" "uuid", "p_completion" "jsonb") FROM PUBLIC;
 
 
 

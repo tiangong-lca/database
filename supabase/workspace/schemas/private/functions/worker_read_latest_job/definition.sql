@@ -43,7 +43,7 @@ begin
   select *
     into v_job
   from private.worker_jobs
-  where (p_requested_by is null or requested_by = p_requested_by)
+  where job_kind not like 'study.%' and (p_requested_by is null or requested_by = p_requested_by)
     and (v_subject_type is null or subject_type = v_subject_type)
     and (p_subject_id is null or subject_id = p_subject_id)
     and (v_subject_version is null or subject_version = v_subject_version)

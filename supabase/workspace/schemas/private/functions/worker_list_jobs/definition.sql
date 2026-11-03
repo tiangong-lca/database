@@ -29,7 +29,8 @@ begin
   from (
     select *
     from private.worker_jobs
-    where (p_requested_by is null or requested_by = p_requested_by)
+    where job_kind not like 'study.%'
+      and (p_requested_by is null or requested_by = p_requested_by)
       and (p_subject_type is null or subject_type = p_subject_type)
       and (p_subject_id is null or subject_id = p_subject_id)
       and (p_visibility is null or visibility = p_visibility)

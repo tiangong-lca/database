@@ -1,0 +1,53 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+set local search_path=extensions,public,api,private,pg_temp;
+select no_plan();
+\ir fixtures/study894_runtime_fixture.sql
+-- This suite verifies SQL authority with real source/RLS and synthetic numerical
+-- artifact metadata. The live HTTP/Worker/Storage receipt owns byte qualification.
+update private.study_runtime_config set disclosure_enabled=true where singleton;
+select pg_temp.study894_claim(null,null,true);
+select ok((api.svc_study_model_preparation_complete_v1('89400000-0000-4000-8000-000000000021','89400000-0000-4000-8000-000000000031','89400000-0000-4000-8000-000000000041',pg_temp.study894_complete(),'disclosure-base')->>'ok')::boolean,'bound current producer issues synthetic preparation for SQL disclosure checks');
+create temp table study895_disclosure_results(k text primary key,v jsonb);
+create function pg_temp.keep(p_key text,p_value jsonb) returns jsonb language plpgsql as $$begin insert into study895_disclosure_results values(p_key,p_value) on conflict(k) do update set v=excluded.v;return p_value;end$$;
+create function pg_temp.val(p_key text) returns jsonb language sql as $$select v from study895_disclosure_results where k=p_key$$;
+create function pg_temp.artifact_request() returns jsonb language sql as $$select jsonb_build_object('schemaVersion','lca.study-api.v2','requestId',gen_random_uuid(),'operation','artifact.read','studyId','89400000-0000-4000-8000-000000000010','artifactRef',pg_temp.study894_complete()->'inputArtifactRef')$$;
+select pg_temp.study894_claim(1);
+select ok((pg_temp.keep('intent',api.qry_study_v1(pg_temp.artifact_request()))->>'ok')::boolean,'current owner obtains an opaque read intent');
+select is(pg_temp.val('intent')->'data'->>'kind','artifactReadIntent','actor response is the closed intent variant');
+select ok(not(pg_temp.val('intent')->'data' ?| array['storageBucket','storageObjectPath','sourceAuthorization','actorId','clientId']),'actor never receives storage or original-actor metadata');
+select is(api.qry_study_v1(jsonb_set(pg_temp.artifact_request(),'{artifactRef,contentHash}',to_jsonb(repeat('e',64))))->>'code','REFERENCE_MISMATCH','same artifact ID cannot select a different immutable byte identity');
+select is(api.qry_study_v1(jsonb_set(pg_temp.artifact_request(),'{artifactRef}',(select ref from private.study_artifacts where id='89400000-0000-4000-8000-000000000060')))->>'code','DISCLOSURE_DENIED','raw source packets remain undisclosable even to the Study owner');
+select pg_temp.study894_claim(2);
+select is(api.qry_study_v1(pg_temp.artifact_request())->>'code','FORBIDDEN','another authenticated actor cannot obtain the personal Study artifact');
+select pg_temp.study894_claim(null,null,true);
+select ok((api.svc_study_artifact_read_resolve_v1((pg_temp.val('intent')->'data'->>'intentId')::uuid)->>'ok')::boolean,'service resolves intent only after checking its original actor rights');
+select is(api.svc_study_artifact_read_resolve_v1(gen_random_uuid())->>'code','CAPABILITY_UNAVAILABLE','unknown opaque intent grants no locator');
+update private.study_artifact_read_intents set expires_at=clock_timestamp()-interval '1 second' where id=(pg_temp.val('intent')->'data'->>'intentId')::uuid;
+select is(api.svc_study_artifact_read_resolve_v1((pg_temp.val('intent')->'data'->>'intentId')::uuid)->>'code','CAPABILITY_UNAVAILABLE','expired intent grants no locator');
+insert into private.oauth_client_registry(client_id,client_kind,enabled) values('study895-disclosure-client','manual',true);
+insert into private.oauth_client_capability_grants(client_id,capability_id) values('study895-disclosure-client','STUDY-READ-01'),('study895-disclosure-client','DB-CORE-READ-01');
+select pg_temp.study894_claim(1,'study895-disclosure-client');
+select ok((pg_temp.keep('client-intent',api.qry_study_v1(pg_temp.artifact_request()))->>'ok')::boolean,'narrow live read and data capabilities permit an intent');
+update private.oauth_client_registry set enabled=false,disabled_at=clock_timestamp() where client_id='study895-disclosure-client';
+select pg_temp.study894_claim(null,null,true);
+select is(api.svc_study_artifact_read_resolve_v1((pg_temp.val('client-intent')->'data'->>'intentId')::uuid)->>'code','FORBIDDEN','client revocation after admission fences service disclosure');
+select pg_temp.study894_claim(1);
+delete from private.study_artifact_read_intents where actor_id='89400000-0000-4000-8000-000000000001';
+do $$declare i integer;r jsonb;begin for i in 1..64 loop r:=api.qry_study_v1(pg_temp.artifact_request());if r->>'ok' is distinct from 'true' then raise exception 'intent admission % failed: %',i,r;end if;end loop;end$$;
+select is((select count(*) from private.study_artifact_read_intents where actor_id='89400000-0000-4000-8000-000000000001'),64::bigint,'one actor has a bounded set of 64 outstanding intents');
+select is(api.qry_study_v1(pg_temp.artifact_request())->>'code','CAPABILITY_UNAVAILABLE','the next outstanding intent is rejected without replacing authority');
+select is((select count(*) from private.study_artifact_read_intents where actor_id='89400000-0000-4000-8000-000000000001'),64::bigint,'budget rejection leaves no extra intent');
+update private.study_artifact_read_intents set expires_at=clock_timestamp()-interval '1 second' where actor_id='89400000-0000-4000-8000-000000000001';
+select ok((api.qry_study_v1(pg_temp.artifact_request())->>'ok')::boolean,'expired own intents release budget on a subsequent authorized read');
+select is((select count(*) from private.study_artifact_read_intents where actor_id='89400000-0000-4000-8000-000000000001'),1::bigint,'successful read prunes expired entries');
+delete from private.study_artifact_read_intents where actor_id='89400000-0000-4000-8000-000000000001';
+insert into private.study_artifact_read_intents(study_id,artifact_id,artifact_ref,actor_id,expires_at)
+select '89400000-0000-4000-8000-000000000010','89400000-0000-4000-8000-000000000061',pg_temp.study894_complete()->'inputArtifactRef','89400000-0000-4000-8000-000000000001',clock_timestamp()-interval '1 second' from generate_series(1,300);
+select ok((api.qry_study_v1(pg_temp.artifact_request())->>'ok')::boolean,'cleanup work remains bounded under a backlog of expired intents');
+select is((select count(*) from private.study_artifact_read_intents where expires_at<=clock_timestamp()),44::bigint,'one read deletes at most 256 expired intents');
+select pg_temp.study894_claim(null,null,true);
+update public.lifecyclemodels set state_code=20 where id='89400000-0000-4000-8000-000000000101';
+select is(api.svc_study_artifact_read_resolve_v1((select id from private.study_artifact_read_intents where expires_at>clock_timestamp() limit 1))->>'code','DISCLOSURE_DENIED','current source withdrawal fences an already issued intent');
+select * from finish();
+rollback;

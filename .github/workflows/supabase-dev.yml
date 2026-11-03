@@ -121,6 +121,10 @@ jobs:
 
       - name: Verify schema and capability contracts
         run: |
+          supabase test db supabase/tests/20261103_study_durable_runtime.sql
+          supabase test db supabase/tests/20261103_study_task_admission.sql
+          supabase test db supabase/tests/20261103_study_task_disclosure.sql
+          supabase test db supabase/tests/20261103_study_task_input_parity.sql
           supabase test db supabase/tests/20261006_search_request_identity.sql
           supabase test db supabase/tests/20260920_portal_china_administrative_navigation.sql
           supabase test db supabase/tests/20260805_full_schema_cutover.sql
@@ -1028,3 +1032,62 @@ jobs:
             and (has("schemaVersion") | not)
             and (has("items") | not)
           ' "$invalid_file" >/dev/null
+
+  study-runtime-concurrency:
+    name: Verify isolated Study PG17 concurrency
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: supabase/setup-cli@v3
+        with:
+          version: 2.117.0
+      - name: Prepare independently owned Study project
+        run: python3 scripts/prepare_study_runtime_project.py --destination "$RUNNER_TEMP/study894"
+      - name: Rebuild isolated candidate
+        shell: bash
+        run: |
+          # CLI startup prints generated local keys: keep its raw output private.
+          umask 077
+          supabase start --workdir "$RUNNER_TEMP/study894" \
+            -x studio,imgproxy,mailpit,postgres-meta,edge-runtime,logflare,vector,supavisor,realtime \
+            > "$RUNNER_TEMP/study894-start.log" 2>&1
+      - name: Verify populated predecessor and blank Study rebuild
+        env:
+          STUDY_RUNTIME_UPGRADE_ALLOW_RESET: isolated
+        run: python3 -B scripts/test_study_runtime_upgrade.py --workdir "$RUNNER_TEMP/study894" --report "$RUNNER_TEMP/study894-upgrade.json"
+      - name: Observe independent Study transaction races
+        run: python3 -B supabase/tests/regression/20261103_study_runtime_concurrency.py --report "$RUNNER_TEMP/study894-concurrency.json"
+      - name: Verify real Study actor and OAuth PostgREST transport
+        run: python3 -B supabase/tests/regression/20261103_study_runtime_transport.py --workdir "$RUNNER_TEMP/study894" --report "$RUNNER_TEMP/study894-transport.json"
+      - name: Verify concurrent first source reads recover one immutable packet
+        run: python3 -B supabase/tests/regression/20261103_study_source_concurrency.py --report "$RUNNER_TEMP/study895-source-concurrency.json"
+      - name: Preserve bounded Study proof summary
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/study894-concurrency.json" ]; then
+            cat "$RUNNER_TEMP/study894-concurrency.json" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f "$RUNNER_TEMP/study894-upgrade.json" ]; then
+            cat "$RUNNER_TEMP/study894-upgrade.json" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f "$RUNNER_TEMP/study894-transport.json" ]; then
+            cat "$RUNNER_TEMP/study894-transport.json" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f "$RUNNER_TEMP/study895-source-concurrency.json" ]; then
+            cat "$RUNNER_TEMP/study895-source-concurrency.json" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Release only the owned Study project
+        if: always()
+        shell: bash
+        run: |
+          if [ -f "$RUNNER_TEMP/study894/ownership.json" ]; then
+            supabase stop --project-id study894 --no-backup
+            remaining="$(docker ps -aq --filter label=com.supabase.cli.project=study894)"
+            test -z "$remaining"
+            test -z "$(docker volume ls -q --filter label=com.supabase.cli.project=study894)"
+            test -z "$(docker network ls -q --filter label=com.supabase.cli.project=study894)"
+            echo "Study894 task containers released; exact project volumes deleted by pinned CLI --no-backup." >> "$GITHUB_STEP_SUMMARY"
+          fi

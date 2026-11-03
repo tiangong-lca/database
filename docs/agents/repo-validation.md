@@ -32,9 +32,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-02
-lastReviewedCommit: 057eec7991bbc2815d874df3d48838d108b9d543
-lastReviewedNote: "Database #887: retire custom ZIP roles and policies; existing Edge server credentials own signing, with no business-data changes."
+lastReviewedAt: 2026-11-03
+lastReviewedCommit: 2b8959360fe39205b4ab11d0d40acf32df3e66ac
+lastReviewedNote: "Database #895: reviewed default-off canonical Study admission, exact RLS source capture/history rights, opaque disclosure intents and scoped cancellation/reconciliation; local runtime evidence and owned reconstruction are distinct from hosted activation."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -75,6 +75,128 @@ required PR CI. This category proves only the offline examples. It does not
 qualify SQL/RLS, actual concurrent transactions, lease fencing, team membership,
 real disclosure/exports/shares or deployment. P1 migration work must use the
 ordinary database baseline and independent runtime proof.
+
+## Study durable runtime (Database #894)
+
+W03 schema work uses the ordinary database baseline; the P0 offline exemption
+does not apply. After a blank PG17 rebuild, run
+`supabase test db supabase/tests/20261103_study_durable_runtime.sql` alongside
+full-schema/API closure, OAuth client foundation, actor command capability,
+`supabase/tests/20260531_worker_jobs_foundation.sql`, and calculation-contract
+identity suites. W03 itself adds current job/lease/terminal-receipt probes.
+Do not use `20260602_worker_jobs_canonical_task_contract.sql` as current
+qualification: it calls the coordinator helper explicitly retired by
+`20260819090000_retire_review_submit_coordinator.sql` and expects retired
+coordinator links. Retain such a historical failed invocation as nonqualification
+rather than restoring the obsolete API. The current workflow selects the
+foundation suite. Preserve the
+P0 offline checker as independent contract-example evidence.
+The Study suite also creates forty legitimate frozen Scenario revisions with
+shared direct-parent and captured-preparation-parent edges. It must complete
+within the statement budget using deduplicated reachability, then reject a
+genuine mixed cycle without leaving nodes or disabled immutability guards.
+
+`scripts/prepare_study_runtime_project.py --destination <new-owned-directory>/study894`
+materializes an independent project/config/migration copy on API56421/DB56422;
+it does not start/reset anything and never changes tracked config. Use the
+repository-pinned Supabase2.117.0 CLI. Keep exact container/volume/network ownership
+and cleanup/retention receipts. Never target the shared database-engine project.
+
+The two-session runner is
+`python3 -B supabase/tests/regression/20261103_study_runtime_concurrency.py --report <new-json>`.
+It requires the exact study894 container/project/port and empty reserved fixture
+namespace, proves overlapping advisory and actual row-lock waits for save/save,
+freeze/save, identical receipt retry and changed-key content, then independently
+checks stored generations/content. It releases its sessions but retains committed
+synthetic fixtures for the owner's exact isolated reset. A rollback-only pgTAP
+run cannot substitute for that observation. Reset this owned project before a
+repeat and before deterministic schema generation.
+
+On that runner's committed synthetic actor fixture, run
+`python3 -B supabase/tests/regression/20261103_study_runtime_transport.py --workdir <owned-study894> --report <new-json>`.
+It exercises the real local PostgREST actor/OAuth-claim/ACL/pre-request boundaries
+with signed local fixture JWTs and the owned verifier's key in memory, logging
+only fixed codes/statuses. It does not prove GoTrue login or OAuth consent;
+the owning Edge transport proof supplies real GoTrue session evidence separately.
+The local signed fixture uses the verifier's database clock and records measured
+host/verifier clock skew; it never changes a host or VM clock to make proof pass.
+It removes its exact synthetic OAuth client and retains its synthetic Study for
+the owner's reset. This does not prove the separately deployed Edge endpoint.
+
+Qualify the exact populated predecessor and final blank migration-ledger rebuild
+with `STUDY_RUNTIME_UPGRADE_ALLOW_RESET=isolated python3 -B scripts/test_study_runtime_upgrade.py --workdir <owned-study894> --report <new-json>`.
+The runner verifies the project/port/PG17 boundary, legacy dataset/job rows,
+existing routine definitions/owners/ACLs and prior capability-manifest entries,
+then resets only that owned project to the full candidate migration ledger.
+The dedicated isolated CI job runs both this proof and observed transaction
+races, then deletes only its owned project containers/volumes/network.
+Regenerate all five schema views and Data API types twice from the same
+isolated candidate state and require no second-run drift. SQL fixtures simulate
+trusted source/Worker evidence with real canonical jobs and lease tokens; they
+do not qualify actual exports, licensing, artifact bytes, solver execution or
+disclosure. W06 must add those real actor/queue/Worker/storage/transport proofs
+before producer or artifact operations are advertised.
+
+## Study task/source/disclosure adapter (Database #895)
+
+After W03→W06 populated upgrade and a blank PG17 rebuild, run all four
+Study SQL suites explicitly:
+
+```sh
+supabase test db supabase/tests/20261103_study_durable_runtime.sql
+supabase test db supabase/tests/20261103_study_task_admission.sql
+supabase test db supabase/tests/20261103_study_task_disclosure.sql
+supabase test db supabase/tests/20261103_study_task_input_parity.sql
+```
+
+Keep the existing full-schema/API closure, OAuth, actor capability, canonical
+Worker foundation and calculation-contract suites. W03 fixtures now derive
+source authority from five actual RLS-governed rows and a leased capture;
+numerical artifact metadata remains explicitly synthetic. Reusing those
+fixtures does not qualify numerical execution or bytes.
+The W06 suites cover default-off admission, exact source bytes/history rights,
+scoped task cancellation/late-lease fencing, fixed diagnostics/reconciliation,
+opaque artifact intents, current client/source revocation,64-intent actor
+budgets and bounded expired-row cleanup. Oversized actual source rows must be
+rejected before JSONB projection/parsing/hashing. Run lookup regressions include
+the actual `run.submit` and `run.cancel` paths, not only helper-name assertions.
+
+Direct actor parity also rejects non-string source identifiers and non-numeric,
+fractional/out-of-range Scenario generations before persistence; integral JSON
+numbers are stored canonically for typed consumers. Generic service job-kind
+classification must use the same case/space normalization as the canonical
+enqueuer, while ordinary non-Study kinds retain their behavior. The source-read
+concurrency harness observes overlapping row locks and proves that both first
+reads under the same lease return the identical captured packet after commit.
+Its synthetic namespace is retained only for an owned reset; it restores the
+prior source-enabled flag and never runs a Worker or touches Storage.
+
+The guarded upgrade helper now starts from exact W03 predecessor20261102165824,
+populates a legacy dataset/job and persistent Study, applies the W06 migration,
+then rebuilds the full candidate ledger. It binds exactly13 reviewed existing
+routine changes, preserves all other definitions and the changed queue
+routines' OIDs/owners/ACLs/settings, closes the moved core delegates, retains
+existing manifest and executor authority, and verifies default-off rollout.
+A changed review inventory must be explained against actual source; never
+replace these checks with lower bounds.
+
+The production source adapter, native execution, Storage upload/readback,
+current artifact delivery, cancellation/unknown-outcome recovery and numeric
+oracle require an actual owned Auth→Edge→PostgREST→canonical queue→Worker→Storage
+receipt across the owning repositories. Bind final migration/function hashes,
+producer executable/dependency/profile/data identities and client code to those
+observations. Preserve earlier failed/timed-out attempts and administrative
+recovery separately; they do not become ordinary-client success evidence.
+
+Before an owned reset, stop and verify every task listener/daemon/child, freeze
+exact artifact registrations and byte identities, export/hash-check retained
+private evidence, and obtain explicit task-object cleanup/retention receipts.
+Do not use orphan reconciliation to delete referenced artifacts. Reset only
+the owned project after its disposition is complete; verify test actor/source/
+Study residue and default-off configuration before Auth fixture cleanup.
+Regenerate the five schema views and exposed Data API types twice from the same
+final clean candidate, requiring no second-run drift. These local receipts do
+not enable hosted runtime flags or grant publication/scientific authority.
 
 ## Existing database baseline details
 
