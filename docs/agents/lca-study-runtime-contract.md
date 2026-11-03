@@ -419,6 +419,16 @@ membership to owner/editor/viewer before ordering, limit and cursor selection.
 Reviewer-only memberships cannot hide another actor-owned Study or consume a
 page. Its existing per-resource read authorization, owner, ACL and settings
 remain unchanged; reviewer membership still grants no legacy raw/core read.
+V4 issued domain references retain their exact string identity. Before any UUID
+cast, lookup, receipt or effect, the V4 envelope requires canonical lowercase
+hyphenated UUID spelling for target/resource IDs, report/share/export/delegation/
+finalization/predecessor references and accepted review IDs. Nullable references
+remain nullable only where the contract permits. PostgreSQL UUID aliases such
+as uppercase or hyphenless spellings return `INVALID_REQUEST`; they are never
+lowercased or rewritten into another request identity. Transport request IDs,
+idempotency keys, client/profile identifiers and legacy V2/V3 semantics are not
+changed. Existing clients can preserve opaque IDs and surface this server
+validation without a codec revision.
 `study_review_config.enabled` defaults false. Its service-only CAS configuration
 requires `lca.study-review-qualification.v1` and an evidence reference; it grants
 no OAuth client a capability. The initial policies are explicit unreviewed and

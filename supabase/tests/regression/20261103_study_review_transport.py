@@ -126,6 +126,34 @@ def main():
         check('revoked-read-client-core-request-denied',rpc('resource.actions',core,client=readonly),False,'42501',403)
     finally:
         sql("update private.oauth_client_registry set enabled=true,disabled_at=null where client_id='"+readonly+"';")
+    exactstudy='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';exactreport='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';exactshare='cccccccc-cccc-4ccc-8ccc-cccccccccccc';exactexport='dddddddd-dddd-4ddd-8ddd-dddddddddddd';exactgrant='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';exacthead='ffffffff-ffff-4fff-8fff-ffffffffffff';exactfinal='abababab-abab-4bab-8bab-abababababab'
+    def exact_state():
+        return json.loads(sql("select jsonb_build_object('studyRevision',(select revision from private.studies where id='"+exactstudy+"'),'members',(select count(*) from private.study_members where study_id='"+exactstudy+"'),'comments',(select count(*) from private.study_report_comments where report_id='"+exactreport+"'),'reviews',(select count(*) from private.study_report_reviews where report_id='"+exactreport+"'),'head',(select review_id from private.study_report_review_heads where report_id='"+exactreport+"'),'grantConsumed',(select consumed_review_id from private.study_review_delegations where id='"+exactgrant+"'),'grantRevoked',(select revoked_at from private.study_review_delegations where id='"+exactgrant+"'),'shareRevoked',(select revoked_at from private.study_report_shares where id='"+exactshare+"'),'finalizations',(select count(*) from private.study_report_finalizations where report_id='"+exactreport+"'),'aliasReceipts',(select count(*) from private.study_command_receipts where idempotency_key like 'http-alias-ref-%'),'aliasIntents',(select count(*) from private.study_review_intents where request->>'requestId' like 'http-alias-ref-%'));"))
+    before_alias=exact_state();generation=before_alias['studyRevision'];exactbinding={'reportRevisionId':exactreport,'expectedContentHash':'b'*64}
+    exacthash=sql("select private.study_review_state('"+exactreport+"')->>'reviewStateHash';")
+    for spelling,alias in [('uppercase',str.upper),('hyphenless',lambda s:s.replace('-',''))]:
+        review={**exactbinding,'reviewClass':'internal','decision':'reject','comment':'Alias must not append','predecessorReviewId':exacthead,'delegationId':None}
+        cases=[
+            ('target','member.set',{'target':{'type':'study','id':alias(exactstudy),'expectedRevision':generation},'memberId':'89400000-0000-4000-8000-000000000003','role':'reviewer'},True,1,None),
+            ('resource','resource.actions',{'resource':{'type':'study','id':alias(exactstudy)}},False,1,None),
+            ('report','comment.append',{**exactbinding,'reportRevisionId':alias(exactreport),'text':'Alias must not append'},True,1,None),
+            ('share','share.revoke',{'shareId':alias(exactshare),'reason':'Alias must not revoke'},True,1,None),
+            ('export','export.download',{'exportId':alias(exactexport)},False,1,None),
+            ('delegation-revoke','review.delegation.revoke',{'delegationId':alias(exactgrant)},True,2,None),
+            ('delegation-consume','review.record',{**review,'delegationId':alias(exactgrant)},True,2,client),
+            ('predecessor','review.record',{**review,'predecessorReviewId':alias(exacthead)},True,2,None),
+            ('finalization','export.request',{**exactbinding,'finalizationId':alias(exactfinal),'expectedReviewStateHash':exacthash,'rendererVersion':'1.0.0','viewModelVersion':'lca.study-report-view.v1'},True,1,None),
+            ('accepted','report.finalize',{'target':{'type':'reportRevision','id':exactreport,'expectedRevision':3},'expectedContentHash':'b'*64,'profileId':'lca.study-report-internal-review.v1','expectedReviewStateHash':exacthash,'acceptedReviewIds':[alias(exacthead)]},True,1,None),
+        ]
+        for name,operation,fields,write,actor,actorclient in cases:
+            alias_request_key='http-alias-ref-'+name+'-'+spelling
+            check('exact-reference-'+name+'-'+spelling,rpc(operation,fields,alias_request_key,write,actor=actor,client=actorclient),False,'INVALID_REQUEST')
+    after_alias=exact_state();assert after_alias==before_alias and after_alias['aliasReceipts']==after_alias['aliasIntents']==0
+    exactrequest={'schemaVersion':'lca.study-api.v4','requestId':'AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA','idempotencyKey':'CaseSensitive-HTTP-Key-Aa','operation':'member.set','target':{'type':'study','id':exactstudy,'expectedRevision':generation},'memberId':'89400000-0000-4000-8000-000000000003','role':'reviewer'}
+    exactresult=check('canonical-reference-opaque-keys',http('rpc/cmd_study_review_v1',{'p_request':exactrequest}))
+    recovered=check('canonical-reference-normal-recovery',http('rpc/cmd_study_review_v1',{'p_request':{**exactrequest,'requestId':'different-opaque-request-Bb'}}));assert recovered==exactresult
+    assert sql("select count(*) from private.study_command_receipts where idempotency_key='CaseSensitive-HTTP-Key-Aa';")=='1'
+    args.report.with_name(args.report.stem+'-exact-reference.json').write_text(json.dumps({'schemaVersion':'lca.study-exact-reference-transport-receipt.v1','project':'study906','aliasCases':20,'allAliasesInvalidBeforeEffects':True,'exactStateUnchanged':True,'aliasReceipts':0,'aliasIntents':0,'memberReviewGrantAndShareStateUnchanged':True,'canonicalReferencesAndOpaqueKeyRecovery':True,'credentialsLogged':False,'classification':'actual local PostgREST signed-fixture authorization proof; synthetic research/signature bytes only'},indent=2)+'\n')
     legacy={'schemaVersion':'lca.study-api.v2','requestId':'mixed-owner-reviewer','operation':'study.list','limit':1,'cursor':None}
     firstpage=check('legacy-mixed-role-first-page',http('rpc/qry_study_v1',{'p_request':legacy},actor=2))['data'];assert firstpage['items'][0]['studyId']=='89300000-0000-4000-8000-000000000001'
     secondpage=check('legacy-mixed-role-cursor-page',http('rpc/qry_study_v1',{'p_request':{**legacy,'cursor':firstpage['nextCursor']}},actor=2))['data'];assert secondpage['items'][0]['studyId']=='89500000-0000-4000-8000-000000000001' and secondpage['nextCursor'] is None

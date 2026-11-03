@@ -105,11 +105,33 @@ create index study_review_intent_share_idx on private.study_review_intents(share
 create index study_review_intent_finalization_idx on private.study_review_intents(finalization_id);
 
 create function private.study_review_envelope(p_request jsonb,p_write boolean) returns void
-language plpgsql set search_path='' as $$begin
+language plpgsql set search_path='' as $$declare field text;value jsonb;entry jsonb;pattern text:='^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$';begin
  perform private.study_require(auth.uid() is not null and not coalesce(util.is_service_request(),false),'AUTH_REQUIRED');
  perform private.study_require(p_request->>'schemaVersion'='lca.study-api.v4' and octet_length(p_request::text)<=262144
   and private.study_text(p_request->'requestId',128,'^[A-Za-z0-9][A-Za-z0-9._:-]*$'),'INVALID_REQUEST');
  if p_write then perform private.study_require(private.study_text(p_request->'idempotencyKey',128,'^[A-Za-z0-9][A-Za-z0-9._:-]*$'),'INVALID_REQUEST');end if;
+ -- Issued domain references are opaque exact identities. PostgreSQL accepts
+ -- UUID aliases, but resolving an alias would change the response binding
+ -- after effects. Reject it before every domain cast, receipt or intent.
+ foreach field in array array['target','resource'] loop
+  if p_request ? field then
+   perform private.study_require(jsonb_typeof(p_request->field)='object'
+    and private.study_text(p_request->field->'id',36,pattern),'INVALID_REQUEST');
+  end if;
+ end loop;
+ foreach field in array array['reportRevisionId','shareId','exportId','delegationId','finalizationId','predecessorReviewId'] loop
+  if not p_request ? field then continue;end if;value:=p_request->field;
+  if value='null'::jsonb and ((field='predecessorReviewId' and p_request->>'operation' in ('review.record','review.delegation.issue'))
+   or (field='delegationId' and p_request->>'operation'='review.record')) then continue;end if;
+  perform private.study_require(private.study_text(value,36,pattern),'INVALID_REQUEST');
+ end loop;
+ if p_request ? 'acceptedReviewIds' then
+  perform private.study_require(jsonb_typeof(p_request->'acceptedReviewIds')='array','INVALID_REQUEST');
+  perform private.study_require(jsonb_array_length(p_request->'acceptedReviewIds')<=64,'INVALID_REQUEST');
+  for entry in select * from jsonb_array_elements(p_request->'acceptedReviewIds') loop
+   perform private.study_require(private.study_text(entry,36,pattern),'INVALID_REQUEST');
+  end loop;
+ end if;
 end$$;
 create function private.study_review_share_check(p_share uuid,p_actor uuid,p_client text,p_bytes boolean) returns private.study_report_shares
 language plpgsql security definer set search_path='' as $$declare s private.study_report_shares%rowtype;st jsonb;e private.study_review_exports%rowtype;begin
