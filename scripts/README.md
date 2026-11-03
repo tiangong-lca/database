@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-03
-lastReviewedCommit: aebe79da1a92904ffbb2c3b03444c396343f2739
-lastReviewedNote: "Database #900: reviewed versioned review metadata schema admission and final writeback guard, isolated PG17 proof and generated schema inventory. Existing rows, API authority, branch deployment and integration policy remain unchanged."
+lastReviewedCommit: 294f37366522e41a303860eb0badb29cae2375a5
+lastReviewedNote: "Database #904: reviewed independent v3 analysis/report/export persistence, exact source/lease/producer fences, default-off gates, isolated SQL/upgrade/concurrency proof and generated schema workflow. Hosted/runtime/signer qualification remains separate; no Production client grants change."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -664,6 +664,28 @@ It never resets a database itself. Preserve both receipts and release/adopt exac
 task resources through the workspace resource workflow. CLI startup logs contain
 generated local keys and must remain private; do not publish raw status/env/logs.
 These SQL proofs do not qualify real source export, compilation or disclosure.
+
+### Study P2 populated upgrade and observed races
+
+```sh
+STUDY_RUNTIME_UPGRADE_ALLOW_RESET=isolated python3 -B scripts/test_study_runtime_reporting_upgrade.py \
+  --workdir <owned-study894> --ownership-manifest <exact-owned-project-json> \
+  --report <new-upgrade-json>
+python3 -B supabase/tests/regression/20261103_study_analysis_concurrency.py \
+  --database <owned-study904_clone> --report <new-analysis-races-json>
+python3 -B supabase/tests/regression/20261103_study_report_concurrency.py \
+  --database <owned-study904_clone> --report <new-report-races-json>
+```
+
+The upgrade runner verifies the exact retained study894/PG17 project and its
+ownership receipt, refuses live actor/client/job state, checks populated upgrade
+from `20261103110000`, and blank-rebuilds the ordered P2 migrations with all flags
+off. Set `SUPABASE_CLI` to the exact pinned2.117.0 executable if it is outside PATH.
+The race runners require separate explicitly owned clones with empty fixture
+namespaces and observe actual advisory/row-lock overlap. They never create or
+destroy resources. Their synthetic producer evidence proves SQL binding/CAS only;
+retain receipts and remove only the reviewed owned clones after verification.
+See the [validation guide](../docs/agents/repo-validation.md) for the full P2 bar.
 
 ### `build_schema_workspace.py`
 

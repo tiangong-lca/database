@@ -126,6 +126,8 @@ jobs:
           supabase test db supabase/tests/20261103_study_task_admission.sql
           supabase test db supabase/tests/20261103_study_task_disclosure.sql
           supabase test db supabase/tests/20261103_study_task_input_parity.sql
+          supabase test db supabase/tests/20261103_study_analysis_reporting.sql
+          supabase test db supabase/tests/20261103_study_report_producer.sql
           supabase test db supabase/tests/20261006_search_request_identity.sql
           supabase test db supabase/tests/20260920_portal_china_administrative_navigation.sql
           supabase test db supabase/tests/20260805_full_schema_cutover.sql
@@ -1060,6 +1062,26 @@ jobs:
         env:
           STUDY_RUNTIME_UPGRADE_ALLOW_RESET: isolated
         run: python3 -B scripts/test_study_runtime_upgrade.py --workdir "$RUNNER_TEMP/study894" --report "$RUNNER_TEMP/study894-upgrade.json"
+      - name: Verify populated P2 upgrade and blank candidate
+        env:
+          STUDY_RUNTIME_UPGRADE_ALLOW_RESET: isolated
+        run: >-
+          python3 -B scripts/test_study_runtime_reporting_upgrade.py
+          --workdir "$RUNNER_TEMP/study894"
+          --ownership-manifest "$RUNNER_TEMP/study894/ownership.json"
+          --report "$RUNNER_TEMP/study904-upgrade.json"
+      - name: Observe independent P2 Analysis and Report races
+        run: |
+          python3 -B supabase/tests/regression/20261103_study_analysis_concurrency.py \
+            --database postgres --owned-ci-project "$RUNNER_TEMP/study894" \
+            --report "$RUNNER_TEMP/study904-analysis-concurrency.json"
+          supabase db reset --local --no-seed --workdir "$RUNNER_TEMP/study894" \
+            > "$RUNNER_TEMP/study904-after-analysis-reset.log" 2>&1
+          python3 -B supabase/tests/regression/20261103_study_report_concurrency.py \
+            --database postgres --owned-ci-project "$RUNNER_TEMP/study894" \
+            --report "$RUNNER_TEMP/study904-report-concurrency.json"
+          supabase db reset --local --no-seed --workdir "$RUNNER_TEMP/study894" \
+            > "$RUNNER_TEMP/study904-after-report-reset.log" 2>&1
       - name: Observe independent Study transaction races
         run: python3 -B supabase/tests/regression/20261103_study_runtime_concurrency.py --report "$RUNNER_TEMP/study894-concurrency.json"
       - name: Verify real Study actor and OAuth PostgREST transport
@@ -1081,6 +1103,14 @@ jobs:
           if [ -f "$RUNNER_TEMP/study895-source-concurrency.json" ]; then
             cat "$RUNNER_TEMP/study895-source-concurrency.json" >> "$GITHUB_STEP_SUMMARY"
           fi
+      - name: Preserve P2 proof summary
+        if: always()
+        run: |
+          for receipt in "$RUNNER_TEMP/study904-upgrade.json" "$RUNNER_TEMP/study904-analysis-concurrency.json" "$RUNNER_TEMP/study904-report-concurrency.json"; do
+            if [ -f "$receipt" ]; then
+              cat "$receipt" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
       - name: Release only the owned Study project
         if: always()
         shell: bash

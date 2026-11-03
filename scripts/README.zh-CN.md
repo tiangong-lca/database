@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-03
-lastReviewedCommit: aebe79da1a92904ffbb2c3b03444c396343f2739
-lastReviewedNote: "Database #900: reviewed versioned review metadata schema admission and final writeback guard, isolated PG17 proof and generated schema inventory. Existing rows, API authority, branch deployment and integration policy remain unchanged."
+lastReviewedCommit: 294f37366522e41a303860eb0badb29cae2375a5
+lastReviewedNote: "Database #904: reviewed independent v3 analysis/report/export persistence, exact source/lease/producer fences, default-off gates, isolated SQL/upgrade/concurrency proof and generated schema workflow. Hosted/runtime/signer qualification remains separate; no Production client grants change."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -554,6 +554,18 @@ python3 -B supabase/tests/regression/20261103_study_runtime_concurrency.py \
 CLI 启动输出含本地生成密钥，须私有保存。完整边界见
 [英文使用说明](README.md)及[Study runtime 合同](../docs/agents/lca-study-runtime-contract.md)；
 这些 SQL 证明不代表真实 source export、编译、解算或 disclosure 已获资格。
+
+### Study P2 分析与报告证明
+
+`test_study_runtime_reporting_upgrade.py` 在显式保留的 study894/PG17 项目上
+验证 `20261103110000` 的有数据升级与 P2 空库重建；运行前必须确认准确的所有权
+JSON、无活动账号/客户端/任务，并设置 `STUDY_RUNTIME_UPGRADE_ALLOW_RESET=isolated`。
+分析和报告并发脚本要求单独拥有、夹具命名空间为空的 `study904_*` 克隆库，通过真实
+会话等待证明幂等、CAS、冻结和导出竞争；脚本本身不创建或删除资源。
+SQL 数值、工件描述符及签名字串夹具仅证明数据库绑定，不证明真实字节或签名器。
+保留回执后只清理准确拥有的克隆库；所有 P2 生产开关与默认客户端授权保持关闭。
+完整参数、命令和资格边界见[英文使用说明](README.md)和
+[验证指南](../docs/agents/repo-validation.md)。
 
 ### `build_schema_workspace.py`
 

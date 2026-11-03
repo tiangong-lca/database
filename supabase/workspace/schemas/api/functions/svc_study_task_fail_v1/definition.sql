@@ -10,18 +10,20 @@ begin
     when 'modelSourceAcquisition' then select study_id,job_id into sid,job from private.study_source_acquisitions where id=p_resource_id; kind:='study.source_acquire'; subject:='acquisitionId';
     when 'modelPreparation' then select study_id,job_id into sid,job from private.study_model_preparations where id=p_resource_id; kind:='study.model_prepare'; subject:='preparationId';
     when 'run' then select study_id,job_id into sid,job from private.study_runs where id=p_resource_id; kind:='study.run'; subject:='runId';
+ when 'analysis' then select study_id,job_id into sid,job from private.study_analyses where id=p_resource_id; kind:='study.analysis'; subject:='analysisId';
     else perform private.study_require(false,'INVALID_REQUEST');
   end case;
   perform private.study_require(sid is not null and job=p_job_id,'REFERENCE_MISMATCH'); perform 1 from private.studies where id=sid for update;
   request:=jsonb_build_object('id',p_resource_id,'jobId',p_job_id,'leaseToken',p_lease_token,'errorCode',p_error_code);
   select * into receipt from private.study_service_receipts where operation=p_resource_type and study_id=sid and idempotency_key=p_idempotency_key;
   if found then perform private.study_require(receipt.request=request,'IDEMPOTENCY_CONFLICT'); return receipt.response; end if;
-  perform private.study_lock_job(sid,p_job_id,p_lease_token,kind,subject,p_resource_id);
+  if p_resource_type='analysis' then perform private.study_analysis_lock_job(sid,p_job_id,p_lease_token,p_resource_id);
+ else perform private.study_lock_job(sid,p_job_id,p_lease_token,kind,subject,p_resource_id);end if;
   old_context:=current_setting('app.study.task_context',true); perform set_config('app.study.task_context','complete',true);
   result:=private.worker_record_job_result(p_job_id,p_lease_token,'failed',jsonb_build_object('schemaVersion','lca.study-job-receipt.v1','studyId',sid,'resourceType',p_resource_type,'resourceId',p_resource_id),
     'lca.study-job-receipt.v1',null,null,p_error_code,'Study task failed',null,null,null,false);
   perform set_config('app.study.task_context',coalesce(old_context,''),true); perform private.study_require((result->>'ok')::boolean,'FORBIDDEN');
-  result:=jsonb_build_object('ok',true,'data',jsonb_build_object('type',p_resource_type,'value',private.study_record(p_resource_type,p_resource_id)));
+  result:=jsonb_build_object('ok',true,'data',jsonb_build_object('type',p_resource_type,'value',case when p_resource_type='analysis' then private.study_analysis_record(p_resource_id) else private.study_record(p_resource_type,p_resource_id) end));
   insert into private.study_service_receipts values(p_resource_type,sid,p_idempotency_key,p_job_id,p_lease_token,request,result); return result;
 exception when raise_exception then return jsonb_build_object('ok',false,'code',sqlerrm);
 end $$;
