@@ -31,7 +31,7 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-04
-lastReviewedCommit: edd84a5f95db1d323207e9fda51f5c804d9beb67
+lastReviewedCommit: 2ceee7b0932090596bc069ffcb0ae87230aecf3a
 lastReviewedNote: "Database #906: reviewed V4 current Study/core and report authority, review/finalization/share and replay boundaries, sole legacy-list role filter, isolated upgrade/SQL/HTTP/concurrency proof and deterministic schema. Actual bytes, UI/CLI, hosted enablement and source integration remain separately qualified."
 related:
   - ../../AGENTS.md
@@ -76,6 +76,8 @@ qualification. No Study phase publishes datasets or formal Results.
 V4 Study actions expose coarse core read/write from the existing authorizer for
 UI affordances. Those flags add no source/target authorization or producer
 qualification and are always false on non-Study targets.
+Archived action metadata preserves permitted reads while suppressing every
+fresh mutation that the existing active-Study command guard rejects.
 The sole legacy helper delta filters V2 Study-list membership by its existing
 readable roles before pagination. Its resource read guard and authority remain
 unchanged; mixed owner/reviewer actors can still list their owned Studies.

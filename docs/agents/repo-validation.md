@@ -140,7 +140,7 @@ before producer or artifact operations are advertised.
 ## Study P3 review/finalization/named sharing (Database #906)
 
 Retain the ordinary blank PG17 migration-ledger baseline and every P1/P2 suite.
-Add `supabase/tests/20261103_study_review_finalization_sharing.sql`:142 assertions
+Add `supabase/tests/20261103_study_review_finalization_sharing.sql`:163 assertions
 cover reviewer isolation, comments without approval, exact heads/replays,
 self-approval exclusion, role/team/client changes, one-use grants and expiry,
 immutable finalization, manifest v2, named recipient projection/download and
@@ -160,6 +160,9 @@ reviewer/recipient isolation, read-only OAuth, archived write denial and live
 team/member/client revocation. Non-Study targets are false/false; revoked clients
 retain whole-request denial. These metadata checks do not replace any command or
 source-specific authorization test.
+Archived Study/report/share actions suppress fresh mutations and member-role
+choices, preserve permitted reads/lists/views, and match actual unchanged-command
+`FROZEN_REVISION` rejection. No write or revoke exception is introduced.
 
 Use `scripts/prepare_study_review_project.py --destination <new-owned-dir>/study906`
 with pinned CLI2.117.0. This creates a separate PG17 project on API56621/DB56622
@@ -183,13 +186,17 @@ On that blank owned project run
 `supabase/tests/regression/20261103_study_review_transport.py --workdir
 <owned-study906> --race-receipt <race-json> --report <new-json>`.
 Both are Python3 entrypoints; transport also requires `SUPABASE_CLI` to identify
-the pinned underlying executable. Nine real independent-session races observe
+the pinned underlying executable. Ten real independent-session races observe
 advisory/domain waits and actual row contention for heads, receipt retry,
 finalization/withdrawal, role demotion, grant consumption/revoke and share revoke;
 the source-ownership withdrawal case observes the NOWAIT rejection instead of a
-wait. The transport runner makes85 actual PostgREST assertions with signed local
+wait. The transport runner makes104 actual PostgREST assertions with signed local
 fixture claims and no credential/raw-error logging. It proves neither GoTrue
 login/consent nor deployed Edge/Storage byte behavior.
+The archive/action race uses the unchanged V2 archive command and observes the
+waiting V4 action query exclude fresh mutations after commit. Its synthetic
+Study is restored only by explicit owned-fixture administration for the HTTP
+suite; no product unarchive operation is claimed.
 
 Runners retain synthetic fixtures for explicit owner reset. Reset only owned
 study906 before deterministic generation and verify empty actors/clients and

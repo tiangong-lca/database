@@ -86,6 +86,29 @@ def main():
     try:
         sql("update private.studies set status='archived' where id='"+STUDY+"';")
         check_core('archived-owner-no-core-write',{'read':True,'write':False})
+        a=check('archived-Study-query-only-actions',rpc('resource.actions',core));assert a['data']['actions']==[] and a['data']['allowedMemberRoles']==[]
+        a=check('archived-owner-report-query-only-actions',rpc('resource.actions',{'resource':{'type':'reportRevision','id':REPORT}}));assert set(a['data']['actions'])=={'report.current','report.view','comment.list','review.list','share.list'}
+        a=check('archived-issuer-share-query-only-actions',rpc('resource.actions',{'resource':{'type':'share','id':share}}));assert a['data']['actions']==['share.read']
+        a=check('archived-reviewer-report-query-only-actions',rpc('resource.actions',{'resource':{'type':'reportRevision','id':REPORT}},actor=2));assert set(a['data']['actions'])=={'report.current','report.view','comment.list','review.list','review.delegation.list'}
+        a=check('archived-recipient-share-query-actions',rpc('resource.actions',{'resource':{'type':'share','id':share}},actor=3));assert set(a['data']['actions'])=={'share.read','share.view','share.download'}
+        archived_share=check('archived-recipient-share-read',rpc('share.read',{'shareId':share},actor=3))['data']['value']
+        generation=int(sql("select revision from private.studies where id='"+STUDY+"';"))
+        check('archived-member-command-still-denied',rpc('member.set',{'target':{'type':'study','id':STUDY,'expectedRevision':generation},'memberId':'89400000-0000-4000-8000-000000000005','role':'editor'},'http-archived-member',True),False,'FROZEN_REVISION')
+        check('archived-comment-command-still-denied',rpc('comment.append',{**binding,'text':'Archived write'},'http-archived-comment',True),False,'FROZEN_REVISION')
+        state=rpc('report.current',binding)[1]['data']['value']
+        check('archived-finalize-command-still-denied',rpc('report.finalize',{'target':{'type':'reportRevision','id':REPORT,'expectedRevision':3},'expectedContentHash':'b'*64,'expectedReviewStateHash':state['reviewStateHash'],'profileId':'lca.study-report-unreviewed.v1','acceptedReviewIds':[]},'http-archived-finalize',True),False,'FROZEN_REVISION')
+        check('archived-export-command-still-denied',rpc('export.request',{**binding,'finalizationId':state['finalization']['finalizationId'],'expectedReviewStateHash':state['reviewStateHash'],'rendererVersion':'1.0.0','viewModelVersion':'lca.study-report-view.v1'},'http-archived-export',True),False,'FROZEN_REVISION')
+        check('archived-share-command-still-denied',rpc('share.create',{**binding,'exportId':archived_share['exportId'],'recipientId':'89400000-0000-4000-8000-000000000003','disclosurePolicyId':'lca.study-report-summary-share.v1','expiresAt':json.loads(sql("select to_jsonb(clock_timestamp()+interval '1 hour');"))},'http-archived-share',True),False,'FROZEN_REVISION')
+        check('archived-revoke-command-still-denied',rpc('share.revoke',{'shareId':share,'reason':'Archived revoke'},'http-archived-revoke',True),False,'FROZEN_REVISION')
+        previous=sql("select review_id from private.study_report_review_heads where report_id='"+REPORT+"' and actor_id='89400000-0000-4000-8000-000000000002';")
+        check('archived-review-command-still-denied',rpc('review.record',{**binding,'reviewClass':'internal','decision':'withdraw','comment':'Archived withdrawal','predecessorReviewId':previous,'delegationId':None},'http-archived-review',True,actor=2),False,'FROZEN_REVISION')
+        check('archived-grant-command-still-denied',rpc('review.delegation.issue',{**binding,'reviewClass':'internal','decision':'approve','clientId':client,'predecessorReviewId':previous,'expiresAt':json.loads(sql("select to_jsonb(clock_timestamp()+interval '5 minutes');"))},'http-archived-grant',True,actor=2),False,'FROZEN_REVISION')
+        delegation=sql("select id from private.study_review_delegations where report_id='"+REPORT+"' and actor_id='89400000-0000-4000-8000-000000000002' order by id limit 1;")
+        check('archived-grant-revoke-command-still-denied',rpc('review.delegation.revoke',{'delegationId':delegation},'http-archived-grant-revoke',True,actor=2),False,'FROZEN_REVISION')
+        check('archived-share-history-still-readable',rpc('share.list',{**binding,'cursor':None,'limit':100}))
+        check('archived-grant-history-still-readable',rpc('review.delegation.list',{**binding,'cursor':None,'limit':100},actor=2))
+        readintent=check('archived-recipient-view-still-readable',rpc('share.view',{'shareId':share},actor=3))['data']['intentId']
+        check('archived-recipient-service-view-still-authorized',http('rpc/svc_study_review_intent_resolve_v1',{'p_intent_id':readintent},actor=None,role='service_role'))
     finally:
         sql("update private.studies set status='active' where id='"+STUDY+"';")
     try:

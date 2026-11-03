@@ -442,6 +442,12 @@ recipient roles imply no core access; non-Study targets always return false/fals
 Read-only OAuth cannot advertise write, and revoked clients retain the existing
 whole-request denial. These flags authorize no particular source, revision,
 target, artifact or producer qualification; actual commands keep all checks.
+Archived Studies advertise no fresh V4 mutations on Study, report or share
+targets, and offer no member-role changes. Permitted read/list/view/download
+actions retain their existing authorization. This matches the unchanged common
+active-Study guard on new commands; it grants no new write or revoke exception.
+Explicit share/delegation revoke can skip report-byte disclosure while the Study
+is active; review decisions, including withdrawal, still require disclosure.
 Substantive `approve`, `reject` and `withdraw` decisions bind exact frozen report
 ID/hash, actor, class and predecessor. One head per actor/class prevents forks;
 at most64 heads keep accepted evidence renderable. A new report ID inherits no

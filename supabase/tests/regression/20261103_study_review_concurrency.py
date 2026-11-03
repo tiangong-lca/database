@@ -113,11 +113,19 @@ def main():
     r=race('share-revocation-before-recipient-intent',cmd('share.revoke',{'shareId':shareid,'reason':'Concurrent revoke'},'race-revoke-share'),call(request('share.view',{'shareId':shareid}),False),claim(1),claim(3))
     assert r['first']['ok'] and r['second']['code']=='DISCLOSURE_DENIED',r;receipts.append(r)
     http_share=share('http-retained-share')
+    generation=int(sql('select revision from private.studies where id='+quote(STUDY)+';'))
+    archive={'schemaVersion':'lca.study-api.v2','requestId':'race-archive-actions','idempotencyKey':'race-archive-actions','operation':'study.archive','target':{'type':'study','id':STUDY,'expectedRevision':generation}}
+    r=race('archive-before-action-projection','select api.cmd_study_v1('+sql_json(archive)+');',call(request('resource.actions',{'resource':{'type':'study','id':STUDY}}),False),claim(1),claim(1))
+    assert r['first']['ok'] and r['second']['data']['actions']==[] and r['second']['data']['allowedMemberRoles']==[],r
+    assert r['second']['data']['corePermissions']=={'read':True,'write':False},r;receipts.append(r)
+    # Fixture administration only: restore this owned synthetic Study for the
+    # following HTTP suite; no product unarchive operation is claimed.
+    sql('update private.studies set status=\'active\' where id='+quote(STUDY)+';')
     assert sql("select count(*) from pg_stat_activity where application_name in('study906-barrier','study906-writer-a','study906-writer-b');")=='0'
     args.report.write_text(json.dumps({'schemaVersion':'lca.study-review-concurrency-receipt.v1','project':'study906','ownership':ownership,'races':receipts,
       'retainedHttpShareId':http_share,'ownedSessionsReleased':True,'classification':'observed PG17 SQL transaction/source fences with synthetic content/signatures; no real byte/UI qualification',
       'disposition':'exact synthetic fixture namespace retained for owned HTTP proof then explicit reset'},indent=2)+'\n')
-    print('Study906: 9 independent-session review/finalization/grant/share/source races passed with observed locks.')
+    print('Study906: 10 independent-session review/finalization/grant/share/source races passed with observed locks.')
 
 
 if __name__=='__main__':main()
