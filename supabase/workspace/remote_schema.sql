@@ -14056,6 +14056,14 @@ begin
     return api.cmd_review_get_dataset_row(p_table, p_id, p_version, false);
   end if;
 
+  v_review_items := coalesce(private.review_clean_metadata_v1(v_review_items), '[]'::jsonb);
+  v_compliance_items := coalesce(private.review_clean_metadata_v1(v_compliance_items), '[]'::jsonb);
+  perform private.review_assert_metadata_v1(
+    private.review_clean_metadata_v1(jsonb_build_object(
+      'validation', jsonb_build_object('review', v_review_items),
+      'complianceDeclarations', jsonb_build_object('compliance', v_compliance_items)
+    )), p_table
+  );
   v_row := api.cmd_review_get_dataset_row(p_table, p_id, p_version, true);
 
   if v_row is null then
@@ -79522,6 +79530,25 @@ $$;
 ALTER FUNCTION "private"."review_assert_current_approval_v1"("p_review" "private"."reviews") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "private"."review_assert_metadata_v1"("p_value" "jsonb", "p_table" "text") RETURNS "void"
+    LANGUAGE "plpgsql" IMMUTABLE
+    SET "search_path" TO ''
+    AS $$
+begin
+  if private.review_metadata_schema_v1(p_table) is null
+    or not extensions.jsonb_matches_schema(
+      private.review_metadata_schema_v1(p_table)::json, coalesce(p_value, '{}'::jsonb)
+    ) then
+    raise exception using errcode = '22023', message = 'REVIEW_METADATA_INVALID',
+      hint = 'Correct the review and compliance fields before submitting an approval.';
+  end if;
+end;
+$$;
+
+
+ALTER FUNCTION "private"."review_assert_metadata_v1"("p_value" "jsonb", "p_table" "text") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "private"."review_build_json_v1"("p_target_table" "text", "p_target_row" "jsonb", "p_owner_id" "uuid", "p_action" "text", "p_actor" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -79677,6 +79704,43 @@ ALTER FUNCTION "private"."review_canonical_json_text_v1"("p_value" "jsonb") OWNE
 
 COMMENT ON FUNCTION "private"."review_canonical_json_text_v1"("p_value" "jsonb") IS 'Canonical JSON writer for review revision fingerprints. Object keys use UTF-8/C byte order, arrays retain order, and separators are compact, matching app_dataset_submit_review Gate hashing.';
 
+
+
+CREATE OR REPLACE FUNCTION "private"."review_clean_metadata_v1"("p_value" "jsonb") RETURNS "jsonb"
+    LANGUAGE "plpgsql" IMMUTABLE
+    SET "search_path" TO ''
+    AS $$
+declare
+  v_result jsonb;
+  v_item jsonb;
+  v_key text;
+  v_clean jsonb;
+begin
+  if p_value is null or p_value = 'null'::jsonb then return null; end if;
+  if jsonb_typeof(p_value) = 'object' then
+    v_result := '{}'::jsonb;
+    for v_key, v_item in select key, value from jsonb_each(p_value) loop
+      v_clean := private.review_clean_metadata_v1(v_item);
+      if v_clean is not null then v_result := v_result || jsonb_build_object(v_key, v_clean); end if;
+    end loop;
+    return nullif(v_result, '{}'::jsonb);
+  elsif jsonb_typeof(p_value) = 'array' then
+    v_result := '[]'::jsonb;
+    for v_item in select value from jsonb_array_elements(p_value) loop
+      v_clean := private.review_clean_metadata_v1(v_item);
+      if v_clean is not null then v_result := v_result || jsonb_build_array(v_clean); end if;
+    end loop;
+    return nullif(v_result, '[]'::jsonb);
+  elsif jsonb_typeof(p_value) = 'string'
+    and (btrim(p_value #>> '{}') = '' or p_value #>> '{}' = 'undefined') then
+    return null;
+  end if;
+  return p_value;
+end;
+$$;
+
+
+ALTER FUNCTION "private"."review_clean_metadata_v1"("p_value" "jsonb") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "private"."review_contact_references_ready"("p_json_ordered" "jsonb", "p_self_id" "uuid") RETURNS boolean
@@ -79993,6 +80057,32 @@ $$;
 ALTER FUNCTION "private"."review_get_or_create_reference_v1"("p_target_table" "text", "p_target_row" "jsonb", "p_checksum" "text", "p_actor" "uuid") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "private"."review_guard_comment_metadata_v1"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+declare
+  v_table text;
+  v_metadata jsonb;
+begin
+  select r.target_table into v_table from private.reviews r
+  where r.id = new.review_id and r.review_kind = 'root';
+  if v_table not in ('processes', 'lifecyclemodels') or v_table is null then return new; end if;
+  if not coalesce(new.json::jsonb ? 'modellingAndValidation', false) then return new; end if;
+  v_metadata := private.review_clean_metadata_v1(new.json::jsonb -> 'modellingAndValidation');
+  if new.state_code = 1 then
+    perform private.review_assert_metadata_v1(v_metadata, v_table);
+  end if;
+  new.json := case when v_metadata is null then new.json::jsonb - 'modellingAndValidation'
+    else jsonb_set(new.json::jsonb, '{modellingAndValidation}', v_metadata) end;
+  return new;
+end;
+$$;
+
+
+ALTER FUNCTION "private"."review_guard_comment_metadata_v1"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "private"."review_member_workload_classification_v1"("p_reviewer_id" "uuid") RETURNS TABLE("review_id" "uuid", "reviewer_id" "uuid", "workload_status" "text")
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -80030,6 +80120,17 @@ ALTER FUNCTION "private"."review_member_workload_classification_v1"("p_reviewer_
 
 COMMENT ON FUNCTION "private"."review_member_workload_classification_v1"("p_reviewer_id" "uuid") IS 'Classifies one reviewer workload: current assigned drafts are pending and durable submitted decisions are reviewed.';
 
+
+
+CREATE OR REPLACE FUNCTION "private"."review_metadata_schema_v1"("p_table" "text") RETURNS "jsonb"
+    LANGUAGE "sql" IMMUTABLE
+    SET "search_path" TO ''
+    AS $_$
+  select $contract${"processes":{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"validation":{"type":"object","properties":{"review":{"anyOf":[{"$ref":"#/$defs/tidas_processes_ProcessReview"},{"type":"array","minItems":1,"items":{"$ref":"#/$defs/tidas_processes_ProcessReview"}}]},"common:other":{"$ref":"#/$defs/tidas_data_types_CommonOther"}},"required":["review"]},"complianceDeclarations":{"type":"object","properties":{"compliance":{"anyOf":[{"type":"object","properties":{"common:referenceToComplianceSystem":{"$ref":"#/$defs/tidas_data_types_GlobalReferenceType"},"common:approvalOfOverallCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:nomenclatureCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:methodologicalCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:reviewCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:documentationCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:qualityCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:other":{"$ref":"#/$defs/tidas_data_types_CommonOther"}},"required":["common:referenceToComplianceSystem","common:approvalOfOverallCompliance","common:nomenclatureCompliance","common:methodologicalCompliance","common:reviewCompliance","common:documentationCompliance","common:qualityCompliance"]},{"type":"array","items":{"type":"object","properties":{"common:referenceToComplianceSystem":{"$ref":"#/$defs/tidas_data_types_GlobalReferenceType"},"common:approvalOfOverallCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:nomenclatureCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:methodologicalCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:reviewCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:documentationCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:qualityCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:other":{"$ref":"#/$defs/tidas_data_types_CommonOther"}},"required":["common:referenceToComplianceSystem","common:approvalOfOverallCompliance","common:nomenclatureCompliance","common:methodologicalCompliance","common:reviewCompliance","common:documentationCompliance","common:qualityCompliance"]},"minItems":1}]},"common:other":{"$ref":"#/$defs/tidas_data_types_CommonOther"}},"required":["compliance"]}},"$defs":{"tidas_processes_ProcessReview":{"type":"object","properties":{"@type":{"type":"string","enum":["Dependent internal review","Independent internal review","Independent external review","Accredited third party review","Independent review panel","Not reviewed"]},"common:scope":{"anyOf":[{"type":"object","properties":{"@name":{"type":"string","enum":["Raw data","Unit process(es), single operation","Unit process(es), black box","LCI results or Partly terminated system","LCIA results","Documentation","Life cycle inventory methods","LCIA results calculation","Goal and scope definition"]},"common:method":{"anyOf":[{"type":"object","properties":{"@name":{"type":"string","enum":["Validation of data sources","Sample tests on calculations","Energy balance","Element balance","Cross-check with other source","Cross-check with other data set","Expert judgement","Mass balance","Compliance with legal limits","Compliance with ISO 14040 to 14044","Documentation","Evidence collection by means of plant visits and/or interviews"]}},"required":["@name"]},{"type":"array","items":{"type":"object","properties":{"@name":{"type":"string","enum":["Validation of data sources","Sample tests on calculations","Energy balance","Element balance","Cross-check with other source","Cross-check with other data set","Expert judgement","Mass balance","Compliance with legal limits","Compliance with ISO 14040 to 14044","Documentation","Evidence collection by means of plant visits and/or interviews"]}},"required":["@name"]}}]}},"required":["@name","common:method"]},{"type":"array","items":{"type":"object","properties":{"@name":{"type":"string","enum":["Raw data","Unit process(es), single operation","Unit process(es), black box","LCI results or Partly terminated system","LCIA results","Documentation","Life cycle inventory methods","LCIA results calculation","Goal and scope definition"]},"common:method":{"anyOf":[{"type":"object","properties":{"@name":{"type":"string","enum":["Validation of data sources","Sample tests on calculations","Energy balance","Element balance","Cross-check with other source","Cross-check with other data set","Expert judgement","Mass balance","Compliance with legal limits","Compliance with ISO 14040 to 14044","Documentation","Evidence collection by means of plant visits and/or interviews"]}},"required":["@name"]},{"type":"array","items":{"type":"object","properties":{"@name":{"type":"string","enum":["Validation of data sources","Sample tests on calculations","Energy balance","Element balance","Cross-check with other source","Cross-check with other data set","Expert judgement","Mass balance","Compliance with legal limits","Compliance with ISO 14040 to 14044","Documentation","Evidence collection by means of plant visits and/or interviews"]}},"required":["@name"]}}]}},"required":["@name","common:method"]}}]},"common:dataQualityIndicators":{"type":"object","properties":{"common:dataQualityIndicator":{"anyOf":[{"type":"object","properties":{"@name":{"type":"string","enum":["Technological representativeness","Time representativeness","Geographical representativeness","Completeness","Precision","Methodological appropriateness and consistency","Overall quality"]},"@value":{"type":"string","enum":["Very good","Good","Fair","Poor","Very poor","Not evaluated / unknown","Not applicable"]}},"required":["@name","@value"]},{"type":"array","items":{"type":"object","properties":{"@name":{"type":"string","enum":["Technological representativeness","Time representativeness","Geographical representativeness","Completeness","Precision","Methodological appropriateness and consistency","Overall quality"]},"@value":{"type":"string","enum":["Very good","Good","Fair","Poor","Very poor","Not evaluated / unknown","Not applicable"]}},"required":["@name","@value"]}}]}},"required":["common:dataQualityIndicator"]},"common:reviewDetails":{"$ref":"#/$defs/tidas_data_types_FTMultiLang"},"common:referenceToNameOfReviewerAndInstitution":{"$ref":"#/$defs/tidas_data_types_GlobalReferenceType"},"common:otherReviewDetails":{"$ref":"#/$defs/tidas_data_types_FTMultiLang"},"common:referenceToCompleteReviewReport":{"$ref":"#/$defs/tidas_data_types_GlobalReferenceType"},"common:other":{"$ref":"#/$defs/tidas_data_types_CommonOther"}},"required":["@type"],"allOf":[{"if":{"properties":{"@type":{"const":"Not reviewed"}}},"then":{},"else":{"required":["common:scope","common:reviewDetails","common:referenceToNameOfReviewerAndInstitution"]}}]},"tidas_data_types_FTMultiLang":{"anyOf":[{"type":"array","items":{"$ref":"#/$defs/tidas_data_types_LocalizedTextItem"},"uniqueItems":true},{"$ref":"#/$defs/tidas_data_types_LocalizedTextItem"}]},"tidas_data_types_LocalizedTextItem":{"type":"object","properties":{"@xml:lang":{"$ref":"#/$defs/tidas_data_types_Languages"},"#text":{"type":"string"}},"required":["@xml:lang","#text"],"allOf":[{"if":{"properties":{"@xml:lang":{"const":"zh"}},"required":["@xml:lang"]},"then":{"properties":{"#text":{"pattern":"[\\u3400-\\u4DBF\\u4E00-\\u9FFF\\uF900-\\uFAFF]"}}}},{"if":{"properties":{"@xml:lang":{"const":"en"}},"required":["@xml:lang"]},"then":{"properties":{"#text":{"not":{"pattern":"[\\u3400-\\u4DBF\\u4E00-\\u9FFF\\uF900-\\uFAFF]"}}}}}]},"tidas_data_types_Languages":{"type":"string","enum":["aa","ab","ae","af","ak","am","an","ar","as","av","ay","az","ba","be","bg","bh","bi","bm","bn","bo","br","bs","ca","ce","ch","co","cr","cs","cu","cv","cy","da","de","dv","dz","ee","el","en","eo","es","et","eu","fa","ff","fi","fj","fo","fr","fy","ga","gd","gl","gn","gu","gv","ha","he","hi","ho","hr","ht","hu","hy","hz","ia","id","ie","ig","ii","ik","io","is","it","iu","ja","jv","ka","kg","ki","kj","kk","kl","km","kn","ko","kr","ks","ku","kv","kw","ky","la","lb","lg","li","ln","lo","lt","lu","lv","mg","mh","mi","mk","ml","mn","mo","mr","ms","mt","my","na","nb","nd","ne","ng","nl","nn","no","nr","nv","ny","oc","oj","om","or","os","pa","pi","pl","ps","pt","qu","rm","rn","ro","ru","rw","sa","sc","sd","se","sg","si","sk","sl","sm","sn","so","sq","sr","ss","st","su","sv","sw","ta","te","tg","th","ti","tk","tl","tn","to","tr","ts","tt","tw","ty","ug","uk","ur","uz","ve","vi","vo","wa","wo","xh","yi","yo","za","zh","zu"]},"tidas_data_types_GlobalReferenceType":{"anyOf":[{"type":"object","properties":{"@type":{"$ref":"#/$defs/tidas_data_types_GlobalReferenceTypeValues"},"@refObjectId":{"type":"string","pattern":"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"},"@version":{"$ref":"#/$defs/tidas_data_types_Version"},"@uri":{"type":"string"},"common:shortDescription":{"$ref":"#/$defs/tidas_data_types_STMultiLang"},"common:subReference":{"anyOf":[{"$ref":"#/$defs/tidas_data_types_String"},{"type":"array","minItems":1,"items":{"$ref":"#/$defs/tidas_data_types_String"}}]}},"required":["@type","@refObjectId","@uri","@version","common:shortDescription"]},{"type":"array","items":{"type":"object","properties":{"@type":{"$ref":"#/$defs/tidas_data_types_GlobalReferenceTypeValues"},"@refObjectId":{"type":"string","pattern":"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"},"@version":{"$ref":"#/$defs/tidas_data_types_Version"},"@uri":{"type":"string"},"common:shortDescription":{"$ref":"#/$defs/tidas_data_types_STMultiLang"},"common:subReference":{"anyOf":[{"$ref":"#/$defs/tidas_data_types_String"},{"type":"array","minItems":1,"items":{"$ref":"#/$defs/tidas_data_types_String"}}]}},"required":["@type","@refObjectId","@uri","@version","common:shortDescription"]}}]},"tidas_data_types_GlobalReferenceTypeValues":{"type":"string","enum":["source data set","process data set","flow data set","flow property data set","unit group data set","contact data set","LCIA method data set","other external file"]},"tidas_data_types_Version":{"type":"string","pattern":"^\\d{2}\\.\\d{2}(\\.\\d{3})?$"},"tidas_data_types_STMultiLang":{"anyOf":[{"type":"array","items":{"$ref":"#/$defs/tidas_data_types_LocalizedText1000Item"},"uniqueItems":true},{"$ref":"#/$defs/tidas_data_types_LocalizedText1000Item"}]},"tidas_data_types_LocalizedText1000Item":{"allOf":[{"$ref":"#/$defs/tidas_data_types_LocalizedTextItem"},{"properties":{"#text":{"maxLength":1000}}}]},"tidas_data_types_String":{"type":"string","maxLength":500,"minLength":1},"tidas_data_types_CommonOther":{"type":"object","patternProperties":{"^@xmlns(:[A-Za-z_][A-Za-z0-9_.-]*)?$":{"type":"string"},"^(?!(common|xmlns):)([A-Za-z_][A-Za-z0-9_.-]*:)?[A-Za-z_][A-Za-z0-9_.-]*$":{"$ref":"#/$defs/tidas_data_types_AnyXmlElement"}},"additionalProperties":false,"not":{"propertyNames":{"pattern":"^@xmlns(:[A-Za-z_][A-Za-z0-9_.-]*)?$"}}},"tidas_data_types_AnyXmlElement":{"anyOf":[{"type":"null"},{"type":"string"},{"type":"number"},{"type":"boolean"},{"type":"array","minItems":1,"items":{"$ref":"#/$defs/tidas_data_types_AnyXmlElement"}},{"type":"object","additionalProperties":{"$ref":"#/$defs/tidas_data_types_AnyXmlElement"}}]}}},"lifecyclemodels":{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"validation":{"type":"object","properties":{"review":{"anyOf":[{"type":"object","properties":{"common:referenceToNameOfReviewerAndInstitution":{"$ref":"#/$defs/tidas_data_types_GlobalReferenceType"},"common:otherReviewDetails":{"$ref":"#/$defs/tidas_data_types_FTMultiLang"},"common:referenceToCompleteReviewReport":{"$ref":"#/$defs/tidas_data_types_GlobalReferenceType"},"common:other":{"$ref":"#/$defs/tidas_data_types_CommonOther"}},"required":["common:referenceToNameOfReviewerAndInstitution"]},{"type":"array","items":{"type":"object","properties":{"common:referenceToNameOfReviewerAndInstitution":{"$ref":"#/$defs/tidas_data_types_GlobalReferenceType"},"common:otherReviewDetails":{"$ref":"#/$defs/tidas_data_types_FTMultiLang"},"common:referenceToCompleteReviewReport":{"$ref":"#/$defs/tidas_data_types_GlobalReferenceType"},"common:other":{"$ref":"#/$defs/tidas_data_types_CommonOther"}},"required":["common:referenceToNameOfReviewerAndInstitution"]}}]},"common:other":{"$ref":"#/$defs/tidas_data_types_CommonOther"}},"required":["review"]},"complianceDeclarations":{"anyOf":[{"type":"object","properties":{"compliance":{"anyOf":[{"type":"object","properties":{"common:referenceToComplianceSystem":{"$ref":"#/$defs/tidas_data_types_GlobalReferenceType"},"common:approvalOfOverallCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:nomenclatureCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:methodologicalCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:reviewCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:documentationCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:qualityCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:other":{"$ref":"#/$defs/tidas_data_types_CommonOther"}},"required":["common:referenceToComplianceSystem","common:approvalOfOverallCompliance","common:nomenclatureCompliance","common:methodologicalCompliance","common:reviewCompliance","common:documentationCompliance","common:qualityCompliance"]},{"type":"array","items":{"type":"object","properties":{"common:referenceToComplianceSystem":{"$ref":"#/$defs/tidas_data_types_GlobalReferenceType"},"common:approvalOfOverallCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:nomenclatureCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:methodologicalCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:reviewCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:documentationCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:qualityCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:other":{"$ref":"#/$defs/tidas_data_types_CommonOther"}},"required":["common:referenceToComplianceSystem","common:approvalOfOverallCompliance","common:nomenclatureCompliance","common:methodologicalCompliance","common:reviewCompliance","common:documentationCompliance","common:qualityCompliance"]},"minItems":1}]},"common:other":{"$ref":"#/$defs/tidas_data_types_CommonOther"}},"required":["compliance"]},{"type":"array","minItems":1,"items":{"type":"object","properties":{"compliance":{"anyOf":[{"type":"object","properties":{"common:referenceToComplianceSystem":{"$ref":"#/$defs/tidas_data_types_GlobalReferenceType"},"common:approvalOfOverallCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:nomenclatureCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:methodologicalCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:reviewCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:documentationCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:qualityCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:other":{"$ref":"#/$defs/tidas_data_types_CommonOther"}},"required":["common:referenceToComplianceSystem","common:approvalOfOverallCompliance","common:nomenclatureCompliance","common:methodologicalCompliance","common:reviewCompliance","common:documentationCompliance","common:qualityCompliance"]},{"type":"array","items":{"type":"object","properties":{"common:referenceToComplianceSystem":{"$ref":"#/$defs/tidas_data_types_GlobalReferenceType"},"common:approvalOfOverallCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:nomenclatureCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:methodologicalCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:reviewCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:documentationCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:qualityCompliance":{"type":"string","enum":["Fully compliant","Not compliant","Not defined"]},"common:other":{"$ref":"#/$defs/tidas_data_types_CommonOther"}},"required":["common:referenceToComplianceSystem","common:approvalOfOverallCompliance","common:nomenclatureCompliance","common:methodologicalCompliance","common:reviewCompliance","common:documentationCompliance","common:qualityCompliance"]},"minItems":1}]},"common:other":{"$ref":"#/$defs/tidas_data_types_CommonOther"}},"required":["compliance"]}}]}},"$defs":{"tidas_data_types_GlobalReferenceType":{"anyOf":[{"type":"object","properties":{"@type":{"$ref":"#/$defs/tidas_data_types_GlobalReferenceTypeValues"},"@refObjectId":{"type":"string","pattern":"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"},"@version":{"$ref":"#/$defs/tidas_data_types_Version"},"@uri":{"type":"string"},"common:shortDescription":{"$ref":"#/$defs/tidas_data_types_STMultiLang"},"common:subReference":{"anyOf":[{"$ref":"#/$defs/tidas_data_types_String"},{"type":"array","minItems":1,"items":{"$ref":"#/$defs/tidas_data_types_String"}}]}},"required":["@type","@refObjectId","@uri","@version","common:shortDescription"]},{"type":"array","items":{"type":"object","properties":{"@type":{"$ref":"#/$defs/tidas_data_types_GlobalReferenceTypeValues"},"@refObjectId":{"type":"string","pattern":"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"},"@version":{"$ref":"#/$defs/tidas_data_types_Version"},"@uri":{"type":"string"},"common:shortDescription":{"$ref":"#/$defs/tidas_data_types_STMultiLang"},"common:subReference":{"anyOf":[{"$ref":"#/$defs/tidas_data_types_String"},{"type":"array","minItems":1,"items":{"$ref":"#/$defs/tidas_data_types_String"}}]}},"required":["@type","@refObjectId","@uri","@version","common:shortDescription"]}}]},"tidas_data_types_GlobalReferenceTypeValues":{"type":"string","enum":["source data set","process data set","flow data set","flow property data set","unit group data set","contact data set","LCIA method data set","other external file"]},"tidas_data_types_Version":{"type":"string","pattern":"^\\d{2}\\.\\d{2}(\\.\\d{3})?$"},"tidas_data_types_STMultiLang":{"anyOf":[{"type":"array","items":{"$ref":"#/$defs/tidas_data_types_LocalizedText1000Item"},"uniqueItems":true},{"$ref":"#/$defs/tidas_data_types_LocalizedText1000Item"}]},"tidas_data_types_LocalizedText1000Item":{"allOf":[{"$ref":"#/$defs/tidas_data_types_LocalizedTextItem"},{"properties":{"#text":{"maxLength":1000}}}]},"tidas_data_types_LocalizedTextItem":{"type":"object","properties":{"@xml:lang":{"$ref":"#/$defs/tidas_data_types_Languages"},"#text":{"type":"string"}},"required":["@xml:lang","#text"],"allOf":[{"if":{"properties":{"@xml:lang":{"const":"zh"}},"required":["@xml:lang"]},"then":{"properties":{"#text":{"pattern":"[\\u3400-\\u4DBF\\u4E00-\\u9FFF\\uF900-\\uFAFF]"}}}},{"if":{"properties":{"@xml:lang":{"const":"en"}},"required":["@xml:lang"]},"then":{"properties":{"#text":{"not":{"pattern":"[\\u3400-\\u4DBF\\u4E00-\\u9FFF\\uF900-\\uFAFF]"}}}}}]},"tidas_data_types_Languages":{"type":"string","enum":["aa","ab","ae","af","ak","am","an","ar","as","av","ay","az","ba","be","bg","bh","bi","bm","bn","bo","br","bs","ca","ce","ch","co","cr","cs","cu","cv","cy","da","de","dv","dz","ee","el","en","eo","es","et","eu","fa","ff","fi","fj","fo","fr","fy","ga","gd","gl","gn","gu","gv","ha","he","hi","ho","hr","ht","hu","hy","hz","ia","id","ie","ig","ii","ik","io","is","it","iu","ja","jv","ka","kg","ki","kj","kk","kl","km","kn","ko","kr","ks","ku","kv","kw","ky","la","lb","lg","li","ln","lo","lt","lu","lv","mg","mh","mi","mk","ml","mn","mo","mr","ms","mt","my","na","nb","nd","ne","ng","nl","nn","no","nr","nv","ny","oc","oj","om","or","os","pa","pi","pl","ps","pt","qu","rm","rn","ro","ru","rw","sa","sc","sd","se","sg","si","sk","sl","sm","sn","so","sq","sr","ss","st","su","sv","sw","ta","te","tg","th","ti","tk","tl","tn","to","tr","ts","tt","tw","ty","ug","uk","ur","uz","ve","vi","vo","wa","wo","xh","yi","yo","za","zh","zu"]},"tidas_data_types_String":{"type":"string","maxLength":500,"minLength":1},"tidas_data_types_FTMultiLang":{"anyOf":[{"type":"array","items":{"$ref":"#/$defs/tidas_data_types_LocalizedTextItem"},"uniqueItems":true},{"$ref":"#/$defs/tidas_data_types_LocalizedTextItem"}]},"tidas_data_types_CommonOther":{"type":"object","patternProperties":{"^@xmlns(:[A-Za-z_][A-Za-z0-9_.-]*)?$":{"type":"string"},"^(?!(common|xmlns):)([A-Za-z_][A-Za-z0-9_.-]*:)?[A-Za-z_][A-Za-z0-9_.-]*$":{"$ref":"#/$defs/tidas_data_types_AnyXmlElement"}},"additionalProperties":false,"not":{"propertyNames":{"pattern":"^@xmlns(:[A-Za-z_][A-Za-z0-9_.-]*)?$"}}},"tidas_data_types_AnyXmlElement":{"anyOf":[{"type":"null"},{"type":"string"},{"type":"number"},{"type":"boolean"},{"type":"array","minItems":1,"items":{"$ref":"#/$defs/tidas_data_types_AnyXmlElement"}},{"type":"object","additionalProperties":{"$ref":"#/$defs/tidas_data_types_AnyXmlElement"}}]}}}}$contract$::jsonb -> p_table;
+$_$;
+
+
+ALTER FUNCTION "private"."review_metadata_schema_v1"("p_table" "text") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "private"."review_notify_event_v1"("p_event_type" "text", "p_review_id" "uuid", "p_recipient_user_id" "uuid", "p_sender_user_id" "uuid", "p_target_table" "text", "p_target_id" "uuid", "p_target_version" "text", "p_root_review_id" "uuid" DEFAULT NULL::"uuid", "p_scope_version" integer DEFAULT NULL::integer, "p_reason_code" "text" DEFAULT NULL::"text") RETURNS "text"
@@ -109059,6 +109160,10 @@ CREATE OR REPLACE TRIGGER "result_query_sources_immutable" BEFORE DELETE OR UPDA
 
 
 
+CREATE OR REPLACE TRIGGER "review_comment_metadata_guard_v1" BEFORE INSERT OR UPDATE OF "json", "state_code" ON "private"."comments" FOR EACH ROW EXECUTE FUNCTION "private"."review_guard_comment_metadata_v1"();
+
+
+
 CREATE OR REPLACE TRIGGER "reviews_v2_kind_guard" BEFORE INSERT OR UPDATE ON "private"."reviews" FOR EACH ROW EXECUTE FUNCTION "private"."review_v2_kind_guard"();
 
 
@@ -116359,6 +116464,10 @@ GRANT ALL ON FUNCTION "private"."review_assert_current_approval_v1"("p_review" "
 
 
 
+REVOKE ALL ON FUNCTION "private"."review_assert_metadata_v1"("p_value" "jsonb", "p_table" "text") FROM PUBLIC;
+
+
+
 REVOKE ALL ON FUNCTION "private"."review_build_json_v1"("p_target_table" "text", "p_target_row" "jsonb", "p_owner_id" "uuid", "p_action" "text", "p_actor" "uuid") FROM PUBLIC;
 GRANT ALL ON FUNCTION "private"."review_build_json_v1"("p_target_table" "text", "p_target_row" "jsonb", "p_owner_id" "uuid", "p_action" "text", "p_actor" "uuid") TO "api_internal_executor";
 
@@ -116371,6 +116480,10 @@ GRANT ALL ON FUNCTION "private"."review_candidate_root_ids_v1"("p_target_table" 
 
 REVOKE ALL ON FUNCTION "private"."review_canonical_json_text_v1"("p_value" "jsonb") FROM PUBLIC;
 GRANT ALL ON FUNCTION "private"."review_canonical_json_text_v1"("p_value" "jsonb") TO "api_internal_executor";
+
+
+
+REVOKE ALL ON FUNCTION "private"."review_clean_metadata_v1"("p_value" "jsonb") FROM PUBLIC;
 
 
 
@@ -116398,7 +116511,15 @@ GRANT ALL ON FUNCTION "private"."review_get_or_create_reference_v1"("p_target_ta
 
 
 
+REVOKE ALL ON FUNCTION "private"."review_guard_comment_metadata_v1"() FROM PUBLIC;
+
+
+
 REVOKE ALL ON FUNCTION "private"."review_member_workload_classification_v1"("p_reviewer_id" "uuid") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."review_metadata_schema_v1"("p_table" "text") FROM PUBLIC;
 
 
 

@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-03
-lastReviewedCommit: 2b8959360fe39205b4ab11d0d40acf32df3e66ac
-lastReviewedNote: "Database #895: reviewed default-off canonical Study admission, exact RLS source capture/history rights, opaque disclosure intents and scoped cancellation/reconciliation; local runtime evidence and owned reconstruction are distinct from hosted activation."
+lastReviewedCommit: aebe79da1a92904ffbb2c3b03444c396343f2739
+lastReviewedNote: "Database #900: reviewed versioned review metadata schema admission and final writeback guard, isolated PG17 proof and generated schema inventory. Existing rows, API authority, branch deployment and integration policy remain unchanged."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -1171,3 +1171,10 @@ restores the prior source-enabled flag and retains its distinct synthetic
 namespace for the explicit owned reset. The input-parity SQL suite separately
 covers numeric source IDs, canonical Scenario generations and normalized generic
 job-kind routing. Neither test grants hosted or business-data authority.
+
+## Review metadata schema check
+
+`python3 scripts/check_review_metadata_contract.py` verifies local-only schema
+references and exact migration embedding. Optional `--sdk-assets <directory>`
+reprojects the installed SDK0.5.0 assets and verifies source hashes. It performs
+no network, database operation, package installation or file mutation.

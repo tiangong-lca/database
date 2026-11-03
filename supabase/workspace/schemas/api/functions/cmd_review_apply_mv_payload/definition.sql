@@ -18,6 +18,14 @@ begin
     return api.cmd_review_get_dataset_row(p_table, p_id, p_version, false);
   end if;
 
+  v_review_items := coalesce(private.review_clean_metadata_v1(v_review_items), '[]'::jsonb);
+  v_compliance_items := coalesce(private.review_clean_metadata_v1(v_compliance_items), '[]'::jsonb);
+  perform private.review_assert_metadata_v1(
+    private.review_clean_metadata_v1(jsonb_build_object(
+      'validation', jsonb_build_object('review', v_review_items),
+      'complianceDeclarations', jsonb_build_object('compliance', v_compliance_items)
+    )), p_table
+  );
   v_row := api.cmd_review_get_dataset_row(p_table, p_id, p_version, true);
 
   if v_row is null then
