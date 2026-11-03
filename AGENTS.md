@@ -38,7 +38,7 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-04
-lastReviewedCommit: 75a5841c35fa4d8b947545f6c31e5aa6c17e921d
+lastReviewedCommit: eb3fbaf5d6de868c8562516b2980bdc968322121
 lastReviewedNote: "Database #906: reviewed V4 revision review, one-use actor delegation, immutable finalization and named summary-share authority, exact additive upgrade, SQL/HTTP/concurrency proof and deterministic generated schema. Actual bytes, UI/CLI, hosted enablement and source integration remain separately qualified."
 related:
   - .docpact/config.yaml

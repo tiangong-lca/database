@@ -72,6 +72,37 @@ def main():
         return body
     binding={'reportRevisionId':REPORT,'expectedContentHash':'b'*64}
     check('owner-current-report',rpc('report.current',binding))
+    core={'resource':{'type':'study','id':STUDY}}
+    def check_core(name,expected,actor=1,client=None):
+        body=check(name,rpc('resource.actions',core,actor=actor,client=client));assert body['data']['corePermissions']==expected
+    check_core('owner-coarse-core-authority',{'read':True,'write':True})
+    check_core('editor-coarse-core-authority',{'read':True,'write':True},actor=4)
+    check_core('viewer-coarse-core-authority',{'read':True,'write':False},actor=5)
+    check_core('reviewer-no-coarse-core-authority',{'read':False,'write':False},actor=2)
+    check_core('recipient-no-coarse-core-authority',{'read':False,'write':False},actor=3)
+    readonly='90600000-0000-4000-8000-000000000104'
+    check_core('read-only-OAuth-core-authority',{'read':True,'write':False},client=readonly)
+    nonstudy=check('non-Study-no-coarse-core-authority',rpc('resource.actions',{'resource':{'type':'reportRevision','id':REPORT}}));assert nonstudy['data']['corePermissions']=={'read':False,'write':False}
+    try:
+        sql("update private.studies set status='archived' where id='"+STUDY+"';")
+        check_core('archived-owner-no-core-write',{'read':True,'write':False})
+    finally:
+        sql("update private.studies set status='active' where id='"+STUDY+"';")
+    try:
+        sql("delete from private.roles where user_id='89400000-0000-4000-8000-000000000004' and team_id='89400000-0000-4000-8000-000000000100';")
+        check_core('team-revoked-no-core-authority',{'read':False,'write':False},actor=4)
+    finally:
+        sql("insert into private.roles(user_id,team_id,role) values('89400000-0000-4000-8000-000000000004','89400000-0000-4000-8000-000000000100','member');")
+    try:
+        sql("delete from private.study_members where study_id='"+STUDY+"' and actor_id='89400000-0000-4000-8000-000000000005';")
+        check_core('member-revoked-no-core-authority',{'read':False,'write':False},actor=5)
+    finally:
+        sql("insert into private.study_members values('"+STUDY+"','89400000-0000-4000-8000-000000000005','viewer');")
+    try:
+        sql("update private.oauth_client_registry set enabled=false,disabled_at=clock_timestamp() where client_id='"+readonly+"';")
+        check('revoked-read-client-core-request-denied',rpc('resource.actions',core,client=readonly),False,'42501',403)
+    finally:
+        sql("update private.oauth_client_registry set enabled=true,disabled_at=null where client_id='"+readonly+"';")
     legacy={'schemaVersion':'lca.study-api.v2','requestId':'mixed-owner-reviewer','operation':'study.list','limit':1,'cursor':None}
     firstpage=check('legacy-mixed-role-first-page',http('rpc/qry_study_v1',{'p_request':legacy},actor=2))['data'];assert firstpage['items'][0]['studyId']=='89300000-0000-4000-8000-000000000001'
     secondpage=check('legacy-mixed-role-cursor-page',http('rpc/qry_study_v1',{'p_request':{**legacy,'cursor':firstpage['nextCursor']}},actor=2))['data'];assert secondpage['items'][0]['studyId']=='89500000-0000-4000-8000-000000000001' and secondpage['nextCursor'] is None

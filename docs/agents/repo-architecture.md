@@ -31,7 +31,7 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-04
-lastReviewedCommit: 75a5841c35fa4d8b947545f6c31e5aa6c17e921d
+lastReviewedCommit: eb3fbaf5d6de868c8562516b2980bdc968322121
 lastReviewedNote: "Database #906: reviewed V4 revision review, one-use actor delegation, immutable finalization and named summary-share authority, exact additive upgrade, SQL/HTTP/concurrency proof and deterministic generated schema. Actual bytes, UI/CLI, hosted enablement and source integration remain separately qualified."
 related:
   - ../../AGENTS.md
@@ -73,6 +73,9 @@ V1 exports retain their historical meaning. Recipient projection authority grant
 no Study/source membership. All producer and review gates default off; exact local
 SQL/HTTP/race proof remains separate from real renderer, UI, CLI and hosted
 qualification. No Study phase publishes datasets or formal Results.
+V4 Study actions expose coarse core read/write from the existing authorizer for
+UI affordances. Those flags add no source/target authorization or producer
+qualification and are always false on non-Study targets.
 The sole legacy helper delta filters V2 Study-list membership by its existing
 readable roles before pagination. Its resource read guard and authority remain
 unchanged; mixed owner/reviewer actors can still list their owned Studies.

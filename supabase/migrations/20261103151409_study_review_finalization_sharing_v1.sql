@@ -492,7 +492,7 @@ exception when raise_exception then return '[]'::jsonb;end$$;
 create function api.qry_study_review_v1(p_request jsonb) returns jsonb
 language plpgsql security definer set search_path='' set statement_timeout='15s' as $$
 declare op text:=p_request->>'operation';actor uuid:=auth.uid();client text:=nullif(auth.jwt()->>'client_id','');allowed text[];rid uuid;r private.study_report_revisions%rowtype;
- s private.study_report_shares%rowtype;e private.study_review_exports%rowtype;value jsonb;ops jsonb;allowed_member_roles jsonb:='[]'::jsonb;kind text;lim integer;afterid uuid;nextid uuid;ids uuid[];resource_id uuid;
+ s private.study_report_shares%rowtype;e private.study_review_exports%rowtype;value jsonb;ops jsonb;allowed_member_roles jsonb:='[]'::jsonb;core_read boolean:=false;core_write boolean:=false;kind text;lim integer;afterid uuid;nextid uuid;ids uuid[];resource_id uuid;
  selection jsonb;epoch text;cur private.study_cursors%rowtype;items jsonb:='[]'::jsonb;more boolean;
 begin
  perform private.study_review_envelope(p_request,false);perform private.study_require(private.study_client_allowed(client,'STUDY-READ-01'),'FORBIDDEN');
@@ -520,7 +520,19 @@ begin
    select case when team_id is null then '["reviewer"]'::jsonb else '["editor","reviewer","viewer"]'::jsonb end into allowed_member_roles
     from private.studies where id=(p_request->'resource'->>'id')::uuid;
   end if;
-  return jsonb_build_object('ok',true,'data',jsonb_build_object('type','actions','resource',p_request->'resource','actions',ops,'allowedMemberRoles',allowed_member_roles));
+  -- Coarse Study permissions reuse the existing authority. They do not confer
+  -- rights to a particular revision, source, target or artifact.
+  if p_request->'resource'->>'type'='study' then
+   begin
+    perform private.study_authorize((p_request->'resource'->>'id')::uuid,actor,client,'read');core_read:=true;
+   exception when raise_exception then null;end;
+   begin
+    perform private.study_authorize((p_request->'resource'->>'id')::uuid,actor,client,'write');
+    select status='active' into core_write from private.studies where id=(p_request->'resource'->>'id')::uuid;
+   exception when raise_exception then null;end;
+  end if;
+  return jsonb_build_object('ok',true,'data',jsonb_build_object('type','actions','resource',p_request->'resource','actions',ops,'allowedMemberRoles',allowed_member_roles,
+   'corePermissions',jsonb_build_object('read',core_read,'write',coalesce(core_write,false))));
  when 'share.read','share.view','share.download' then
   perform private.study_require(private.study_keys(p_request,array['schemaVersion','requestId','operation','shareId']),'INVALID_REQUEST');
   s:=private.study_review_share_check((p_request->>'shareId')::uuid,actor,client,op<>'share.read');

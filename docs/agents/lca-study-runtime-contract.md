@@ -434,6 +434,14 @@ self-demotion/removal is denied. `resource.actions.allowedMemberRoles` supplies
 the exact server policy (`reviewer` for a personal owner, all three nonowner roles
 for a team owner, empty without management authority); clients do not infer it.
 Comments are append-only and never approve.
+Study-target actions also return coarse `corePermissions.read/write`, derived
+by calling the existing `private.study_authorize` checks. Archived Studies have
+write=false. The fields distinguish existing owner/editor/viewer core authority
+without copying role policy or expanding V2 wire/authority. Reviewer and named
+recipient roles imply no core access; non-Study targets always return false/false.
+Read-only OAuth cannot advertise write, and revoked clients retain the existing
+whole-request denial. These flags authorize no particular source, revision,
+target, artifact or producer qualification; actual commands keep all checks.
 Substantive `approve`, `reject` and `withdraw` decisions bind exact frozen report
 ID/hash, actor, class and predecessor. One head per actor/class prevents forks;
 at most64 heads keep accepted evidence renderable. A new report ID inherits no
