@@ -19,8 +19,8 @@ checkPaths:
   - supabase/tests/regression/*study*.py
   - scripts/*study_runtime*.py
   - docs/agents/lca-study-runtime-contract.md
-lastReviewedAt: 2026-11-03
-lastReviewedCommit: 08499675382d498f2c98e5460d2e95d716c8b668
+lastReviewedAt: 2026-11-04
+lastReviewedCommit: 75a5841c35fa4d8b947545f6c31e5aa6c17e921d
 lastReviewedNote: "Database #906: reviewed V4 revision review, one-use actor delegation, immutable finalization and named summary-share authority, exact additive upgrade, SQL/HTTP/concurrency proof and deterministic generated schema. Actual bytes, UI/CLI, hosted enablement and source integration remain separately qualified."
 related:
   - ./lca-study-durable-contract.md

@@ -24,7 +24,8 @@ CREATE OR REPLACE FUNCTION "private"."study_review_actions"("p_type" "text", "p_
    ops:=ops||jsonb_build_array('report.finalize','share.list');st:=private.study_review_state(r.id);
    if st->>'acceptance'='current' then
     if (select export_enabled and export_profile is not null from private.study_reporting_config where singleton) and not exists(select 1 from private.study_runs where id in(select jsonb_array_elements_text(r.run_ids)::uuid) and validity<>'current') then ops:=ops||jsonb_build_array('export.request');end if;
-    if exists(select 1 from private.study_review_exports where report_id=r.id and finalization_id=(st->'finalization'->>'finalizationId')::uuid and actor_id=p_actor and grant_epoch=(select grant_epoch from private.studies where id=r.study_id)) then ops:=ops||jsonb_build_array('share.create');end if;
+    if exists(select 1 from private.study_review_exports e where e.report_id=r.id and e.finalization_id=(st->'finalization'->>'finalizationId')::uuid and e.actor_id=p_actor
+     and e.grant_epoch=(select grant_epoch from private.studies where id=r.study_id) and private.study_client_allowed(e.client_id,'STUDY-WRITE-01')) then ops:=ops||jsonb_build_array('share.create');end if;
    end if;
   end if;
  end if;return ops;

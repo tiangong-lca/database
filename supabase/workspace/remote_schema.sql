@@ -17922,6 +17922,7 @@ begin
   perform private.study_require(p_request->>'reviewClass'='internal' and p_request->>'decision' in ('approve','reject','withdraw'),'INVALID_REQUEST');
   select review_id into head from private.study_report_review_heads where report_id=r.id and actor_id=actor and review_class='internal';
   perform private.study_require(head is not distinct from (p_request->>'predecessorReviewId')::uuid,'REVISION_CONFLICT');
+  perform private.study_require(p_request->>'decision'<>'withdraw' or head is not null,'REVISION_CONFLICT');
   if op='review.delegation.issue' then
    perform private.study_require((p_request->>'clientId') ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' and private.study_client_allowed(p_request->>'clientId','STUDY-WRITE-01'),'FORBIDDEN');
    ts:=(p_request->>'expiresAt')::timestamptz;perform private.study_require(ts>clock_timestamp() and ts<=clock_timestamp()+interval '15 minutes','INVALID_REQUEST');
@@ -85539,7 +85540,7 @@ begin
     end if;
   end if;
   if op='study.list' then
-    select array_agg(id order by id) into ids from(select s.id from private.studies s join private.study_members m on m.study_id=s.id where m.actor_id=actor and private.study_team_member(actor,s.team_id) and (after_id is null or s.id>after_id) order by s.id limit lim+1)t;
+    select array_agg(id order by id) into ids from(select s.id from private.studies s join private.study_members m on m.study_id=s.id where m.actor_id=actor and m.role in ('owner','editor','viewer') and private.study_team_member(actor,s.team_id) and (after_id is null or s.id>after_id) order by s.id limit lim+1)t;
     more:=cardinality(ids)>lim; ids:=ids[1:lim];
     -- Recheck and lock every selected Study before returning its current projection.
     foreach rid in array coalesce(ids,'{}') loop perform private.study_authorize(rid,actor,client,'read'); end loop;
@@ -86305,7 +86306,8 @@ CREATE OR REPLACE FUNCTION "private"."study_review_actions"("p_type" "text", "p_
    ops:=ops||jsonb_build_array('report.finalize','share.list');st:=private.study_review_state(r.id);
    if st->>'acceptance'='current' then
     if (select export_enabled and export_profile is not null from private.study_reporting_config where singleton) and not exists(select 1 from private.study_runs where id in(select jsonb_array_elements_text(r.run_ids)::uuid) and validity<>'current') then ops:=ops||jsonb_build_array('export.request');end if;
-    if exists(select 1 from private.study_review_exports where report_id=r.id and finalization_id=(st->'finalization'->>'finalizationId')::uuid and actor_id=p_actor and grant_epoch=(select grant_epoch from private.studies where id=r.study_id)) then ops:=ops||jsonb_build_array('share.create');end if;
+    if exists(select 1 from private.study_review_exports e where e.report_id=r.id and e.finalization_id=(st->'finalization'->>'finalizationId')::uuid and e.actor_id=p_actor
+     and e.grant_epoch=(select grant_epoch from private.studies where id=r.study_id) and private.study_client_allowed(e.client_id,'STUDY-WRITE-01')) then ops:=ops||jsonb_build_array('share.create');end if;
    end if;
   end if;
  end if;return ops;
