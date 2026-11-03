@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS "private"."study_members" (
     "study_id" "uuid" NOT NULL,
     "actor_id" "uuid" NOT NULL,
     "role" "text" NOT NULL,
-    CONSTRAINT "study_members_role_check" CHECK (("role" = ANY (ARRAY['owner'::"text", 'editor'::"text", 'viewer'::"text"])))
+    CONSTRAINT "study_members_role_check" CHECK (("role" = ANY (ARRAY['owner'::"text", 'editor'::"text", 'reviewer'::"text", 'viewer'::"text"])))
 );
 
 ALTER TABLE ONLY "private"."study_members" FORCE ROW LEVEL SECURITY;
