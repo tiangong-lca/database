@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-03
-lastReviewedCommit: 2b8959360fe39205b4ab11d0d40acf32df3e66ac
-lastReviewedNote: "Database #895: reviewed default-off canonical Study admission, exact RLS source capture/history rights, opaque disclosure intents and scoped cancellation/reconciliation; local runtime evidence and owned reconstruction are distinct from hosted activation."
+lastReviewedCommit: aebe79da1a92904ffbb2c3b03444c396343f2739
+lastReviewedNote: "Database #900: reviewed versioned review metadata schema admission and final writeback guard, isolated PG17 proof and generated schema inventory. Existing rows, API authority, branch deployment and integration policy remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1816,3 +1816,15 @@ New scope-closure execution fingerprints and ordinary snapshot-build queue keys 
 ## Final Result ZIP signing
 
 Edge reuses existing server credentials for native single-object, 60-second Storage links after actor/current/complete-Candidate checks. Database continues to own the exact authorized descriptor; no custom signing role is needed. Migration `20261102091416` retires only the two #887 roles, their grants/memberships and five named Storage policies. Earlier migrations remain intact. There is no application data mutation or CASCADE; unexpected dependencies stop retirement.
+
+## Review metadata admission
+
+`contracts/review/metadata.v1.json` is the Database-owned review/compliance
+projection of SDK0.5.0's TIDAS assets, with exact source hashes and only local
+JSON Schema references. It is consumer admission policy, not a replacement
+for the public specification. `private.review_guard_comment_metadata_v1` cleans
+empty optional fields in Process/LifecycleModel Root comments and validates
+approving opinions with pg_jsonschema0.3.3. Drafts/rejections stay incomplete
+when necessary. `api.cmd_review_apply_mv_payload` validates normalized additions
+before final writeback, including old submitted opinions. Existing business
+rows are not backfilled, API/ACL identity and Root/Reference independence remain.

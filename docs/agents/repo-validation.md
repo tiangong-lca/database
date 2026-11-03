@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-03
-lastReviewedCommit: 2b8959360fe39205b4ab11d0d40acf32df3e66ac
-lastReviewedNote: "Database #895: reviewed default-off canonical Study admission, exact RLS source capture/history rights, opaque disclosure intents and scoped cancellation/reconciliation; local runtime evidence and owned reconstruction are distinct from hosted activation."
+lastReviewedCommit: aebe79da1a92904ffbb2c3b03444c396343f2739
+lastReviewedNote: "Database #900: reviewed versioned review metadata schema admission and final writeback guard, isolated PG17 proof and generated schema inventory. Existing rows, API authority, branch deployment and integration policy remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1785,3 +1785,20 @@ Also apply the migration to a populated canonical-base fixture with an existing 
 ## Final Result ZIP role retirement
 
 Run `supabase/tests/20261102_final_result_zip_retirement.sql` after a blank rebuild and an upgrade from the generation-role migration. Verify both custom roles and all five policies are absent, existing service Storage access and RLS remain, and the global RLS inventory returns to 121. Run schema/API closure as usual. Hosted readback must verify both environments after normal Dev/Main delivery. Edge separately verifies the actual two signed ZIP downloads with disposable objects; no business Result registration or publication is needed.
+
+## Review metadata guard (Database #900)
+
+Run `python3 scripts/check_review_metadata_contract.py` and, when SDK0.5.0 is
+installed, add `--sdk-assets <package>/dist/runtime-assets/tidas/schemas` to
+verify the exact source hashes and bounded projection. The offline check binds
+the versioned schemas to their migration embedding and rejects external refs.
+After the ordinary blank PG17 rebuild and populated predecessor upgrade, run
+`supabase/tests/20261103_review_metadata_guard.sql`, the adjacent
+`20261001_rejected_comment_reference_scope.sql`, full-schema/API closure and
+actor/OAuth contracts. The review fixture uses rollback-only synthetic actors,
+real draft/submit commands and the real writeback helper; only external webhook
+dispatch is disabled, while review immutability remains enabled. Prove invalid
+submission rollback, valid singleton/list metadata, incomplete rejection,
+legacy empty-selector cleanup, JSON/json_ordered synchronization and closed
+helper ACLs. Regenerate the five schema views twice without drift. No fixture
+qualifies hosted deployment or repairs historical datasets.

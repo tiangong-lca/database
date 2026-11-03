@@ -72,6 +72,7 @@ jobs:
 
       - name: Verify deployment workflow contract
         run: |
+          python scripts/check_review_metadata_contract.py
           python scripts/test_resolve_migration_head.py
           python3 scripts/test_configure_derivative_scheduler.py
           python scripts/test_supabase_dev_workflow_contract.py
@@ -142,6 +143,7 @@ jobs:
           supabase test db supabase/tests/20260930_review_member_workload_drilldown.sql
           supabase test db supabase/tests/20260928_review_rejection_visibility.sql
           supabase test db supabase/tests/20260929_rejected_review_report_download.sql
+          supabase test db supabase/tests/20261103_review_metadata_guard.sql
           supabase test db supabase/tests/20261001_rejected_comment_reference_scope.sql
           supabase test db supabase/tests/20260909_tidas_partial_import.sql
           supabase test db supabase/tests/20260918_tidas_full_package_import.sql
