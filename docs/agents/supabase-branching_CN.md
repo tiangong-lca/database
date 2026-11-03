@@ -88,6 +88,7 @@ canonical-base-to-head upgrade；追加的 Preview repair 本身不能证明首�
 - 独立的 ARM64 `scheduler-profile` 作业只重建本地数据库，运行两组完整的合成性能样本并在两组之间重置。x64 `local-contract` 继续运行功能和安全测试；持久化 Dev 部署须等待两个作业。性能作业没有托管凭据或部署权限。
 - Study runtime 证明作业独占本地 PG17 `study894` 项目，验证 populated upgrade、完整 migration ledger 重建、实际观察到的 CAS/幂等并发与 PostgREST 授权。它保留有界证明摘要，仅释放该项目的 containers、volumes 和 network；local-contract 作业另执行 W06 task-admission/artifact-disclosure 与 P2 analysis/report/export SQL 套件。独立 Study 作业也验证 P2 predecessor 有数据升级，以及实际观察到的 Analysis/报告 producer 并发；各夹具命名空间之间只重置准确拥有的可丢弃项目。迁移仅安装默认关闭的能力；source/solver/disclosure 启用仍是由 `lca-study-runtime-contract.md` 规定、绑定实际证据的独立 service 操作。
 - 数据库 workflow 成功后，通过 `tiangong-lca-edge-functions` 部署并验证持久化 Dev 所需的 Functions。Function 源码、函数选择、部署命令和运行时验证仍由 Edge 仓负责。
+- P3审阅/分享证明使用另一个独占的本地PG17 `study906` 项目；只重置/清理其归属资源，验证P2数据升级、实际并发和PostgREST授权。该作业没有托管凭据；安装默认关闭的V4能力不代表启用任何环境。完整证明边界见runtime contract与validation guide。
 - 不要为 Git `main` 增加 checked-in 的 GitHub Actions 生产部署流程；生产项目由绑定到本仓的 Supabase GitHub integration 自动迁移。
 - 不要先手改远端数据库再回头补 migration。
 

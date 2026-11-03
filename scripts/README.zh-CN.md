@@ -66,6 +66,22 @@ JSON/cursor 及索引存储/写成本。这些本地资格不代表 hosted 性�
 
 ## 脚本列表
 
+### Study P3 审阅与指定接收人分享
+
+`prepare_study_review_project.py --destination <new-owned-dir>/study906` 创建
+独立 PG17 项目（API56621/DB56622）及归属回执，不启动或重置任何数据库。
+`test_study_review_upgrade.py --workdir <owned-study906> --report <new-json>`
+仅在 `STUDY_REVIEW_ALLOW_RESET=owned-study906` 下重置明确核验归属的项目，
+验证已填充 P2 升级及完整空白迁移账本。后续运行
+`supabase/tests/regression/20261103_study_review_concurrency.py` 和
+`20261103_study_review_transport.py`，参数及顺序见英文 README 与 validation
+guide。`SUPABASE_CLI` 必须指向项目固定的2.117.0底层可执行文件。
+
+并发与 HTTP runner 保留合成数据，供归属方明确重置；不操作 P2保留的
+study894 或共享 database-engine。SQL/JWT/并发证明不代替真实字节、签名、
+GoTrue授权同意、Edge、安装版CLI或UI资格。保存回执后，只清理 study906
+标签所标识的容器、卷和网络，并记录零残留证明。
+
 ### `test_search_request_identity_http.py`
 
 仅在明确归属 Database #777 的本地隔离栈上执行真实 Auth/PostgREST

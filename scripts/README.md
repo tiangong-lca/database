@@ -687,6 +687,31 @@ destroy resources. Their synthetic producer evidence proves SQL binding/CAS only
 retain receipts and remove only the reviewed owned clones after verification.
 See the [validation guide](../docs/agents/repo-validation.md) for the full P2 bar.
 
+### Study P3 review qualification
+
+The following runners operate only the separately owned `study906` project
+(PG17, API56621/DB56622). They never touch retained `study894` or shared
+`database-engine`. Use the pinned underlying Supabase2.117.0 executable as
+`SUPABASE_CLI`; a wrapper hardcoded to another project is not suitable.
+
+```bash
+python3 -B scripts/prepare_study_review_project.py --destination <new-owned-dir>/study906
+supabase start --workdir <owned-study906>
+STUDY_REVIEW_ALLOW_RESET=owned-study906 python3 -B scripts/test_study_review_upgrade.py \
+  --workdir <owned-study906> --report <new-upgrade-json>
+python3 -B supabase/tests/regression/20261103_study_review_concurrency.py \
+  --workdir <owned-study906> --report <new-race-json>
+python3 -B supabase/tests/regression/20261103_study_review_transport.py \
+  --workdir <owned-study906> --race-receipt <race-json> --report <new-http-json>
+```
+
+The upgrade runner resets only the verified owned project. Race/HTTP runners
+retain their exact synthetic fixture namespace and never reset/drop anything.
+After preserving receipts, explicitly reset that project before generation and
+stop it with `supabase stop --project-id study906 --no-backup`; verify zero
+resources with its exact `com.supabase.cli.project=study906` label. See the
+[validation guide](../docs/agents/repo-validation.md) for proof boundaries.
+
 ### `build_schema_workspace.py`
 
 Refreshes the human-readable schema workspace under:

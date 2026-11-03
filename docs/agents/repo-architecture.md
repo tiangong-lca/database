@@ -63,8 +63,13 @@ Study/Run/Report remain distinct from LifecycleModel, worker_jobs and formal
 Final Result publication. P2 adds private ordered Analysis/Run links, canonical
 analysis jobs, opaque report producer intents, immutable ReportRevision content
 and exact signed-export bindings through an independently negotiated v3 façade.
-All new producer gates default off; review/finalization/share remain additive
-work under P0. No Study phase publishes datasets or formal Results.
+P3 adds separate reviewer authority, append-only comments/decision heads,
+one-use actor-issued OAuth delegations, immutable finalizations and named summary
+shares through independently negotiated V4 façades. Frozen P2 records and signed
+V1 exports retain their historical meaning. Recipient projection authority grants
+no Study/source membership. All producer and review gates default off; exact local
+SQL/HTTP/race proof remains separate from real renderer, UI, CLI and hosted
+qualification. No Study phase publishes datasets or formal Results.
 
 ## Final Result content identity
 

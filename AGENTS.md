@@ -88,7 +88,7 @@ Additional governed source docs, not part of the default first-load surface:
 | --- | --- | --- |
 | `README.md` and `README.zh-CN.md` | repo landing context and high-level purpose | repo contract, proof bar, or branch-policy truth |
 | `docs/agents/lca-study-durable-contract.md` | Study identity, persistence, freeze, authorization, concurrency and report review/export/share invariants; P0 offline acceptance examples | Edge public wire schemas, numerical algorithms, or proof of implemented schema/runtime |
-| `docs/agents/lca-study-runtime-contract.md` | W03/W06 persistence and gated source/task/disclosure, P2 analysis/report/export producer intents, current authorization, receipts and lease fences | Worker numerical semantics, environment qualification, Edge wire ownership or report/publication authority |
+| `docs/agents/lca-study-runtime-contract.md` | W03/W06 persistence and source/task/disclosure; P2 producer intents; P3 review, finalization and named-summary-share authority; current authorization and immutable receipts | Worker numerical semantics, environment qualification, Edge wire ownership or formal publication authority |
 
 ## Load Order
 

@@ -303,10 +303,14 @@ rules:
         kind: wire-parity-fixture
       - path: supabase/tests/fixtures/study904_analysis_fixture.sql
         kind: analysis-reporting-synthetic-fixture
+      - path: supabase/tests/fixtures/study906_review_fixture.sql
+        kind: review-sharing-synthetic-fixture
       - path: supabase/tests/regression/*study*.py
         kind: concurrent-runtime-tests
       - path: scripts/*study_runtime*.py
         kind: isolated-runtime-tooling
+      - path: scripts/*study_review*.py
+        kind: isolated-review-tooling
       - path: docs/agents/lca-study-runtime-contract.md
         kind: runtime-contract
     requiredDocs:

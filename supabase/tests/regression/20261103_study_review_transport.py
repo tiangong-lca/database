@@ -1,0 +1,123 @@
+#!/usr/bin/env python3
+"""Actual owned-study906 PostgREST/JWT/RLS/pre-request proof.
+
+Uses signed local fixture claims, not GoTrue/OAuth-consent or Edge byte proof.
+Never logs credentials, payloads or raw errors. Requires committed race fixture.
+"""
+import argparse
+import base64
+import hashlib
+import hmac
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.request
+sys.path.insert(0,str(Path(__file__).resolve().parents[3]/'scripts'))
+from study_review_test_support import REPORT,STUDY,request,sql,verify_owned
+
+
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self,req,fp,code,msg,headers,newurl):return None
+
+
+def main():
+    p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--workdir',type=Path,required=True)
+    p.add_argument('--race-receipt',type=Path,required=True)
+    p.add_argument('--report',type=Path,required=True)
+    args=p.parse_args()
+    verify_owned(args.workdir);assert not args.report.exists()
+    race=json.loads(args.race_receipt.read_text());assert race['project']=='study906'
+    share=race['retainedHttpShareId']
+    cli=os.environ['SUPABASE_CLI']
+    env=json.loads(subprocess.check_output([cli,'status','--workdir',str(args.workdir),'--output','json'],text=True,stderr=subprocess.DEVNULL))
+    assert env['API_URL']=='http://127.0.0.1:56621' and '127.0.0.1:56622/' in env['DB_URL']
+    info=json.loads(subprocess.check_output(['docker','inspect','supabase_rest_study906'],text=True))[0]
+    assert info['Config']['Labels']['com.supabase.cli.project']=='study906'
+    restenv=dict(x.split('=',1) for x in info['Config']['Env'] if '=' in x)
+    keys=[k for k in json.loads(restenv['PGRST_JWT_SECRET'])['keys'] if k.get('kty')=='oct'];assert len(keys)==1
+    jwk=keys[0];key=base64.urlsafe_b64decode(jwk['k']+'='*(-len(jwk['k'])%4))
+    now=int(sql('select extract(epoch from clock_timestamp())::bigint;'));assertions=[]
+    client='90600000-0000-4000-8000-000000000101';other='90600000-0000-4000-8000-000000000102'
+    def token(actor=1,client=None,role='authenticated'):
+        enc=lambda b:base64.urlsafe_b64encode(b).decode().rstrip('=')
+        h={'alg':'HS256','typ':'JWT'}
+        if jwk.get('kid'):h['kid']=jwk['kid']
+        c={'role':role,'aud':'authenticated','iat':now,'exp':now+600}
+        if actor is not None:c['sub']='89400000-0000-4000-8000-'+str(actor).zfill(12)
+        if client:c['client_id']=client
+        head=enc(json.dumps(h,separators=(',',':')).encode());body=enc(json.dumps(c,separators=(',',':')).encode())
+        return head+'.'+body+'.'+enc(hmac.new(key,(head+'.'+body).encode(),hashlib.sha256).digest())
+    def http(path,body=None,actor=1,client=None,role='authenticated',profile='api'):
+        headers={'apikey':env['ANON_KEY'],'Authorization':'Bearer '+token(actor,client,role),'Content-Type':'application/json','Content-Profile':profile,'Accept-Profile':profile}
+        req=urllib.request.Request(env['API_URL']+'/rest/v1/'+path,headers=headers,data=None if body is None else json.dumps(body).encode(),method='GET' if body is None else 'POST')
+        try:
+            with urllib.request.build_opener(urllib.request.ProxyHandler({}),NoRedirect).open(req,timeout=15) as r:status,raw=r.status,r.read()
+        except urllib.error.HTTPError as e:status,raw=e.code,e.read()
+        try:return status,json.loads(raw)
+        except ValueError:return status,{}
+    def rpc(op,fields=None,key='http',write=False,**kw):
+        req=request(op,fields,key)
+        if write:req['idempotencyKey']=key
+        return http('rpc/'+('cmd' if write else 'qry')+'_study_review_v1',{'p_request':req},**kw)
+    def check(name,response,ok=True,code=None,status=200):
+        actual,body=response
+        passed=actual==status and(body.get('ok') is True if ok else body.get('code')==code)
+        proof={'name':name,'httpStatus':actual,'code':body.get('code'),'passed':passed};assertions.append(proof)
+        assert passed,'transport check failed: '+json.dumps(proof)
+        return body
+    binding={'reportRevisionId':REPORT,'expectedContentHash':'b'*64}
+    check('owner-current-report',rpc('report.current',binding))
+    check('reviewer-summary-without-core-read',rpc('report.current',binding,actor=2,client=client))
+    v3=http('rpc/qry_study_reporting_v1',{'p_request':{'schemaVersion':'lca.study-api.v3','requestId':'legacy','operation':'report.read','reportRevisionId':REPORT}},actor=2)
+    check('reviewer-no-V3-escalation',v3,False,'FORBIDDEN')
+    check('viewer-cannot-comment',rpc('comment.append',{**binding,'text':'Forbidden viewer'},'http-viewer',True,actor=5),False,'FORBIDDEN')
+    first=check('reviewer-appends-comment',rpc('comment.append',{**binding,'text':'Actual PostgREST actor fixture'},'http-comment',True,actor=2))
+    replay=check('comment-exact-recovery',rpc('comment.append',{**binding,'text':'Actual PostgREST actor fixture'},'http-comment',True,actor=2));assert replay==first
+    check('wrong-hash-denied',rpc('report.current',{**binding,'expectedContentHash':'c'*64},actor=2),False,'REFERENCE_MISMATCH')
+    r=rpc('report.current',binding,actor=None,role='anon');assert r[0] in (401,403,404);assertions.append({'name':'anonymous-ACL-denied','httpStatus':r[0],'passed':True})
+    r=http('study_report_reviews?select=id',profile='private');assert r[0]==406;assertions.append({'name':'private-schema-unexposed','httpStatus':r[0],'passed':True})
+    r=http('rpc/svc_study_review_intent_resolve_v1',{'p_intent_id':'90600000-0000-4000-8000-000000009999'});assert r[0] in(401,403,404);assertions.append({'name':'trusted-resolver-ACL-denied','httpStatus':r[0],'passed':True})
+    check('service-consume-canonical-manifest',http('rpc/svc_study_review_intent_consume_v1',{'p_intent_id':'90600000-0000-4000-8000-000000009999','p_completion':{}},actor=None,role='service_role'),False,'CAPABILITY_UNAVAILABLE')
+    check('service-config-canonical-manifest',http('rpc/svc_study_review_configure_v1',{'p_expected_revision':99999,'p_configuration':{'qualificationVersion':'lca.study-review-qualification.v1','enabled':True,'evidenceRef':'synthetic-stale-CAS'}},actor=None,role='service_role'),False,'REVISION_CONFLICT')
+    predecessor=sql("select review_id from private.study_report_review_heads where report_id='"+REPORT+"' and actor_id='89400000-0000-4000-8000-000000000002';")
+    expiry=json.loads(sql("select to_jsonb(clock_timestamp()+interval '5 minutes');"))
+    fields={**binding,'clientId':client,'reviewClass':'internal','decision':'approve','predecessorReviewId':predecessor,'expiresAt':expiry}
+    check('OAuth-cannot-self-authorize',rpc('review.delegation.issue',fields,'http-self-grant',True,actor=2,client=client),False,'FORBIDDEN')
+    d=check('first-party-actor-delegation',rpc('review.delegation.issue',fields,'http-actor-grant',True,actor=2))['data']['value']['delegationId']
+    review={**binding,'reviewClass':'internal','decision':'approve','comment':'Delegated actor assessment','predecessorReviewId':predecessor,'delegationId':d}
+    check('wrong-client-grant-denied',rpc('review.record',review,'http-wrong-client',True,actor=2,client=other),False,'FORBIDDEN')
+    approved=check('OAuth-consumes-actor-grant',rpc('review.record',review,'http-OAuth-review',True,actor=2,client=client))
+    assert check('OAuth-same-key-recovers',rpc('review.record',review,'http-OAuth-review',True,actor=2,client=client))==approved
+    check('named-recipient-metadata',rpc('share.read',{'shareId':share},actor=3))
+    check('recipient-no-Study-authority',rpc('report.current',binding,actor=3),False,'FORBIDDEN')
+    intent=check('recipient-projection-intent',rpc('share.view',{'shareId':share},actor=3))['data']['intentId']
+    def resolve(i):return http('rpc/svc_study_review_intent_resolve_v1',{'p_intent_id':i},actor=None,role='service_role')
+    c=check('service-narrow-projection',resolve(intent))['data'];assert c['producerContext'] is None and c['artifact']['artifactRef']['type']=='reportProjection'
+    download=check('recipient-cross-context-download',rpc('share.download',{'shareId':share},actor=3,client=client))['data']['intentId']
+    c=check('service-exact-bundle-only',resolve(download))['data'];assert c['producerContext'] is None and c['artifact']['artifactRef']['type']=='reportExportBundle'
+    try:
+        sql("update private.oauth_client_registry set enabled=false,disabled_at=clock_timestamp() where client_id='"+client+"';")
+        r=rpc('report.current',binding,actor=2,client=client);check('revoked-client-pre-request',r,False,'42501',403)
+        check('client-change-during-I/O',resolve(download),False,'FORBIDDEN')
+    finally:
+        sql("update private.oauth_client_registry set enabled=true,disabled_at=null where client_id='"+client+"';")
+    try:
+        sql("update public.lifecyclemodels set user_id='89400000-0000-4000-8000-000000000002' where id='89400000-0000-4000-8000-000000000101';")
+        check('source-change-during-I/O',resolve(intent),False,'DISCLOSURE_DENIED')
+    finally:
+        sql("update public.lifecyclemodels set user_id='89400000-0000-4000-8000-000000000001' where id='89400000-0000-4000-8000-000000000101';")
+    check('owner-HTTP-share-revoke',rpc('share.revoke',{'shareId':share,'reason':'HTTP fixture revoke'},'http-share-revoke',True))
+    check('share-revoke-during-I/O',resolve(intent),False,'DISCLOSURE_DENIED')
+    body=check('recipient-retained-revoked-metadata',rpc('share.read',{'shareId':share},actor=3));assert body['data']['value']['status']=='revoked'
+    args.report.write_text(json.dumps({'schemaVersion':'lca.study-review-transport-receipt.v1','project':'study906','assertions':assertions,'credentialsLogged':False,
+      'hostMinusVerifierClockSeconds':int(time.time())-now,'classification':'actual PostgREST/JWT/RLS/pre-request proof with synthetic fixture claims; no GoTrue/OAuth-consent, Storage bytes or deployed Edge/UI qualification',
+      'disposition':'synthetic fixtures retained for explicit owned study906 reset'},indent=2)+'\n')
+    print(f'Study906: {len(assertions)} actual PostgREST authorization/receipt/I/O-fence assertions passed; credentials not logged.')
+
+
+if __name__=='__main__':main()

@@ -337,9 +337,9 @@ def main() -> int:
     supabase_cli_versions = re.findall(
         r"uses: supabase/setup-cli@v3\s+with:\s+version:\s*([^\s#]+)", text
     )
-    if supabase_cli_versions != ["2.117.0"] * 5:
+    if supabase_cli_versions != ["2.117.0"] * 6:
         failures.append(
-            "all five local, ARM profile, persistent-Dev, Preview, and isolated Study Supabase CLI pins "
+            "all six local, ARM profile, persistent-Dev, Preview, isolated Study and P3 review Supabase CLI pins "
             f"must be 2.117.0, found {supabase_cli_versions or 'none'}"
         )
 
@@ -365,6 +365,18 @@ def main() -> int:
     hosted_workflow = jobs.get("deploy-and-verify", "")
     preview_workflow = jobs.get("preview-runtime-contract", "")
     study_workflow = jobs.get("study-runtime-concurrency", "")
+    review_workflow = jobs.get("study-review-concurrency", "")
+    for token in (
+        'scripts/prepare_study_review_project.py --destination "$RUNNER_TEMP/study906"',
+        'STUDY_REVIEW_ALLOW_RESET: owned-study906',
+        'scripts/test_study_review_upgrade.py --workdir "$RUNNER_TEMP/study906"',
+        'supabase/tests/regression/20261103_study_review_concurrency.py',
+        'supabase/tests/regression/20261103_study_review_transport.py',
+        'supabase stop --project-id study906 --no-backup',
+        'label=com.supabase.cli.project=study906',
+    ):
+        if token not in review_workflow:
+            failures.append(f'isolated P3 proof must preserve its separate project boundary: {token}')
     for token in (
         'scripts/prepare_study_runtime_project.py --destination "$RUNNER_TEMP/study894"',
         'STUDY_RUNTIME_UPGRADE_ALLOW_RESET: isolated',
@@ -377,7 +389,7 @@ def main() -> int:
     ):
         if token not in study_workflow:
             failures.append(f"isolated Study proof must preserve its owned-project boundary: {token}")
-    for suite in ('20261103_study_durable_runtime.sql', '20261103_study_task_admission.sql', '20261103_study_task_disclosure.sql', '20261103_study_task_input_parity.sql'):
+    for suite in ('20261103_study_durable_runtime.sql', '20261103_study_task_admission.sql', '20261103_study_task_disclosure.sql', '20261103_study_task_input_parity.sql', '20261103_study_review_finalization_sharing.sql'):
         if f'supabase test db supabase/tests/{suite}' not in local_workflow:
             failures.append(f'local contract must execute the exact Study suite: {suite}')
     if not local_workflow:
