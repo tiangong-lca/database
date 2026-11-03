@@ -1,8 +1,8 @@
 version: 1
 layout: repo
-lastReviewedAt: "2026-11-02"
-lastReviewedCommit: "057eec7991bbc2815d874df3d48838d108b9d543"
-lastReviewedNote: "Database #887: retire custom ZIP roles and policies; existing Edge server credentials own signing, with no business-data changes."
+lastReviewedAt: 2026-11-03
+lastReviewedCommit: 2b8959360fe39205b4ab11d0d40acf32df3e66ac
+lastReviewedNote: "Database #895: reviewed default-off canonical Study admission, exact RLS source capture/history rights, opaque disclosure intents and scoped cancellation/reconciliation; local runtime evidence and owned reconstruction are distinct from hosted activation."
 
 # Keep deterministic governance facts here.
 # AGENTS.md remains the repo contract entrypoint.
@@ -311,7 +311,7 @@ rules:
         mode: review_or_update
       - path: .docpact/config.yaml
         mode: review_or_update
-    reason: Study persistence must preserve durable authorization/CAS/producer boundaries and keep real SQL proof distinct from unavailable W06 admission and disclosure.
+    reason: Study persistence and task/source/disclosure adapters must preserve current authorization, CAS, lease and immutable-byte boundaries while keeping SQL proof distinct from environment-specific runtime qualification.
   - id: database-engine-lca-study-durable-contract
     scope: repo
     repo: database-engine

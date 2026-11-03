@@ -4,7 +4,9 @@ CREATE TABLE IF NOT EXISTS "private"."study_source_acquisitions" (
     "origin_ref" "jsonb" NOT NULL,
     "requested_by" "uuid" NOT NULL,
     "job_id" "uuid" NOT NULL,
-    "snapshot_id" "uuid"
+    "snapshot_id" "uuid",
+    "requested_client_id" "text",
+    "source_packet" "jsonb"
 );
 
 ALTER TABLE ONLY "private"."study_source_acquisitions" FORCE ROW LEVEL SECURITY;

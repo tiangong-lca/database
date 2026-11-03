@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS "private"."study_runs" (
     "result_artifact_id" "uuid",
     "validity" "text" DEFAULT 'current'::"text" NOT NULL,
     "validity_checked_at" timestamp with time zone DEFAULT "clock_timestamp"() NOT NULL,
+    "requested_client_id" "text",
     CONSTRAINT "study_runs_input_hash_check" CHECK (("input_hash" ~ '^[0-9a-f]{64}$'::"text")),
     CONSTRAINT "study_runs_validity_check" CHECK (("validity" = ANY (ARRAY['current'::"text", 'superseded'::"text", 'withdrawn'::"text", 'unknown'::"text"])))
 );

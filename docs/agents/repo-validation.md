@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-03
-lastReviewedCommit: 5ed1cd2cd487ff147695b76762c65e2c8e8100aa
-lastReviewedNote: "Database #894: W03 private Study runtime, live authorization, atomic validation intents and real SQL/concurrency proof; W06 admission and disclosure remain unavailable."
+lastReviewedCommit: 2b8959360fe39205b4ab11d0d40acf32df3e66ac
+lastReviewedNote: "Database #895: reviewed default-off canonical Study admission, exact RLS source capture/history rights, opaque disclosure intents and scoped cancellation/reconciliation; local runtime evidence and owned reconstruction are distinct from hosted activation."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -136,6 +136,67 @@ trusted source/Worker evidence with real canonical jobs and lease tokens; they
 do not qualify actual exports, licensing, artifact bytes, solver execution or
 disclosure. W06 must add those real actor/queue/Worker/storage/transport proofs
 before producer or artifact operations are advertised.
+
+## Study task/source/disclosure adapter (Database #895)
+
+After W03→W06 populated upgrade and a blank PG17 rebuild, run all four
+Study SQL suites explicitly:
+
+```sh
+supabase test db supabase/tests/20261103_study_durable_runtime.sql
+supabase test db supabase/tests/20261103_study_task_admission.sql
+supabase test db supabase/tests/20261103_study_task_disclosure.sql
+supabase test db supabase/tests/20261103_study_task_input_parity.sql
+```
+
+Keep the existing full-schema/API closure, OAuth, actor capability, canonical
+Worker foundation and calculation-contract suites. W03 fixtures now derive
+source authority from five actual RLS-governed rows and a leased capture;
+numerical artifact metadata remains explicitly synthetic. Reusing those
+fixtures does not qualify numerical execution or bytes.
+The W06 suites cover default-off admission, exact source bytes/history rights,
+scoped task cancellation/late-lease fencing, fixed diagnostics/reconciliation,
+opaque artifact intents, current client/source revocation,64-intent actor
+budgets and bounded expired-row cleanup. Oversized actual source rows must be
+rejected before JSONB projection/parsing/hashing. Run lookup regressions include
+the actual `run.submit` and `run.cancel` paths, not only helper-name assertions.
+
+Direct actor parity also rejects non-string source identifiers and non-numeric,
+fractional/out-of-range Scenario generations before persistence; integral JSON
+numbers are stored canonically for typed consumers. Generic service job-kind
+classification must use the same case/space normalization as the canonical
+enqueuer, while ordinary non-Study kinds retain their behavior. The source-read
+concurrency harness observes overlapping row locks and proves that both first
+reads under the same lease return the identical captured packet after commit.
+Its synthetic namespace is retained only for an owned reset; it restores the
+prior source-enabled flag and never runs a Worker or touches Storage.
+
+The guarded upgrade helper now starts from exact W03 predecessor20261102165824,
+populates a legacy dataset/job and persistent Study, applies the W06 migration,
+then rebuilds the full candidate ledger. It binds exactly13 reviewed existing
+routine changes, preserves all other definitions and the changed queue
+routines' OIDs/owners/ACLs/settings, closes the moved core delegates, retains
+existing manifest and executor authority, and verifies default-off rollout.
+A changed review inventory must be explained against actual source; never
+replace these checks with lower bounds.
+
+The production source adapter, native execution, Storage upload/readback,
+current artifact delivery, cancellation/unknown-outcome recovery and numeric
+oracle require an actual owned Auth→Edge→PostgREST→canonical queue→Worker→Storage
+receipt across the owning repositories. Bind final migration/function hashes,
+producer executable/dependency/profile/data identities and client code to those
+observations. Preserve earlier failed/timed-out attempts and administrative
+recovery separately; they do not become ordinary-client success evidence.
+
+Before an owned reset, stop and verify every task listener/daemon/child, freeze
+exact artifact registrations and byte identities, export/hash-check retained
+private evidence, and obtain explicit task-object cleanup/retention receipts.
+Do not use orphan reconciliation to delete referenced artifacts. Reset only
+the owned project after its disposition is complete; verify test actor/source/
+Study residue and default-off configuration before Auth fixture cleanup.
+Regenerate the five schema views and exposed Data API types twice from the same
+final clean candidate, requiring no second-run drift. These local receipts do
+not enable hosted runtime flags or grant publication/scientific authority.
 
 ## Existing database baseline details
 

@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-03
-lastReviewedCommit: 5ed1cd2cd487ff147695b76762c65e2c8e8100aa
-lastReviewedNote: "Database #894: reviewed isolated Study PG17 proof tooling, unchanged hosted branch authority, stable/generated ownership and exact-local deterministic reconstruction."
+lastReviewedCommit: 2b8959360fe39205b4ab11d0d40acf32df3e66ac
+lastReviewedNote: "Database #895: reviewed default-off canonical Study admission, exact RLS source capture/history rights, opaque disclosure intents and scoped cancellation/reconciliation; local runtime evidence and owned reconstruction are distinct from hosted activation."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

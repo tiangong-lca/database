@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-03
-lastReviewedCommit: 5ed1cd2cd487ff147695b76762c65e2c8e8100aa
-lastReviewedNote: "Database #894: reviewed isolated Study PG17 proof tooling, unchanged hosted branch authority, stable/generated ownership and exact-local deterministic reconstruction."
+lastReviewedCommit: 2b8959360fe39205b4ab11d0d40acf32df3e66ac
+lastReviewedNote: "Database #895: reviewed default-off canonical Study admission, exact RLS source capture/history rights, opaque disclosure intents and scoped cancellation/reconciliation; local runtime evidence and owned reconstruction are distinct from hosted activation."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -635,7 +635,7 @@ Notes:
 - You can override the destination with `--schema-file`
 - `--environment local` without `--db-url` uses Supabase CLI `db dump --local`; an explicit `--db-url` still uses that URL
 
-### Isolated Study runtime proof (Database #894)
+### Isolated Study runtime proof (Database #894/#895)
 
 `prepare_study_runtime_project.py --destination <new-owned-directory>/study894`
 copies the pinned migrations/templates/seeds and rewrites a separate project
@@ -654,8 +654,10 @@ python3 -B supabase/tests/regression/20261103_study_runtime_concurrency.py \
 ```
 
 The upgrade proof resets the verified task project to its exact predecessor,
-preserves synthetic legacy rows and existing routine/ACL/manifest metadata across
-the real migration, then reconstructs the complete candidate migration ledger.
+preserves a legacy dataset/job and persistent Study across W03→W06, binds the
+exact13 reviewed routine changes and unchanged surrounding authority/manifest,
+then reconstructs the complete candidate migration ledger. Producer/disclosure
+flags must remain off after reconstruction.
 The concurrency proof observes two real sessions waiting on controlled advisory
 and row locks; it retains exact synthetic fixtures for the owner's later reset.
 It never resets a database itself. Preserve both receipts and release/adopt exact
@@ -1157,3 +1159,15 @@ or writer cost and does not establish hosted p95.
 ### Calculation export upgrade qualification
 
 `render_calculation_export_upgrade.py <output.sql>` renders the exact canonical-base populated fixture without connecting to a database. `test_calculation_export_upgrade.sh` runs that fixture only in the matching ephemeral GitHub-hosted workspace, with explicit isolated-reset admission. It verifies historical jobs/results/packages/snapshots, native export leases and immutable admission; see the validation guide for the pinned base and restore sequence.
+
+### Study source replay regression
+
+Run the owned PG17 same-lease first-read check after the canonical rebuild:
+```sh
+python3 -B supabase/tests/regression/20261103_study_source_concurrency.py --report <new-source-concurrency-json>
+```
+It observes two sessions on real Study/job locks, expects one immutable packet,
+restores the prior source-enabled flag and retains its distinct synthetic
+namespace for the explicit owned reset. The input-parity SQL suite separately
+covers numeric source IDs, canonical Scenario generations and normalized generic
+job-kind routing. Neither test grants hosted or business-data authority.

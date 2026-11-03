@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS "private"."study_model_preparations" (
     "model_ref" "jsonb",
     "input_artifact_id" "uuid",
     "input_hash" "text",
+    "requested_client_id" "text",
     CONSTRAINT "study_model_preparations_calculation_contract_ref_check" CHECK (((("calculation_contract_ref" ->> 'kind'::"text") = 'calculation_contract'::"text") AND (("calculation_contract_ref" ->> 'schema'::"text") = 'lca.calculation-contract.v1'::"text") AND (("calculation_contract_ref" ->> 'sha256'::"text") ~ '^[0-9a-f]{64}$'::"text"))),
     CONSTRAINT "study_model_preparations_check" CHECK ((("model_ref" IS NULL) = ("input_artifact_id" IS NULL))),
     CONSTRAINT "study_model_preparations_check1" CHECK ((("model_ref" IS NOT NULL) OR ("input_hash" IS NULL))),

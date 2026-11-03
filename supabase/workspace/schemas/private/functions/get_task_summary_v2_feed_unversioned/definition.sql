@@ -66,7 +66,7 @@ begin
             cp.result_set_id,
             ck.result_set_id
           )
-        where j.requested_by = a
+        where j.job_kind not like 'study.%' and j.requested_by = a
           and (
             j.visibility = 'user'
             or (

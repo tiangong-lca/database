@@ -8,6 +8,7 @@ declare
   v_blocker_codes text[] := coalesce(p_blocker_codes, '{}'::text[]);
   v_job private.worker_jobs%rowtype;
 begin
+  if not private.study_generic_job_allowed(null,p_job_id,'complete') then return jsonb_build_object('ok',false,'code','STUDY_SCOPED_ROUTE_REQUIRED','status',403,'message','Study task requires scoped authorization'); end if;
   if not coalesce(util.is_service_request(), false) then
     return jsonb_build_object(
       'ok', false,
