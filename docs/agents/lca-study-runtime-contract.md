@@ -15,12 +15,13 @@ checkPaths:
   - supabase/tests/*study*.sql
   - supabase/tests/fixtures/study894_runtime_fixture.sql
   - supabase/tests/fixtures/study894_definition_vectors.sql
+  - supabase/tests/fixtures/study904_analysis_fixture.sql
   - supabase/tests/regression/*study*.py
   - scripts/*study_runtime*.py
   - docs/agents/lca-study-runtime-contract.md
 lastReviewedAt: 2026-11-03
-lastReviewedCommit: 2b8959360fe39205b4ab11d0d40acf32df3e66ac
-lastReviewedNote: "Database #895: reviewed default-off canonical Study admission, exact RLS source capture/history rights, opaque disclosure intents and scoped cancellation/reconciliation; local runtime evidence and owned reconstruction are distinct from hosted activation."
+lastReviewedCommit: 294f37366522e41a303860eb0badb29cae2375a5
+lastReviewedNote: "Database #904: reviewed independent v3 analysis/report/export persistence, exact source/lease/producer fences, default-off gates, isolated SQL/upgrade/concurrency proof and generated schema workflow. Hosted/runtime/signer qualification remains separate; no Production client grants change."
 related:
   - ./lca-study-durable-contract.md
   - ./repo-validation.md
@@ -61,8 +62,9 @@ installed profile or descriptor does not qualify a deployment; actual
 actor/API/queue/Worker/storage evidence and independently owned runtime limits
 are required before enabling its scope. Local test activation qualifies only
 that explicitly owned environment.
-Report/review/export/share production structures belong to W09/W13 additive
-delivery; the P0 rules remain authoritative for those later structures.
+P2 adds separately gated analysis/report/export persistence through the v3
+reporting façade described below. Review, finalization and sharing remain later
+additive delivery under the P0 rules.
 
 ## Actor and team authorization
 
@@ -295,3 +297,114 @@ Committed, a waiting same-lease caller therefore reuses the first committed
 packet instead of recapturing from a stale pre-lock row. Transaction and
 source-right checks remain in force; higher-isolation serialization failures
 require normal caller recovery, not a stale overwrite.
+
+
+## P2 analysis and reporting producer boundary
+
+Scientific validity and access authorization are independent. Initial-profile
+fresh analysis/report/freeze/export producers require current selected Runs via
+an internal producer-only guard. Historical reads, artifact access and committed
+receipt recovery recheck current Study/client/source rights without requiring a
+Run's scientific validity to remain current. Superseded/unknown validity never
+grants source access and does not itself revoke authorized history. Report read
+metadata conservatively derives validity from persisted selected Run statuses
+and their oldest scientific check time; it never invents a new check on read.
+Stored report evidence, export manifests and terminal receipts retain their
+historical snapshots. A fresh export signs the captured, current-rechecked
+report validity projection and remains unavailable for noncurrent Runs under
+this initial profile.
+
+
+Database #904 independently negotiates `lca.study-api.v3` through
+`api.cmd_study_reporting_v1` and `api.qry_study_reporting_v1`; v2 core dispatch
+remains unchanged. `private.study_reporting_config` starts with analysis,
+report and export producer flags off and no export profile. The service-only
+CAS `svc_study_reporting_configure_v1` accepts the exact qualification version,
+three booleans, evidence reference and nullable public export profile. It stores
+no signing key and grants no OAuth client a capability. Existing reads and
+analysis cancellation retain current authorization when new submissions are off.
+The existing P1 disclosure gate separately controls artifact delivery.
+
+An Analysis binds one contribution Run or two ordered distinct comparison Runs
+in the same Study, exactly as `lca.study-analysis-config.v1`. Config identity is
+SHA256 of UTF8 `study.analysis-config.v1`, NUL and sorted compact JSON; it is a
+Worker-owned config identity, not a PostgreSQL research-document hash. Admission
+requires current completed Run/source rights and creates the Analysis, ordered
+Run links and canonical `study.analysis` solver job in one transaction. Input and
+completion recheck current original actor/client rights, exact prepared/result
+bindings, canonical job kind/runtime/queue/subject/payload and the current lease.
+P2 locks the deduplicated exact captured source rows in stable kind/id/version
+order with `FOR SHARE NOWAIT`, then reruns the existing NOBYPASS rights check.
+Locks never grant authorization. Contention returns `CAPABILITY_UNAVAILABLE`
+without writes; NOWAIT avoids cycles with existing root-first dataset writers.
+The helper uses a two-second table-lock timeout and checks a ten-second loop
+admission deadline before each row. Enclosing RPC/role statement limits remain
+authoritative; a function-local SET is not evidence of a current-statement timer. Those locks serialize durable producer evidence with withdrawal through
+commit. HTTP reads retain the post-I/O rights-check disclosure boundary; later
+revocation cannot recall bytes already released.
+`svc_study_analysis_read_input_v1` returns ordered Run/revision/scenario/preparation
+records and both private artifact capabilities. Only the fenced completion may
+register immutable `analysisFacts`; a public record has facts only after its
+canonical job completes. Generic job routes remain closed by the Study prefix.
+
+Report create/save/freeze and export requests return opaque two-minute
+`reportCommandIntent` acknowledgements. The Database preallocates exact resource
+IDs, captures original request/CAS, actor/client, grant epoch and reporting-config
+revision, and stores no placeholder public report or content reference. Only
+`svc_study_report_intent_resolve_v1` exposes ordered current source bindings and
+private capabilities to the service. The service resolves before and after I/O.
+Report admission initially resolves only immutable Study ownership, then reloads
+and locks the report after acquiring the Study lock. Rights, fresh CAS/hash
+checks and intent snapshots therefore use one post-wait row; committed exact
+receipt recovery still precedes fresh CAS checks.
+Both resolve and `svc_study_report_intent_consume_v1` recheck live rights and all
+captured bindings; stale configuration, expired unconsumed intent, source
+revocation or CAS drift leaves no report/artifact write.
+
+Edge owns the bounded validated content envelope, producer claim checks and
+actual canonical bytes. Database stores only a matching service-produced content
+artifact under its preallocated ID and exact `content.json` path, then commits the
+draft/CAS and terminal receipt atomically. Report `contentHash` equals that actual
+content artifact's byte hash. `factsRefs` are the exact ordered ready Analysis
+facts; claims cannot select raw Run facts or arbitrary client artifacts. The
+shared facts identity is SHA256 of `lca.study-report-facts-binding.v1`, NUL and
+sorted compact JSON of those ordered refs. Freeze revalidates the registered
+content/facts and advances CAS once. Frozen content and links are immutable.
+Every P2 report has `not_finalized`, profile
+`lca.study-report-unreviewed.v1`, requirement `none` and empty review IDs.
+
+Export binds the frozen report/hash, original actor/client, current Study grant
+epoch, exact facts and configured renderer/issuer/key metadata. Database issues
+an opaque disclosure-context identity; Edge signs that exact identity. Consumption
+checks the exact manifest, projection hash/size, canonical manifest resource hash,
+detached signature receipt hash and preallocated projection/resources/bundle
+identities before registering immutable rows. Storage names are exactly
+`projection.json`, `resources.json` and `bundle.json`; `resources.json` contains
+canonical detached manifest bytes. SQL trusts only the authenticated producer for
+cryptographic validation and never accepts validation/signature authority from an
+actor request. Export receipt recovery, reads and artifact delivery recheck
+original actor/client, grant epoch and current source rights. A retained receipt
+cannot authorize a later denied download.
+
+V3 bounded resource pages use server-stored opaque cursors bound to actor,
+client, complete selection, Study access epoch and five-minute expiry. Raw
+relations, intents, artifact locators and service functions remain ACL-closed;
+all new private relations force RLS. SQL synthetic artifact/signature fixtures
+prove persistence/authorization only. Real Worker bytes, Edge claim validation,
+signer verification and installed CLI transport require separate qualification.
+
+
+`svc_study_report_intent_reconcile_v1(intentId,artifactId,contentHash)` is a
+service-only metadata observation for unknown upload/consume outcomes. It returns
+only caller-supplied IDs, `lca.study-report-reconcile.v1`, a fixed state and
+`deletionPermitted:false`; it grants neither actor access nor deletion authority.
+Only an artifact preallocated by that exact intent can be observed. `committed`
+requires the exact registered ref/hash and historical successful intent outcome;
+any other registered allocated ID is `referenced`. An expired unconsumed intent
+with no registered artifact is `expired_unreferenced`, because its original
+consume and same-key reissue are closed after expiry. A live unconsumed intent is
+`pending`; wrong/unknown IDs and inconsistent outcomes are `unknown`. Study then
+intent locks make that observation coherent with consumption. Revoked actor
+rights still deny every user read/consume; they do not erase the service's
+locator-free audit evidence. Denied/expired resolution alone never authorizes
+cleanup; uncertain bytes remain retained for a separately owned disposition.

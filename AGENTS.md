@@ -38,8 +38,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-03
-lastReviewedCommit: aebe79da1a92904ffbb2c3b03444c396343f2739
-lastReviewedNote: "Database #900: reviewed versioned review metadata schema admission and final writeback guard, isolated PG17 proof and generated schema inventory. Existing rows, API authority, branch deployment and integration policy remain unchanged."
+lastReviewedCommit: 294f37366522e41a303860eb0badb29cae2375a5
+lastReviewedNote: "Database #904: reviewed independent v3 analysis/report/export persistence, exact source/lease/producer fences, default-off gates, isolated SQL/upgrade/concurrency proof and generated schema workflow. Hosted/runtime/signer qualification remains separate; no Production client grants change."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-validation.md
@@ -88,7 +88,7 @@ Additional governed source docs, not part of the default first-load surface:
 | --- | --- | --- |
 | `README.md` and `README.zh-CN.md` | repo landing context and high-level purpose | repo contract, proof bar, or branch-policy truth |
 | `docs/agents/lca-study-durable-contract.md` | Study identity, persistence, freeze, authorization, concurrency and report review/export/share invariants; P0 offline acceptance examples | Edge public wire schemas, numerical algorithms, or proof of implemented schema/runtime |
-| `docs/agents/lca-study-runtime-contract.md` | W03 persistence and W06 gated canonical task/source/disclosure adapter, current authorization, receipts and lease fences | Worker numerical semantics, environment qualification, Edge wire ownership or report/publication authority |
+| `docs/agents/lca-study-runtime-contract.md` | W03/W06 persistence and gated source/task/disclosure, P2 analysis/report/export producer intents, current authorization, receipts and lease fences | Worker numerical semantics, environment qualification, Edge wire ownership or report/publication authority |
 
 ## Load Order
 

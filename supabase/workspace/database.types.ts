@@ -723,6 +723,7 @@ export type Database = {
         }
         Returns: Json
       }
+      cmd_study_reporting_v1: { Args: { p_request: Json }; Returns: Json }
       cmd_study_v1: { Args: { p_request: Json }; Returns: Json }
       cmd_system_change_member_role: {
         Args: {
@@ -2923,6 +2924,7 @@ export type Database = {
         }
         Returns: Json
       }
+      qry_study_reporting_v1: { Args: { p_request: Json }; Returns: Json }
       qry_study_v1: { Args: { p_request: Json }; Returns: Json }
       qry_system_find_member_candidate_by_email: {
         Args: { p_email: string }
@@ -3870,6 +3872,20 @@ export type Database = {
         Returns: Json
       }
       svc_schema_contract_status: { Args: never; Returns: Json }
+      svc_study_analysis_complete_v1: {
+        Args: {
+          p_analysis_id: string
+          p_completion: Json
+          p_idempotency_key: string
+          p_job_id: string
+          p_lease_token: string
+        }
+        Returns: Json
+      }
+      svc_study_analysis_read_input_v1: {
+        Args: { p_analysis_id: string; p_job_id: string; p_lease_token: string }
+        Returns: Json
+      }
       svc_study_artifact_read_resolve_v1: {
         Args: { p_intent_id: string }
         Returns: Json
@@ -3890,6 +3906,26 @@ export type Database = {
           p_lease_token: string
           p_preparation_id: string
         }
+        Returns: Json
+      }
+      svc_study_report_intent_consume_v1: {
+        Args: { p_completion: Json; p_intent_id: string }
+        Returns: Json
+      }
+      svc_study_report_intent_reconcile_v1: {
+        Args: {
+          p_artifact_id: string
+          p_content_hash: string
+          p_intent_id: string
+        }
+        Returns: Json
+      }
+      svc_study_report_intent_resolve_v1: {
+        Args: { p_intent_id: string }
+        Returns: Json
+      }
+      svc_study_reporting_configure_v1: {
+        Args: { p_configuration: Json; p_expected_revision: number }
         Returns: Json
       }
       svc_study_revision_freeze_consume_v1: {

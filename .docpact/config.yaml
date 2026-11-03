@@ -1,8 +1,8 @@
 version: 1
 layout: repo
-lastReviewedAt: 2026-11-03
-lastReviewedCommit: aebe79da1a92904ffbb2c3b03444c396343f2739
-lastReviewedNote: "Database #900: reviewed versioned review metadata schema admission and final writeback guard, isolated PG17 proof and generated schema inventory. Existing rows, API authority, branch deployment and integration policy remain unchanged."
+lastReviewedAt: "2026-11-03"
+lastReviewedCommit: "294f37366522e41a303860eb0badb29cae2375a5"
+lastReviewedNote: "Database #904: reviewed independent v3 analysis/report/export persistence, exact source/lease/producer fences, default-off gates, isolated SQL/upgrade/concurrency proof and generated schema workflow. Hosted/runtime/signer qualification remains separate; no Production client grants change."
 
 # Keep deterministic governance facts here.
 # AGENTS.md remains the repo contract entrypoint.
@@ -301,6 +301,8 @@ rules:
         kind: runtime-fixture
       - path: supabase/tests/fixtures/study894_definition_vectors.sql
         kind: wire-parity-fixture
+      - path: supabase/tests/fixtures/study904_analysis_fixture.sql
+        kind: analysis-reporting-synthetic-fixture
       - path: supabase/tests/regression/*study*.py
         kind: concurrent-runtime-tests
       - path: scripts/*study_runtime*.py

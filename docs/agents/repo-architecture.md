@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-03
-lastReviewedCommit: aebe79da1a92904ffbb2c3b03444c396343f2739
-lastReviewedNote: "Database #900: reviewed versioned review metadata schema admission and final writeback guard, isolated PG17 proof and generated schema inventory. Existing rows, API authority, branch deployment and integration policy remain unchanged."
+lastReviewedCommit: 294f37366522e41a303860eb0badb29cae2375a5
+lastReviewedNote: "Database #904: reviewed independent v3 analysis/report/export persistence, exact source/lease/producer fences, default-off gates, isolated SQL/upgrade/concurrency proof and generated schema workflow. Hosted/runtime/signer qualification remains separate; no Production client grants change."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -60,8 +60,11 @@ qualification flags. Installation alone activates no source or numerical profile
 real actor/queue/Worker/storage qualification remains environment-specific.
 Edge owns public Study wire schemas; Worker owns numerical contracts.
 Study/Run/Report remain distinct from LifecycleModel, worker_jobs and formal
-Final Result publication. Later report/review/export/share structures remain
-additive work governed by P0; W03 does not publish datasets or Results.
+Final Result publication. P2 adds private ordered Analysis/Run links, canonical
+analysis jobs, opaque report producer intents, immutable ReportRevision content
+and exact signed-export bindings through an independently negotiated v3 façade.
+All new producer gates default off; review/finalization/share remain additive
+work under P0. No Study phase publishes datasets or formal Results.
 
 ## Final Result content identity
 
