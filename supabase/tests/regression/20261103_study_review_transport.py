@@ -92,11 +92,15 @@ def main():
     review={**binding,'reviewClass':'internal','decision':'approve','comment':'Delegated actor assessment','predecessorReviewId':predecessor,'delegationId':d}
     check('wrong-client-grant-denied',rpc('review.record',review,'http-wrong-client',True,actor=2,client=other),False,'FORBIDDEN')
     approved=check('OAuth-consumes-actor-grant',rpc('review.record',review,'http-OAuth-review',True,actor=2,client=client))
-    assert check('OAuth-same-key-recovers',rpc('review.record',review,'http-OAuth-review',True,actor=2,client=client))==approved
-    check('named-recipient-metadata',rpc('share.read',{'shareId':share},actor=3))
+    assert check('OAuth-same-key-recovers',rpc('review.record',review,'http-OAuth-review',True,actor=2,client=client))['data']['value']==approved['data']['value']
+    replay=check('delegation-replay-current-consumption',rpc('review.delegation.issue',fields,'http-actor-grant',True,actor=2));assert replay['data']['value']['consumedReviewId']==approved['data']['value']['reviewId']
+    shared=check('named-recipient-metadata',rpc('share.read',{'shareId':share},actor=3))['data']['value']
+    ownerintent=check('owner-export-download-intent',rpc('export.download',{'exportId':shared['exportId']}))['data']['intentId']
+    check('reviewer-owner-download-denied',rpc('export.download',{'exportId':shared['exportId']},actor=2),False,'FORBIDDEN')
     check('recipient-no-Study-authority',rpc('report.current',binding,actor=3),False,'FORBIDDEN')
     intent=check('recipient-projection-intent',rpc('share.view',{'shareId':share},actor=3))['data']['intentId']
     def resolve(i):return http('rpc/svc_study_review_intent_resolve_v1',{'p_intent_id':i},actor=None,role='service_role')
+    c=check('owner-export-exact-bundle',resolve(ownerintent))['data'];assert c['share'] is None and c['producerContext'] is None and c['artifact']['artifactRef']==c['export']['bundleRef']
     c=check('service-narrow-projection',resolve(intent))['data'];assert c['producerContext'] is None and c['artifact']['artifactRef']['type']=='reportProjection'
     download=check('recipient-cross-context-download',rpc('share.download',{'shareId':share},actor=3,client=client))['data']['intentId']
     c=check('service-exact-bundle-only',resolve(download))['data'];assert c['producerContext'] is None and c['artifact']['artifactRef']['type']=='reportExportBundle'
@@ -109,11 +113,49 @@ def main():
     try:
         sql("update public.lifecyclemodels set user_id='89400000-0000-4000-8000-000000000002' where id='89400000-0000-4000-8000-000000000101';")
         check('source-change-during-I/O',resolve(intent),False,'DISCLOSURE_DENIED')
+        check('owner-download-source-change-during-I/O',resolve(ownerintent),False,'DISCLOSURE_DENIED')
     finally:
         sql("update public.lifecyclemodels set user_id='89400000-0000-4000-8000-000000000001' where id='89400000-0000-4000-8000-000000000101';")
     check('owner-HTTP-share-revoke',rpc('share.revoke',{'shareId':share,'reason':'HTTP fixture revoke'},'http-share-revoke',True))
+    original=json.loads(sql("select request-'_verifiedClientId'-'operation' from private.study_command_receipts where idempotency_key='http-retained-share';"))
+    replay=check('share-create-replay-current-revocation',rpc('share.create',original,'http-retained-share',True));assert replay['data']['value']['shareId']==share and replay['data']['value']['status']=='revoked'
     check('share-revoke-during-I/O',resolve(intent),False,'DISCLOSURE_DENIED')
     body=check('recipient-retained-revoked-metadata',rpc('share.read',{'shareId':share},actor=3));assert body['data']['value']['status']=='revoked'
+    short={**original,'expiresAt':json.loads(sql("select to_jsonb(clock_timestamp()+interval '2 seconds');"))}
+    shortshare=check('short-share-creation',rpc('share.create',short,'http-short-share',True))['data']['value']
+    time.sleep(2.1)
+    replay=check('share-create-replay-current-expiry',rpc('share.create',short,'http-short-share',True));assert replay['data']['value']['shareId']==shortshare['shareId'] and replay['data']['value']['status']=='expired'
+    # Same immutable report under an explicitly personal fixture scope; every
+    # admission/decision is a real HTTP operation, never a direct grant insert.
+    sql("update private.studies set team_id=null where id='"+STUDY+"';")
+    policy=check('personal-owner-role-policy',rpc('resource.actions',{'resource':{'type':'study','id':STUDY}}));assert policy['data']['allowedMemberRoles']==['reviewer']
+    def membership(role,key):
+        generation=int(sql("select revision from private.studies where id='"+STUDY+"';"))
+        return rpc('member.set',{'target':{'type':'study','id':STUDY,'expectedRevision':generation},'memberId':'89400000-0000-4000-8000-000000000002','role':role},key,True)
+    check('personal-reviewer-remove',membership(None,'http-personal-remove'))
+    check('personal-default-isolation',rpc('report.current',binding,actor=2),False,'FORBIDDEN')
+    check('personal-editor-denied',membership('editor','http-personal-editor'),False,'CAPABILITY_UNAVAILABLE')
+    check('personal-reviewer-admission',membership('reviewer','http-personal-reviewer'))
+    check('personal-reviewer-comment',rpc('comment.append',{**binding,'text':'Personal HTTP reviewer'},'http-personal-comment',True,actor=2))
+    r=http('rpc/qry_study_reporting_v1',{'p_request':{'schemaVersion':'lca.study-api.v3','requestId':'personal-legacy','operation':'report.read','reportRevisionId':REPORT}},actor=2)
+    check('personal-reviewer-no-core-escalation',r,False,'FORBIDDEN')
+    previous=approved['data']['value']['reviewId']
+    pfields={**binding,'reviewClass':'internal','decision':'approve','comment':'Personal nonauthor actor decision','predecessorReviewId':previous,'delegationId':None}
+    personal=check('personal-reviewer-approval',rpc('review.record',pfields,'http-personal-approve',True,actor=2))
+    state=check('personal-current-state',rpc('report.current',binding))['data']['value']
+    finfields={'target':{'type':'reportRevision','id':REPORT,'expectedRevision':3},'expectedContentHash':'b'*64,'expectedReviewStateHash':state['reviewStateHash'],'profileId':'lca.study-report-internal-review.v1','acceptedReviewIds':state['acceptedReviewIds']}
+    finalized=check('personal-owner-finalizes',rpc('report.finalize',finfields,'http-personal-finalize',True))
+    view=check('personal-reviewer-view-intent',rpc('report.view',binding,actor=2))['data']['intentId']
+    check('personal-report-only-view-context',resolve(view))
+    wfields={**pfields,'decision':'withdraw','predecessorReviewId':personal['data']['value']['reviewId']}
+    check('personal-reviewer-withdraws',rpc('review.record',wfields,'http-personal-withdraw',True,actor=2))
+    replay=check('finalization-replay-withdrawn-current-state',rpc('report.finalize',finfields,'http-personal-finalize',True));assert replay['data']['value']==finalized['data']['value'] and replay['data']['state']['acceptance']=='invalidated'
+    state=check('withdrawn-current-state',rpc('report.current',binding))['data']['value']
+    newer=check('new-explicit-unreviewed-finalization',rpc('report.finalize',{**finfields,'expectedReviewStateHash':state['reviewStateHash'],'profileId':'lca.study-report-unreviewed.v1','acceptedReviewIds':[]},'http-latest-finalization',True))
+    replay=check('old-outcome-with-different-latest-state',rpc('report.finalize',finfields,'http-personal-finalize',True));assert replay['data']['value']==finalized['data']['value'] and replay['data']['state']['finalization']['finalizationId']==newer['data']['value']['finalizationId']
+    oldreview=check('old-review-replay-fresh-head-state',rpc('review.record',pfields,'http-personal-approve',True,actor=2));assert oldreview['data']['value']==personal['data']['value'] and oldreview['data']['state']['currentReviewIds']!=[personal['data']['value']['reviewId']]
+    check('personal-role-removal',membership(None,'http-personal-final-remove'))
+    check('personal-removal-during-I/O',resolve(view),False,'FORBIDDEN')
     args.report.write_text(json.dumps({'schemaVersion':'lca.study-review-transport-receipt.v1','project':'study906','assertions':assertions,'credentialsLogged':False,
       'hostMinusVerifierClockSeconds':int(time.time())-now,'classification':'actual PostgREST/JWT/RLS/pre-request proof with synthetic fixture claims; no GoTrue/OAuth-consent, Storage bytes or deployed Edge/UI qualification',
       'disposition':'synthetic fixtures retained for explicit owned study906 reset'},indent=2)+'\n')

@@ -422,7 +422,13 @@ internal review. Independent review remains unavailable.
 Owner manages roles, finalizes and shares; editor comments and authors through
 the existing producer; reviewer comments and records decisions; viewer reads.
 Reviewer is a V4 resource role only: V2/V3 Study, source, Run, facts and raw
-artifact authority remains unchanged. Comments are append-only and never approve.
+artifact authority remains unchanged. Personal Studies admit only an explicit
+nonowner reviewer or removal of a nonowner grant; personal editor/viewer admission
+remains unavailable. Team grants still require live team membership. Owner
+self-demotion/removal is denied. `resource.actions.allowedMemberRoles` supplies
+the exact server policy (`reviewer` for a personal owner, all three nonowner roles
+for a team owner, empty without management authority); clients do not infer it.
+Comments are append-only and never approve.
 Substantive `approve`, `reject` and `withdraw` decisions bind exact frozen report
 ID/hash, actor, class and predecessor. One head per actor/class prevents forks;
 at most64 heads keep accepted evidence renderable. A new report ID inherits no
@@ -436,6 +442,12 @@ atomic. Expiry gates unconsumed admission; a consumed grant remains historical
 evidence. Explicit grant revocation, current reviewer/team membership and enabled
 client capability govern current acceptance. Trusted client identity participates
 in command receipt identity; changing transport `requestId` alone does not.
+Receipt storage preserves the original immutable outcome and identity. A replay
+freshly projects current `state` beside the original review/finalization value;
+its latest finalization may differ from that historical outcome. Share values
+hydrate current revoked/expired/invalidated status, and delegation values hydrate
+current consumption/revocation. A cached commit observation never masquerades as
+current acceptance or an active share.
 
 Finalization stores a separate immutable record with frozen report CAS/hash,
 profile, expected current review-state hash and exact selected review IDs. It
@@ -464,6 +476,11 @@ are unchanged. Bundle schema is `lca.study-export-bundle.v2`. Every service
 consume checks exact preallocated artifact IDs, hashes/sizes, canonical manifest,
 detached receipt metadata and current rights before atomic registration. SQL
 trusts only the authenticated Edge producer for cryptographic validation.
+`export.download` uses the same live owner/export/source authority as
+`export.read` and returns a narrow exact persisted-bundle intent. Its
+`exportDownload` response contains the original export record and verified bytes;
+it never routes through V3 artifact access or a self-share. Historical selected
+review IDs remain historical even when current acceptance changes.
 
 Named UUID shares bind exact export/report/projection/bundle, finalization,
 recipient, issuer/client, grant epoch, disclosure identity, expiry and revoke

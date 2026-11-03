@@ -31,7 +31,7 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-03
-lastReviewedCommit: da6f313f76a77c72f0e9eb97f18116a0ddb8d371
+lastReviewedCommit: 3b711627a0049b5a8d59e25aa748a9d2d4925b16
 lastReviewedNote: "Database #906: reviewed V4 revision review, one-use actor delegation, immutable finalization and named summary-share authority, exact additive upgrade, SQL/HTTP/concurrency proof and deterministic generated schema. Actual bytes, UI/CLI, hosted enablement and source integration remain separately qualified."
 related:
   - ../../AGENTS.md
@@ -65,7 +65,10 @@ analysis jobs, opaque report producer intents, immutable ReportRevision content
 and exact signed-export bindings through an independently negotiated v3 façade.
 P3 adds separate reviewer authority, append-only comments/decision heads,
 one-use actor-issued OAuth delegations, immutable finalizations and named summary
-shares through independently negotiated V4 façades. Frozen P2 records and signed
+shares through independently negotiated V4 façades. Personal grants admit only
+report reviewers; the server returns allowed member roles. Explicit owner bundle
+downloads remain separate from named-recipient sharing. Command recovery keeps
+original identities beside freshly projected current state. Frozen P2 records and signed
 V1 exports retain their historical meaning. Recipient projection authority grants
 no Study/source membership. All producer and review gates default off; exact local
 SQL/HTTP/race proof remains separate from real renderer, UI, CLI and hosted

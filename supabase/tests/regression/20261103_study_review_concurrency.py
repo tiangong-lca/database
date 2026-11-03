@@ -39,7 +39,8 @@ def main():
     receipts=[]
     exact=cmd('review.record',review('approve',head()),'race-exact-review')
     r=race('same-key-review-recovery',exact,exact,claim(2),claim(2))
-    assert r['first']['ok'] and r['first']==r['second'],r;receipts.append(r)
+    assert r['first']['ok'] and r['first']['data']['value']==r['second']['data']['value'],r
+    assert r['first']['data']['state']['reviewStateHash']==r['second']['data']['state']['reviewStateHash'],r;receipts.append(r)
     h=head()
     r=race('stale-head-fork',cmd('review.record',review('approve',h),'race-head-a'),cmd('review.record',review('reject',h),'race-head-b'),claim(2),claim(2))
     assert r['first']['ok'] and r['second']['code']=='REVISION_CONFLICT',r;receipts.append(r)
@@ -47,6 +48,9 @@ def main():
     r=race('finalization-before-withdrawal',cmd('report.finalize',finalize(st),'race-finalize-first'),cmd('review.record',review('withdraw',head()),'race-withdraw-second'),claim(1),claim(2))
     assert r['first']['ok'] and r['second']['ok'],r
     assert current()['acceptance']=='invalidated';receipts.append(r)
+    replay=invoke(cmd('report.finalize',finalize(st),'race-finalize-first'))
+    assert replay['data']['value']==r['first']['data']['value'] and replay['data']['state']['acceptance']=='invalidated',replay
+    r['postWithdrawalReplay']={'immutableValuePreserved':True,'currentAcceptance':replay['data']['state']['acceptance']}
     assert invoke(cmd('review.record',review('approve',head()),'race-approve-again'),actor=2)['ok']
     stale=cmd('report.finalize',finalize(current()),'race-stale-finalize')
     r=race('withdrawal-before-finalization',cmd('review.record',review('withdraw',head()),'race-withdraw-first'),stale,claim(2),claim(1))
