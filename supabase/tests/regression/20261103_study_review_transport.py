@@ -126,7 +126,7 @@ def main():
         check('revoked-read-client-core-request-denied',rpc('resource.actions',core,client=readonly),False,'42501',403)
     finally:
         sql("update private.oauth_client_registry set enabled=true,disabled_at=null where client_id='"+readonly+"';")
-    exactstudy='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';exactreport='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';exactshare='cccccccc-cccc-4ccc-8ccc-cccccccccccc';exactexport='dddddddd-dddd-4ddd-8ddd-dddddddddddd';exactgrant='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';exacthead='ffffffff-ffff-4fff-8fff-ffffffffffff';exactfinal='abababab-abab-4bab-8bab-abababababab'
+    exactstudy='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';exactreport='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';exactshare='cccccccc-cccc-4ccc-8ccc-cccccccccccc';exactexport='dddddddd-dddd-4ddd-8ddd-dddddddddddd';exactgrant='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';exacthead='ffffffff-ffff-4fff-8fff-ffffffffffff';exactfinal='abababab-abab-4bab-8bab-abababababab';exactmember='abababab-abab-4bab-8bab-abababababab';exactrecipient='bcbcbcbc-bcbc-4cbc-8cbc-bcbcbcbcbcbc'
     def exact_state():
         return json.loads(sql("select jsonb_build_object('studyRevision',(select revision from private.studies where id='"+exactstudy+"'),'members',(select count(*) from private.study_members where study_id='"+exactstudy+"'),'comments',(select count(*) from private.study_report_comments where report_id='"+exactreport+"'),'reviews',(select count(*) from private.study_report_reviews where report_id='"+exactreport+"'),'head',(select review_id from private.study_report_review_heads where report_id='"+exactreport+"'),'grantConsumed',(select consumed_review_id from private.study_review_delegations where id='"+exactgrant+"'),'grantRevoked',(select revoked_at from private.study_review_delegations where id='"+exactgrant+"'),'shareRevoked',(select revoked_at from private.study_report_shares where id='"+exactshare+"'),'finalizations',(select count(*) from private.study_report_finalizations where report_id='"+exactreport+"'),'aliasReceipts',(select count(*) from private.study_command_receipts where idempotency_key like 'http-alias-ref-%'),'aliasIntents',(select count(*) from private.study_review_intents where request->>'requestId' like 'http-alias-ref-%'));"))
     before_alias=exact_state();generation=before_alias['studyRevision'];exactbinding={'reportRevisionId':exactreport,'expectedContentHash':'b'*64}
@@ -136,6 +136,7 @@ def main():
         cases=[
             ('target','member.set',{'target':{'type':'study','id':alias(exactstudy),'expectedRevision':generation},'memberId':'89400000-0000-4000-8000-000000000003','role':'reviewer'},True,1,None),
             ('resource','resource.actions',{'resource':{'type':'study','id':alias(exactstudy)}},False,1,None),
+            ('member','member.set',{'target':{'type':'study','id':exactstudy,'expectedRevision':generation},'memberId':alias(exactmember),'role':'reviewer'},True,1,None),
             ('report','comment.append',{**exactbinding,'reportRevisionId':alias(exactreport),'text':'Alias must not append'},True,1,None),
             ('share','share.revoke',{'shareId':alias(exactshare),'reason':'Alias must not revoke'},True,1,None),
             ('export','export.download',{'exportId':alias(exactexport)},False,1,None),
@@ -153,7 +154,6 @@ def main():
     exactresult=check('canonical-reference-opaque-keys',http('rpc/cmd_study_review_v1',{'p_request':exactrequest}))
     recovered=check('canonical-reference-normal-recovery',http('rpc/cmd_study_review_v1',{'p_request':{**exactrequest,'requestId':'different-opaque-request-Bb'}}));assert recovered==exactresult
     assert sql("select count(*) from private.study_command_receipts where idempotency_key='CaseSensitive-HTTP-Key-Aa';")=='1'
-    args.report.with_name(args.report.stem+'-exact-reference.json').write_text(json.dumps({'schemaVersion':'lca.study-exact-reference-transport-receipt.v1','project':'study906','aliasCases':20,'allAliasesInvalidBeforeEffects':True,'exactStateUnchanged':True,'aliasReceipts':0,'aliasIntents':0,'memberReviewGrantAndShareStateUnchanged':True,'canonicalReferencesAndOpaqueKeyRecovery':True,'credentialsLogged':False,'classification':'actual local PostgREST signed-fixture authorization proof; synthetic research/signature bytes only'},indent=2)+'\n')
     legacy={'schemaVersion':'lca.study-api.v2','requestId':'mixed-owner-reviewer','operation':'study.list','limit':1,'cursor':None}
     firstpage=check('legacy-mixed-role-first-page',http('rpc/qry_study_v1',{'p_request':legacy},actor=2))['data'];assert firstpage['items'][0]['studyId']=='89300000-0000-4000-8000-000000000001'
     secondpage=check('legacy-mixed-role-cursor-page',http('rpc/qry_study_v1',{'p_request':{**legacy,'cursor':firstpage['nextCursor']}},actor=2))['data'];assert secondpage['items'][0]['studyId']=='89500000-0000-4000-8000-000000000001' and secondpage['nextCursor'] is None
@@ -238,10 +238,17 @@ def main():
         sql("update private.oauth_client_registry set enabled=false,disabled_at=clock_timestamp() where client_id='"+client+"';")
         a=check('original-client-revoked-actions',rpc('resource.actions',actions));assert 'share.create' not in a['data']['actions']
         check('revoked-export-share-command-denied',rpc('share.create',{**actionbinding,'exportId':oauth_export['exportId'],'recipientId':'89400000-0000-4000-8000-000000000003','disclosurePolicyId':'lca.study-report-summary-share.v1','expiresAt':json.loads(sql("select to_jsonb(clock_timestamp()+interval '1 hour');"))},'http-action-denied-share',True),False,'DISCLOSURE_DENIED')
-        produce_export('http-action-fresh-export')
+        fresh_export=produce_export('http-action-fresh-export')
         a=check('fresh-export-restores-share-action',rpc('resource.actions',actions));assert 'share.create' in a['data']['actions']
     finally:
         sql("update private.oauth_client_registry set enabled=true,disabled_at=null where client_id='"+client+"';")
+    recipient_fields={**actionbinding,'exportId':fresh_export['exportId'],'disclosurePolicyId':'lca.study-report-summary-share.v1','expiresAt':json.loads(sql("select to_jsonb(clock_timestamp()+interval '1 hour');"))}
+    before_recipient=sql("select count(*) from private.study_report_shares where export_id='"+fresh_export['exportId']+"';")
+    for spelling,alias in [('uppercase',str.upper),('hyphenless',lambda s:s.replace('-',''))]:
+        check('exact-reference-recipient-'+spelling,rpc('share.create',{**recipient_fields,'recipientId':alias(exactrecipient)},'http-alias-ref-recipient-'+spelling,True),False,'INVALID_REQUEST')
+    assert before_recipient=='0' and sql("select count(*) from private.study_report_shares where export_id='"+fresh_export['exportId']+"';")=='0'
+    assert sql("select (select count(*) from private.study_command_receipts where idempotency_key like 'http-alias-ref-%')+(select count(*) from private.study_review_intents where request->>'requestId' like 'http-alias-ref-%');")=='0'
+    args.report.with_name(args.report.stem+'-exact-reference.json').write_text(json.dumps({'schemaVersion':'lca.study-exact-reference-transport-receipt.v1','project':'study906','aliasCases':24,'allAliasesInvalidBeforeEffects':True,'exactStateUnchanged':True,'aliasReceipts':0,'aliasIntents':0,'memberReviewGrantAndShareStateUnchanged':True,'eligibleExportRecipientAliasesCreateNoShares':True,'canonicalReferencesAndOpaqueKeyRecovery':True,'credentialsLogged':False,'classification':'actual local PostgREST signed-fixture authorization proof; synthetic research/signature bytes only'},indent=2)+'\n')
     # Same immutable report under an explicitly personal fixture scope; every
     # admission/decision is a real HTTP operation, never a direct grant insert.
     sql("update private.studies set team_id=null where id='"+STUDY+"';")

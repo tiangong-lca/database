@@ -323,6 +323,9 @@ select pg_temp.study894_claim(1);
 select ok((pg_temp.cmd('member.set','{"target":{"type":"study","id":"90600000-0000-4000-8000-000000000010","expectedRevision":2},"memberId":"89400000-0000-4000-8000-000000000002","role":null}','personal-remove')->>'ok')::boolean,'personal owner can remove a nonowner reviewer');
 -- Canonical domain identity is checked before PostgreSQL's permissive UUID
 -- parser. These synthetic letter-bearing IDs make uppercase aliases distinct.
+insert into auth.users(id,instance_id,aud,role,email,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
+ select id::uuid,'00000000-0000-0000-0000-000000000000','authenticated','authenticated',email,'{}','{}',now(),now() from (values('abababab-abab-4bab-8bab-abababababab','exact-member@invalid.test'),('bcbcbcbc-bcbc-4cbc-8cbc-bcbcbcbcbcbc','exact-recipient@invalid.test'))u(id,email);
+insert into private.users(id,raw_user_meta_data,contact) values('abababab-abab-4bab-8bab-abababababab','{}',null),('bcbcbcbc-bcbc-4cbc-8cbc-bcbcbcbcbcbc','{}',null) on conflict(id) do nothing;
 insert into private.studies(id,owner_id,title) values('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','89400000-0000-4000-8000-000000000001','Exact-reference fixture');
 insert into private.study_members values('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','89400000-0000-4000-8000-000000000001','owner');
 insert into private.study_report_revisions(id,study_id,author_id,revision,status,content_hash,content_artifact_id,template_id,run_ids,analysis_ids,facts_refs,validity_snapshot,validation_evidence)
@@ -335,20 +338,29 @@ insert into private.study_review_delegations(id,study_id,report_id,report_hash,a
  values('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee','89400000-0000-4000-8000-000000000010','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',repeat('b',64),'89400000-0000-4000-8000-000000000002','90600000-0000-4000-8000-000000000101','internal','reject','ffffffff-ffff-4fff-8fff-ffffffffffff',clock_timestamp()+interval '5 minutes');
 insert into private.study_review_exports(id,study_id,report_id,actor_id,client_id,grant_epoch,finalization_id,record,manifest,projection_artifact_id,resources_artifact_id,bundle_artifact_id)
  select 'dddddddd-dddd-4ddd-8ddd-dddddddddddd',study_id,report_id,actor_id,client_id,grant_epoch,finalization_id,jsonb_set(record,'{exportId}','"dddddddd-dddd-4ddd-8ddd-dddddddddddd"'),jsonb_set(manifest,'{exportId}','"dddddddd-dddd-4ddd-8ddd-dddddddddddd"'),projection_artifact_id,resources_artifact_id,bundle_artifact_id from private.study_review_exports where id=(pg_temp.val('export')->'data'->'value'->>'exportId')::uuid;
+-- Synthetic metadata only: an otherwise eligible current export makes the
+-- recipient alias case an actual share-creation boundary, not a missing ref.
+insert into private.study_review_exports(id,study_id,report_id,actor_id,client_id,grant_epoch,finalization_id,record,manifest,projection_artifact_id,resources_artifact_id,bundle_artifact_id)
+ select 'cdcdcdcd-cdcd-4dcd-8dcd-cdcdcdcdcdcd',study_id,'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',actor_id,client_id,grant_epoch,'abababab-abab-4bab-8bab-abababababab',
+ record||jsonb_build_object('exportId','cdcdcdcd-cdcd-4dcd-8dcd-cdcdcdcdcdcd','reportRevisionId','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','finalization',private.study_finalization_record('abababab-abab-4bab-8bab-abababababab'),'generatedAt',clock_timestamp()),
+ manifest||jsonb_build_object('exportId','cdcdcdcd-cdcd-4dcd-8dcd-cdcdcdcdcdcd','reportRevisionId','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','finalization',private.study_finalization_record('abababab-abab-4bab-8bab-abababababab'),'reviewIds',jsonb_build_array('ffffffff-ffff-4fff-8fff-ffffffffffff'),'generatedAt',clock_timestamp()),projection_artifact_id,resources_artifact_id,bundle_artifact_id from private.study_review_exports where id=(pg_temp.val('export')->'data'->'value'->>'exportId')::uuid;
 insert into private.study_report_shares(id,study_id,report_id,report_hash,export_id,finalization_id,issuer_id,issuer_client_id,recipient_id,grant_epoch,disclosure_context_hash,expires_at)
  select 'cccccccc-cccc-4ccc-8ccc-cccccccccccc',study_id,report_id,report_hash,export_id,finalization_id,issuer_id,issuer_client_id,recipient_id,grant_epoch,disclosure_context_hash,clock_timestamp()+interval '1 hour' from private.study_report_shares where id=(pg_temp.val('share')->'data'->'value'->>'shareId')::uuid;
 create temp table study906_alias_cases(name text primary key,actor integer,client text,is_write boolean,request jsonb);
-do $$declare spelling text;sid text;rid text;shareid text;exportid text;delegation text;predecessor text;finalization text;binding jsonb;review_fields jsonb;finalize_fields jsonb;begin
+do $$declare spelling text;sid text;rid text;shareid text;exportid text;delegation text;predecessor text;finalization text;member text;recipient text;binding jsonb;review_fields jsonb;finalize_fields jsonb;begin
  foreach spelling in array array['uppercase','hyphenless'] loop
   sid:='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';rid:='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';shareid:='cccccccc-cccc-4ccc-8ccc-cccccccccccc';exportid:='dddddddd-dddd-4ddd-8ddd-dddddddddddd';delegation:='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';predecessor:='ffffffff-ffff-4fff-8fff-ffffffffffff';finalization:='abababab-abab-4bab-8bab-abababababab';
-  if spelling='uppercase' then sid:=upper(sid);rid:=upper(rid);shareid:=upper(shareid);exportid:=upper(exportid);delegation:=upper(delegation);predecessor:=upper(predecessor);finalization:=upper(finalization);
-  else sid:=replace(sid,'-','');rid:=replace(rid,'-','');shareid:=replace(shareid,'-','');exportid:=replace(exportid,'-','');delegation:=replace(delegation,'-','');predecessor:=replace(predecessor,'-','');finalization:=replace(finalization,'-','');end if;
+  member:='abababab-abab-4bab-8bab-abababababab';recipient:='bcbcbcbc-bcbc-4cbc-8cbc-bcbcbcbcbcbc';
+  if spelling='uppercase' then sid:=upper(sid);rid:=upper(rid);shareid:=upper(shareid);exportid:=upper(exportid);delegation:=upper(delegation);predecessor:=upper(predecessor);finalization:=upper(finalization);member:=upper(member);recipient:=upper(recipient);
+  else sid:=replace(sid,'-','');rid:=replace(rid,'-','');shareid:=replace(shareid,'-','');exportid:=replace(exportid,'-','');delegation:=replace(delegation,'-','');predecessor:=replace(predecessor,'-','');finalization:=replace(finalization,'-','');member:=replace(member,'-','');recipient:=replace(recipient,'-','');end if;
   binding:=jsonb_build_object('reportRevisionId','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','expectedContentHash',repeat('b',64));
   review_fields:=binding||jsonb_build_object('reviewClass','internal','decision','reject','comment','Alias must not append','predecessorReviewId','ffffffff-ffff-4fff-8fff-ffffffffffff','delegationId',null);
   finalize_fields:=jsonb_build_object('target',jsonb_build_object('type','reportRevision','id','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','expectedRevision',3),'expectedContentHash',repeat('b',64),'profileId','lca.study-report-internal-review.v1','expectedReviewStateHash',private.study_review_state('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb')->>'reviewStateHash','acceptedReviewIds',jsonb_build_array(predecessor));
   insert into study906_alias_cases values
    ('target-'||spelling,1,null,true,pg_temp.req('member.set',jsonb_build_object('target',jsonb_build_object('type','study','id',sid,'expectedRevision',1),'memberId','89400000-0000-4000-8000-000000000002','role','reviewer'))),
    ('resource-'||spelling,1,null,false,pg_temp.req('resource.actions',jsonb_build_object('resource',jsonb_build_object('type','study','id',sid)))),
+   ('member-'||spelling,1,null,true,pg_temp.req('member.set',jsonb_build_object('target',jsonb_build_object('type','study','id','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','expectedRevision',1),'memberId',member,'role','reviewer'))),
+   ('recipient-'||spelling,1,null,true,pg_temp.req('share.create',binding||jsonb_build_object('exportId','cdcdcdcd-cdcd-4dcd-8dcd-cdcdcdcdcdcd','recipientId',recipient,'disclosurePolicyId','lca.study-report-summary-share.v1','expiresAt',clock_timestamp()+interval '1 hour'))),
    ('report-'||spelling,1,null,true,pg_temp.req('comment.append',jsonb_build_object('reportRevisionId',rid,'expectedContentHash',repeat('b',64),'text','Alias must not append'))),
    ('share-'||spelling,1,null,true,pg_temp.req('share.revoke',jsonb_build_object('shareId',shareid,'reason','Alias must not revoke'))),
    ('export-'||spelling,1,null,false,pg_temp.req('export.download',jsonb_build_object('exportId',exportid))),
@@ -371,6 +383,7 @@ select is((select count(*) from private.study_report_reviews where report_id='bb
 select is((select review_id::text from private.study_report_review_heads where report_id='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'),'ffffffff-ffff-4fff-8fff-ffffffffffff','review aliases preserve exact current head');
 select ok((select revoked_at is null and consumed_review_id is null from private.study_review_delegations where id='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'),'delegation aliases neither revoke nor consume actor grant');
 select ok((select revoked_at is null from private.study_report_shares where id='cccccccc-cccc-4ccc-8ccc-cccccccccccc'),'share aliases do not revoke canonical share');
+select is((select count(*) from private.study_report_shares where export_id='cdcdcdcd-cdcd-4dcd-8dcd-cdcdcdcdcdcd'),0::bigint,'recipient aliases create no named shares');
 select is((select count(*) from private.study_report_finalizations where report_id='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'),1::bigint,'accepted/finalization aliases create no finalization');
 select pg_temp.study894_claim(1);
 select pg_temp.keep('exact-member',api.cmd_study_review_v1(pg_temp.req('member.set','{"target":{"type":"study","id":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa","expectedRevision":1},"memberId":"89400000-0000-4000-8000-000000000002","role":"reviewer"}','AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA')||'{"idempotencyKey":"CASE-SENSITIVE-Key-Aa"}'));

@@ -140,7 +140,7 @@ before producer or artifact operations are advertised.
 ## Study P3 review/finalization/named sharing (Database #906)
 
 Retain the ordinary blank PG17 migration-ledger baseline and every P1/P2 suite.
-Add `supabase/tests/20261103_study_review_finalization_sharing.sql`:196 assertions
+Add `supabase/tests/20261103_study_review_finalization_sharing.sql`:201 assertions
 cover reviewer isolation, comments without approval, exact heads/replays,
 self-approval exclusion, role/team/client changes, one-use grants and expiry,
 immutable finalization, manifest v2, named recipient projection/download and
@@ -163,13 +163,17 @@ source-specific authorization test.
 Archived Study/report/share actions suppress fresh mutations and member-role
 choices, preserve permitted reads/lists/views, and match actual unchanged-command
 `FROZEN_REVISION` rejection. No write or revoke exception is introduced.
-Twenty uppercase/hyphenless domain-reference cases reject before effects,
+Twenty-four uppercase/hyphenless domain/member/recipient UUID cases reject before effects,
 receipts or intents, including grant consumption/revocation and review-head
 changes. Canonical issued references and case-sensitive opaque transport/key
 recovery remain unchanged. The HTTP runner independently compares affected
 member/review/grant/share state before and after the alias cases. A separate
 consumed-codec negative receipt demonstrates the old canonicalized-success
 response mismatch and acceptance of the pre-effect `INVALID_REQUEST` outcome.
+Member/recipient direct-RPC probes use existing synthetic Auth targets; recipient
+probes also bind a fresh otherwise eligible export. They create no member grant,
+named share, receipt or intent. The unchanged codec already rejects these user
+UUID aliases before Edge dispatch, so no client shape or pin change is needed.
 
 Use `scripts/prepare_study_review_project.py --destination <new-owned-dir>/study906`
 with pinned CLI2.117.0. This creates a separate PG17 project on API56621/DB56622
@@ -197,7 +201,7 @@ the pinned underlying executable. Ten real independent-session races observe
 advisory/domain waits and actual row contention for heads, receipt retry,
 finalization/withdrawal, role demotion, grant consumption/revoke and share revoke;
 the source-ownership withdrawal case observes the NOWAIT rejection instead of a
-wait. The transport runner makes126 actual PostgREST assertions with signed local
+wait. The transport runner makes130 actual PostgREST assertions with signed local
 fixture claims and no credential/raw-error logging. It proves neither GoTrue
 login/consent nor deployed Edge/Storage byte behavior.
 The archive/action race uses the unchanged V2 archive command and observes the
