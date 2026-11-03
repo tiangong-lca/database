@@ -24,7 +24,8 @@ begin
  perform private.study_review_authorize(sid,actor,client,case when op in ('member.set','report.finalize','export.request','share.create','share.revoke') then 'manage'
  when op in ('review.record','review.delegation.issue','review.delegation.revoke') then 'review' else 'comment' end);
  select * into study from private.studies where id=sid;
- -- Withdrawal and explicit revoke remain possible even when disclosure ceased.
+ -- Explicit share/delegation revoke does not require report-byte disclosure.
+ -- All fresh mutations still require an active Study below.
  if rid is not null and op not in ('share.revoke','review.delegation.revoke') then
   select * into r from private.study_report_revisions where id=rid and study_id=sid;
   perform private.study_require(found and r.status='frozen' and r.content_hash=p_request->>'expectedContentHash','REFERENCE_MISMATCH');
