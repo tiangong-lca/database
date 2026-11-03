@@ -19,6 +19,7 @@ declare
   v_concurrency_key text := nullif(trim(p_concurrency_key), '');
   v_queue_key text := nullif(trim(p_queue_key), '');
 begin
+  if not private.study_generic_job_allowed(p_job_kind,null,'enqueue') then return jsonb_build_object('ok',false,'code','STUDY_SCOPED_ROUTE_REQUIRED','status',403,'message','Study task requires scoped authorization'); end if;
   if not coalesce(util.is_service_request(), false) then
     return jsonb_build_object(
       'ok', false,

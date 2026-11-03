@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-03
-lastReviewedCommit: 5ed1cd2cd487ff147695b76762c65e2c8e8100aa
-lastReviewedNote: "Database #894: reviewed isolated Study PG17 proof tooling, unchanged hosted branch authority, stable/generated ownership and exact-local deterministic reconstruction."
+lastReviewedCommit: 2b8959360fe39205b4ab11d0d40acf32df3e66ac
+lastReviewedNote: "Database #895: reviewed default-off canonical Study admission, exact RLS source capture/history rights, opaque disclosure intents and scoped cancellation/reconciliation; local runtime evidence and owned reconstruction are distinct from hosted activation."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -534,7 +534,7 @@ python scripts/export_remote_schema.py --environment dev
 - 可通过 `--schema-file` 覆盖输出路径
 - 未传 `--db-url` 时，`--environment local` 使用 Supabase CLI 的 `db dump --local`；显式 `--db-url` 仍使用该 URL
 
-### Study runtime 隔离证明（Database #894）
+### Study runtime 隔离证明（Database #894/#895）
 
 `prepare_study_runtime_project.py --destination <new-owned-directory>/study894`
 只复制独立 PG17 项目配置和 migration，使用 API56421/DB56422，移除 remote
@@ -548,8 +548,8 @@ python3 -B supabase/tests/regression/20261103_study_runtime_concurrency.py \
   --report <new-concurrency-json>
 ```
 
-前者验证准确 predecessor 的既有行、routine/ACL/manifest 保留并重建完整 candidate
-ledger；后者观察真实的两会话 advisory/row-lock 等待，保留合成 fixture 供资源 owner
+前者从准确 W03 predecessor 验证既有 dataset/job/Study、13 项已审阅 routine
+变更及周边 ACL/manifest/role 权限保留，再重建默认关闭能力的完整 candidate ledger；后者观察真实的两会话 advisory/row-lock 等待，保留合成 fixture 供资源 owner
 准确重置。保留 receipts 后，通过 workspace 资源流程释放或明确接管该项目资源。
 CLI 启动输出含本地生成密钥，须私有保存。完整边界见
 [英文使用说明](README.md)及[Study runtime 合同](../docs/agents/lca-study-runtime-contract.md)；
@@ -986,3 +986,14 @@ python3 scripts/benchmark_portal_facets_navigation_concurrent.py \
 ### 计算导出升级验证
 
 `render_calculation_export_upgrade.py <output.sql>` 只生成绑定准确基线和迁移文件的 populated fixture，不连接数据库。`test_calculation_export_upgrade.sh` 只在匹配的临时 GitHub-hosted workspace 中、显式允许隔离重置后执行，验证既有任务/结果/包/快照不变、导出租约和不可变输入绑定。基线与恢复顺序见 validation guide。
+
+### Study 来源重试回归
+
+在任务所有的 PG17 项目完成规范重建后运行：
+```sh
+python3 -B supabase/tests/regression/20261103_study_source_concurrency.py --report <new-source-concurrency-json>
+```
+测试观察两个真实会话的 Study/job 锁等待，要求同一租约返回相同不可变 packet，
+恢复原 source-enabled 标记，并仅保留专用合成命名空间供明确的任务 reset。
+input-parity SQL 套件另行覆盖非字符串来源 ID、规范化整数代际及普通任务类型归一化。
+这些测试不授予 hosted 操作或业务数据权限。

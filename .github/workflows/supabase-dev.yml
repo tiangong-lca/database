@@ -122,6 +122,9 @@ jobs:
       - name: Verify schema and capability contracts
         run: |
           supabase test db supabase/tests/20261103_study_durable_runtime.sql
+          supabase test db supabase/tests/20261103_study_task_admission.sql
+          supabase test db supabase/tests/20261103_study_task_disclosure.sql
+          supabase test db supabase/tests/20261103_study_task_input_parity.sql
           supabase test db supabase/tests/20261006_search_request_identity.sql
           supabase test db supabase/tests/20260920_portal_china_administrative_navigation.sql
           supabase test db supabase/tests/20260805_full_schema_cutover.sql
@@ -1059,6 +1062,8 @@ jobs:
         run: python3 -B supabase/tests/regression/20261103_study_runtime_concurrency.py --report "$RUNNER_TEMP/study894-concurrency.json"
       - name: Verify real Study actor and OAuth PostgREST transport
         run: python3 -B supabase/tests/regression/20261103_study_runtime_transport.py --workdir "$RUNNER_TEMP/study894" --report "$RUNNER_TEMP/study894-transport.json"
+      - name: Verify concurrent first source reads recover one immutable packet
+        run: python3 -B supabase/tests/regression/20261103_study_source_concurrency.py --report "$RUNNER_TEMP/study895-source-concurrency.json"
       - name: Preserve bounded Study proof summary
         if: always()
         run: |
@@ -1070,6 +1075,9 @@ jobs:
           fi
           if [ -f "$RUNNER_TEMP/study894-transport.json" ]; then
             cat "$RUNNER_TEMP/study894-transport.json" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f "$RUNNER_TEMP/study895-source-concurrency.json" ]; then
+            cat "$RUNNER_TEMP/study895-source-concurrency.json" >> "$GITHUB_STEP_SUMMARY"
           fi
       - name: Release only the owned Study project
         if: always()

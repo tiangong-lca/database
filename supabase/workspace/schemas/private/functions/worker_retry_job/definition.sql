@@ -6,6 +6,7 @@ declare
   v_job private.worker_jobs%rowtype;
   v_retry_at timestamptz;
 begin
+  if not private.study_generic_job_allowed(null,p_job_id,'retry') then return jsonb_build_object('ok',false,'code','STUDY_SCOPED_ROUTE_REQUIRED','status',403,'message','Study task requires scoped authorization'); end if;
   if not coalesce(util.is_service_request(), false) then
     return jsonb_build_object(
       'ok', false,

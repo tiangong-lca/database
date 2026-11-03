@@ -2,6 +2,8 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path=extensions,public,api,private,pg_temp;
 select no_plan();
+-- This suite qualifies the frozen W03 core with runtime admissions disabled.
+update private.study_runtime_config set source_enabled=false,compute_enabled=false,disclosure_enabled=false where singleton;
 \ir fixtures/study894_runtime_fixture.sql
 create temp table study894_results(k text primary key,v jsonb);
 create function pg_temp.keep(p_key text,p_value jsonb) returns jsonb language plpgsql as $$ begin
@@ -84,7 +86,7 @@ select ok((api.svc_study_model_preparation_complete_v1('89400000-0000-4000-8000-
  jsonb_set(pg_temp.study894_complete(),'{inputArtifactRef,id}','"89400000-0000-4000-8000-000000000062"')||jsonb_build_object('modelRef',pg_temp.study894_model()||jsonb_build_object('modelRevisionId','scenario-model-894','contentHash',repeat('e',64)),'inputHash',repeat('d',64),'storageObjectPath','study/89400000-0000-4000-8000-000000000010/89400000-0000-4000-8000-000000000062/input.json'),'scenario-producer')->>'ok')::boolean,'current actual lease issues exact Scenario preparation and semantic input identity');
 select ok((pg_temp.study894_cmd(1,'scenario.freeze',jsonb_build_object('target',jsonb_build_object('type','scenarioRevision','id',pg_temp.val('scenario')->'data'->'value'->'scenarioRevisionId','expectedRevision',1),'expectedContentHash',pg_temp.val('scenario')->'data'->'value'->'contentHash','modelPreparationId','89400000-0000-4000-8000-000000000022'))->>'ok')::boolean,'captured draft preparation freezes without a false provenance self-cycle');
 select is((select status||':'||revision from private.study_scenarios),'frozen:2','Scenario freezes once and advances its own generation');
-select is(pg_temp.study894_cmd(1,'run.submit','{}')->>'code','CAPABILITY_UNAVAILABLE','no placeholder queue/solver admission is advertised');
+select is(pg_temp.study894_cmd(1,'run.submit',jsonb_build_object('studyRevisionId',pg_temp.val('revision')->'data'->'value'->'revisionId','scenarioRevisionId',pg_temp.val('scenario')->'data'->'value'->'scenarioRevisionId','expectedInputHash',repeat('d',64),'profileId','lca.study-explicit-v1','calculationContractRef',pg_temp.study894_complete()->'calculationContractRef'))->>'code','CAPABILITY_UNAVAILABLE','no placeholder queue/solver admission is advertised');
 select is((select count(*) from private.study_runs),0::bigint,'unavailable Run command creates no domain row');
 select is(pg_temp.study894_qry(1,'artifact.read','{"studyId":"89400000-0000-4000-8000-000000000010","artifactRef":{}}')->>'code','CAPABILITY_UNAVAILABLE','artifact disclosure unavailable until qualified W06 path');
 

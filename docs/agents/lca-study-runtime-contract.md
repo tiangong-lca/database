@@ -1,5 +1,5 @@
 ---
-title: Study durable runtime v1
+title: Study durable runtime and task admission v1
 docType: contract
 scope: repo
 status: active
@@ -19,17 +19,17 @@ checkPaths:
   - scripts/*study_runtime*.py
   - docs/agents/lca-study-runtime-contract.md
 lastReviewedAt: 2026-11-03
-lastReviewedCommit: 5ed1cd2cd487ff147695b76762c65e2c8e8100aa
-lastReviewedNote: "Database #894: additive W03 persistence and fenced service seams; queue admission, actual producers and disclosure remain W06."
+lastReviewedCommit: 2b8959360fe39205b4ab11d0d40acf32df3e66ac
+lastReviewedNote: "Database #895: reviewed default-off canonical Study admission, exact RLS source capture/history rights, opaque disclosure intents and scoped cancellation/reconciliation; local runtime evidence and owned reconstruction are distinct from hosted activation."
 related:
   - ./lca-study-durable-contract.md
   - ./repo-validation.md
   - ../../AGENTS.md
 ---
 
-# Study durable runtime v1
+# Study durable runtime and task admission v1
 
-Database #894 implements W03 persistence under the retained
+Database #894 implements W03 persistence and Database #895 adds the separately gated W06 task/disclosure adapter under the retained
 [durable invariants](lca-study-durable-contract.md). Edge owns public
 `lca.study-api.v2`; Worker owns source compilation and numerical/artifact
 identities. Internal RPC suffix `v1` does not change the public wire version.
@@ -49,14 +49,18 @@ including code-point and UTF8 byte bounds; committed parity vectors are checked
 against the Edge-owned schema. Direct PostgREST callers cannot bypass the Edge
 parser to persist an unprojectable functional unit, method or assumption record.
 
-W03 does not advertise `model.source.resolve`, `model.prepare`, `run.submit`,
-`run.cancel` or `artifact.read`. They return `CAPABILITY_UNAVAILABLE` and create
-no placeholder work. The additive W06 task adapter must qualify real admission,
-source/export/compilation, cancellation, current disclosure and transport before
-enabling those operations. Profile registration is empty on migration; no
-algorithm is activated and the P0 qualification profile is never enabled as a
-runtime solver. The initial supported profile identity is
-`lca.study-explicit-v1`; activation remains a separately verified operation.
+W03 alone advertises no source or numerical producer. W06 adds closed
+`model.source.resolve`, `model.prepare`, `run.submit`, `run.cancel`, `task.read`,
+`task.cancel` and `artifact.read` paths. Installation leaves source, compute and
+disclosure flags off in `private.study_runtime_config` and grants no OAuth
+client a capability. Unavailable submissions create no placeholder work.
+Only the service-only CAS façade `svc_study_runtime_configure_v1` can select the
+exact registered calculation descriptor, ordered method references and bounded
+`lca.study-explicit-v1` profile with a qualification-evidence reference. An
+installed profile or descriptor does not qualify a deployment; actual
+actor/API/queue/Worker/storage evidence and independently owned runtime limits
+are required before enabling its scope. Local test activation qualifies only
+that explicitly owned environment.
 Report/review/export/share production structures belong to W09/W13 additive
 delivery; the P0 rules remain authoritative for those later structures.
 
@@ -199,3 +203,95 @@ resolver evidence is independently Worker-owned. Derived Run/report projections
 need explicit qualified disclosure policy too. Synthetic service/job fixture
 tests prove SQL fencing only; they do not fetch exports, compile, verify licenses,
 upload bytes or qualify the source/solver pipeline.
+
+## W06 canonical task admission and recovery
+
+Source acquisition, preparation and Run admission atomically bind their domain
+identity to the existing `worker_jobs` arbiter. Commands derive the actual actor,
+current client and Study/team rights before receipt replay; an exact-key retry
+returns its original task. A changed normalized request conflicts. Generic
+queue enqueue/read/cancel/retry/result routes reject Study jobs, and generic
+lists, latest-job and TaskHub feeds exclude them before pagination. Public
+`task.read`/`task.cancel` take the same Study and typed domain resource identity;
+resource IDs and requester ownership alone do not confer permission.
+
+Cancellation uses the canonical state/lease arbiter and clears lease authority
+atomically. A late producer cannot complete or fail that canceled task. Fixed
+phase/error-code allowlists exclude raw Worker messages, details, source bytes
+and storage locators. Source, model and Run callbacks keep the existing exact
+job/kind/resource/current-lease/expiry and immutable terminal receipt fences.
+The source completion façade is `svc_study_source_record_v1`; callers must not
+infer a symmetric RPC name from the source-acquisition read endpoint.
+
+`svc_study_task_fail_v1` accepts only the twelve documented diagnostic codes.
+`svc_study_task_reconcile_v1` requires the exact current or recorded historical
+claimed lease, Study/resource/job and idempotency binding. It reports committed
+receipts and referenced artifacts conservatively. `unreferenced` requires a
+terminal task with no lease and no artifact metadata; active, expired,
+reclaimed or ambiguous tasks remain pending. Time or object age never grants
+cleanup authority. Worker owns exact storage-byte readback and deletion receipts.
+
+## W06 actual source capture and historical disclosure
+
+The source exporter resolves exact UUID/version references from current
+RLS-governed `json_ordered::text` rows, through the existing NOBYPASSRLS executor
+with the captured actor/client context. It requires both current Study rights
+and `DB-CORE-READ-01`, admitting published100 or the actor's own draft0 only.
+Withdrawn, state120/200, missing, foreign-private or RLS-invisible rows fail.
+The bounded closure covers at most512 documents,64 instances and4MiB; it follows
+exact Model→Process→Flow→reference FlowProperty→UnitGroup references without a
+latest-version fallback. The first leased read stores its packet once; retries
+retain that exact byte observation and time.
+
+Per-document SHA256 binds the exact PostgreSQL JSON-text UTF8 string. Snapshot
+packet/artifact bytes, Worker semantic model/input identities and the
+calculation descriptor have separate hash domains. `licenseEvidence` is a
+captured descriptive record; access-policy metadata is not an open-license or
+redistribution assertion. Base preparation stores explicit ordered methods and
+cutoffs; empty cutoffs mean no exclusions. Scenario preparation uses the selected
+frozen StudyRevision's base preparation and complete current override layer,
+including captured factors, rather than latest data or implicit parent layers.
+
+Current row visibility never retroactively publishes historical draft bytes.
+Captured private bytes remain bound to their captured owner and current
+ownership/read eligibility. A different actor may receive captured public bytes
+only while the exact captured SHA is still public100 now. A captured owner may
+retain historical bytes only while current ownership and read eligibility
+remain. These checks apply to leased source use, model/Run input reads,
+completion and every artifact disclosure; a newer published row is not silently
+substituted for the frozen source.
+
+## W06 opaque artifact disclosure intents
+
+The `study-artifacts` bucket is private, limited to4MiB per artifact, and a
+restrictive Storage policy closes direct anon/authenticated object access
+independently of permissive policies. Raw `modelSource` packets are never
+publicly disclosed. Only qualified `modelInput` and `runResult` projections have
+an actor read path, with both current Study rights and the complete current
+source/history disclosure scope.
+
+Actor `artifact.read` returns an opaque two-minute intent containing only the
+exact typed reference, Study and intent identity/expiry. It returns no storage
+locator or captured actor/client metadata. The service-only resolver rechecks
+that original actor/client, current rights, expiry and exact binding before
+returning an internal capability; Edge resolves again after bounded download
+and hash/size verification before releasing bytes. A host wall clock cannot
+replace the database expiry check. There are at most64 outstanding intents per
+actor, serialized by a transaction advisory lock. Each authorized read removes
+at most256 expired rows with `SKIP LOCKED`, then checks the live budget; an
+excess request returns `CAPABILITY_UNAVAILABLE` without extra authority.
+
+## Direct-input parity and concurrent capture
+
+Source identifiers retain their public string types. Scenario preparation
+generations must be numeric safe integers and are stored as canonical integers;
+string coercion must not create a record rejected by typed consumers. Generic
+job-kind routing uses the canonical enqueuer's lower/trim normalization before
+deciding whether a scoped Study route is required.
+
+Source input reads acquire Study and job locks in the existing order, then reload
+the acquisition before inspecting its captured packet. Under PostgreSQL17 Read
+Committed, a waiting same-lease caller therefore reuses the first committed
+packet instead of recapturing from a stale pre-lock row. Transaction and
+source-right checks remain in force; higher-isolation serialization failures
+require normal caller recovery, not a stale overwrite.

@@ -371,11 +371,15 @@ def main() -> int:
         'scripts/test_study_runtime_upgrade.py --workdir "$RUNNER_TEMP/study894"',
         'supabase/tests/regression/20261103_study_runtime_concurrency.py',
         'supabase/tests/regression/20261103_study_runtime_transport.py',
+        'supabase/tests/regression/20261103_study_source_concurrency.py',
         'supabase stop --project-id study894 --no-backup',
         'label=com.supabase.cli.project=study894',
     ):
         if token not in study_workflow:
             failures.append(f"isolated Study proof must preserve its owned-project boundary: {token}")
+    for suite in ('20261103_study_durable_runtime.sql', '20261103_study_task_admission.sql', '20261103_study_task_disclosure.sql', '20261103_study_task_input_parity.sql'):
+        if f'supabase test db supabase/tests/{suite}' not in local_workflow:
+            failures.append(f'local contract must execute the exact Study suite: {suite}')
     if not local_workflow:
         failures.append("x64 local contract job is missing")
     if not profile_workflow:

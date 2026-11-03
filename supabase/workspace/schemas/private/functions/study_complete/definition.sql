@@ -31,6 +31,7 @@ begin
     perform private.study_require(previous.job_id=p_job and previous.lease_token=p_token,'FORBIDDEN');
     return previous.response;
   end if;
+  perform private.study_validate_task_completion(p_kind,p_id,p_completion);
   perform private.study_lock_job(sid,p_job,p_token,expected_kind,subject,p_id);
   if p_kind='modelPreparation' then
     perform private.study_require(p.model_ref is null,'IDEMPOTENCY_CONFLICT');
@@ -64,9 +65,11 @@ begin
   else update private.study_runs set result_artifact_id=artifact where id=p_id; end if;
   -- Generic worker_job_payload(false) includes result_json. Never place private
   -- source scope, model/numerics or storage locators in that shared projection.
+  perform set_config('app.study.task_context','complete',true);
   jresult:=private.worker_record_job_result(p_job,p_token,'completed',
     jsonb_build_object('schemaVersion','lca.study-job-receipt.v1','studyId',sid,'resourceType',p_kind,'resourceId',p_id),
     'lca.study-job-receipt.v1',p_completion->artifact_key);
+  perform set_config('app.study.task_context','',true);
   perform private.study_require((jresult->>'ok')::boolean,'FORBIDDEN');
   perform private.study_assert_provenance(sid);
   response:=jsonb_build_object('ok',true,'data',jsonb_build_object('type',p_kind,'value',private.study_record(p_kind,p_id)));

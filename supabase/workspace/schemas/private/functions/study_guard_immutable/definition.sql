@@ -15,8 +15,8 @@ begin
     if (to_jsonb(old)-'model_ref'-'input_artifact_id'-'input_hash') is distinct from (to_jsonb(new)-'model_ref'-'input_artifact_id'-'input_hash') then raise exception 'REFERENCE_MISMATCH'; end if;
     if old.model_ref is not null and to_jsonb(old) is distinct from to_jsonb(new) then raise exception 'FROZEN_REVISION'; end if;
   elsif tg_table_name='study_source_acquisitions' then
-    if (to_jsonb(old)-'snapshot_id') is distinct from (to_jsonb(new)-'snapshot_id') then raise exception 'REFERENCE_MISMATCH'; end if;
-    if old.snapshot_id is not null and old.snapshot_id is distinct from new.snapshot_id then raise exception 'FROZEN_REVISION'; end if;
+    if (to_jsonb(old)-'snapshot_id'-'source_packet') is distinct from (to_jsonb(new)-'snapshot_id'-'source_packet') then raise exception 'REFERENCE_MISMATCH'; end if;
+    if old.snapshot_id is not null and old.snapshot_id is distinct from new.snapshot_id then raise exception 'FROZEN_REVISION'; end if; if old.source_packet is not null and old.source_packet is distinct from new.source_packet then raise exception 'FROZEN_REVISION'; end if;
   elsif tg_table_name='study_runs' then
     if (to_jsonb(old)-'result_artifact_id') is distinct from (to_jsonb(new)-'result_artifact_id') then raise exception 'REFERENCE_MISMATCH'; end if;
     if old.result_artifact_id is not null and old.result_artifact_id is distinct from new.result_artifact_id then raise exception 'FROZEN_REVISION'; end if;

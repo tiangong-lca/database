@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-03
-lastReviewedCommit: 5ed1cd2cd487ff147695b76762c65e2c8e8100aa
-lastReviewedNote: "Database #894: W03 private Study runtime, live authorization, atomic validation intents and real SQL/concurrency proof; W06 admission and disclosure remain unavailable."
+lastReviewedCommit: 2b8959360fe39205b4ab11d0d40acf32df3e66ac
+lastReviewedNote: "Database #895: reviewed default-off canonical Study admission, exact RLS source capture/history rights, opaque disclosure intents and scoped cancellation/reconciliation; local runtime evidence and owned reconstruction are distinct from hosted activation."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -51,11 +51,13 @@ This repo is organized around one checked-in Supabase project plus a generated s
 [LCA Study durable invariants v1](lca-study-durable-contract.md) owns the P0
 identity, revision, authorization, concurrency and report review/export/share
 contract with offline transition examples. The P0 examples introduce no runtime
-capability. The additive [W03 runtime contract](lca-study-runtime-contract.md)
+capability. The additive [Study runtime contract](lca-study-runtime-contract.md)
 owns private persistent Study/grant/source/preparation/revision/scenario/Run
 identities, actor façades, atomic validation intents and fenced service seams.
-W06 queue admission, actual producers and source/artifact disclosure remain
-unavailable until separately qualified; W03 alone advertises no numerical profile.
+W06 adds canonical queue admission, immutable actual-row JSON capture, scoped
+task control and opaque artifact-disclosure intents behind default-off service
+qualification flags. Installation alone activates no source or numerical profile;
+real actor/queue/Worker/storage qualification remains environment-specific.
 Edge owns public Study wire schemas; Worker owns numerical contracts.
 Study/Run/Report remain distinct from LifecycleModel, worker_jobs and formal
 Final Result publication. Later report/review/export/share structures remain

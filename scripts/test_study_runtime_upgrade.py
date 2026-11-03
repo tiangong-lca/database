@@ -17,8 +17,8 @@ from prepare_study_runtime_project import settings
 from resolve_migration_head import resolve_migration_head
 
 CONTAINER = "supabase_db_study894"
-MIGRATION = "20261102165824_study_durable_runtime_v1.sql"
-PREDECESSOR = "20261102091416"
+MIGRATION = "20261102215839_study_task_admission_v1.sql"
+PREDECESSOR = "20261102165824"
 
 
 def sql(statement):
@@ -72,24 +72,55 @@ values('89499999-0000-4000-8000-000000000002','01.00.000',0,'89499999-0000-4000-
 '{"contactDataSet":{"contactInformation":{"dataSetInformation":{"common:UUID":"89499999-0000-4000-8000-000000000002"}},"administrativeInformation":{"publicationAndOwnership":{"common:dataSetVersion":"01.00.000"}}}}');
 insert into private.worker_jobs(id,job_kind,worker_queue,requested_by,status,payload_schema_version,payload_json)
 values('89499999-0000-4000-8000-000000000003','lca.solve_one','solver','89499999-0000-4000-8000-000000000001','queued','study894.legacy-fixture.v1','{}');
+insert into private.studies(id,owner_id,title) values('89499999-0000-4000-8000-000000000004','89499999-0000-4000-8000-000000000001','Persisted predecessor Study');
+insert into private.study_members values('89499999-0000-4000-8000-000000000004','89499999-0000-4000-8000-000000000001','owner');
 create temp table study894_prior as select
+ (select to_jsonb(s) from private.studies s where id='89499999-0000-4000-8000-000000000004') study,
+ (select coalesce(jsonb_agg(to_jsonb(m) order by m.oid),'[]'::jsonb) from pg_auth_members m where m.roleid='api_internal_executor'::regrole and m.member='postgres'::regrole) executor_membership,
+ has_schema_privilege('api_internal_executor','private','CREATE') executor_create,
  (select to_jsonb(c) from public.contacts c where id='89499999-0000-4000-8000-000000000002') contact,
  (select to_jsonb(j) from private.worker_jobs j where id='89499999-0000-4000-8000-000000000003') job,
- (select jsonb_object_agg(p.oid::text,jsonb_build_object('definition',pg_get_functiondef(p.oid),'acl',p.proacl::text,'owner',p.proowner)) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname in ('public','private','api','util') and p.prokind='f') functions,
+ (select jsonb_object_agg(p.oid::text,jsonb_build_object('definition',pg_get_functiondef(p.oid),'acl',p.proacl::text,'owner',p.proowner,'schema',n.nspname,'name',p.proname,'settings',p.proconfig)) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname in ('public','private','api','util') and p.prokind='f') functions,
  (select jsonb_object_agg(routine_identity,to_jsonb(g)) from private.api_capability_grants g) manifest;
 commit;
 """
     verification = """
-select jsonb_build_object('datasetPreserved',b.contact=(select to_jsonb(c) from public.contacts c where id='89499999-0000-4000-8000-000000000002'),
+create temp table study895_expected_changes(name text primary key);
+insert into study895_expected_changes values
+ ('private.worker_enqueue_job'),('private.worker_read_job'),('private.worker_cancel_job'),('private.worker_retry_job'),
+ ('private.worker_record_job_result'),('private.worker_list_jobs'),('private.worker_read_latest_job'),
+ ('private.get_task_summary_v2_feed_unversioned'),('private.study_complete'),('private.study_guard_immutable'),
+ ('private.study_read_worker_input'),('api.cmd_study_v1'),('api.qry_study_v1');
+select jsonb_build_object(
+'datasetPreserved',b.contact=(select to_jsonb(c) from public.contacts c where id='89499999-0000-4000-8000-000000000002'),
 'legacyJobPreserved',b.job=(select to_jsonb(j) from private.worker_jobs j where id='89499999-0000-4000-8000-000000000003'),
-'existingRoutinesPreserved',b.functions=(select jsonb_object_agg(p.oid::text,jsonb_build_object('definition',pg_get_functiondef(p.oid),'acl',p.proacl::text,'owner',p.proowner)) from pg_proc p where b.functions ? p.oid::text),
+'persistedStudyPreserved',b.study=(select to_jsonb(s) from private.studies s where id='89499999-0000-4000-8000-000000000004'),
+'otherRoutinesPreserved',not exists(
+ select 1 from jsonb_each(b.functions) x left join pg_proc p on p.oid=x.key::oid left join pg_namespace n on n.oid=p.pronamespace
+ where not exists(select 1 from study895_expected_changes e where e.name=(x.value->>'schema')||'.'||(x.value->>'name'))
+ and (p.oid is null or x.value<>jsonb_build_object('definition',pg_get_functiondef(p.oid),'acl',p.proacl::text,'owner',p.proowner,'schema',n.nspname,'name',p.proname,'settings',p.proconfig))),
+'changedQueueAuthorityPreserved',not exists(
+ select 1 from jsonb_each(b.functions) x left join pg_proc p on p.oid=x.key::oid left join pg_namespace n on n.oid=p.pronamespace
+ where exists(select 1 from study895_expected_changes e where e.name=(x.value->>'schema')||'.'||(x.value->>'name')) and x.value->>'schema'='private'
+ and (p.oid is null or (x.value-'definition')<>jsonb_build_object('acl',p.proacl::text,'owner',p.proowner,'schema',n.nspname,'name',p.proname,'settings',p.proconfig))),
+'exactReviewedChangeInventory',(select array_agg(e.name order by e.name) from study895_expected_changes e)=(
+ select array_agg((x.value->>'schema')||'.'||(x.value->>'name') order by (x.value->>'schema')||'.'||(x.value->>'name'))
+ from jsonb_each(b.functions) x left join pg_proc p on p.oid=x.key::oid left join pg_namespace n on n.oid=p.pronamespace
+ where p.oid is null or x.value<>jsonb_build_object('definition',pg_get_functiondef(p.oid),'acl',p.proacl::text,'owner',p.proowner,'schema',n.nspname,'name',p.proname,'settings',p.proconfig)),
+'coreDelegationClosed',to_regprocedure('private.study_cmd_core_v1(jsonb)') is not null and to_regprocedure('private.study_qry_core_v1(jsonb)') is not null
+ and not has_function_privilege('authenticated','private.study_cmd_core_v1(jsonb)','EXECUTE')
+ and not has_function_privilege('service_role','private.study_qry_core_v1(jsonb)','EXECUTE')
+ and has_function_privilege('authenticated','api.cmd_study_v1(jsonb)','EXECUTE') and has_function_privilege('authenticated','api.qry_study_v1(jsonb)','EXECUTE'),
 'existingManifestPreserved',b.manifest=(select jsonb_object_agg(g.routine_identity,to_jsonb(g)) from private.api_capability_grants g where b.manifest ? g.routine_identity),
-'noInventedStudy',not exists(select 1 from private.studies),
-'noActivatedProfile',not exists(select 1 from private.study_profiles)) from study894_prior b;
+'executorMembershipPreserved',b.executor_membership=(select coalesce(jsonb_agg(to_jsonb(m) order by m.oid),'[]'::jsonb) from pg_auth_members m where m.roleid='api_internal_executor'::regrole and m.member='postgres'::regrole),
+'executorCreatePreserved',b.executor_create=has_schema_privilege('api_internal_executor','private','CREATE'),
+'noInventedStudy',(select count(*)=1 from private.studies),
+'rolloutOff',(select not source_enabled and not compute_enabled and not disclosure_enabled and revision=1 from private.study_runtime_config where singleton)
+ and not exists(select 1 from private.study_profiles where enabled)) from study894_prior b;
 """
     output = sql(fixture + migration.decode() + verification)
     receipt = json.loads(next(line for line in output.splitlines() if line.startswith("{")))
-    assert all(receipt.values()), receipt
+    assert receipt and all(value is True for value in receipt.values()), receipt
     reset()
     head = sql("select max(version) from supabase_migrations.schema_migrations;").strip()
     assert head == resolve_migration_head(repo / "supabase/migrations"), head
@@ -97,6 +128,7 @@ select jsonb_build_object('datasetPreserved',b.contact=(select to_jsonb(c) from 
     args.report.write_text(json.dumps({"schemaVersion": "lca.study-upgrade-receipt.v1", "project": "study894",
         "predecessor": PREDECESSOR, "candidate": head, "migrationSha256": hashlib.sha256(migration).hexdigest(),
         "selectedUpgradeMigration": MIGRATION,
+        "reviewedChangedRoutines": 13,
         "preservation": receipt, "blankLedgerRebuild": True, "syntheticUpgradeFixtureRemovedByOwnedReset": True}, indent=2) + "\n")
     print("Study PG17 populated predecessor preserved; exact candidate blank migration-ledger rebuild passed.")
 
