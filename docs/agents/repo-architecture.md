@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-04
-lastReviewedCommit: 8a45544bbc8defa90d9157fe46763f9ccd170e32
-lastReviewedNote: "Database #906: reviewed current Study/core and report authority, archived action availability, review/finalization/share replay, sole legacy-list filter and isolated SQL/HTTP/concurrency/upgrade/generated proof. Actual bytes, UI/CLI, hosted enablement and source integration remain separate."
+lastReviewedCommit: f75058aab16340ad09e9dc04ab9e5e0c88827665
+lastReviewedNote: "Database #906: reviewed exact V4 domain references, current Study/core and archived action availability, review/finalization/share replay, sole legacy-list filter and isolated upgrade/SQL/HTTP/concurrency/generated proof. Actual bytes, UI/CLI, hosted enablement and source integration remain separate."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
