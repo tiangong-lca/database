@@ -129,6 +129,7 @@ jobs:
           supabase test db supabase/tests/20261103_study_analysis_reporting.sql
           supabase test db supabase/tests/20261103_study_report_producer.sql
           supabase test db supabase/tests/20261103_study_review_finalization_sharing.sql
+          supabase test db supabase/tests/20261104_study_advanced_analysis.sql
           supabase test db supabase/tests/20261006_search_request_identity.sql
           supabase test db supabase/tests/20260920_portal_china_administrative_navigation.sql
           supabase test db supabase/tests/20260805_full_schema_cutover.sql
@@ -1037,6 +1038,62 @@ jobs:
             and (has("schemaVersion") | not)
             and (has("items") | not)
           ' "$invalid_file" >/dev/null
+
+  study-advanced-concurrency:
+    name: Verify isolated Study advanced profiles and V5 reporting
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+      SUPABASE_CLI: supabase
+    steps:
+      - uses: actions/checkout@v7
+      - uses: supabase/setup-cli@v3
+        with:
+          version: 2.117.0
+      - name: Prepare separately owned P4 project
+        run: python3 -B scripts/prepare_study_advanced_project.py --destination "$RUNNER_TEMP/study909"
+      - name: Start separately owned P4 project
+        run: |
+          umask 077
+          supabase start --workdir "$RUNNER_TEMP/study909" \
+            -x studio,imgproxy,mailpit,postgres-meta,edge-runtime,logflare,vector,supavisor,realtime \
+            > "$RUNNER_TEMP/study909-start.log" 2>&1
+      - name: Verify exact Worker serialization and config identities
+        run: >-
+          python3 -B scripts/test_study_advanced_serialization.py --workdir "$RUNNER_TEMP/study909"
+          --report "$RUNNER_TEMP/study909-serialization.json"
+      - name: Verify populated P3 upgrade and blank ledger
+        env:
+          STUDY_ADVANCED_ALLOW_RESET: owned-study909
+        run: >-
+          python3 -B scripts/test_study_advanced_upgrade.py --workdir "$RUNNER_TEMP/study909"
+          --report "$RUNNER_TEMP/study909-upgrade.json"
+      - name: Observe independent analysis and report races
+        run: >-
+          python3 -B supabase/tests/regression/20261104_study_advanced_concurrency.py
+          --workdir "$RUNNER_TEMP/study909" --report "$RUNNER_TEMP/study909-concurrency.json"
+      - name: Verify actual V5 PostgREST and old-family isolation
+        run: >-
+          python3 -B supabase/tests/regression/20261104_study_advanced_transport.py
+          --workdir "$RUNNER_TEMP/study909" --race-receipt "$RUNNER_TEMP/study909-concurrency.json"
+          --report "$RUNNER_TEMP/study909-transport.json"
+      - name: Preserve bounded P4 proof
+        if: always()
+        run: |
+          for receipt in "$RUNNER_TEMP/study909-serialization.json" "$RUNNER_TEMP/study909-upgrade.json" "$RUNNER_TEMP/study909-concurrency.json" "$RUNNER_TEMP/study909-transport.json"; do
+            if [ -f "$receipt" ]; then cat "$receipt" >> "$GITHUB_STEP_SUMMARY"; fi
+          done
+      - name: Release only owned P4 resources
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/study909/ownership.json" ]; then
+            supabase stop --project-id study909 --no-backup
+            test -z "$(docker ps -aq --filter label=com.supabase.cli.project=study909)"
+            test -z "$(docker volume ls -q --filter label=com.supabase.cli.project=study909)"
+            test -z "$(docker network ls -q --filter label=com.supabase.cli.project=study909)"
+            echo "Study909 exact owned containers, volumes and network released." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   study-review-concurrency:
     name: Verify isolated Study review and sharing

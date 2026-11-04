@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-04
-lastReviewedCommit: 97b06712ac75f08eeeb886c41d7fdb4f19a6373f
-lastReviewedNote: "Database #906: reviewed exact V4 domain references, current Study/core and archived action availability, review/finalization/share replay, sole legacy-list filter and isolated upgrade/SQL/HTTP/concurrency/generated proof. Actual bytes, UI/CLI, hosted enablement and source integration remain separate."
+lastReviewedCommit: ae9ef85d1adb77f6bb8213d89a58675b234cff76
+lastReviewedNote: "Database #909: reviewed explicit V5 advanced analysis/report/review families, exact baseline/source/lease and minimal cancellation boundaries, default-off qualification, owned upgrade/race/HTTP/generation workflow and old-family compatibility. Branch, hosted enablement, actual-byte/scientific qualification and root integration authority remain separate."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -65,6 +65,22 @@ JSON/cursor 及索引存储/写成本。这些本地资格不代表 hosted 性�
 本地迁移输出和审计 JSONL 文件应写入 `_artifacts/`，该目录已被 Git 忽略。
 
 ## 脚本列表
+
+### Study P4 高级分析与 V5 报告
+
+`prepare_study_advanced_project.py --destination <new-owned-dir>/study909` 仅创建
+独立 PG17 配置和归属回执，固定 API56821/DB56822，不启动数据库。每次 CLI
+操作必须显式传入 `--workdir <owned-study909>`，`SUPABASE_CLI` 指向固定的
+2.117.0 底层可执行文件。`test_study_advanced_serialization.py` 核对 Worker
+数值字串与配置身份；`test_study_advanced_upgrade.py` 仅在
+`STUDY_ADVANCED_ALLOW_RESET=owned-study909` 下验证已填充 P3 升级和空库重建。
+后续运行 `20261104_study_advanced_concurrency.py`、
+`20261104_study_advanced_transport.py`，参数和顺序见英文 README 与 validation guide。
+
+并发/HTTP runner 保留明确合成数据，不重置或删除任何项目。先保存回执，再由
+归属方明确重置用于生成 schema；最终仅释放 study909 的精确容器、卷和网络并
+保存清理回执。SQL/JWT/合成签名不证明 GoTrue 同意、Edge、原生计算、实际
+Storage 字节、真实密码学签发或行业科学资格。
 
 ### Study P3 审阅与指定接收人分享
 
