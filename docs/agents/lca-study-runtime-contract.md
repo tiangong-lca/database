@@ -18,10 +18,12 @@ checkPaths:
   - supabase/tests/fixtures/study904_analysis_fixture.sql
   - supabase/tests/regression/*study*.py
   - scripts/*study_runtime*.py
+  - scripts/*study_advanced*.py
+  - supabase/tests/fixtures/study909_worker_*.json
   - docs/agents/lca-study-runtime-contract.md
 lastReviewedAt: 2026-11-04
-lastReviewedCommit: 97b06712ac75f08eeeb886c41d7fdb4f19a6373f
-lastReviewedNote: "Database #906: reviewed exact V4 domain references, current Study/core and archived action availability, review/finalization/share replay, sole legacy-list filter and isolated upgrade/SQL/HTTP/concurrency/generated proof. Actual bytes, UI/CLI, hosted enablement and source integration remain separate."
+lastReviewedCommit: 4a3e95b443545b67e47c689725d1b3d5f4d27b8a
+lastReviewedNote: "Database #909: reviewed V5 advanced families, exact baseline/source/lease and minimal cancellation boundaries, independent shortest-decimal/NULL-evidence corrections, default-off qualification, and owned upgrade/race/HTTP/deterministic-generation proof. Hosted activation, actual-byte/scientific qualification and Main/root integration remain separate."
 related:
   - ./lca-study-durable-contract.md
   - ./repo-validation.md
@@ -65,6 +67,98 @@ that explicitly owned environment.
 P2 adds separately gated analysis/report/export persistence through the v3
 reporting façade described below. Review, finalization and sharing remain later
 additive delivery under the P0 rules.
+
+## P4 advanced analysis and report family (Database #909)
+
+Edge-owned `lca.study-api.v5` uses `api.cmd_study_advanced_v1` and
+`api.qry_study_advanced_v1` for advanced analysis, parameter inspection and report
+authoring. Collaboration uses separate `cmd/qry_study_advanced_review_v1`
+façades. V4 retains Study membership management; V5 does not add `member.set` or
+Study action targets. No V2/V3/V4 capability or response schema is widened.
+
+The numerical owner is Worker #362. OAT sensitivity and bounded uncertainty have
+separate profiles `lca.study-sensitivity-oat.v1` and
+`lca.study-uncertainty-bounded.v1`, closed config.v2 and facts.v2. They select one
+exact completed baseline Run. Derived evaluations are analysis-local identities;
+they never create Runs, Scenario revisions or changes to baseline artifacts.
+`private.study_advanced_analyses` records the exact baseline Run, original
+SourceSnapshot, configuration/hash, original actor/client and canonical job.
+The separate `study.analysis_advanced` kind has payload
+`study.analysis_advanced.request.v1`; an old Worker must never interpret it as
+`study.analysis`. New raw tables force RLS and grant no actor/service DML.
+
+Scientific values remain canonical strings. The SQL verifier checks the exact
+finite IEEE value and Worker shortest-roundtrip spelling, including exponent
+notation; PostgreSQL float text alone is insufficient at values such as `1e23`.
+The `study.analysis-config.v2` hash is domain + NUL + compact sorted-key UTF-8
+JSON, with arrays ordered and strings unchanged. Worker owns numerical validity,
+distributions, RNG, evaluation semantics, fact catalogs and qualification.
+Database structural admission rejects unknown fields, duplicate parameters,
+unsupported dependence shapes, invalid sample counts, noncanonical values and
+inconsistent empirical support. It does not certify scientific suitability.
+
+`svc_study_advanced_configure_v1` is service-only CAS. Its independent config
+starts with all gates false and parameter/sample ceilings null; explicit
+qualification must select positive limits before admission. These are selected
+environment bounds, not generally qualified hosted capacity. Advanced review and
+export use a separate default-off `svc_study_review_advanced_configure_v1` config.
+It binds renderer `2.0.0`, view.v2 and the exact renderer artifact hash. No migration
+enables a profile, creates an OAuth grant or changes P1/P2/P3 configuration.
+
+Admission, input resolution, completion and facts disclosure recheck the original
+current Study/source/client authority. `svc_study_analysis_advanced_read_input_v1`
+returns input.v2 containing the exact baseline tuple, SourceSnapshot and private
+source capability; neither source documents nor frozen methods reload latest.
+`svc_study_analysis_advanced_complete_v1` validates the same real job, domain,
+payload, runtime, queue and current lease, then atomically registers facts.v2 and
+its terminal receipt. The retained generic task failure/reconciliation façades
+dispatch advanced resources only after matching the advanced table and exact job;
+foreign subjects/tokens fail closed. Cancellation and late completions use the
+same canonical queue arbiter.
+Minimal `task.read` and `task.cancel` use current Study/client read or write
+authority and the exact canonical job/resource binding. They remain available
+when source access is withdrawn or new admission stops, so authorized work can
+still be stopped. Their closed projection contains status/progress and fixed
+codes only, with no source/configuration/result, raw diagnostics or locators.
+Full analysis/input/artifact/report reads retain source checks.
+
+Unknown completion outcomes remain unknown to the Worker until authoritative
+recovery. A successful completion followed by client revocation can reject the
+callback retry while its original artifact remains registered. This rejection is
+not evidence that a prior attempt had no effects. Bound historical-lease service
+reconciliation returns only scoped attachment/receipt state; it does not renew
+actor access or authorize deletion of registered artifacts.
+
+`analysis.parameters.read` issues a two-minute opaque intent with at most 64 live
+intents per actor and bounded expired-row cleanup. Its service resolver rechecks
+the original actor/client, baseline and SourceSnapshot. Edge derives the actor
+catalog from verified Worker-prepared bytes, excluding reference exchanges and
+preserving lexical baseline amounts and exact flow/support identities. The
+private source packet/capability never becomes the actor catalog.
+
+Advanced reports use template/draft/content/validation v2 and facts.v2. Run IDs
+contain only the single baseline; one or two advanced analyses must share it.
+A separate report-to-advanced-analysis link preserves the legacy foreign-key
+family. Versioned advanced report intent resolve/consume/reconcile RPCs bind the
+same original actor/client, Study CAS, exact content/facts and ordered facts
+binding hash. Every producer analysis context includes the registered original
+`sourceSnapshotRef`, distinct from the compiler source/model/input hashes.
+
+Review, finalization and named sharing retain the existing domain semantics under
+explicit V5 actor/service entrypoints. Exports bind manifest.v3, bundle.v3,
+renderer 2.0.0 and view.v2; signature domain v1 remains unambiguous because the
+signed canonical payload includes manifest.v3. Old V4 actor and service paths
+reject P4 reports and indirect share/export/delegation references. Existing signed
+P2/P3 bundles retain their own versions and verification rules. No V5 unreviewed
+`export.request` shortcut bypasses finalization.
+
+Compatibility is selected before ordering, limits and cursors. Advanced analyses
+are stored separately; V3 report lists and direct authoring/read/artifact paths
+require template v1. V5 lists/read/task/artifact paths select only the advanced
+family, and cursor selection binds its negotiated schema/family. Current source,
+actor, client and report/share authority is rechecked when an opaque capability
+resolves. SQL metadata/signature fixtures prove these bindings, not actual native
+execution, artifact bytes, cryptographic issuance or scientific qualification.
 
 ## Actor and team authorization
 

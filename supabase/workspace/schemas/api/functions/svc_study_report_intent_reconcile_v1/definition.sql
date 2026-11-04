@@ -6,7 +6,7 @@ declare i private.study_report_intents%rowtype;a private.study_artifacts%rowtype
  perform private.study_require(coalesce(util.is_service_request(),false),'FORBIDDEN');
  perform private.study_require(p_intent_id is not null and p_artifact_id is not null and private.study_text(to_jsonb(p_content_hash),64,'^[0-9a-f]{64}$'),'INVALID_REQUEST');
  select * into i from private.study_report_intents where id=p_intent_id;
- if found then
+ if found and i.family='legacy' then
   perform 1 from private.studies where id=i.study_id for update;
   select * into i from private.study_report_intents where id=p_intent_id for update;
   if p_artifact_id=any(array[i.content_artifact_id,i.projection_artifact_id,i.resources_artifact_id,i.bundle_artifact_id]) then

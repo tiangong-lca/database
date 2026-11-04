@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-04
-lastReviewedCommit: 97b06712ac75f08eeeb886c41d7fdb4f19a6373f
-lastReviewedNote: "Database #906: reviewed exact V4 domain references, current Study/core and archived action availability, review/finalization/share replay, sole legacy-list filter and isolated upgrade/SQL/HTTP/concurrency/generated proof. Actual bytes, UI/CLI, hosted enablement and source integration remain separate."
+lastReviewedCommit: 4a3e95b443545b67e47c689725d1b3d5f4d27b8a
+lastReviewedNote: "Database #909: reviewed V5 advanced families, exact baseline/source/lease and minimal cancellation boundaries, independent shortest-decimal/NULL-evidence corrections, default-off qualification, and owned upgrade/race/HTTP/deterministic-generation proof. Hosted activation, actual-byte/scientific qualification and Main/root integration remain separate."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -73,6 +73,15 @@ V1 exports retain their historical meaning. Recipient projection authority grant
 no Study/source membership. All producer and review gates default off; exact local
 SQL/HTTP/race proof remains separate from real renderer, UI, CLI and hosted
 qualification. No Study phase publishes datasets or formal Results.
+P4 adds separately stored advanced analyses and explicit V5 analysis/catalog/report
+and collaboration façades. Their closed Worker config/facts v2 and exact baseline
+Run/SourceSnapshot bindings retain deterministic Run history. Advanced reports use
+template/content v2 with separate advanced-analysis links; renderer 2.0.0/view v2
+and manifest/bundle v3 require separate default-off qualification. Old V3/V4 lists,
+reads, tasks, artifacts and indirect share/export references keep their own family
+before pagination or capability resolution. Source/client/lease checks remain live;
+unknown callback rejection never establishes absence of an earlier committed
+artifact. See the runtime contract for the owned RPC and recovery boundaries.
 V4 Study actions expose coarse core read/write from the existing authorizer for
 UI affordances. Those flags add no source/target authorization or producer
 qualification and are always false on non-Study targets.

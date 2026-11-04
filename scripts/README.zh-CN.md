@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-04
-lastReviewedCommit: 97b06712ac75f08eeeb886c41d7fdb4f19a6373f
-lastReviewedNote: "Database #906: reviewed exact V4 domain references, current Study/core and archived action availability, review/finalization/share replay, sole legacy-list filter and isolated upgrade/SQL/HTTP/concurrency/generated proof. Actual bytes, UI/CLI, hosted enablement and source integration remain separate."
+lastReviewedCommit: 4a3e95b443545b67e47c689725d1b3d5f4d27b8a
+lastReviewedNote: "Database #909: reviewed V5 advanced families, exact baseline/source/lease and minimal cancellation boundaries, independent shortest-decimal/NULL-evidence corrections, default-off qualification, and owned upgrade/race/HTTP/deterministic-generation proof. Hosted activation, actual-byte/scientific qualification and Main/root integration remain separate."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -65,6 +65,27 @@ JSON/cursor 及索引存储/写成本。这些本地资格不代表 hosted 性�
 本地迁移输出和审计 JSONL 文件应写入 `_artifacts/`，该目录已被 Git 忽略。
 
 ## 脚本列表
+
+### Study P4 高级分析与 V5 报告
+
+`prepare_study_advanced_project.py --destination <new-owned-dir>/study909` 仅创建
+独立 PG17 配置和归属回执，固定 API56821/DB56822，不启动数据库。每次 CLI
+操作必须显式传入 `--workdir <owned-study909>`，`SUPABASE_CLI` 指向固定的
+2.117.0 底层可执行文件。`test_study_advanced_serialization.py` 核对 Worker
+数值字串与配置身份；`test_study_advanced_upgrade.py` 仅在
+`STUDY_ADVANCED_ALLOW_RESET=owned-study909` 下验证已填充 P3 升级和空库重建。
+后续运行 `20261104_study_advanced_concurrency.py`、
+`20261104_study_advanced_transport.py`，参数和顺序见英文 README 与 validation guide。
+
+Schema 导出 helper 没有 workdir 参数，必须显式指定 `--environment local
+--db-url <verified-study909-db-url> --schemas public api private util archive`；
+裸 `--environment local` 会选择仓库项目，不是 study909。类型生成则显式使用
+CLI 的 `--local --workdir <owned-study909>`。
+
+并发/HTTP runner 保留明确合成数据，不重置或删除任何项目。先保存回执，再由
+归属方明确重置用于生成 schema；最终仅释放 study909 的精确容器、卷和网络并
+保存清理回执。SQL/JWT/合成签名不证明 GoTrue 同意、Edge、原生计算、实际
+Storage 字节、真实密码学签发或行业科学资格。
 
 ### Study P3 审阅与指定接收人分享
 

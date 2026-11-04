@@ -2,6 +2,7 @@ CREATE OR REPLACE FUNCTION "private"."study_report_rights"("p_study" "uuid", "p_
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
     AS $$declare rid text;aid text;a private.study_analyses%rowtype;refs jsonb:='[]'::jsonb;begin
+ if exists(select 1 from private.study_advanced_analyses where study_id=p_study and id=(p_analyses->>0)::uuid) then return private.study_report_advanced_rights(p_study,p_runs,p_analyses,p_actor,p_client);end if;
  perform private.study_authorize(p_study,p_actor,p_client,'read');
  perform private.study_require(private.study_report_ids(p_runs,1,2) and private.study_report_ids(p_analyses,1,2),'INVALID_REQUEST');
  for rid in select jsonb_array_elements_text(p_runs) loop

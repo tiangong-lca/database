@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-04
-lastReviewedCommit: 97b06712ac75f08eeeb886c41d7fdb4f19a6373f
-lastReviewedNote: "Database #906: reviewed exact V4 domain references, current Study/core and archived action availability, review/finalization/share replay, sole legacy-list filter and isolated upgrade/SQL/HTTP/concurrency/generated proof. Actual bytes, UI/CLI, hosted enablement and source integration remain separate."
+lastReviewedCommit: 4a3e95b443545b67e47c689725d1b3d5f4d27b8a
+lastReviewedNote: "Database #909: reviewed V5 advanced families, exact baseline/source/lease and minimal cancellation boundaries, independent shortest-decimal/NULL-evidence corrections, default-off qualification, and owned upgrade/race/HTTP/deterministic-generation proof. Hosted activation, actual-byte/scientific qualification and Main/root integration remain separate."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -136,6 +136,63 @@ trusted source/Worker evidence with real canonical jobs and lease tokens; they
 do not qualify actual exports, licensing, artifact bytes, solver execution or
 disclosure. W06 must add those real actor/queue/Worker/storage/transport proofs
 before producer or artifact operations are advertised.
+
+## Study P4 advanced profiles and V5 reporting (Database #909)
+
+Retain every P1/P2/P3 SQL and transport boundary. The ordinary PG17 blank-ledger
+baseline applies. `supabase/tests/20261104_study_advanced_analysis.sql` checks the
+closed Worker configs/hashes, independent default-off configuration, exact
+baseline/source/client/lease bindings, task cancellation and recovery, family
+filtering before pagination, facts/content v2, V5 review and manifest/bundle v3.
+Numerical/content/signature metadata is explicitly synthetic; actual Worker,
+Edge, installed clients, renderer and cryptographic/Storage bytes require the
+coordinated workspace #2181 qualification.
+
+Use pinned Supabase 2.117.0 and materialize only the reserved owned environment:
+
+```sh
+python3 -B scripts/prepare_study_advanced_project.py --destination <new-owned-dir>/study909
+```
+
+The helper creates PG17 API56821/DB56822 configuration and ownership metadata;
+it operates no database. Inventory ports/resources before starting, use explicit
+`--workdir <owned-study909>` on every CLI operation, keep local startup/status
+keys private, and retain an exact resource cleanup receipt. Never operate the
+retained P2/P3 or shared project for this proof.
+
+With the owned stack running and its fixture namespace empty, run
+`supabase/tests/regression/20261104_study_advanced_concurrency.py --workdir
+<owned-study909> --report <new-json>`. It commits synthetic rows and observes real
+advisory/row-lock overlap for admission/receipt conflicts, both cancellation
+orders, report consume/save/freeze/admission CAS, and completion/source withdrawal.
+It never creates/resets a project. Then use `SUPABASE_CLI=<pinned-executable>` with
+`supabase/tests/regression/20261104_study_advanced_transport.py --workdir
+<owned-study909> --race-receipt <race-json> --report <new-json>` for actual
+PostgREST, fixture JWT, role/client/pre-request and family checks. It restores only
+the exact synthetic source row state after withdrawal, verifying unchanged
+bytes/owner/version. Credentials and raw HTTP errors remain unlogged. These
+signed fixture claims do not prove GoTrue login or OAuth consent.
+
+After preserving receipts and explicitly disposing the owned synthetic namespace,
+reset only study909 to an empty candidate. Then
+`STUDY_ADVANCED_ALLOW_RESET=owned-study909` permits
+`scripts/test_study_advanced_upgrade.py --workdir <owned-study909> --report
+<new-json>` to reset the exact P3 predecessor `20261103151409`, seed retained P3
+flows, apply the advanced migration and check all prior application table values,
+Auth values, capability/job-kind rows and prior routine ACLs/owners/settings.
+Only the fifteen declared family/rights/task/service wrapper definitions may
+change. The two existing opaque intent tables gain default `family=legacy`;
+all original fields must remain exact. A final blank ledger leaves every P1–P4
+gate off with no accounts/client grants or advanced records.
+
+Compare the immutable Worker serialization/config vectors in
+`supabase/tests/fixtures/study909_worker_goldens.json`; retain independently
+source-bound broader IEEE corpus receipts when the verifier changes. The committed
+16,362 binary/decimal powers and immediate-neighbor vectors remain part of CI.
+Refresh all
+five generated schema views plus public/api Data API types twice from the final
+blank owned state, require zero second-run drift, and run advisors/lint and Docpact.
+P4 source delivery, hosted enablement and exact root integration are separate.
 
 ## Study P3 review/finalization/named sharing (Database #906)
 

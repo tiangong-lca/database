@@ -15,7 +15,7 @@ begin
   perform private.study_require(found and cur.actor_id=actor and cur.client_id is not distinct from client and cur.selection=selection and cur.access_epoch=epoch and cur.expires_at>clock_timestamp(),'INVALID_REQUEST');after_id:=cur.after_id;
  end if;
  if kind='analysis' then select array_agg(t.id order by t.id) into ids from(select study_analyses.id from private.study_analyses where study_id=sid and (after_id is null or study_analyses.id>after_id) order by study_analyses.id limit lim+1)t;
- elsif kind='reportRevision' then select array_agg(t.id order by t.id) into ids from(select study_report_revisions.id from private.study_report_revisions where study_id=sid and (after_id is null or study_report_revisions.id>after_id) order by study_report_revisions.id limit lim+1)t;
+ elsif kind='reportRevision' then select array_agg(t.id order by t.id) into ids from(select study_report_revisions.id from private.study_report_revisions where study_id=sid and template_id='lca.study-report.v1' and (after_id is null or study_report_revisions.id>after_id) order by study_report_revisions.id limit lim+1)t;
  else select array_agg(t.id order by t.id) into ids from(select study_report_exports.id from private.study_report_exports where study_id=sid and actor_id=actor and client_id is not distinct from client and grant_epoch=(select grant_epoch from private.studies where studies.id=sid) and (after_id is null or study_report_exports.id>after_id) order by study_report_exports.id limit lim+1)t;end if;
  more:=coalesce(cardinality(ids)>lim,false);
  foreach resource_id in array coalesce(ids[1:lim],'{}') loop

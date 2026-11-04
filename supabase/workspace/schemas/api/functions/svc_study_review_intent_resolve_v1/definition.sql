@@ -3,7 +3,7 @@ CREATE OR REPLACE FUNCTION "api"."svc_study_review_intent_resolve_v1"("p_intent_
     SET "search_path" TO ''
     AS $$declare i private.study_review_intents%rowtype;r private.study_report_revisions%rowtype;s private.study_report_shares%rowtype;e private.study_review_exports%rowtype;
  st jsonb;producer jsonb;runs jsonb;analyses jsonb;issuer uuid;artifact jsonb;begin
- perform private.study_require(coalesce(util.is_service_request(),false),'FORBIDDEN');i:=private.study_review_intent_check(p_intent_id);
+ perform private.study_require(coalesce(util.is_service_request(),false),'FORBIDDEN');perform private.study_require(exists(select 1 from private.study_review_intents guard_intent join private.study_report_revisions guard_report on guard_report.id=guard_intent.report_id where guard_intent.id=p_intent_id and guard_report.template_id='lca.study-report.v1' and guard_intent.request->>'schemaVersion'='lca.study-api.v4'),'CAPABILITY_UNAVAILABLE');i:=private.study_review_intent_check(p_intent_id);
  if i.response is not null then return i.response;end if;
  select * into r from private.study_report_revisions where id=i.report_id;st:=jsonb_set(private.study_review_state(r.id),'{checkedAt}',to_jsonb(i.created_at));
  if i.operation='export.download' then

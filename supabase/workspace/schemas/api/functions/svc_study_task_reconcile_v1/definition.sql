@@ -5,6 +5,7 @@ CREATE OR REPLACE FUNCTION "api"."svc_study_task_reconcile_v1"("p_resource_type"
 declare sid uuid; bound_job uuid; j private.worker_jobs%rowtype; receipt private.study_service_receipts%rowtype; state text; resource jsonb;
 begin
   perform private.study_require(coalesce(util.is_service_request(),false),'FORBIDDEN');
+  if p_resource_type='analysis' and exists(select 1 from private.study_advanced_analyses where id=p_resource_id and job_id=p_job_id) then return api.svc_study_analysis_advanced_reconcile_v1(p_resource_type,p_resource_id,p_job_id,p_lease_token,p_idempotency_key,p_artifact_id);end if;
   case p_resource_type
     when 'modelSourceAcquisition' then select study_id,job_id into sid,bound_job from private.study_source_acquisitions where id=p_resource_id;
     when 'modelPreparation' then select study_id,job_id into sid,bound_job from private.study_model_preparations where id=p_resource_id;

@@ -7,7 +7,7 @@ declare op text:=p_request->>'operation';actor uuid:=auth.uid();client text:=nul
  s private.study_report_shares%rowtype;e private.study_review_exports%rowtype;value jsonb;ops jsonb;allowed_member_roles jsonb:='[]'::jsonb;core_read boolean:=false;core_write boolean:=false;kind text;lim integer;afterid uuid;nextid uuid;ids uuid[];resource_id uuid;
  selection jsonb;epoch text;cur private.study_cursors%rowtype;items jsonb:='[]'::jsonb;more boolean;
 begin
- perform private.study_review_envelope(p_request,false);perform private.study_require(private.study_client_allowed(client,'STUDY-READ-01'),'FORBIDDEN');
+ perform private.study_review_envelope(p_request,false);perform private.study_review_family(p_request,'lca.study-report.v1');perform private.study_require(private.study_client_allowed(client,'STUDY-READ-01'),'FORBIDDEN');
  if op='capability.read' then
   perform private.study_require(private.study_keys(p_request,array['schemaVersion','requestId','operation']),'INVALID_REQUEST');
   if not(select enabled from private.study_review_config where singleton) then
