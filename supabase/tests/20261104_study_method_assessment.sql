@@ -68,6 +68,37 @@ select is(api.qry_study_method_v1(pg_temp.v6('method.evidence.read',jsonb_build_
 select ok((pg_temp.keep('method',api.cmd_study_method_v1(pg_temp.method_request('method')))->>'ok')::boolean,'owner admits distinct method job');
 select is(api.cmd_study_method_v1(pg_temp.method_request('method')),pg_temp.val('method'),'same intent returns same assessment and job');
 select is(api.cmd_study_method_v1(pg_temp.method_request('method',jsonb_set(pg_temp.method_config(),'{declarations,studyPhase}','"screening"')))->>'code','IDEMPOTENCY_CONFLICT','changed declaration cannot reuse key');
+-- Action discovery must agree with actual cancellation authority, including
+-- cleanup after admission/source withdrawal and archival. Every probe rolls back
+-- its role/state/cancellation changes while retaining its observed DTO.
+insert into private.oauth_client_registry(client_id,client_kind,enabled)
+ values('study912-action-readonly','manual',true);
+insert into private.oauth_client_capability_grants(client_id,capability_id)
+ values('study912-action-readonly','STUDY-READ-01'),('study912-action-readonly','DB-CORE-READ-01');
+create function pg_temp.method_action_case(p_state text,p_role text,p_readonly boolean) returns jsonb
+language plpgsql as $$declare actions jsonb;cancel jsonb;begin
+ begin
+  update private.study_members set role=p_role where study_id='89400000-0000-4000-8000-000000000010' and actor_id='89400000-0000-4000-8000-000000000001';
+  if p_state='admission_off' then update private.study_method_config set execution_enabled=false;end if;
+  if p_state='source_withdrawn' then update public.lifecyclemodels set state_code=20 where id='89400000-0000-4000-8000-000000000101';end if;
+  if p_state='archived' then update private.studies set status='archived' where id='89400000-0000-4000-8000-000000000010';end if;
+  perform pg_temp.study894_claim(1,case when p_readonly then 'study912-action-readonly' end);
+  actions:=api.qry_study_method_v1(pg_temp.v6('resource.actions',jsonb_build_object('resource',jsonb_build_object('type','methodAssessment','id',pg_temp.mid()))));
+  cancel:=pg_temp.method_cmd('task.cancel',jsonb_build_object('studyId','89400000-0000-4000-8000-000000000010','resource',jsonb_build_object('type','methodAssessment','id',pg_temp.mid()),'reason','Action authority matrix'),'action-matrix');
+  raise exception using errcode='ZX912',message='rollback action authority probe';
+ exception when sqlstate 'ZX912' then null;end;
+ return jsonb_build_object('ok',actions->'ok','actions',actions->'data'->'actions','corePermissions',actions->'data'->'corePermissions',
+  'allowedMemberRoles',actions->'data'->'allowedMemberRoles','cancelOk',cancel->'ok','cancelCode',cancel->'code');
+end$$;
+with cases as materialized(select state,member_role,readonly,pg_temp.method_action_case(state,member_role,readonly) observed
+ from unnest(array['active','admission_off','source_withdrawn','archived'])state
+ cross join unnest(array['owner','editor','viewer'])member_role cross join unnest(array[false,true])readonly)
+select is(observed,jsonb_build_object('ok',true,
+ 'actions','["task.read"]'::jsonb||case when member_role in('owner','editor') and not readonly then '["task.cancel"]'::jsonb else '[]'::jsonb end||case when state<>'source_withdrawn' then '["method.assessment.read"]'::jsonb else '[]'::jsonb end,
+ 'corePermissions',jsonb_build_object('read',true,'write',member_role in('owner','editor') and not readonly and state<>'archived'),
+ 'allowedMemberRoles','[]'::jsonb,'cancelOk',member_role in('owner','editor') and not readonly,'cancelCode',case when member_role='viewer' or readonly then 'FORBIDDEN' end),
+ 'actual method actions/cancel/core permissions: '||state||'/'||member_role||case when readonly then '/readonly-client' else '/first-party' end)
+from cases;
 select pg_temp.study894_claim(null,null,true);
 select pg_temp.keep('method-claim',private.worker_claim_jobs('solver','study912-sql',1,900));
 select ok((pg_temp.keep('method-input',api.svc_study_method_assessment_read_input_v1(pg_temp.mid(),pg_temp.mjob(),pg_temp.mlease()))->>'ok')::boolean,'canonical current lease resolves source-bound method input');

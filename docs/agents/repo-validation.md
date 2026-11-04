@@ -33,7 +33,7 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-04
-lastReviewedCommit: 6621e91fc4e8360bbaac1688cdbc42b976e43ab2
+lastReviewedCommit: d95848a3859834cf4abe143dde3111ce71e968ce
 lastReviewedNote: "Database #912: reviewed separate V6 method/evidence/report families, exact baseline and selected-factor budgets, declared evidence without professional approval, original preview/export requests, default-off authority and owned upgrade/race/HTTP/Unicode/schema proof. Actual native/byte/scientific qualification and Main/root delivery remain separate."
 related:
   - ../../AGENTS.md
@@ -1989,7 +1989,11 @@ qualifies hosted deployment or repairs historical datasets.
 
 The V6 method/evidence/report family uses the exact owned study912/PG17 project
 and CLI 2.117.0. Run `supabase/tests/20261104_study_method_assessment.sql` with
-retained Study suites, full schema/API/OAuth closure and worker-job isolation.
+retained Study suites, full schema/API/OAuth closure and worker-job isolation. The
+rollback-only action matrix compares exact actions/core permissions with actual
+cancellation across owner/editor/viewer, active/admission-off/source-withdrawn/
+archived states, and first-party/read-only OAuth clients. Preserve a red result
+against the original void-authorizer assignment and the corrected green result.
 The [method script entrypoint](../../scripts/README.md#study-methodevidence-qualification-database-912)
 defines populated V5 preservation, blank-ledger reconstruction, observed actual
 transaction races, contained Worker/config/schema/Unicode parity and real

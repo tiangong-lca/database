@@ -22,7 +22,7 @@ checkPaths:
   - supabase/tests/fixtures/study909_worker_*.json
   - docs/agents/lca-study-runtime-contract.md
 lastReviewedAt: 2026-11-04
-lastReviewedCommit: 6621e91fc4e8360bbaac1688cdbc42b976e43ab2
+lastReviewedCommit: d95848a3859834cf4abe143dde3111ce71e968ce
 lastReviewedNote: "Database #912: reviewed separate V6 method/evidence/report families, exact baseline and selected-factor budgets, declared evidence without professional approval, original preview/export requests, default-off authority and owned upgrade/race/HTTP/Unicode/schema proof. Actual native/byte/scientific qualification and Main/root delivery remain separate."
 related:
   - ./lca-study-durable-contract.md
@@ -197,7 +197,11 @@ or source revocation may deny a retry without undoing attachment; scoped service
 reconciliation can prove that historical attachment without renewing actor
 access. Minimal `task.read/cancel` uses current Study/client rights and exact
 job identity after source withdrawal or admission shutdown. Full assessment and
-facts reads still require current source rights. Old V2–V5 paths do not discover
+facts reads still require current source rights. Method-assessment action discovery
+runs the same Study authorizer and reads the actual membership role while its
+Study lock is held. Owner/editor cancellation remains available after shutdown,
+withdrawal or archival; coarse core write requires an active Study. Both are
+fenced by the client's live write capability, and viewers receive neither. Old V2–V5 paths do not discover
 this family, including artifact routing and selection before pagination.
 
 `method.evidence.create` accepts `studyId` and a closed Worker-owned `content`
