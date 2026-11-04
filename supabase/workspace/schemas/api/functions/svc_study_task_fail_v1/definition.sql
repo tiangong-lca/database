@@ -5,6 +5,9 @@ CREATE OR REPLACE FUNCTION "api"."svc_study_task_fail_v1"("p_resource_type" "tex
 declare sid uuid; job uuid; kind text; subject text; result jsonb; old_context text; receipt private.study_service_receipts%rowtype; request jsonb;
 begin
   perform private.study_require(coalesce(util.is_service_request(),false),'FORBIDDEN');
+  if p_resource_type='methodAssessment' then
+    perform private.study_require(exists(select 1 from private.study_method_assessments where id=p_resource_id and job_id=p_job_id),'REFERENCE_MISMATCH');
+    return api.svc_study_method_assessment_fail_v1(p_resource_type,p_resource_id,p_job_id,p_lease_token,p_error_code,p_idempotency_key);end if;
   if p_resource_type='analysis' and exists(select 1 from private.study_advanced_analyses where id=p_resource_id and job_id=p_job_id) then return api.svc_study_analysis_advanced_fail_v1(p_resource_type,p_resource_id,p_job_id,p_lease_token,p_error_code,p_idempotency_key);end if;
   perform private.study_require(p_error_code=any(array['source_invalid','boundary_undeclared','normalization_underflow','normalization_overflow','numeric_invalid','resource_limit','model_not_solvable','native_execution_failed','job_timeout','job_lease_lost','runtime_unavailable','runtime_failed']) and length(p_idempotency_key) between 1 and 128,'INVALID_REQUEST');
   case p_resource_type

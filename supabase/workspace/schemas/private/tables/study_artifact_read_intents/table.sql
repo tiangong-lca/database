@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS "private"."study_artifact_read_intents" (
     "client_id" "text",
     "expires_at" timestamp with time zone DEFAULT ("clock_timestamp"() + '00:02:00'::interval) NOT NULL,
     "family" "text" DEFAULT 'legacy'::"text" NOT NULL,
-    CONSTRAINT "study_artifact_read_intents_family_check" CHECK (("family" = ANY (ARRAY['legacy'::"text", 'advanced'::"text"])))
+    CONSTRAINT "study_artifact_read_intents_family_check" CHECK (("family" = ANY (ARRAY['legacy'::"text", 'advanced'::"text", 'method'::"text"])))
 );
 
 ALTER TABLE ONLY "private"."study_artifact_read_intents" FORCE ROW LEVEL SECURITY;

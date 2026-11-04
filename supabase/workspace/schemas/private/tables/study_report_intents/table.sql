@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS "private"."study_report_intents" (
     "expires_at" timestamp with time zone DEFAULT ("clock_timestamp"() + '00:02:00'::interval) NOT NULL,
     "response" "jsonb",
     "family" "text" DEFAULT 'legacy'::"text" NOT NULL,
-    CONSTRAINT "study_report_intents_family_check" CHECK (("family" = ANY (ARRAY['legacy'::"text", 'advanced'::"text"]))),
+    CONSTRAINT "study_report_intents_family_check" CHECK (("family" = ANY (ARRAY['legacy'::"text", 'advanced'::"text", 'method'::"text"]))),
     CONSTRAINT "study_report_intents_operation_check" CHECK (("operation" = ANY (ARRAY['report.create'::"text", 'report.save'::"text", 'report.freeze'::"text", 'export.request'::"text"])))
 );
 
