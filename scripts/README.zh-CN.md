@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-04
-lastReviewedCommit: 4a9e81ac8e648aefb16091148a44c17c76edf2b9
-lastReviewedNote: "Database #909: reviewed explicit V5 advanced analysis/report/review families, exact baseline/source/lease and minimal cancellation boundaries, default-off qualification, owned upgrade/race/HTTP/generation workflow and old-family compatibility. Branch, hosted enablement, actual-byte/scientific qualification and root integration authority remain separate."
+lastReviewedCommit: 4a3e95b443545b67e47c689725d1b3d5f4d27b8a
+lastReviewedNote: "Database #909: reviewed V5 advanced families, exact baseline/source/lease and minimal cancellation boundaries, independent shortest-decimal/NULL-evidence corrections, default-off qualification, and owned upgrade/race/HTTP/deterministic-generation proof. Hosted activation, actual-byte/scientific qualification and Main/root integration remain separate."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml

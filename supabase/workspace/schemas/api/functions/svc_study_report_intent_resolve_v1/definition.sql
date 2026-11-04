@@ -3,7 +3,7 @@ CREATE OR REPLACE FUNCTION "api"."svc_study_report_intent_resolve_v1"("p_intent_
     SET "search_path" TO ''
     AS $$
 declare i private.study_report_intents%rowtype;r private.study_report_revisions%rowtype;runids jsonb;analysisids jsonb;runs jsonb;analyses jsonb;begin
- perform private.study_require(coalesce(util.is_service_request(),false),'FORBIDDEN');i:=private.study_report_intent_check(p_intent_id);
+ perform private.study_require(coalesce(util.is_service_request(),false),'FORBIDDEN');perform private.study_require(exists(select 1 from private.study_report_intents where id=p_intent_id and family='legacy'),'CAPABILITY_UNAVAILABLE');i:=private.study_report_intent_check(p_intent_id);
  if i.response is not null then return i.response;end if;
  if i.operation='report.create' then runids:=i.request->'runIds';analysisids:=i.request->'analysisIds';
  else select * into r from private.study_report_revisions where id=i.report_id;runids:=r.run_ids;analysisids:=r.analysis_ids;end if;

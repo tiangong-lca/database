@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS "private"."study_report_revisions" (
     CONSTRAINT "study_report_revisions_content_hash_check" CHECK (("content_hash" ~ '^[0-9a-f]{64}$'::"text")),
     CONSTRAINT "study_report_revisions_revision_check" CHECK ((("revision" >= 1) AND ("revision" <= '9007199254740991'::bigint))),
     CONSTRAINT "study_report_revisions_status_check" CHECK (("status" = ANY (ARRAY['draft'::"text", 'frozen'::"text"]))),
-    CONSTRAINT "study_report_revisions_template_id_check" CHECK (("template_id" = 'lca.study-report.v1'::"text"))
+    CONSTRAINT "study_report_revisions_template_id_check" CHECK (("template_id" = ANY (ARRAY['lca.study-report.v1'::"text", 'lca.study-report.v2'::"text"])))
 );
 
 ALTER TABLE ONLY "private"."study_report_revisions" FORCE ROW LEVEL SECURITY;

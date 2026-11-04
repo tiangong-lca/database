@@ -8,7 +8,7 @@ CREATE OR REPLACE FUNCTION "private"."study_reporting_artifact_authorize"("p_stu
  select * into a from private.study_artifacts where study_id=p_study and id=(p_ref->>'id')::uuid;perform private.study_require(found and a.ref=p_ref,'REFERENCE_MISMATCH');
  if p_ref->>'type'='reportContent' then
   select * into r from private.study_report_revisions where study_id=p_study and content_artifact_id=a.id;
-  perform private.study_require(found,'DISCLOSURE_DENIED');perform private.study_report_rights(p_study,r.run_ids,r.analysis_ids,p_actor,p_client);
+  perform private.study_require(found and r.template_id='lca.study-report.v1','DISCLOSURE_DENIED');perform private.study_report_rights(p_study,r.run_ids,r.analysis_ids,p_actor,p_client);
  else
   select * into e from private.study_report_exports where study_id=p_study and (projection_artifact_id=a.id or resources_artifact_id=a.id or bundle_artifact_id=a.id);
   perform private.study_require(found,'DISCLOSURE_DENIED');perform private.study_report_export_authorize(e.id,p_actor,p_client);

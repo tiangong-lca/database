@@ -7,7 +7,7 @@ CREATE OR REPLACE FUNCTION "api"."qry_study_reporting_v1"("p_request" "jsonb") R
  if op='study.resources.list' then return private.study_reporting_list(p_request);end if;
  if op='report.read' then
   perform private.study_require(private.study_keys(p_request,array['schemaVersion','requestId','operation','reportRevisionId']),'INVALID_REQUEST');
-  select * into r from private.study_report_revisions where id=(p_request->>'reportRevisionId')::uuid;perform private.study_require(found,'FORBIDDEN');
+  select * into r from private.study_report_revisions where id=(p_request->>'reportRevisionId')::uuid;perform private.study_require(found and r.template_id='lca.study-report.v1','FORBIDDEN');
   perform private.study_report_rights(r.study_id,r.run_ids,r.analysis_ids,actor,client);
   return jsonb_build_object('ok',true,'data',jsonb_build_object('type','reportRevision','value',private.study_report_record(r.id)));
  elsif op='export.read' then

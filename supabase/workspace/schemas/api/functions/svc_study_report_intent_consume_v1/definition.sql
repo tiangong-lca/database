@@ -6,7 +6,7 @@ declare i private.study_report_intents%rowtype;r private.study_report_revisions%
  manifest jsonb;receipt jsonb;profile jsonb;projection uuid;resources uuid;bundle uuid;record jsonb;validity jsonb;
 begin
  perform private.study_require(coalesce(util.is_service_request(),false),'FORBIDDEN');
- i:=private.study_report_intent_check(p_intent_id);
+ perform private.study_require(exists(select 1 from private.study_report_intents where id=p_intent_id and family='legacy'),'CAPABILITY_UNAVAILABLE');i:=private.study_report_intent_check(p_intent_id);
  select * into i from private.study_report_intents where id=i.id for update;
  if i.response is not null then return i.response;end if;
  if i.operation='report.create' then
