@@ -53,11 +53,10 @@ create table private.study_method_config(
 insert into private.study_method_config(singleton) values(true);
 create table private.study_method_evidence(
  id uuid primary key,study_id uuid not null references private.studies(id),requirement_id text not null check(requirement_id ~ '^PEF-(0[1-9]|1[0-9]|20)$'),
- declared_kind text not null check(declared_kind in('sourceRecord','applicabilityRecord','professionalRecord')),artifact_id uuid not null unique,
+ declared_kind text not null check(declared_kind in('sourceRecord','applicabilityRecord','professionalRecord')),artifact_id uuid not null,
  recorded_by uuid not null references auth.users(id),recorded_client_id text,recorded_at timestamptz not null default clock_timestamp(),
- unique(study_id,id),foreign key(study_id,artifact_id) references private.study_artifacts(study_id,id)
+ unique(study_id,id),unique(study_id,artifact_id),foreign key(study_id,artifact_id) references private.study_artifacts(study_id,id)
 );
-create index study_method_evidence_study_idx on private.study_method_evidence(study_id,id);
 create index study_method_evidence_actor_idx on private.study_method_evidence(recorded_by);
 create trigger study_method_evidence_immutable before update or delete on private.study_method_evidence for each row execute function private.study_report_immutable();
 create table private.study_method_evidence_intents(
@@ -76,7 +75,6 @@ create table private.study_method_assessments(
  foreign key(study_id,baseline_run_id) references private.study_runs(study_id,id),foreign key(study_id,source_snapshot_id) references private.study_source_snapshots(study_id,id),foreign key(study_id,facts_artifact_id) references private.study_artifacts(study_id,id),
  check(config_hash=private.study_method_config_hash(config)),check(config->>'baselineRunId'=baseline_run_id::text),check((facts_artifact_id is null)=(selected_factor_record_count is null))
 );
-create index study_method_assessment_study_idx on private.study_method_assessments(study_id,id);
 create index study_method_assessment_actor_idx on private.study_method_assessments(requested_by);
 create index study_method_assessment_baseline_idx on private.study_method_assessments(study_id,baseline_run_id);
 create index study_method_assessment_source_idx on private.study_method_assessments(study_id,source_snapshot_id);
