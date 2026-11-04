@@ -20,9 +20,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-03
-lastReviewedCommit: 294f37366522e41a303860eb0badb29cae2375a5
-lastReviewedNote: "Database #904: reviewed independent v3 analysis/report/export persistence, exact source/lease/producer fences, default-off gates, isolated SQL/upgrade/concurrency proof and generated schema workflow. Hosted/runtime/signer qualification remains separate; no Production client grants change."
+lastReviewedAt: 2026-11-04
+lastReviewedCommit: 97b06712ac75f08eeeb886c41d7fdb4f19a6373f
+lastReviewedNote: "Database #906: reviewed exact V4 domain references, current Study/core and archived action availability, review/finalization/share replay, sole legacy-list filter and isolated upgrade/SQL/HTTP/concurrency/generated proof. Actual bytes, UI/CLI, hosted enablement and source integration remain separate."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -65,6 +65,22 @@ JSON/cursor 及索引存储/写成本。这些本地资格不代表 hosted 性�
 本地迁移输出和审计 JSONL 文件应写入 `_artifacts/`，该目录已被 Git 忽略。
 
 ## 脚本列表
+
+### Study P3 审阅与指定接收人分享
+
+`prepare_study_review_project.py --destination <new-owned-dir>/study906` 创建
+独立 PG17 项目（API56621/DB56622）及归属回执，不启动或重置任何数据库。
+`test_study_review_upgrade.py --workdir <owned-study906> --report <new-json>`
+仅在 `STUDY_REVIEW_ALLOW_RESET=owned-study906` 下重置明确核验归属的项目，
+验证已填充 P2 升级及完整空白迁移账本。后续运行
+`supabase/tests/regression/20261103_study_review_concurrency.py` 和
+`20261103_study_review_transport.py`，参数及顺序见英文 README 与 validation
+guide。`SUPABASE_CLI` 必须指向项目固定的2.117.0底层可执行文件。
+
+并发与 HTTP runner 保留合成数据，供归属方明确重置；不操作 P2保留的
+study894 或共享 database-engine。SQL/JWT/并发证明不代替真实字节、签名、
+GoTrue授权同意、Edge、安装版CLI或UI资格。保存回执后，只清理 study906
+标签所标识的容器、卷和网络，并记录零残留证明。
 
 ### `test_search_request_identity_http.py`
 

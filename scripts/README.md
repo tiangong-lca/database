@@ -20,9 +20,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-03
-lastReviewedCommit: 294f37366522e41a303860eb0badb29cae2375a5
-lastReviewedNote: "Database #904: reviewed independent v3 analysis/report/export persistence, exact source/lease/producer fences, default-off gates, isolated SQL/upgrade/concurrency proof and generated schema workflow. Hosted/runtime/signer qualification remains separate; no Production client grants change."
+lastReviewedAt: 2026-11-04
+lastReviewedCommit: 97b06712ac75f08eeeb886c41d7fdb4f19a6373f
+lastReviewedNote: "Database #906: reviewed exact V4 domain references, current Study/core and archived action availability, review/finalization/share replay, sole legacy-list filter and isolated upgrade/SQL/HTTP/concurrency/generated proof. Actual bytes, UI/CLI, hosted enablement and source integration remain separate."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -686,6 +686,31 @@ namespaces and observe actual advisory/row-lock overlap. They never create or
 destroy resources. Their synthetic producer evidence proves SQL binding/CAS only;
 retain receipts and remove only the reviewed owned clones after verification.
 See the [validation guide](../docs/agents/repo-validation.md) for the full P2 bar.
+
+### Study P3 review qualification
+
+The following runners operate only the separately owned `study906` project
+(PG17, API56621/DB56622). They never touch retained `study894` or shared
+`database-engine`. Use the pinned underlying Supabase2.117.0 executable as
+`SUPABASE_CLI`; a wrapper hardcoded to another project is not suitable.
+
+```bash
+python3 -B scripts/prepare_study_review_project.py --destination <new-owned-dir>/study906
+supabase start --workdir <owned-study906>
+STUDY_REVIEW_ALLOW_RESET=owned-study906 python3 -B scripts/test_study_review_upgrade.py \
+  --workdir <owned-study906> --report <new-upgrade-json>
+python3 -B supabase/tests/regression/20261103_study_review_concurrency.py \
+  --workdir <owned-study906> --report <new-race-json>
+python3 -B supabase/tests/regression/20261103_study_review_transport.py \
+  --workdir <owned-study906> --race-receipt <race-json> --report <new-http-json>
+```
+
+The upgrade runner resets only the verified owned project. Race/HTTP runners
+retain their exact synthetic fixture namespace and never reset/drop anything.
+After preserving receipts, explicitly reset that project before generation and
+stop it with `supabase stop --project-id study906 --no-backup`; verify zero
+resources with its exact `com.supabase.cli.project=study906` label. See the
+[validation guide](../docs/agents/repo-validation.md) for proof boundaries.
 
 ### `build_schema_workspace.py`
 

@@ -22,9 +22,9 @@ checkPaths:
   - .github/workflows/supabase-dev.yml
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
-lastReviewedAt: 2026-11-03
-lastReviewedCommit: 294f37366522e41a303860eb0badb29cae2375a5
-lastReviewedNote: "Database #904: reviewed independent v3 analysis/report/export persistence, exact source/lease/producer fences, default-off gates, isolated SQL/upgrade/concurrency proof and generated schema workflow. Hosted/runtime/signer qualification remains separate; no Production client grants change."
+lastReviewedAt: 2026-11-04
+lastReviewedCommit: 97b06712ac75f08eeeb886c41d7fdb4f19a6373f
+lastReviewedNote: "Database #906: reviewed exact V4 domain references, current Study/core and archived action availability, review/finalization/share replay, sole legacy-list filter and isolated upgrade/SQL/HTTP/concurrency/generated proof. Actual bytes, UI/CLI, hosted enablement and source integration remain separate."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -85,6 +85,7 @@ When review changes an already-applied PR migration, add a later migration that 
 - Keep `.github/workflows/supabase-dev.yml` as the sole persistent-`dev` migration deployer. It may run `supabase link`, exactly one `supabase db push --include-all`, and one Management API PATCH limited to `db_schema`, `db_extra_search_path`, and `max_rows` so the running PostgREST instance matches the checked-in contract; it must not deploy/delete Edge Functions, run `supabase config push`, or mutate any other project setting.
 - The separate ARM64 scheduler-profile job rebuilds only a local database and runs both full synthetic performance cohorts, resetting between them. The x64 local-contract job retains the functional and security suites; persistent Dev deployment waits for both jobs. The profile job has no hosted credentials or deployment authority.
 - The Study runtime proof job owns a separate local PG17 `study894` project for populated upgrade, blank-ledger reconstruction, observed CAS/idempotency races and PostgREST authorization probes. It retains bounded proof summaries and releases only that named project's containers, volumes and network. The local-contract job also runs the W06 task-admission/artifact-disclosure and P2 analysis/report/export SQL suites. The isolated Study job additionally proves the populated P2 predecessor upgrade and observed Analysis/report producer races, resetting its exact disposable project between fixture namespaces. Actual source/solver/disclosure enablement remains a separate evidence-bound service operation defined in `lca-study-runtime-contract.md`; migration application installs default-off flags.
+- P3 review/share qualification owns a second local PG17 `study906` project for populated P2 upgrade, actual transaction races and PostgREST authorization. It resets/releases only its exact owned resources and has no hosted credentials. Installing V4 default-off capabilities does not qualify or enable an environment; see the runtime contract and validation guide.
 - After the database workflow succeeds, deploy and validate the intended persistent-Dev Functions through `tiangong-lca-edge-functions`. Function source, function selection, deployment commands, and runtime validation remain owned by that repository.
 - Do not add a checked-in GitHub Actions production deploy for Git `main`; the production project is migrated by the Supabase GitHub integration bound to this repository.
 - Do not author normal schema changes by editing the remote database first and reconstructing migrations later.

@@ -30,9 +30,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-03
-lastReviewedCommit: 294f37366522e41a303860eb0badb29cae2375a5
-lastReviewedNote: "Database #904: reviewed independent v3 analysis/report/export persistence, exact source/lease/producer fences, default-off gates, isolated SQL/upgrade/concurrency proof and generated schema workflow. Hosted/runtime/signer qualification remains separate; no Production client grants change."
+lastReviewedAt: 2026-11-04
+lastReviewedCommit: 97b06712ac75f08eeeb886c41d7fdb4f19a6373f
+lastReviewedNote: "Database #906: reviewed exact V4 domain references, current Study/core and archived action availability, review/finalization/share replay, sole legacy-list filter and isolated upgrade/SQL/HTTP/concurrency/generated proof. Actual bytes, UI/CLI, hosted enablement and source integration remain separate."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -63,8 +63,27 @@ Study/Run/Report remain distinct from LifecycleModel, worker_jobs and formal
 Final Result publication. P2 adds private ordered Analysis/Run links, canonical
 analysis jobs, opaque report producer intents, immutable ReportRevision content
 and exact signed-export bindings through an independently negotiated v3 façade.
-All new producer gates default off; review/finalization/share remain additive
-work under P0. No Study phase publishes datasets or formal Results.
+P3 adds separate reviewer authority, append-only comments/decision heads,
+one-use actor-issued OAuth delegations, immutable finalizations and named summary
+shares through independently negotiated V4 façades. Personal grants admit only
+report reviewers; the server returns allowed member roles. Explicit owner bundle
+downloads remain separate from named-recipient sharing. Command recovery keeps
+original identities beside freshly projected current state. Frozen P2 records and signed
+V1 exports retain their historical meaning. Recipient projection authority grants
+no Study/source membership. All producer and review gates default off; exact local
+SQL/HTTP/race proof remains separate from real renderer, UI, CLI and hosted
+qualification. No Study phase publishes datasets or formal Results.
+V4 Study actions expose coarse core read/write from the existing authorizer for
+UI affordances. Those flags add no source/target authorization or producer
+qualification and are always false on non-Study targets.
+Archived action metadata preserves permitted reads while suppressing every
+fresh mutation that the existing active-Study command guard rejects.
+The V4 envelope rejects UUID reference aliases before domain casts/effects,
+preserving exact issued identities without rewriting opaque transport keys or
+changing legacy V2/V3 behavior.
+The sole legacy helper delta filters V2 Study-list membership by its existing
+readable roles before pagination. Its resource read guard and authority remain
+unchanged; mixed owner/reviewer actors can still list their owned Studies.
 
 ## Final Result content identity
 

@@ -43,7 +43,7 @@ begin
     end if;
   end if;
   if op='study.list' then
-    select array_agg(id order by id) into ids from(select s.id from private.studies s join private.study_members m on m.study_id=s.id where m.actor_id=actor and private.study_team_member(actor,s.team_id) and (after_id is null or s.id>after_id) order by s.id limit lim+1)t;
+    select array_agg(id order by id) into ids from(select s.id from private.studies s join private.study_members m on m.study_id=s.id where m.actor_id=actor and m.role in ('owner','editor','viewer') and private.study_team_member(actor,s.team_id) and (after_id is null or s.id>after_id) order by s.id limit lim+1)t;
     more:=cardinality(ids)>lim; ids:=ids[1:lim];
     -- Recheck and lock every selected Study before returning its current projection.
     foreach rid in array coalesce(ids,'{}') loop perform private.study_authorize(rid,actor,client,'read'); end loop;
