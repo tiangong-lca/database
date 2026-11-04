@@ -29,7 +29,7 @@ begin
  -- mutable report before rights, replay recovery, CAS/hash checks or snapshot.
  if op<>'report.create' then
   select * into r from private.study_report_revisions where study_id=sid and id=rid for update;
-  perform private.study_require(found,'NOT_FOUND');
+  perform private.study_require(found and r.template_id='lca.study-report.v1','NOT_FOUND');
  end if;
  if op='report.create' then refs:=private.study_report_rights(sid,p_request->'runIds',p_request->'analysisIds',actor,client);
  else refs:=private.study_report_rights(sid,r.run_ids,r.analysis_ids,actor,client);end if;
@@ -51,7 +51,7 @@ begin
  end if;
  if op='report.create' then
   perform private.study_require(p_request->>'templateId'='lca.study-report.v1','INVALID_REQUEST');parent:=(p_request->>'parentReportRevisionId')::uuid;
-  if parent is not null then perform private.study_require(exists(select 1 from private.study_report_revisions where study_id=sid and id=parent and status='frozen'),'REFERENCE_MISMATCH');end if;
+  if parent is not null then perform private.study_require(exists(select 1 from private.study_report_revisions where study_id=sid and id=parent and status='frozen' and template_id='lca.study-report.v1'),'REFERENCE_MISMATCH');end if;
   rid:=gen_random_uuid();
  else
   if op='export.request' then

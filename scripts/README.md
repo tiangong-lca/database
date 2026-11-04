@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-04
-lastReviewedCommit: 97b06712ac75f08eeeb886c41d7fdb4f19a6373f
-lastReviewedNote: "Database #906: reviewed exact V4 domain references, current Study/core and archived action availability, review/finalization/share replay, sole legacy-list filter and isolated upgrade/SQL/HTTP/concurrency/generated proof. Actual bytes, UI/CLI, hosted enablement and source integration remain separate."
+lastReviewedCommit: 4a3e95b443545b67e47c689725d1b3d5f4d27b8a
+lastReviewedNote: "Database #909: reviewed V5 advanced families, exact baseline/source/lease and minimal cancellation boundaries, independent shortest-decimal/NULL-evidence corrections, default-off qualification, and owned upgrade/race/HTTP/deterministic-generation proof. Hosted activation, actual-byte/scientific qualification and Main/root integration remain separate."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -711,6 +711,38 @@ After preserving receipts, explicitly reset that project before generation and
 stop it with `supabase stop --project-id study906 --no-backup`; verify zero
 resources with its exact `com.supabase.cli.project=study906` label. See the
 [validation guide](../docs/agents/repo-validation.md) for proof boundaries.
+
+### Study P4 advanced qualification
+
+Use the dedicated `study909` PG17 project (API56821/DB56822), pinned CLI2.117.0
+and exact ownership receipt. Every CLI invocation uses explicit `--workdir`.
+The helper creates only files; upgrade is the only runner that resets a project.
+
+```bash
+python3 -B scripts/prepare_study_advanced_project.py --destination <new-owned-dir>/study909
+supabase start --workdir <owned-study909>
+python3 -B scripts/test_study_advanced_serialization.py --workdir <owned-study909> --report <new-goldens-json>
+STUDY_ADVANCED_ALLOW_RESET=owned-study909 python3 -B scripts/test_study_advanced_upgrade.py \
+  --workdir <owned-study909> --report <new-upgrade-json>
+python3 -B supabase/tests/regression/20261104_study_advanced_concurrency.py \
+  --workdir <owned-study909> --report <new-race-json>
+python3 -B supabase/tests/regression/20261104_study_advanced_transport.py \
+  --workdir <owned-study909> --race-receipt <race-json> --report <new-http-json>
+```
+
+Set `SUPABASE_CLI` to the pinned underlying executable when it is outside PATH.
+Race/HTTP runners retain exact synthetic fixtures and cannot reset/drop a project.
+For schema export, `build_schema_workspace.py` has no workdir option: pass
+`--environment local --db-url <verified-study909-db-url> --schemas public api
+private util archive` explicitly. Its bare `--environment local` targets the
+repository project and is not an isolated-study909 export. Generate public/api
+types with the CLI's explicit `--local --workdir <owned-study909>` and preserve
+`rstrip()` plus one trailing newline as described below.
+After preserving receipts, dispose the owned namespace explicitly and blank-reset
+before schema generation. Release the exact owned group through the workspace
+resource workflow, retaining a cleanup receipt. No hosted, native/Storage-byte or
+cryptographic qualification follows from these SQL/JWT fixtures. See the
+[validation guide](../docs/agents/repo-validation.md) for the complete proof bar.
 
 ### `build_schema_workspace.py`
 

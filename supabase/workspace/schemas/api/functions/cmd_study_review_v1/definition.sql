@@ -7,7 +7,7 @@ declare op text:=p_request->>'operation';actor uuid:=auth.uid();client text:=nul
  req jsonb:=(p_request-'schemaVersion'-'requestId'-'idempotencyKey')||jsonb_build_object('_verifiedClientId',client);prev private.study_command_receipts%rowtype;r private.study_report_revisions%rowtype;d private.study_review_delegations%rowtype;
  s private.study_report_shares%rowtype;e private.study_review_exports%rowtype;study private.studies%rowtype;st jsonb;result jsonb;value jsonb;ts timestamptz;
 begin
- perform private.study_review_envelope(p_request,true);
+ perform private.study_review_envelope(p_request,true);perform private.study_review_family(p_request,'lca.study-report.v1');
  case op
  when 'member.set' then allowed:=array['target','memberId','role'];sid:=(p_request->'target'->>'id')::uuid;
  when 'review.delegation.revoke' then allowed:=array['delegationId'];select study_id,report_id into sid,rid from private.study_review_delegations where id=(p_request->>'delegationId')::uuid;
