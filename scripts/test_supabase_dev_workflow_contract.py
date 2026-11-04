@@ -337,9 +337,9 @@ def main() -> int:
     supabase_cli_versions = re.findall(
         r"uses: supabase/setup-cli@v3\s+with:\s+version:\s*([^\s#]+)", text
     )
-    if supabase_cli_versions != ["2.117.0"] * 7:
+    if supabase_cli_versions != ["2.117.0"] * 8:
         failures.append(
-            "all seven local, ARM profile, persistent-Dev, Preview, isolated Study, P3 review and P4 advanced Supabase CLI pins "
+            "all eight local, ARM profile, persistent-Dev, Preview, isolated Study, P3 review, P4 advanced and method Supabase CLI pins "
             f"must be 2.117.0, found {supabase_cli_versions or 'none'}"
         )
 
@@ -367,6 +367,21 @@ def main() -> int:
     study_workflow = jobs.get("study-runtime-concurrency", "")
     review_workflow = jobs.get("study-review-concurrency", "")
     advanced_workflow = jobs.get("study-advanced-concurrency", "")
+
+    method_workflow = jobs.get("study-method-concurrency", "")
+    for required in [
+        'scripts/prepare_study_method_project.py --destination "$RUNNER_TEMP/study912"',
+        'STUDY_METHOD_ALLOW_RESET: owned-study912',
+        'scripts/test_study_method_upgrade.py --workdir "$RUNNER_TEMP/study912"',
+        'supabase/tests/regression/20261104_study_method_concurrency.py',
+        'scripts/test_study_method_serialization.py --workdir "$RUNNER_TEMP/study912"',
+        'supabase/tests/regression/20261104_study_method_transport.py',
+        'supabase stop --project-id study912 --no-backup',
+        'label=com.supabase.cli.project=study912',
+    ]:
+        if required not in method_workflow:
+            errors.append(f"isolated Study method proof is missing {required}")
+
     for token in (
         'scripts/prepare_study_advanced_project.py --destination "$RUNNER_TEMP/study909"',
         'STUDY_ADVANCED_ALLOW_RESET: owned-study909',

@@ -1,0 +1,28 @@
+{
+  "classification": "software_config_identity_not_a_study_or_authority_receipt",
+  "domain": "study.method-assessment-config.v1",
+  "config": {
+    "schemaVersion": "lca.study-method-assessment-config.v1",
+    "baselineRunId": "10000000-0000-4000-8000-000000000010",
+    "moduleRef": {
+      "repository": "tiangong-lca/pcr",
+      "sourceCommit": "51c0842c67b14ba886e2edee2846e26eefac030f",
+      "moduleId": "method.pef-2021-ef31",
+      "moduleVersion": "0.1.0",
+      "artifactSha256": "b19ba5754b0bc20c44c8c65966bafafd5984cd74636f2c805c0fa4373f5554ad",
+      "reviewBasisSha256": "989391423c7f31bdf77e18ea4438fab1a27ff6708c0f44ecad8ab8813763a165",
+      "sourceBindingsSha256": "3fd9b1dc68228db3e146b6d23daac853b27b9f504f9445a0cc5a971d53257ce2"
+    },
+    "declarations": {
+      "productRole": "finishedCementIntermediate",
+      "studyPhase": "finalStudy",
+      "referenceUnitBasis": "declaredMass",
+      "categoryRule": {
+        "kind": "noneEstablished"
+      }
+    },
+    "evidenceRefs": []
+  },
+  "canonicalUtf8": "{\"baselineRunId\":\"10000000-0000-4000-8000-000000000010\",\"declarations\":{\"categoryRule\":{\"kind\":\"noneEstablished\"},\"productRole\":\"finishedCementIntermediate\",\"referenceUnitBasis\":\"declaredMass\",\"studyPhase\":\"finalStudy\"},\"evidenceRefs\":[],\"moduleRef\":{\"artifactSha256\":\"b19ba5754b0bc20c44c8c65966bafafd5984cd74636f2c805c0fa4373f5554ad\",\"moduleId\":\"method.pef-2021-ef31\",\"moduleVersion\":\"0.1.0\",\"repository\":\"tiangong-lca/pcr\",\"reviewBasisSha256\":\"989391423c7f31bdf77e18ea4438fab1a27ff6708c0f44ecad8ab8813763a165\",\"sourceBindingsSha256\":\"3fd9b1dc68228db3e146b6d23daac853b27b9f504f9445a0cc5a971d53257ce2\",\"sourceCommit\":\"51c0842c67b14ba886e2edee2846e26eefac030f\"},\"schemaVersion\":\"lca.study-method-assessment-config.v1\"}",
+  "sha256": "0d350c9ed228d1bbf03f23712c9a7510366f32e6d8f4182c8df0408e4e569d76"
+}

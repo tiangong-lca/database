@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-04
-lastReviewedCommit: 4a3e95b443545b67e47c689725d1b3d5f4d27b8a
-lastReviewedNote: "Database #909: reviewed V5 advanced families, exact baseline/source/lease and minimal cancellation boundaries, independent shortest-decimal/NULL-evidence corrections, default-off qualification, and owned upgrade/race/HTTP/deterministic-generation proof. Hosted activation, actual-byte/scientific qualification and Main/root integration remain separate."
+lastReviewedCommit: 6621e91fc4e8360bbaac1688cdbc42b976e43ab2
+lastReviewedNote: "Database #912: reviewed separate V6 method/evidence/report families, exact baseline and selected-factor budgets, declared evidence without professional approval, original preview/export requests, default-off authority and owned upgrade/race/HTTP/Unicode/schema proof. Actual native/byte/scientific qualification and Main/root delivery remain separate."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -1053,3 +1053,27 @@ input-parity SQL 套件另行覆盖非字符串来源 ID、规范化整数代际
 以及迁移内嵌内容是否与契约一致。可选参数 `--sdk-assets <directory>` 从已安装的
 SDK 0.5.0 资源重新生成投影并核对来源哈希。此命令不访问网络、不操作数据库、
 不安装依赖，也不修改文件。
+
+### Study 方法评估与声明证据（Database #912）
+
+使用独立 PG17 项目 `study912`（API56921/DB56922）和固定 CLI2.117.0。
+`prepare_study_method_project.py --destination <新目录>/study912` 仅生成配置及
+所有权清单；可用 `--through-version` 选择已存在的精确前置迁移。所有 CLI
+操作必须显式指定该工作目录，不能操作保留的 study894/906/909 或共享项目。
+
+按英文脚本说明依次执行 `test_study_method_upgrade.py`、
+`20261104_study_method_concurrency.py`（输出实际服务 DTO）、
+`test_study_method_serialization.py` 和 `20261104_study_method_transport.py`。
+仅升级脚本在 `STUDY_METHOD_ALLOW_RESET=owned-study912` 下重建已核实的项目；
+竞争与 HTTP 脚本保留其合成命名空间并释放会话，不重建资源。
+
+结构验证使用已安装的 pg_jsonschema0.3.3；固定 Worker 文件字节保持不变。
+仅在所有引用均为本地片段后，在内存中提供绝对根 URI，解决验证器的解析
+基地址要求，不改变约束或引入依赖。声明证据始终为 recorded_unverified。
+SQL、本地签名 JWT 和模式验证不能替代真实 OAuth、原生计算、Storage 字节、
+签名、科学方法或生产资格。
+
+保留回执后，仅清理此任务明确拥有的命名空间，再空库重建并连续两次生成
+五模式工作区与 public/api 类型。导出必须指定已核实的 study912 数据库 URL；
+无参数 local 导出指向共享项目。结束时按精确项目标签执行受治理资源清理，
+验证容器、卷及网络均为零，或记录明确的保留交接。

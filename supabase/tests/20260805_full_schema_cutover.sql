@@ -78,7 +78,8 @@ select is(
   -- Database #904 adds two actor reporting facades and six service analysis/reporting seams.
   -- Database #906 adds two actor V4 and three service review/intent façades.
   -- Database #909 adds four V5 actor façades and thirteen fenced service/configuration seams.
-  413::bigint,
+  -- Database #912 adds four V6 actor facades and fifteen fenced method/evidence/report service seams.
+  432::bigint,
   'One additive organization dashboard v6 facade plus four Portal navigation/V3 facades: api contains the active cutover and consumer facades, including the two Open Data catalog readers and three dataset display RPCs, the reviewer Contact status and activation RPCs, eight additive Portal/Next version-search APIs, two V4, two V5 and two V6 review queues plus batch eligibility, the rejection-detail RPC, the actor-bound rejected-review report download descriptor RPC and the reviewer workload drill-down RPC, two partial-import APIs, the three manager-attested Result publication RPCs, the guarded owner-draft before-content save facade, and the five versioned v2 Time-alias protected endpoints (preflight/gate/admit/read plus the service-only execute callback)'
 );
 
@@ -103,7 +104,8 @@ select is(
   -- Database #904 adds thirty-two closed analysis/reporting helpers including the moved v3 analysis delegate.
   -- Database #906 adds seventeen closed review, current-state, receipt and summary helpers.
   -- Database #909 adds twenty-five closed advanced numerical/configuration/family/review helpers.
-  738::bigint,
+  -- Database #912 adds thirty-five closed method/evidence/report/binding helpers.
+  773::bigint,
   'Twenty-five navigation helpers plus: private contains the active helpers, including the Open Data filter and three dataset display helpers, the reviewer Contact reference-readiness helper, the review rejection-reason extractor, rejected-report exact-reference matcher, submitted-decision sync helper and shared reviewer workload classifier, the twenty-five exact-version, thirteen composite-name and one review-search internals, two partial-import helpers, two whole-package helpers, the example write guard, the two state-120 candidate-cache helpers, the state-120 lifecycle guard, the seven manager-attested Result publication helpers, the nineteen versioned v2 Time-alias helpers (four exact-numeric, ten leaf/derivation helpers, the guarded v2 batch executor, the plan key set, the six-key derivative-target checker, the guarded v2 plan executor and the deterministic derivative-chunk partition), and the eight closed Length*time profile helpers (the closed discriminator, the plan key set, the factor constant, the exact multiply, the instance rewrite, the guarded Length*time executor, the null-safe required-scalar check and the null-safe required-count check), the two Database #689 batch queue-cache helpers (the dispatch-body candidate-id extractor and the per-batch queue cache builder), the Database #703 internal derivative scheduler picker, and the Database #828 owner-only AI deadline expiry helper'
 );
 
@@ -152,7 +154,8 @@ select is(
   -- Database #904 adds two Analysis and four report/export immutability triggers.
   -- Database #906 adds append-only comment/review/finalization/V4-export guards.
   -- Database #909 adds immutable advanced-analysis and advanced report-link guards.
-  190::bigint,
+  -- Database #912 adds immutable evidence, method assessment and method-report link guards.
+  193::bigint,
   'Two private navigation writers and one seed guard plus: all active application triggers and two Process composite-name sync triggers plus seven example write guards remain present, including the review submitted-decision sync trigger, the Result lifecycle guard and the append-only Result guard and seven dataset display source-cleanup triggers'
 );
 
@@ -266,7 +269,8 @@ select is(
   -- Database #904 adds fifty-six constraints across eight private analysis/reporting relations.
   -- Database #906 adds 56 constraints across nine private review/share relations.
   -- Database #909 adds five private tables and two explicit intent-family CHECKs: thirty-four constraints.
-  1102::bigint,
+  -- Database #912 adds six closed method tables and exact method report selection: forty-four constraints.
+  1146::bigint,
   'Twenty-nine navigation constraints plus: all application, OAuth registry and twenty-two composite-name constraints plus ten partial-import and four whole-package constraints, the review submitted-decision constraint, the Result publication attestation and dataset display exact-version and allowlist constraints remain present, and the versioned v2 Time-alias preflight/gate/request tables carry their own reviewed constraints'
 );
 
@@ -303,7 +307,8 @@ select is(
   -- Database #904 adds eight ACL-closed private relations with forced RLS.
   -- Database #906 adds nine FORCE RLS private review/share relations.
   -- Database #909 adds five FORCE-RLS private advanced/configuration/intent/link tables.
-  153::bigint,
+  -- Database #912 adds six FORCE-RLS private method/config/evidence/intent/link tables.
+  159::bigint,
   'RLS covers the Open Data publication relation, five new private navigation relations and existing tables plus four private composite-name relations and three private import plan/receipt relations'
 );
 

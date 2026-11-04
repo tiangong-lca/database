@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-04
-lastReviewedCommit: 4a3e95b443545b67e47c689725d1b3d5f4d27b8a
-lastReviewedNote: "Database #909: reviewed V5 advanced families, exact baseline/source/lease and minimal cancellation boundaries, independent shortest-decimal/NULL-evidence corrections, default-off qualification, and owned upgrade/race/HTTP/deterministic-generation proof. Hosted activation, actual-byte/scientific qualification and Main/root integration remain separate."
+lastReviewedCommit: 6621e91fc4e8360bbaac1688cdbc42b976e43ab2
+lastReviewedNote: "Database #912: reviewed separate V6 method/evidence/report families, exact baseline and selected-factor budgets, declared evidence without professional approval, original preview/export requests, default-off authority and owned upgrade/race/HTTP/Unicode/schema proof. Actual native/byte/scientific qualification and Main/root delivery remain separate."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -41,6 +41,14 @@ related:
 ---
 
 Allocation contract update (Database #789): `private.lcia_scope_closure_normalize_request` freezes omitted/explicit v5 allocation intent as `tidas-reference-allocation-v5`, rejects explicit stale/unknown versions, and preserves cutoff, numerical eligibility and ACLs. Historical manifests/certificates are not rewritten. Coordinate with Worker #311 and Edge #454; drain v4 work before switching admission to v5-capable Workers, and obtain new v5 closure checks instead of reusing v4 evidence. The version identifies Product/Waste allocation targets in either exchange direction; numerical interpretation remains Worker-owned.
+
+## Study method boundary
+
+The default-off V6 method-assessment/evidence family uses separate private
+records and exact job/lease/byte bindings. It consumes pinned Worker schemas,
+keeps declared evidence unverified, and preserves old Study/report families.
+The [runtime contract](lca-study-runtime-contract.md) owns its fields and proof
+limits; method report adoption and actual runtime qualification remain distinct.
 
 ## Repo Shape
 

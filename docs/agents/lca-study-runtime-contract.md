@@ -22,8 +22,8 @@ checkPaths:
   - supabase/tests/fixtures/study909_worker_*.json
   - docs/agents/lca-study-runtime-contract.md
 lastReviewedAt: 2026-11-04
-lastReviewedCommit: 4a3e95b443545b67e47c689725d1b3d5f4d27b8a
-lastReviewedNote: "Database #909: reviewed V5 advanced families, exact baseline/source/lease and minimal cancellation boundaries, independent shortest-decimal/NULL-evidence corrections, default-off qualification, and owned upgrade/race/HTTP/deterministic-generation proof. Hosted activation, actual-byte/scientific qualification and Main/root integration remain separate."
+lastReviewedCommit: 6621e91fc4e8360bbaac1688cdbc42b976e43ab2
+lastReviewedNote: "Database #912: reviewed separate V6 method/evidence/report families, exact baseline and selected-factor budgets, declared evidence without professional approval, original preview/export requests, default-off authority and owned upgrade/race/HTTP/Unicode/schema proof. Actual native/byte/scientific qualification and Main/root delivery remain separate."
 related:
   - ./lca-study-durable-contract.md
   - ./repo-validation.md
@@ -159,6 +159,117 @@ family, and cursor selection binds its negotiated schema/family. Current source,
 actor, client and report/share authority is rechecked when an opaque capability
 resolves. SQL metadata/signature fixtures prove these bindings, not actual native
 execution, artifact bytes, cryptographic issuance or scientific qualification.
+
+## P4 method assessment and declared evidence (Database #912)
+
+The separately admitted `lca.study-api.v6` family uses `cmd/qry_study_method_v1`.
+It owns a `methodAssessment` resource and `study.method_assessment` solver job,
+not an advanced-analysis alias. The closed Worker schemas are independently
+consumed from Worker `13a749e619d7ef348e9298bb049e8c01c60e9086`; the test fixture
+source manifest binds their exact original paths and byte hashes. The profile
+pins PCR Main51c0842c and module `method.pef-2021-ef31@0.1.0` independently of
+current source rights, recorded declarations and scientific qualification.
+
+`svc_study_method_configure_v1` is service-only CAS over `executionEnabled`,
+`reportEnabled`, `maxEvidenceRefs` (0–128), `maxSelectedFactorRecords` (1–8192)
+and `qualificationEvidenceRef`. All new gates start off; selected ceilings are
+null until qualified. Enabling requires both bounded ceilings and nonnull
+qualification evidence. Installation grants no OAuth client a capability.
+Admission freezes the selected ceilings, exact completed baseline, original
+SourceSnapshot and requesting actor/client. A later configuration change does
+not rewrite an admitted job or replace its original budget.
+
+The unchanged `lca.study-method-assessment-input.v1` is nested inside a distinct
+`lca.study-method-job-context.v1` with `budget:{maxSelectedFactorRecords,
+maxFactsBytes:4194304}`. `svc_study_method_assessment_read_input_v1` takes the
+exact assessment, job and current lease. It rechecks original live Study/source/
+client authority and returns frozen baseline/source capabilities only to the
+service. The selected-factor count includes every selected method×inventory
+cell, including missing factors; it is not a count of successful CF matches.
+Completion verifies that count against the admitted ceiling, exact profile/
+config/facts identity, current original source rights and canonical live job
+before atomically attaching immutable method facts and completing the job.
+
+The method-specific fail/reconcile façades retain real lease and historical
+attachment rules. Generic task failure/reconciliation delegates only after
+matching the method table and exact job. A committed result followed by client
+or source revocation may deny a retry without undoing attachment; scoped service
+reconciliation can prove that historical attachment without renewing actor
+access. Minimal `task.read/cancel` uses current Study/client rights and exact
+job identity after source withdrawal or admission shutdown. Full assessment and
+facts reads still require current source rights. Old V2–V5 paths do not discover
+this family, including artifact routing and selection before pagination.
+
+`method.evidence.create` accepts `studyId` and a closed Worker-owned `content`
+record: schema/version, requirement ID, declared kind, title, statement and typed
+citations. Unicode field limits, the total64KiB UTF-8 bound, control/markup rejection, duplicate citations and
+unknown keys are checked before an opaque two-minute intent. No public evidence
+row exists before immutable producer consumption. The service resolver issues
+an exact `methodEvidenceCommandContext` with request, original actor/client,
+Study, evidence/artifact IDs, persisted `recordedAt`, and the SHA-256/size of
+sorted compact literal-Unicode JSON without a newline. The consume payload is
+exactly `{artifact:{artifactRef,storageBucket,storageObjectPath}}`; identity,
+byte hash/size, original live authority, Study epoch and config revision are
+rechecked before recording. Lost acknowledgments recover the same evidence
+record and key. Historical reconciliation has `deletionPermitted:false`.
+
+Evidence metadata is `lca.study-method-evidence-record.v1` with status always
+`recorded_unverified`. It exposes no original actor/client or Storage locator.
+Nonempty configuration references must identify registered same-Study evidence
+with the exact requirement, declared kind and artifact bytes. A declaration,
+citation hash, registration, software check or document presence never becomes
+professional approval, PEF conformity, a waiver or scientific/business ranking.
+The existing incomplete cement input remains a negative method case. Source,
+software, actual runtime and complete real-study/professional qualification are
+separate; a missing real positive is not waived by this implementation.
+
+Method report/review/export adoption uses distinct actor and service façades.
+The shared report row has a separate `method_assessment_ids` field; method
+reports select one actual baseline and one assessment with `analysis_ids`
+empty. Old rows retain their original values and an empty method-selection
+field. New template `lca.study-method-report.v1`, view.v3/renderer3.0.0 and
+manifest.v4/bundle.v4 identities preserve every old family and signed byte.
+
+The report facts-binding domain is `lca.study-method-report-facts-binding.v1`
+over `{studyId,runIds,methodAssessmentIds,factsRefs,baseline,assessment}` using
+sorted compact literal-Unicode JSON and a NUL domain separator. Baseline has
+exactly `runId,studyId,studyRevisionId,scenarioRevisionId,effectiveModelRef,
+inputHash,profileId,engineId,calculationContractRef,resultRef,preparedArtifactRef,
+sourceSnapshotRef`; assessment has `assessmentId,profileId,configHash,moduleRef`.
+Execution, current validity and observation times do not enter that immutable
+binding. Content/artifact hashes remain SHA-256 of the exact canonical stored
+UTF-8 bytes without a prefix or newline; the content schema distinguishes its
+family. No semantic hash replaces an artifact-byte hash.
+
+Method authoring consumes opaque `reportMethodCommandContext` through
+`svc_study_report_method_intent_resolve/consume/reconcile_v1`. Its `runs` and
+`methodAssessments` carry the captured baseline, registered method record,
+private facts capability and original SourceSnapshot ref. A closed validation
+receipt binds report/content/claim count/facts hash, exact assessment/config,
+`requirementCount:20`, `categoryCount:25`, and `factCount:58`. Edge derives the
+mandatory full method summary; an author's draft cannot suppress requirements,
+category roles, source/configuration, coverage, N/W availability or professional
+states. Selected factor records remain complete in their exact authorized facts
+artifact; the summary explicitly binds that ref/count instead of claiming an
+embedded list. Facts/content/export retain 4194304-byte limits; a projection
+must fit 2000000 UTF-8 bytes. Unreportable content fails, never truncates.
+
+Review, finalization and named-summary sharing use
+`cmd/qry_study_method_review_v1` and independent default-off review configuration.
+Current actor/client/Study/source authority remains required; report reviewer
+access does not confer core Study/facts rights. V6 does not manage membership.
+The method command rejects author self-approval and retains exact first-party
+one-use OAuth delegation, current review-state and accepted-review bindings.
+Historical review withdrawal preserves old records and affects current approval.
+
+The protected `studyMethodReviewContext` carries an original public request.
+Its producer context keeps `report.view` as the exact view request, with null
+new export/projection/resources/bundle IDs, and creates no export, receipt or
+Storage write. `export.request` retains its original finalization and review
+hash fields and its allocated IDs. Source/role/family checks occur at every
+intent read/upload/consume boundary. New report/review reconciliation schemas
+are `lca.study-method-report-reconcile.v1` and
+`lca.study-method-review-reconcile.v1`, with `deletionPermitted:false`.
 
 ## Actor and team authorization
 
