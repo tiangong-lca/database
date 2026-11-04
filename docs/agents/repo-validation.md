@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-04
-lastReviewedCommit: 4a3e95b443545b67e47c689725d1b3d5f4d27b8a
-lastReviewedNote: "Database #909: reviewed V5 advanced families, exact baseline/source/lease and minimal cancellation boundaries, independent shortest-decimal/NULL-evidence corrections, default-off qualification, and owned upgrade/race/HTTP/deterministic-generation proof. Hosted activation, actual-byte/scientific qualification and Main/root integration remain separate."
+lastReviewedCommit: d95848a3859834cf4abe143dde3111ce71e968ce
+lastReviewedNote: "Database #912: reviewed separate V6 method/evidence/report families, exact baseline and selected-factor budgets, declared evidence without professional approval, original preview/export requests, default-off authority and owned upgrade/race/HTTP/Unicode/schema proof. Actual native/byte/scientific qualification and Main/root delivery remain separate."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -233,7 +233,7 @@ named share, receipt or intent. The unchanged codec already rejects these user
 UUID aliases before Edge dispatch, so no client shape or pin change is needed.
 
 Use `scripts/prepare_study_review_project.py --destination <new-owned-dir>/study906`
-with pinned CLI2.117.0. This creates a separate PG17 project on API56621/DB56622
+with pinned CLI 2.117.0. This creates a separate PG17 project on API56621/DB56622
 and an ownership receipt. It never changes or operates the retained P2 study894
 project. Start only that project and keep startup keys in private logs.
 `STUDY_REVIEW_ALLOW_RESET=owned-study906` permits
@@ -1984,3 +1984,29 @@ submission rollback, valid singleton/list metadata, incomplete rejection,
 legacy empty-selector cleanup, JSON/json_ordered synchronization and closed
 helper ACLs. Regenerate the five schema views twice without drift. No fixture
 qualifies hosted deployment or repairs historical datasets.
+
+## Study method/evidence source qualification (#912)
+
+The V6 method/evidence/report family uses the exact owned study912/PG17 project
+and CLI 2.117.0. Run `supabase/tests/20261104_study_method_assessment.sql` with
+retained Study suites, full schema/API/OAuth closure and worker-job isolation. The
+rollback-only action matrix compares exact actions/core permissions with actual
+cancellation across owner/editor/viewer, active/admission-off/source-withdrawn/
+archived states, and first-party/read-only OAuth clients. Preserve a red result
+against the original void-authorizer assignment and the corrected green result.
+The [method script entrypoint](../../scripts/README.md#study-methodevidence-qualification-database-912)
+defines populated V5 preservation, blank-ledger reconstruction, observed actual
+transaction races, contained Worker/config/schema/Unicode parity and real
+PostgREST signed-fixture-JWT privilege checks. Source, native/Storage/signature,
+actual installed consumers, professional validity and deployment are separately
+qualified. All new gates start off; no migration grants an environment client.
+
+Preserve all prior table/Auth values, routine ACL/owner/settings and existing
+capability/job definitions. The only old report data extension is an empty
+method-selection field, projected separately in preservation comparisons. The
+four reviewed routine changes are generic task failure/reconciliation, generic
+artifact intent resolution and exact-template report disclosure dispatch; old
+branches remain unchanged. Regenerate the five-schema workspace and public/api
+types from a blank exact candidate twice and compare bytes. Keep unrelated
+historical lint findings explicit; new-surface errors or missing FK indexes must
+be resolved. CI owns and releases only its exact study912 resources.

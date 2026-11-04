@@ -23,8 +23,8 @@ checkPaths:
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
 lastReviewedAt: 2026-11-04
-lastReviewedCommit: 4a3e95b443545b67e47c689725d1b3d5f4d27b8a
-lastReviewedNote: "Database #909: reviewed V5 advanced families, exact baseline/source/lease and minimal cancellation boundaries, independent shortest-decimal/NULL-evidence corrections, default-off qualification, and owned upgrade/race/HTTP/deterministic-generation proof. Hosted activation, actual-byte/scientific qualification and Main/root integration remain separate."
+lastReviewedCommit: 6621e91fc4e8360bbaac1688cdbc42b976e43ab2
+lastReviewedNote: "Database #912: reviewed separate V6 method/evidence/report families, exact baseline and selected-factor budgets, declared evidence without professional approval, original preview/export requests, default-off authority and owned upgrade/race/HTTP/Unicode/schema proof. Actual native/byte/scientific qualification and Main/root delivery remain separate."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -396,3 +396,5 @@ python3 scripts/test_check_auth_email_templates.py
 ## Study P0 离线合同检查
 
 现有 local-contract CI job 在数据库重建前运行 [Study 持久参考模型](lca-study-durable-contract.md)。该离线检查不增加迁移或 hosted 权限，Preview 与 persistent Dev 仍由原五类 deployable 输入判定；顺序样例不代表 SQL/RLS、真实并发或 Study API 已部署。
+
+Database #912 的方法评估/声明证据资格使用独立 PG17 项目 `study912`，覆盖保留 V5 数据的升级、空库迁移账本、实际事务竞争、固定 Worker 模式/Unicode 一致性及本地签名 JWT 的 PostgREST 权限。该 CI 仅清理自身精确资源，不持有托管凭据；V6 执行和审阅配置默认关闭，源码夹具不能代替真实原生计算、Storage 字节、科学或生产资格。

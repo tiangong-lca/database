@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-04
-lastReviewedCommit: 4a3e95b443545b67e47c689725d1b3d5f4d27b8a
-lastReviewedNote: "Database #909: reviewed V5 advanced families, exact baseline/source/lease and minimal cancellation boundaries, independent shortest-decimal/NULL-evidence corrections, default-off qualification, and owned upgrade/race/HTTP/deterministic-generation proof. Hosted activation, actual-byte/scientific qualification and Main/root integration remain separate."
+lastReviewedCommit: 6621e91fc4e8360bbaac1688cdbc42b976e43ab2
+lastReviewedNote: "Database #912: reviewed separate V6 method/evidence/report families, exact baseline and selected-factor budgets, declared evidence without professional approval, original preview/export requests, default-off authority and owned upgrade/race/HTTP/Unicode/schema proof. Actual native/byte/scientific qualification and Main/root delivery remain separate."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -714,7 +714,7 @@ resources with its exact `com.supabase.cli.project=study906` label. See the
 
 ### Study P4 advanced qualification
 
-Use the dedicated `study909` PG17 project (API56821/DB56822), pinned CLI2.117.0
+Use the dedicated `study909` PG17 project (API56821/DB56822), pinned CLI 2.117.0
 and exact ownership receipt. Every CLI invocation uses explicit `--workdir`.
 The helper creates only files; upgrade is the only runner that resets a project.
 
@@ -743,6 +743,47 @@ before schema generation. Release the exact owned group through the workspace
 resource workflow, retaining a cleanup receipt. No hosted, native/Storage-byte or
 cryptographic qualification follows from these SQL/JWT fixtures. See the
 [validation guide](../docs/agents/repo-validation.md) for the complete proof bar.
+
+### Study method/evidence qualification (Database #912)
+
+Use only the separately owned PG17 `study912` project, API 56921/DB 56922 and
+pinned Supabase CLI 2.117.0. The helper writes configuration and an ownership
+manifest; `--through-version` optionally selects an exact existing predecessor.
+Every CLI operation passes the explicit task workdir. No retained parent stack
+or shared database-engine project is an implied target.
+
+```bash
+python3 -B scripts/prepare_study_method_project.py --destination <new-owned-dir>/study912
+supabase start --workdir <owned-study912> \
+  -x studio,imgproxy,mailpit,postgres-meta,edge-runtime,logflare,vector,supavisor,realtime
+STUDY_METHOD_ALLOW_RESET=owned-study912 python3 -B scripts/test_study_method_upgrade.py \
+  --workdir <owned-study912> --report <new-upgrade-json>
+python3 -B supabase/tests/regression/20261104_study_method_concurrency.py \
+  --workdir <owned-study912> --report <new-race-json> --vectors-report <new-service-dtos-json>
+python3 -B scripts/test_study_method_serialization.py --workdir <owned-study912> \
+  --vectors <service-dtos-json> --report <new-serialization-json>
+python3 -B supabase/tests/regression/20261104_study_method_transport.py \
+  --workdir <owned-study912> --race-receipt <race-json> --report <new-http-json>
+```
+
+Upgrade is the only runner that resets resources. Race and HTTP runners retain
+the exact synthetic namespace and release their sessions. The schema verifier
+uses installed pg_jsonschema 0.3.3: original contained Worker bytes remain hashed;
+only an absolute root base URI is supplied in memory after every reference is
+proved local. This compatibility annotation does not modify constraints or
+vendor files and adds no dependency. Unicode field limits and the 64KiB total
+evidence bound are tested separately. These SQL/signed-local-JWT fixtures do
+not qualify GoTrue consent, native computation, actual Storage bytes, signing,
+scientific conformance or hosted activation. Preserve the receipt distinctions.
+
+After preserving proof, explicitly dispose/reset only this owned synthetic
+namespace before generation. Export the five schemas with the explicit verified
+study912 DB URL; bare local export selects the repository's shared project.
+Generate public/api types through `supabase gen types typescript --local
+--workdir <owned-study912> --schema public --schema api` and retain deterministic
+second-generation comparison. Release only the verified project label through
+`supabase stop --project-id study912 --no-backup`; retain the zero-container,
+zero-volume and zero-network cleanup receipt, or an explicit retention handoff.
 
 ### `build_schema_workspace.py`
 

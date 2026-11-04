@@ -725,6 +725,8 @@ export type Database = {
       }
       cmd_study_advanced_review_v1: { Args: { p_request: Json }; Returns: Json }
       cmd_study_advanced_v1: { Args: { p_request: Json }; Returns: Json }
+      cmd_study_method_review_v1: { Args: { p_request: Json }; Returns: Json }
+      cmd_study_method_v1: { Args: { p_request: Json }; Returns: Json }
       cmd_study_reporting_v1: { Args: { p_request: Json }; Returns: Json }
       cmd_study_review_v1: { Args: { p_request: Json }; Returns: Json }
       cmd_study_v1: { Args: { p_request: Json }; Returns: Json }
@@ -2929,6 +2931,8 @@ export type Database = {
       }
       qry_study_advanced_review_v1: { Args: { p_request: Json }; Returns: Json }
       qry_study_advanced_v1: { Args: { p_request: Json }; Returns: Json }
+      qry_study_method_review_v1: { Args: { p_request: Json }; Returns: Json }
+      qry_study_method_v1: { Args: { p_request: Json }; Returns: Json }
       qry_study_reporting_v1: { Args: { p_request: Json }; Returns: Json }
       qry_study_review_v1: { Args: { p_request: Json }; Returns: Json }
       qry_study_v1: { Args: { p_request: Json }; Returns: Json }
@@ -3940,6 +3944,66 @@ export type Database = {
         Args: { p_intent_id: string }
         Returns: Json
       }
+      svc_study_method_assessment_complete_v1: {
+        Args: {
+          p_assessment_id: string
+          p_completion: Json
+          p_idempotency_key: string
+          p_job_id: string
+          p_lease_token: string
+        }
+        Returns: Json
+      }
+      svc_study_method_assessment_fail_v1: {
+        Args: {
+          p_error_code: string
+          p_idempotency_key: string
+          p_job_id: string
+          p_lease_token: string
+          p_resource_id: string
+          p_resource_type: string
+        }
+        Returns: Json
+      }
+      svc_study_method_assessment_read_input_v1: {
+        Args: {
+          p_assessment_id: string
+          p_job_id: string
+          p_lease_token: string
+        }
+        Returns: Json
+      }
+      svc_study_method_assessment_reconcile_v1: {
+        Args: {
+          p_artifact_id?: string
+          p_idempotency_key: string
+          p_job_id: string
+          p_lease_token: string
+          p_resource_id: string
+          p_resource_type: string
+        }
+        Returns: Json
+      }
+      svc_study_method_configure_v1: {
+        Args: { p_configuration: Json; p_expected_revision: number }
+        Returns: Json
+      }
+      svc_study_method_evidence_intent_consume_v1: {
+        Args: { p_completion: Json; p_intent_id: string }
+        Returns: Json
+      }
+      svc_study_method_evidence_intent_reconcile_v1: {
+        Args: {
+          p_artifact_id: string
+          p_content_hash: string
+          p_intent_id: string
+        }
+        Returns: Json
+      }
+      svc_study_method_evidence_intent_resolve_v1: {
+        Args: { p_intent_id: string }
+        Returns: Json
+      }
       svc_study_model_preparation_complete_v1: {
         Args: {
           p_completion: Json
@@ -3990,6 +4054,22 @@ export type Database = {
         Args: { p_intent_id: string }
         Returns: Json
       }
+      svc_study_report_method_intent_consume_v1: {
+        Args: { p_completion: Json; p_intent_id: string }
+        Returns: Json
+      }
+      svc_study_report_method_intent_reconcile_v1: {
+        Args: {
+          p_artifact_id: string
+          p_content_hash: string
+          p_intent_id: string
+        }
+        Returns: Json
+      }
+      svc_study_report_method_intent_resolve_v1: {
+        Args: { p_intent_id: string }
+        Returns: Json
+      }
       svc_study_reporting_configure_v1: {
         Args: { p_configuration: Json; p_expected_revision: number }
         Returns: Json
@@ -4023,6 +4103,26 @@ export type Database = {
         Returns: Json
       }
       svc_study_review_intent_resolve_v1: {
+        Args: { p_intent_id: string }
+        Returns: Json
+      }
+      svc_study_review_method_configure_v1: {
+        Args: { p_configuration: Json; p_expected_revision: number }
+        Returns: Json
+      }
+      svc_study_review_method_intent_consume_v1: {
+        Args: { p_completion: Json; p_intent_id: string }
+        Returns: Json
+      }
+      svc_study_review_method_intent_reconcile_v1: {
+        Args: {
+          p_artifact_id: string
+          p_content_hash: string
+          p_intent_id: string
+        }
+        Returns: Json
+      }
+      svc_study_review_method_intent_resolve_v1: {
         Args: { p_intent_id: string }
         Returns: Json
       }

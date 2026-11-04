@@ -130,6 +130,7 @@ jobs:
           supabase test db supabase/tests/20261103_study_report_producer.sql
           supabase test db supabase/tests/20261103_study_review_finalization_sharing.sql
           supabase test db supabase/tests/20261104_study_advanced_analysis.sql
+          supabase test db supabase/tests/20261104_study_method_assessment.sql
           supabase test db supabase/tests/20261006_search_request_identity.sql
           supabase test db supabase/tests/20260920_portal_china_administrative_navigation.sql
           supabase test db supabase/tests/20260805_full_schema_cutover.sql
@@ -1038,6 +1039,64 @@ jobs:
             and (has("schemaVersion") | not)
             and (has("items") | not)
           ' "$invalid_file" >/dev/null
+
+  study-method-concurrency:
+    name: Verify isolated Study method and evidence contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+      SUPABASE_CLI: supabase
+    steps:
+      - uses: actions/checkout@v7
+      - uses: supabase/setup-cli@v3
+        with:
+          version: 2.117.0
+      - name: Prepare separately owned method project
+        run: python3 -B scripts/prepare_study_method_project.py --destination "$RUNNER_TEMP/study912"
+      - name: Start separately owned method project
+        run: |
+          umask 077
+          supabase start --workdir "$RUNNER_TEMP/study912" \
+            -x studio,imgproxy,mailpit,postgres-meta,edge-runtime,logflare,vector,supavisor,realtime \
+            > "$RUNNER_TEMP/study912-start.log" 2>&1
+      - name: Verify populated V5 upgrade and blank ledger
+        env:
+          STUDY_METHOD_ALLOW_RESET: owned-study912
+        run: >-
+          python3 -B scripts/test_study_method_upgrade.py --workdir "$RUNNER_TEMP/study912"
+          --report "$RUNNER_TEMP/study912-upgrade.json"
+      - name: Observe method and report transaction races
+        run: >-
+          python3 -B supabase/tests/regression/20261104_study_method_concurrency.py
+          --workdir "$RUNNER_TEMP/study912" --report "$RUNNER_TEMP/study912-concurrency.json"
+          --vectors-report "$RUNNER_TEMP/study912-service-dtos.json"
+      - name: Verify contained Worker schemas and Unicode boundaries
+        run: >-
+          python3 -B scripts/test_study_method_serialization.py --workdir "$RUNNER_TEMP/study912"
+          --vectors "$RUNNER_TEMP/study912-service-dtos.json" --report "$RUNNER_TEMP/study912-serialization.json"
+      - name: Verify actual V6 PostgREST and old-family isolation
+        run: >-
+          python3 -B supabase/tests/regression/20261104_study_method_transport.py
+          --workdir "$RUNNER_TEMP/study912" --race-receipt "$RUNNER_TEMP/study912-concurrency.json"
+          --report "$RUNNER_TEMP/study912-transport.json"
+          --vectors-report "$RUNNER_TEMP/study912-public-dtos.json"
+      - name: Preserve bounded method proof
+        if: always()
+        run: |
+          for receipt in "$RUNNER_TEMP/study912-upgrade.json" "$RUNNER_TEMP/study912-concurrency.json" "$RUNNER_TEMP/study912-serialization.json" "$RUNNER_TEMP/study912-transport.json"; do
+            if [ -f "$receipt" ]; then cat "$receipt" >> "$GITHUB_STEP_SUMMARY"; fi
+          done
+      - name: Release only owned method resources
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/study912/ownership.json" ]; then
+            supabase stop --project-id study912 --no-backup
+            test -z "$(docker ps -aq --filter label=com.supabase.cli.project=study912)"
+            test -z "$(docker volume ls -q --filter label=com.supabase.cli.project=study912)"
+            test -z "$(docker network ls -q --filter label=com.supabase.cli.project=study912)"
+            echo "Study912 exact owned containers, volumes and network released." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   study-advanced-concurrency:
     name: Verify isolated Study advanced profiles and V5 reporting
