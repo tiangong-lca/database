@@ -112326,11 +112326,6 @@ ALTER TABLE ONLY "private"."study_method_config"
 
 
 
-ALTER TABLE ONLY "private"."study_method_evidence"
-    ADD CONSTRAINT "study_method_evidence_artifact_id_key" UNIQUE ("artifact_id");
-
-
-
 ALTER TABLE ONLY "private"."study_method_evidence_intents"
     ADD CONSTRAINT "study_method_evidence_intents_pkey" PRIMARY KEY ("id");
 
@@ -112338,6 +112333,11 @@ ALTER TABLE ONLY "private"."study_method_evidence_intents"
 
 ALTER TABLE ONLY "private"."study_method_evidence"
     ADD CONSTRAINT "study_method_evidence_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "private"."study_method_evidence"
+    ADD CONSTRAINT "study_method_evidence_study_id_artifact_id_key" UNIQUE ("study_id", "artifact_id");
 
 
 
@@ -113822,10 +113822,6 @@ CREATE INDEX "study_method_assessment_source_idx" ON "private"."study_method_ass
 
 
 
-CREATE INDEX "study_method_assessment_study_idx" ON "private"."study_method_assessments" USING "btree" ("study_id", "id");
-
-
-
 CREATE INDEX "study_method_evidence_actor_idx" ON "private"."study_method_evidence" USING "btree" ("recorded_by");
 
 
@@ -113835,10 +113831,6 @@ CREATE INDEX "study_method_evidence_intent_actor_idx" ON "private"."study_method
 
 
 CREATE INDEX "study_method_evidence_intent_study_idx" ON "private"."study_method_evidence_intents" USING "btree" ("study_id");
-
-
-
-CREATE INDEX "study_method_evidence_study_idx" ON "private"."study_method_evidence" USING "btree" ("study_id", "id");
 
 
 

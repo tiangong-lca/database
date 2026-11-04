@@ -16,10 +16,10 @@ ALTER TABLE ONLY "private"."study_method_evidence" FORCE ROW LEVEL SECURITY;
 ALTER TABLE "private"."study_method_evidence" OWNER TO "postgres";
 
 ALTER TABLE ONLY "private"."study_method_evidence"
-    ADD CONSTRAINT "study_method_evidence_artifact_id_key" UNIQUE ("artifact_id");
+    ADD CONSTRAINT "study_method_evidence_pkey" PRIMARY KEY ("id");
 
 ALTER TABLE ONLY "private"."study_method_evidence"
-    ADD CONSTRAINT "study_method_evidence_pkey" PRIMARY KEY ("id");
+    ADD CONSTRAINT "study_method_evidence_study_id_artifact_id_key" UNIQUE ("study_id", "artifact_id");
 
 ALTER TABLE ONLY "private"."study_method_evidence"
     ADD CONSTRAINT "study_method_evidence_study_id_id_key" UNIQUE ("study_id", "id");
