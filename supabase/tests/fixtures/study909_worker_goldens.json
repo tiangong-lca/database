@@ -219,5 +219,15 @@
       },
       "configHash": "fa0ce3b8bf3c008d55bf33773682ee4b969a35ad6201b2c56089467f2e33a4b7"
     }
-  ]
+  ],
+  "powerNeighborFixture": "study909_worker_powers_and_neighbors.json",
+  "powerNeighborFixtureSha256": "867e1451713d1fac4b994c16e551182d3501252715c495dc1915a7abf70a2042",
+  "powerNeighborProvenance": {
+    "workerCommit": "b6d97040a9e096d78146a509524a98682352ba21",
+    "generator": "allpositivebinarypowerssubnormal+normal anddecimalpowers1e-323..1e308, immediatebitneighbors, bothsigns, finiteonly, uniquebits",
+    "harnessSha256": "9a1bf1bbac4c48815afcbae07dcda1687704702767603a56c00d5cd040b116de",
+    "vectorsSha256": "867e1451713d1fac4b994c16e551182d3501252715c495dc1915a7abf70a2042",
+    "count": 16362,
+    "method": "verbatimunchangedownercanonical_number +samecompileddeps"
+  }
 }

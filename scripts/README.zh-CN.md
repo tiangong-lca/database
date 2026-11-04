@@ -21,7 +21,7 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-04
-lastReviewedCommit: ae9ef85d1adb77f6bb8213d89a58675b234cff76
+lastReviewedCommit: 4a9e81ac8e648aefb16091148a44c17c76edf2b9
 lastReviewedNote: "Database #909: reviewed explicit V5 advanced analysis/report/review families, exact baseline/source/lease and minimal cancellation boundaries, default-off qualification, owned upgrade/race/HTTP/generation workflow and old-family compatibility. Branch, hosted enablement, actual-byte/scientific qualification and root integration authority remain separate."
 related:
   - ../AGENTS.md
@@ -76,6 +76,11 @@ JSON/cursor 及索引存储/写成本。这些本地资格不代表 hosted 性�
 `STUDY_ADVANCED_ALLOW_RESET=owned-study909` 下验证已填充 P3 升级和空库重建。
 后续运行 `20261104_study_advanced_concurrency.py`、
 `20261104_study_advanced_transport.py`，参数和顺序见英文 README 与 validation guide。
+
+Schema 导出 helper 没有 workdir 参数，必须显式指定 `--environment local
+--db-url <verified-study909-db-url> --schemas public api private util archive`；
+裸 `--environment local` 会选择仓库项目，不是 study909。类型生成则显式使用
+CLI 的 `--local --workdir <owned-study909>`。
 
 并发/HTTP runner 保留明确合成数据，不重置或删除任何项目。先保存回执，再由
 归属方明确重置用于生成 schema；最终仅释放 study909 的精确容器、卷和网络并

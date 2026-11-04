@@ -4,14 +4,14 @@ begin;
 create or replace function private.study_advanced_number(p_value jsonb) returns text
 language plpgsql immutable set search_path='' set extra_float_digits=3 as $$
 declare v double precision;t text;negative boolean;digits text;point integer;zero_count integer;exponent integer;result text;
- raw bytea;fraction bigint;binary_exponent integer;i integer;power_value numeric:=1;factor numeric;remaining integer;exact_value numeric;rounded numeric;quantum numeric;scale integer;precision integer;
+ raw bytea;fraction bigint;binary_exponent integer;i integer;power_value numeric:=1;factor numeric;remaining integer;exact_value numeric;rounded numeric;quantum numeric;scale integer;candidate numeric;best numeric;best_distance numeric;distance numeric;
 begin
  if not private.study_text(p_value,64,'^-?(0|[1-9][0-9]*)(\.[0-9]*[1-9])?(e-?[1-9][0-9]{0,2})?$') then return null;end if;
  v:=(p_value#>>'{}')::double precision;
  if v in ('Infinity'::double precision,'-Infinity'::double precision,'NaN'::double precision) then return null;end if;
  if v=0 then return case when p_value#>>'{}'='0' then '0' end;end if;
  negative:=v<0;raw:=float8send(abs(v));binary_exponent:=((get_byte(raw,0)&127)*16+(get_byte(raw,1)>>4));fraction:=(get_byte(raw,1)&15)::bigint;
- for i in 2..7 loop fraction:=fraction*256+get_byte(raw,i);end loop;
+ for byte_index in 2..7 loop fraction:=fraction*256+get_byte(raw,byte_index);end loop;
  if binary_exponent=0 then binary_exponent:=-1074;else fraction:=fraction+4503599627370496;binary_exponent:=binary_exponent-1075;end if;
  -- Construct the exact finite binary value as decimal integer/scale. PostgreSQL's
  -- own float8 text chooses different shortest spellings at some boundaries.
@@ -27,13 +27,25 @@ begin
  end if;exact_value:=t::numeric;
  point:=position('.' in t);if point=0 then point:=length(t)+1;end if;
  digits:=replace(t,'.','');zero_count:=length(digits)-length(ltrim(digits,'0'));exponent:=point-zero_count-2;
- -- The first nearest decimal coefficient that roundtrips is the owner shortest
- -- representation. Resolve exact halfway cases to an even coefficient.
+ -- Binary powers have asymmetric neighboring intervals. At the shortest
+ -- decimal precision inspect the nearest coefficient and both adjacent ones;
+ -- select only roundtripping candidates by exact distance, then even ties.
  for precision in 1..17 loop
-  scale:=precision-1-exponent;rounded:=round(exact_value,scale);quantum:=('1e'||(-scale)::text)::numeric;
-  if exact_value=rounded-quantum/2 and mod(rounded*(('1e'||scale::text)::numeric),2)=1 then rounded:=rounded-quantum;end if;
-  begin if rounded::double precision=abs(v) then exit;end if;exception when numeric_value_out_of_range then null;end;
+  scale:=precision-1-exponent;rounded:=round(exact_value,scale);quantum:=('1e'||(-scale)::text)::numeric;best:=null;best_distance:=null;
+  foreach candidate in array array[rounded,rounded-quantum,rounded+quantum] loop
+   if candidate<=0 then continue;end if;
+   begin
+    if candidate::double precision=abs(v) then
+     distance:=abs(candidate-exact_value);
+     if best is null or distance<best_distance or (distance=best_distance and mod(candidate*(('1e'||scale::text)::numeric),2)=0 and mod(best*(('1e'||scale::text)::numeric),2)<>0) then
+      best:=candidate;best_distance:=distance;
+     end if;
+    end if;
+   exception when numeric_value_out_of_range then null;end;
+  end loop;
+  if best is not null then rounded:=best;exit;end if;
  end loop;
+ if best is null then return null;end if;
  t:=rounded::text;point:=position('.' in t);if point=0 then point:=length(t)+1;end if;
  digits:=replace(t,'.','');zero_count:=length(digits)-length(ltrim(digits,'0'));digits:=rtrim(ltrim(digits,'0'),'0');exponent:=point-zero_count-2;
  if exponent between -5 and 15 then result:=case when position('.' in t)>0 then rtrim(rtrim(t,'0'),'.') else t end;
@@ -43,7 +55,7 @@ exception when invalid_text_representation or numeric_value_out_of_range then re
 end$$;
 create function private.study_advanced_config_valid(p_config jsonb) returns boolean
 language plpgsql immutable set search_path='' as $$
-declare x jsonb;row jsonb;v jsonb;seen text[]:='{}';n integer;low double precision;high double precision;base double precision;kind text:=p_config->>'kind';
+declare x jsonb;row jsonb;v jsonb;seen text[]:='{}'::text[];n integer;low double precision;high double precision;base double precision;kind text:=p_config->>'kind';
 begin
  if octet_length(p_config::text)>262144 or p_config->>'schemaVersion' is distinct from 'lca.study-analysis-config.v2'
  or not private.study_text(p_config->'baselineRunId',36,'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
@@ -90,7 +102,7 @@ create table private.study_advanced_config (
  singleton boolean primary key default true check(singleton),revision bigint not null default 1 check(revision>0),
  sensitivity_enabled boolean not null default false,uncertainty_enabled boolean not null default false,report_enabled boolean not null default false,
  max_parameters integer check(max_parameters>0),max_samples bigint check(max_samples between 2 and 4294967295),qualification_evidence_ref text,
- check(not(sensitivity_enabled or uncertainty_enabled or report_enabled) or (max_parameters is not null and max_samples is not null and length(qualification_evidence_ref) between 1 and 2048))
+ check(not(sensitivity_enabled or uncertainty_enabled or report_enabled) or (max_parameters is not null and max_samples is not null and private.study_text(to_jsonb(qualification_evidence_ref),2048)))
 );
 insert into private.study_advanced_config(singleton) values(true);
 create table private.study_advanced_analyses (
@@ -110,7 +122,7 @@ create index study_advanced_analysis_study_idx on private.study_advanced_analyse
 create index study_advanced_analysis_actor_idx on private.study_advanced_analyses(requested_by);
 create index study_advanced_analysis_baseline_idx on private.study_advanced_analyses(study_id,baseline_run_id);
 create index study_advanced_analysis_snapshot_idx on private.study_advanced_analyses(study_id,source_snapshot_id);
-create index study_advanced_analysis_facts_idx on private.study_advanced_analyses(facts_artifact_id);
+create index study_advanced_analysis_facts_idx on private.study_advanced_analyses(study_id,facts_artifact_id);
 create function private.study_advanced_immutable() returns trigger language plpgsql set search_path='' as $$begin
  if tg_op='DELETE' or (to_jsonb(old)-'facts_artifact_id') is distinct from (to_jsonb(new)-'facts_artifact_id') or old.facts_artifact_id is not null then raise exception 'FROZEN_REVISION';end if;return new;
 end$$;
@@ -495,9 +507,10 @@ create table private.study_report_advanced_analyses (
  foreign key(study_id,analysis_id) references private.study_advanced_analyses(study_id,id)
 );
 create index study_report_advanced_analysis_idx on private.study_report_advanced_analyses(study_id,analysis_id);
+create index study_report_advanced_report_idx on private.study_report_advanced_analyses(study_id,report_id);
 create trigger study_report_advanced_analyses_immutable before update or delete on private.study_report_advanced_analyses for each row execute function private.study_report_immutable();
 create function private.study_report_advanced_rights(p_study uuid,p_runs jsonb,p_analyses jsonb,p_actor uuid,p_client text) returns jsonb
-language plpgsql security definer set search_path='' as $$declare aid text;a private.study_advanced_analyses%rowtype;refs jsonb:='[]';begin
+language plpgsql security definer set search_path='' as $$declare aid text;a private.study_advanced_analyses%rowtype;refs jsonb:='[]'::jsonb;begin
  perform private.study_authorize(p_study,p_actor,p_client,'read');perform private.study_require(private.study_report_ids(p_runs,1,1) and private.study_report_ids(p_analyses,1,2),'INVALID_REQUEST');
  perform private.study_advanced_rights(p_study,(p_runs->>0)::uuid,p_actor,p_client);
  for aid in select jsonb_array_elements_text(p_analyses) loop
@@ -702,7 +715,6 @@ create or replace function "api"."svc_study_report_advanced_intent_consume_v1"("
     SET "search_path" TO ''
     AS $_$
 declare i private.study_report_intents%rowtype;r private.study_report_revisions%rowtype;refs jsonb;contentref jsonb;artifact uuid;result jsonb;validation jsonb;claimcount integer;
- manifest jsonb;receipt jsonb;profile jsonb;projection uuid;resources uuid;bundle uuid;record jsonb;validity jsonb;
 begin
  perform private.study_require(coalesce(util.is_service_request(),false),'FORBIDDEN');
  i:=private.study_report_advanced_intent_check(p_intent_id);
@@ -1088,7 +1100,7 @@ end$$;
 create function private.study_advanced_list(p_request jsonb) returns jsonb
 language plpgsql security definer set search_path='' as $$
 declare sid uuid:=(p_request->>'studyId')::uuid;actor uuid:=auth.uid();client text:=nullif(auth.jwt()->>'client_id','');kind text:=p_request->>'kind';lim integer;
- selection jsonb;cur private.study_cursors%rowtype;afterid uuid;ids uuid[];resourceid uuid;items jsonb:='[]';v jsonb;nextid uuid;more boolean;epoch text;a private.study_advanced_analyses%rowtype;r private.study_report_revisions%rowtype;
+ selection jsonb;cur private.study_cursors%rowtype;afterid uuid;ids uuid[];resourceid uuid;items jsonb:='[]'::jsonb;v jsonb;nextid uuid;more boolean;epoch text;a private.study_advanced_analyses%rowtype;r private.study_report_revisions%rowtype;
 begin
  perform private.study_advanced_envelope(p_request,false);
  perform private.study_require(private.study_keys(p_request,array['schemaVersion','requestId','operation','studyId','kind','limit','cursor']) and kind in ('analysis','reportRevision')
@@ -1124,7 +1136,7 @@ language plpgsql security definer set search_path='' as $$begin
 exception when raise_exception then return jsonb_build_object('ok',false,'code',sqlerrm);end$$;
 create function api.qry_study_advanced_v1(p_request jsonb) returns jsonb
 language plpgsql security definer set search_path='' as $$declare actor uuid:=auth.uid();client text:=nullif(auth.jwt()->>'client_id','');a private.study_advanced_analyses%rowtype;r private.study_report_revisions%rowtype;
- cfg private.study_advanced_config%rowtype;ops jsonb;profiles jsonb:='[]';begin
+ cfg private.study_advanced_config%rowtype;ops jsonb;profiles jsonb:='[]'::jsonb;begin
  perform private.study_advanced_envelope(p_request,false);perform private.study_require(private.study_client_allowed(client,'STUDY-READ-01'),'FORBIDDEN');
  case p_request->>'operation'
  when 'capability.read' then

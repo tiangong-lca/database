@@ -33,7 +33,7 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-04
-lastReviewedCommit: ae9ef85d1adb77f6bb8213d89a58675b234cff76
+lastReviewedCommit: 4a9e81ac8e648aefb16091148a44c17c76edf2b9
 lastReviewedNote: "Database #909: reviewed explicit V5 advanced analysis/report/review families, exact baseline/source/lease and minimal cancellation boundaries, default-off qualification, owned upgrade/race/HTTP/generation workflow and old-family compatibility. Branch, hosted enablement, actual-byte/scientific qualification and root integration authority remain separate."
 related:
   - ../../AGENTS.md
@@ -187,7 +187,9 @@ gate off with no accounts/client grants or advanced records.
 
 Compare the immutable Worker serialization/config vectors in
 `supabase/tests/fixtures/study909_worker_goldens.json`; retain independently
-source-bound broader IEEE corpus receipts when the verifier changes. Refresh all
+source-bound broader IEEE corpus receipts when the verifier changes. The committed
+16,362 binary/decimal powers and immediate-neighbor vectors remain part of CI.
+Refresh all
 five generated schema views plus public/api Data API types twice from the final
 blank owned state, require zero second-run drift, and run advisors/lint and Docpact.
 P4 source delivery, hosted enablement and exact root integration are separate.

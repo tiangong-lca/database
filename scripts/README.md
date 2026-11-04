@@ -21,7 +21,7 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-04
-lastReviewedCommit: ae9ef85d1adb77f6bb8213d89a58675b234cff76
+lastReviewedCommit: 4a9e81ac8e648aefb16091148a44c17c76edf2b9
 lastReviewedNote: "Database #909: reviewed explicit V5 advanced analysis/report/review families, exact baseline/source/lease and minimal cancellation boundaries, default-off qualification, owned upgrade/race/HTTP/generation workflow and old-family compatibility. Branch, hosted enablement, actual-byte/scientific qualification and root integration authority remain separate."
 related:
   - ../AGENTS.md
@@ -732,6 +732,12 @@ python3 -B supabase/tests/regression/20261104_study_advanced_transport.py \
 
 Set `SUPABASE_CLI` to the pinned underlying executable when it is outside PATH.
 Race/HTTP runners retain exact synthetic fixtures and cannot reset/drop a project.
+For schema export, `build_schema_workspace.py` has no workdir option: pass
+`--environment local --db-url <verified-study909-db-url> --schemas public api
+private util archive` explicitly. Its bare `--environment local` targets the
+repository project and is not an isolated-study909 export. Generate public/api
+types with the CLI's explicit `--local --workdir <owned-study909>` and preserve
+`rstrip()` plus one trailing newline as described below.
 After preserving receipts, dispose the owned namespace explicitly and blank-reset
 before schema generation. Release the exact owned group through the workspace
 resource workflow, retaining a cleanup receipt. No hosted, native/Storage-byte or

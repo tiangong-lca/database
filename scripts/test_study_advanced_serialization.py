@@ -18,18 +18,23 @@ def main():
     fixture=ROOT/'supabase/tests/fixtures/study909_worker_goldens.json'
     data=json.loads(fixture.read_text())
     canonical=[row['canonical'] for row in data['numericBoundaryVectors']]
+    powers_path=fixture.parent/data['powerNeighborFixture']
+    assert hashlib.sha256(powers_path.read_bytes()).hexdigest()==data['powerNeighborFixtureSha256']
+    powers=json.loads(powers_path.read_text())
+    power_values=[row['canonical'] for row in powers]
     aliases=[row['input'] for row in data['numericBoundaryVectors'] if 'input' in row and row['input']!=row['canonical']]
     started=time.monotonic()
     statement='''select jsonb_build_object(
  'allCanonicalNumbersMatch',not exists(select 1 from jsonb_array_elements_text(%s)v where private.study_advanced_number(to_jsonb(v)) is distinct from v),
+ 'allPowerNeighborsMatch',not exists(select 1 from jsonb_array_elements_text(%s)v where private.study_advanced_number(to_jsonb(v)) is distinct from v),
  'allAliasesRejected',not exists(select 1 from jsonb_array_elements_text(%s)v where private.study_advanced_number(to_jsonb(v)) is not null),
  'allConfigsValid',not exists(select 1 from jsonb_array_elements(%s)c where not private.study_advanced_config_valid(c->'config')),
  'allConfigHashesMatch',not exists(select 1 from jsonb_array_elements(%s)c where private.study_advanced_config_hash(c->'config') is distinct from c->>'configHash'));
-'''%(sql_json(canonical),sql_json(aliases),sql_json(data['configs']),sql_json(data['configs']))
+'''%(sql_json(canonical),sql_json(power_values),sql_json(aliases),sql_json(data['configs']),sql_json(data['configs']))
     proof=json.loads(sql(statement))
     assert all(value is True for value in proof.values()),proof
     args.report.write_text(json.dumps({'schemaVersion':'lca.study-advanced-serialization-receipt.v1','project':'study909','workerCommit':data['workerCommit'],
-        'fixtureSha256':hashlib.sha256(fixture.read_bytes()).hexdigest(),'numericBoundaryCount':len(canonical),'aliasCount':len(aliases),'configCount':len(data['configs']),
+        'fixtureSha256':hashlib.sha256(fixture.read_bytes()).hexdigest(),'numericBoundaryCount':len(canonical),'powerNeighborCount':len(power_values),'powerNeighborFixtureSha256':data['powerNeighborFixtureSha256'],'aliasCount':len(aliases),'configCount':len(data['configs']),
         'proof':proof,'elapsedMillis':round((time.monotonic()-started)*1000),'classification':'exact owner serialization/config identity; no numerical algorithm or capacity qualification'},indent=2)+'\n')
     print('Exact Worker numerical spelling and configuration goldens match PG17; aliases rejected.')
 

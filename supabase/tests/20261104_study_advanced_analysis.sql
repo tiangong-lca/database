@@ -27,6 +27,9 @@ select ok(private.study_advanced_config_valid(jsonb_set(pg_temp.advanced_config(
 select ok(not private.study_advanced_config_valid(jsonb_set(pg_temp.advanced_config(true),'{design}','{"kind":"jointEmpirical","rows":[["8"]]}')),'empirical support bounded by each parameter');
 select ok(not private.study_advanced_config_valid(jsonb_set(pg_temp.advanced_config(true),'{design}','{"kind":"jointEmpirical","rows":[["9","11"]]}')),'empirical width exact');
 select is(private.study_advanced_number('"1e23"'),'1e23','owner Ryu value accepted at PG shortest discrepancy');
+select is(private.study_advanced_number('"7.120236347223045e-307"'),'7.120236347223045e-307','asymmetric binary power interval accepts owner adjacent shortest coefficient');
+select is(private.study_advanced_number('"5.960464477539063e-8"'),'5.960464477539063e-8','binary power neighbor handles shorter upward roundtrip');
+select is(private.study_advanced_number('"5.684341886080802e-14"'),'5.684341886080802e-14','small binary power neighbor remains exact Worker spelling');
 select is(private.study_advanced_number('"9.999999999999999e22"'),null::text,'alternate PG shortest spelling rejected');
 select is(private.study_advanced_config_hash('{"kind":"sensitivityOat","schemaVersion":"lca.study-analysis-config.v2","baselineRunId":"10000000-0000-4000-8000-000000000010","parameters":[{"path":"/instances/a/exchanges/e/amount","unit":"kg","baselineAmount":"10","low":"9","high":"11"}]}'),'b4223a3c658b034710ba3611b3f987651c2d80de2d9ada4dd881955721441609','config identity equals immutable Worker golden');
 select ok(not has_table_privilege('authenticated','private.study_advanced_analyses','SELECT') and not has_table_privilege('service_role','private.study_advanced_analyses','UPDATE'),'new raw actor/service relations closed');
@@ -38,6 +41,8 @@ select is((select count(*) from private.study_advanced_analyses),0::bigint,'no g
 select is(api.qry_study_advanced_v1(pg_temp.v5('capability.read'))->'data'->'analysisProfiles','[]'::jsonb,'disabled capabilities advertise no advanced profiles');
 select is(api.qry_study_review_v1(pg_temp.req('capability.read'))->'data'->>'contractVersion','4.0.0','legacy review capabilities retain version');
 select pg_temp.study894_claim(null,null,true);
+select is(api.svc_study_advanced_configure_v1(1,'{"sensitivityEnabled":true,"uncertaintyEnabled":true,"reportEnabled":true,"maxParameters":8,"maxSamples":128,"qualificationEvidenceRef":null}')->>'code','INVALID_REQUEST','SQL NULL cannot bypass required qualification evidence when enabling any advanced gate');
+select ok((select revision=1 and not sensitivity_enabled and not uncertainty_enabled and not report_enabled from private.study_advanced_config),'rejected null-evidence activation leaves default-off config unchanged');
 select is(api.svc_study_advanced_configure_v1(2,'{"sensitivityEnabled":true,"uncertaintyEnabled":true,"reportEnabled":true,"maxParameters":8,"maxSamples":128,"qualificationEvidenceRef":"isolated.sql-only"}')->>'code','REVISION_CONFLICT','config CAS checked');
 select ok((api.svc_study_advanced_configure_v1(1,'{"sensitivityEnabled":true,"uncertaintyEnabled":true,"reportEnabled":true,"maxParameters":8,"maxSamples":128,"qualificationEvidenceRef":"isolated.sql-only"}')->>'ok')::boolean,'explicit isolated qualification enables selected bounds');
 select pg_temp.study894_claim(2);
