@@ -19,9 +19,9 @@ checkPaths:
   - supabase/tests/regression/*study*.py
   - scripts/*study_runtime*.py
   - docs/agents/lca-study-runtime-contract.md
-lastReviewedAt: 2026-11-03
-lastReviewedCommit: 294f37366522e41a303860eb0badb29cae2375a5
-lastReviewedNote: "Database #904: reviewed independent v3 analysis/report/export persistence, exact source/lease/producer fences, default-off gates, isolated SQL/upgrade/concurrency proof and generated schema workflow. Hosted/runtime/signer qualification remains separate; no Production client grants change."
+lastReviewedAt: 2026-11-04
+lastReviewedCommit: 97b06712ac75f08eeeb886c41d7fdb4f19a6373f
+lastReviewedNote: "Database #906: reviewed exact V4 domain references, current Study/core and archived action availability, review/finalization/share replay, sole legacy-list filter and isolated upgrade/SQL/HTTP/concurrency/generated proof. Actual bytes, UI/CLI, hosted enablement and source integration remain separate."
 related:
   - ./lca-study-durable-contract.md
   - ./repo-validation.md
@@ -408,3 +408,138 @@ intent locks make that observation coherent with consumption. Revoked actor
 rights still deny every user read/consume; they do not erase the service's
 locator-free audit evidence. Denied/expired resolution alone never authorizes
 cleanup; uncertain bytes remain retained for a separately owned disposition.
+
+## P3 revision review, finalization and named summary disclosure
+
+Database #906 negotiates `lca.study-api.v4` through separate
+`cmd_study_review_v1` and `qry_study_review_v1` façades. Frozen reports,
+historical exports and signature meanings are unchanged. The sole legacy
+definition delta is `private.study_qry_core_v1(jsonb)`: `study.list` filters
+membership to owner/editor/viewer before ordering, limit and cursor selection.
+Reviewer-only memberships cannot hide another actor-owned Study or consume a
+page. Its existing per-resource read authorization, owner, ACL and settings
+remain unchanged; reviewer membership still grants no legacy raw/core read.
+V4 issued domain references retain their exact string identity. Before any UUID
+cast, lookup, receipt or effect, the V4 envelope requires canonical lowercase
+hyphenated UUID spelling for target/resource IDs, report/share/export/delegation/
+finalization/predecessor references and accepted review IDs, plus the nonnullable
+member/recipient UUID inputs already required by the owner wire schema. Direct
+PostgREST callers receive the same pre-effect enforcement as Edge callers.
+Nullable references
+remain nullable only where the contract permits. PostgreSQL UUID aliases such
+as uppercase or hyphenless spellings return `INVALID_REQUEST`; they are never
+lowercased or rewritten into another request identity. Transport request IDs,
+idempotency keys, client/profile identifiers and legacy V2/V3 semantics are not
+changed. Existing clients can preserve opaque IDs and surface this server
+validation without a codec revision.
+Cursor tokens retain their separate existing bounded-query contract.
+`study_review_config.enabled` defaults false. Its service-only CAS configuration
+requires `lca.study-review-qualification.v1` and an evidence reference; it grants
+no OAuth client a capability. The initial policies are explicit unreviewed and
+internal review. Independent review remains unavailable.
+
+Owner manages roles, finalizes and shares; editor comments and authors through
+the existing producer; reviewer comments and records decisions; viewer reads.
+Reviewer is a V4 resource role only: V2/V3 Study, source, Run, facts and raw
+artifact authority remains unchanged. Personal Studies admit only an explicit
+nonowner reviewer or removal of a nonowner grant; personal editor/viewer admission
+remains unavailable. Team grants still require live team membership. Owner
+self-demotion/removal is denied. `resource.actions.allowedMemberRoles` supplies
+the exact server policy (`reviewer` for a personal owner, all three nonowner roles
+for a team owner, empty without management authority); clients do not infer it.
+Comments are append-only and never approve.
+Study-target actions also return coarse `corePermissions.read/write`, derived
+by calling the existing `private.study_authorize` checks. Archived Studies have
+write=false. The fields distinguish existing owner/editor/viewer core authority
+without copying role policy or expanding V2 wire/authority. Reviewer and named
+recipient roles imply no core access; non-Study targets always return false/false.
+Read-only OAuth cannot advertise write, and revoked clients retain the existing
+whole-request denial. These flags authorize no particular source, revision,
+target, artifact or producer qualification; actual commands keep all checks.
+Archived Studies advertise no fresh V4 mutations on Study, report or share
+targets, and offer no member-role changes. Permitted read/list/view/download
+actions retain their existing authorization. This matches the unchanged common
+active-Study guard on new commands; it grants no new write or revoke exception.
+Explicit share/delegation revoke can skip report-byte disclosure while the Study
+is active; review decisions, including withdrawal, still require disclosure.
+Substantive `approve`, `reject` and `withdraw` decisions bind exact frozen report
+ID/hash, actor, class and predecessor. One head per actor/class prevents forks;
+at most64 heads keep accepted evidence renderable. A new report ID inherits no
+approvals, even if its bytes are identical. Withdrawal cannot start a chain:
+both direct decisions and withdrawal delegation issuance require a current
+substantive head and its exact predecessor identity.
+
+First-party decisions are labelled `first_party_actor`, without inferred human
+or independent certification. An OAuth decision requires a first-party grant
+issued by that same reviewer for the exact client/report/hash/class/decision and
+predecessor, expiring within15 minutes. Grant consumption and decision append are
+atomic. Expiry gates unconsumed admission; a consumed grant remains historical
+evidence. Explicit grant revocation, current reviewer/team membership and enabled
+client capability govern current acceptance. Trusted client identity participates
+in command receipt identity; changing transport `requestId` alone does not.
+Receipt storage preserves the original immutable outcome and identity. A replay
+freshly projects current `state` beside the original review/finalization value;
+its latest finalization may differ from that historical outcome. Share values
+hydrate current revoked/expired/invalidated status, and delegation values hydrate
+current consumption/revocation. A cached commit observation never masquerades as
+current acceptance or an active share.
+
+Finalization stores a separate immutable record with frozen report CAS/hash,
+profile, expected current review-state hash and exact selected review IDs. It
+never changes frozen report rows. `currentReviewIds` are all heads;
+`acceptedReviewIds` are current eligible approving heads from nonauthor reviewers,
+so the owner can select qualified evidence without reconstructing authorization.
+The finalization's accepted IDs are its historical chosen subset. Internal
+acceptance additionally requires the complete current state hash to match;
+withdrawal, role/client changes or head changes invalidate current acceptance
+without erasing the historical record. An explicit later finalization may select
+new evidence. Unreviewed finalization always accepts an empty set. Scientific
+validity remains a separate persisted Run observation, never a new check on read.
+
+Summary projection authority is explicit. The current Study owner must retain
+actual complete P2 source rights and own every captured private source. Public
+captured sources remain subject to current historical-byte visibility rules.
+Borrowed private-source read permission never becomes redistribution authority.
+This policy can deny reviewer projection for editor-private material that the
+owner cannot disclose. A reviewer obtains only a bounded report view, generated
+by Edge from a service-only owner/source context; raw producer capabilities never
+reach the actor response.
+
+V4 exports bind immutable finalization, accepted IDs and actual projection bytes
+in `lca.study-export-manifest.v2`; the retained signature domain and receipt v2
+are unchanged. Bundle schema is `lca.study-export-bundle.v2`. Every service
+consume checks exact preallocated artifact IDs, hashes/sizes, canonical manifest,
+detached receipt metadata and current rights before atomic registration. SQL
+trusts only the authenticated Edge producer for cryptographic validation.
+`export.download` uses the same live owner/export/source authority as
+`export.read` and returns a narrow exact persisted-bundle intent. Its
+`exportDownload` response contains the original export record and verified bytes;
+it never routes through V3 artifact access or a self-share. Historical selected
+review IDs remain historical even when current acceptance changes.
+
+Named UUID shares bind exact export/report/projection/bundle, finalization,
+recipient, issuer/client, grant epoch, disclosure identity, expiry and revoke
+state. A recipient gains no Study role. First-party and valid OAuth recipient
+contexts use the same narrow share; issuer and original export client authority
+remain live. Metadata retains revoked/expired/invalidated status, while view and
+download fail closed. Anonymous and foreign actors receive no share access.
+Immutable signed view snapshots remain historical; online current state is
+returned separately.
+
+All V4 changes acquire Study before dependent records; the retained P2 exact
+source-row locks use stable ordering and NOWAIT before durable evidence commits.
+Source lock contention returns `CAPABILITY_UNAVAILABLE`. Current role, team,
+client, source and share checks precede receipt recovery and repeat around
+Storage I/O through two-minute opaque `studyReviewIntent` capabilities. There
+are at most64 outstanding intents per actor. Resolver timestamps are pinned to
+the intent for repeatable context comparison; scientific check time remains its
+persisted observation. Histories use actor/client/selection/access-bound opaque
+cursors with a100-row maximum. No locator or raw relation becomes actor-readable.
+Report share actions use the same original export client's live
+`STUDY-WRITE-01` predicate as `share.create`. A revoked client's sole export
+cannot advertise that action; a fresh eligible export can restore it.
+
+The owned study906 suites prove actual SQL/RLS/PostgREST and observed transaction
+fences with synthetic content/facts/signatures. They do not prove GoTrue OAuth
+consent, real Storage bytes, signer/renderer correctness, installed CLI or UI
+acceptance, hosted enablement or workspace integration.

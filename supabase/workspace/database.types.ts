@@ -724,6 +724,7 @@ export type Database = {
         Returns: Json
       }
       cmd_study_reporting_v1: { Args: { p_request: Json }; Returns: Json }
+      cmd_study_review_v1: { Args: { p_request: Json }; Returns: Json }
       cmd_study_v1: { Args: { p_request: Json }; Returns: Json }
       cmd_system_change_member_role: {
         Args: {
@@ -2925,6 +2926,7 @@ export type Database = {
         Returns: Json
       }
       qry_study_reporting_v1: { Args: { p_request: Json }; Returns: Json }
+      qry_study_review_v1: { Args: { p_request: Json }; Returns: Json }
       qry_study_v1: { Args: { p_request: Json }; Returns: Json }
       qry_system_find_member_candidate_by_email: {
         Args: { p_email: string }
@@ -3926,6 +3928,18 @@ export type Database = {
       }
       svc_study_reporting_configure_v1: {
         Args: { p_configuration: Json; p_expected_revision: number }
+        Returns: Json
+      }
+      svc_study_review_configure_v1: {
+        Args: { p_configuration: Json; p_expected_revision: number }
+        Returns: Json
+      }
+      svc_study_review_intent_consume_v1: {
+        Args: { p_completion: Json; p_intent_id: string }
+        Returns: Json
+      }
+      svc_study_review_intent_resolve_v1: {
+        Args: { p_intent_id: string }
         Returns: Json
       }
       svc_study_revision_freeze_consume_v1: {

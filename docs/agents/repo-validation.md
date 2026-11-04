@@ -32,9 +32,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-03
-lastReviewedCommit: 294f37366522e41a303860eb0badb29cae2375a5
-lastReviewedNote: "Database #904: reviewed independent v3 analysis/report/export persistence, exact source/lease/producer fences, default-off gates, isolated SQL/upgrade/concurrency proof and generated schema workflow. Hosted/runtime/signer qualification remains separate; no Production client grants change."
+lastReviewedAt: 2026-11-04
+lastReviewedCommit: 97b06712ac75f08eeeb886c41d7fdb4f19a6373f
+lastReviewedNote: "Database #906: reviewed exact V4 domain references, current Study/core and archived action availability, review/finalization/share replay, sole legacy-list filter and isolated upgrade/SQL/HTTP/concurrency/generated proof. Actual bytes, UI/CLI, hosted enablement and source integration remain separate."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -136,6 +136,86 @@ trusted source/Worker evidence with real canonical jobs and lease tokens; they
 do not qualify actual exports, licensing, artifact bytes, solver execution or
 disclosure. W06 must add those real actor/queue/Worker/storage/transport proofs
 before producer or artifact operations are advertised.
+
+## Study P3 review/finalization/named sharing (Database #906)
+
+Retain the ordinary blank PG17 migration-ledger baseline and every P1/P2 suite.
+Add `supabase/tests/20261103_study_review_finalization_sharing.sql`:201 assertions
+cover reviewer isolation, comments without approval, exact heads/replays,
+self-approval exclusion, role/team/client changes, one-use grants and expiry,
+immutable finalization, manifest v2, named recipient projection/download and
+revocation during resolution. Synthetic facts/content/signatures prove only SQL
+binding and authorization. Actual byte and UI/installed CLI proof belongs to the
+coordinated P3 consumer qualification.
+The suite includes personal reviewer-only admission, server-derived member-role
+policy, owner bundle download and replaying immutable outcomes beside current
+acceptance/share/delegation metadata. Current state may refer to a later
+finalization than the original command outcome.
+It rejects first withdrawal and withdrawal grants without a substantive head,
+proves mixed owner/reviewer legacy lists before pagination/cursors while keeping
+explicit reviewer reads denied, and compares share actions against current
+original export client authority and fresh-export recovery.
+Coarse Study core permissions exercise existing owner/editor/viewer authority,
+reviewer/recipient isolation, read-only OAuth, archived write denial and live
+team/member/client revocation. Non-Study targets are false/false; revoked clients
+retain whole-request denial. These metadata checks do not replace any command or
+source-specific authorization test.
+Archived Study/report/share actions suppress fresh mutations and member-role
+choices, preserve permitted reads/lists/views, and match actual unchanged-command
+`FROZEN_REVISION` rejection. No write or revoke exception is introduced.
+Twenty-four uppercase/hyphenless domain/member/recipient UUID cases reject before effects,
+receipts or intents, including grant consumption/revocation and review-head
+changes. Canonical issued references and case-sensitive opaque transport/key
+recovery remain unchanged. The HTTP runner independently compares affected
+member/review/grant/share state before and after the alias cases. A separate
+consumed-codec negative receipt demonstrates the old canonicalized-success
+response mismatch and acceptance of the pre-effect `INVALID_REQUEST` outcome.
+Member/recipient direct-RPC probes use existing synthetic Auth targets; recipient
+probes also bind a fresh otherwise eligible export. They create no member grant,
+named share, receipt or intent. The unchanged codec already rejects these user
+UUID aliases before Edge dispatch, so no client shape or pin change is needed.
+
+Use `scripts/prepare_study_review_project.py --destination <new-owned-dir>/study906`
+with pinned CLI2.117.0. This creates a separate PG17 project on API56621/DB56622
+and an ownership receipt. It never changes or operates the retained P2 study894
+project. Start only that project and keep startup keys in private logs.
+`STUDY_REVIEW_ALLOW_RESET=owned-study906` permits
+`scripts/test_study_review_upgrade.py --workdir <owned-study906> --report <new-json>`
+to prove populated predecessor `20261103110002`, unchanged prior rows/authority/
+manifest/configuration and an exact blank candidate ledger with all
+P1/P2/P3 gates off. Existing P2 upgrade qualification still examines its exact
+pair, then rebuilds the complete current candidate including later migrations.
+The only prior routine definition allowed to change is
+`private.study_qry_core_v1(jsonb)`, with precisely the owner/editor/viewer
+membership filter before its legacy list limit/cursor. The runner compares that
+exact replacement and proves every prior routine's ACL, owner and settings
+unchanged, with no other definition delta.
+
+On that blank owned project run
+`supabase/tests/regression/20261103_study_review_concurrency.py --workdir
+<owned-study906> --report <new-json>`, followed by
+`supabase/tests/regression/20261103_study_review_transport.py --workdir
+<owned-study906> --race-receipt <race-json> --report <new-json>`.
+Both are Python3 entrypoints; transport also requires `SUPABASE_CLI` to identify
+the pinned underlying executable. Ten real independent-session races observe
+advisory/domain waits and actual row contention for heads, receipt retry,
+finalization/withdrawal, role demotion, grant consumption/revoke and share revoke;
+the source-ownership withdrawal case observes the NOWAIT rejection instead of a
+wait. The transport runner makes130 actual PostgREST assertions with signed local
+fixture claims and no credential/raw-error logging. It proves neither GoTrue
+login/consent nor deployed Edge/Storage byte behavior.
+The archive/action race uses the unchanged V2 archive command and observes the
+waiting V4 action query exclude fresh mutations after commit. Its synthetic
+Study is restored only by explicit owned-fixture administration for the HTTP
+suite; no product unarchive operation is claimed.
+
+Runners retain synthetic fixtures for explicit owner reset. Reset only owned
+study906 before deterministic generation and verify empty actors/clients and
+default-off gates. Run local security/performance advisors and lint, distinguish
+preexisting findings from the new review surface, and regenerate five-schema
+workspace plus public/api types twice without drift. The dedicated CI job
+retains bounded receipts and removes only its labelled study906 containers,
+volumes and network. Record an exact local cleanup receipt too.
 
 ## Study P2 analysis/report/export (Database #904)
 

@@ -55,7 +55,9 @@ def main():
     assert cli
     assert subprocess.check_output([cli,'--version'],text=True).strip() == '2.117.0'
     source_migrations = ROOT/'supabase/migrations'
-    assert resolve_migration_head(source_migrations) == MIGRATIONS[-1].split('_')[0]
+    # Qualify this exact P2 pair; later additive phases are included only in the
+    # final blank candidate rebuild and must not make the retained proof stale.
+    assert all((source_migrations/name).is_file() for name in MIGRATIONS)
     migration_bytes=[(source_migrations/x).read_bytes() for x in MIGRATIONS]
     for path in source_migrations.glob('*.sql'):
         shutil.copy2(path,workdir/'supabase/migrations'/path.name)

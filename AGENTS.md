@@ -37,9 +37,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-03
-lastReviewedCommit: 294f37366522e41a303860eb0badb29cae2375a5
-lastReviewedNote: "Database #904: reviewed independent v3 analysis/report/export persistence, exact source/lease/producer fences, default-off gates, isolated SQL/upgrade/concurrency proof and generated schema workflow. Hosted/runtime/signer qualification remains separate; no Production client grants change."
+lastReviewedAt: 2026-11-04
+lastReviewedCommit: 97b06712ac75f08eeeb886c41d7fdb4f19a6373f
+lastReviewedNote: "Database #906: reviewed exact V4 domain references, current Study/core and archived action availability, review/finalization/share replay, sole legacy-list filter and isolated upgrade/SQL/HTTP/concurrency/generated proof. Actual bytes, UI/CLI, hosted enablement and source integration remain separate."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-validation.md
@@ -88,7 +88,7 @@ Additional governed source docs, not part of the default first-load surface:
 | --- | --- | --- |
 | `README.md` and `README.zh-CN.md` | repo landing context and high-level purpose | repo contract, proof bar, or branch-policy truth |
 | `docs/agents/lca-study-durable-contract.md` | Study identity, persistence, freeze, authorization, concurrency and report review/export/share invariants; P0 offline acceptance examples | Edge public wire schemas, numerical algorithms, or proof of implemented schema/runtime |
-| `docs/agents/lca-study-runtime-contract.md` | W03/W06 persistence and gated source/task/disclosure, P2 analysis/report/export producer intents, current authorization, receipts and lease fences | Worker numerical semantics, environment qualification, Edge wire ownership or report/publication authority |
+| `docs/agents/lca-study-runtime-contract.md` | W03/W06 persistence and source/task/disclosure; P2 producer intents; P3 review, finalization and named-summary-share authority; current authorization and immutable receipts | Worker numerical semantics, environment qualification, Edge wire ownership or formal publication authority |
 
 ## Load Order
 
