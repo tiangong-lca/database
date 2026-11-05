@@ -10968,10 +10968,23 @@ begin
    return private.lca_release_error('rollback_scope_mismatch',409,'Rollback must retain the exact historical Candidate and selection'); end if;
  if exists(select 1 from private.final_result_release_members m left join private.final_result_query_rows q
    on q.artifact_id=m.artifact_id and q.row_ordinal=m.row_ordinal and q.result_id=m.result_id and q.result_version=m.result_version
-   left join private.final_result_identities i on i.result_id=q.result_id and i.result_version=q.result_version and i.registration_id=q.registration_id
-     and i.content_hash=q.content_hash and i.registration_kind='registered'
-   where m.release_run_id=v_run.id and (q.result_id is null or i.result_id is null)) then
+   where m.release_run_id=v_run.id and q.result_id is null) then
    raise exception using errcode='55000',message='Final Result publication content identity changed'; end if;
+ -- Compare only published memberships, including superseded or withdrawn batches.
+ -- The publication lock also fences this check against a competing activation.
+ if exists(
+   select 1 from private.final_result_publication_bindings b
+   join private.lca_release_publications p on p.id=b.publication_id
+   join private.final_result_release_members historical on historical.release_run_id=p.release_run_id
+   join private.final_result_release_members selected on selected.release_run_id=v_run.id
+     and selected.result_id=historical.result_id and selected.result_version=historical.result_version
+   join private.final_result_query_rows prior_row on prior_row.artifact_id=historical.artifact_id and prior_row.row_ordinal=historical.row_ordinal
+   join private.final_result_query_rows selected_row on selected_row.artifact_id=selected.artifact_id and selected_row.row_ordinal=selected.row_ordinal
+   where prior_row.canonical_content_hash<>selected_row.canonical_content_hash
+ ) then
+   return private.lca_release_error('final_result_dataset_version_conflict',409,
+     'A published Result UUID and dataset version already have different content. Version the Result before rebuilding the Candidate.');
+ end if;
  if v_previous is not null then update private.lca_release_publications set is_current=false,status='superseded',superseded_at=v_now where id=v_previous; end if;
  insert into private.lca_release_publications(release_run_id,release_version,approval_id,approval_hash,publish_plan_hash,release_manifest_hash,
    artifact_set_hash,approved_by,executed_by,credential_fingerprint,idempotency_key,published_at,reason)
@@ -27083,8 +27096,6 @@ begin
  join private.final_result_release_members m on m.release_run_id=r.id and m.result_id=p_result_id and m.result_version=p_result_version
  join private.final_result_query_artifacts a on a.id=m.artifact_id
  join private.final_result_query_rows q on q.artifact_id=m.artifact_id and q.row_ordinal=m.row_ordinal and q.result_id=m.result_id and q.result_version=m.result_version
- join private.final_result_identities i on i.result_id=q.result_id and i.result_version=q.result_version and i.registration_id=q.registration_id
-   and i.content_hash=q.content_hash and i.registration_kind='registered'
  where p.publication_series_key='global' and p.publication_channel='public' and p.visibility_scope='public' and p.is_current and p.status='current'
    and (p_publication_id is null or p.id=p_publication_id);
  if v_data is null then return private.lca_release_error('published_result_not_available',404,'Exact Result is not in the current publication'); end if;
@@ -27174,8 +27185,6 @@ begin
     from private.final_result_release_members m join private.final_result_query_artifacts a on a.id=m.artifact_id
     join private.final_result_query_rows q on q.artifact_id=m.artifact_id and q.row_ordinal=m.row_ordinal
       and q.result_id=m.result_id and q.result_version=m.result_version
-    join private.final_result_identities i on i.result_id=q.result_id and i.result_version=q.result_version
-      and i.registration_id=q.registration_id and i.content_hash=q.content_hash and i.registration_kind='registered'
     where m.release_run_id=p_release_run_id and m.result_id=p_result_id and m.result_version=p_result_version;
   if v_data is null then return private.lca_release_error('final_result_probe_not_available',404,'Result is absent from the sealed publication selection'); end if;
   return jsonb_build_object('ok',true,'data',(v_context->'data')||v_data);
@@ -33684,8 +33693,6 @@ begin
        'contentHash',q.content_hash,'lciAvailable',true,'lciaAvailable',v_artifact.impact_count>0)
        into v_expected from private.final_result_release_members m join private.final_result_query_rows q
        on q.artifact_id=m.artifact_id and q.row_ordinal=m.row_ordinal and q.result_id=m.result_id and q.result_version=m.result_version
-       join private.final_result_identities i on i.result_id=q.result_id and i.result_version=q.result_version
-       and i.registration_id=q.registration_id and i.content_hash=q.content_hash and i.registration_kind='registered'
        where m.release_run_id=v_attempt.release_run_id and m.artifact_id=v_id and m.result_id=(v_probe#>>'{result,uuid}')::uuid and m.result_version=v_probe#>>'{result,version}';
      if v_expected is null or v_probe->>'schemaVersion' is distinct from 'tiangong.final-result-reader-probe.v1'
        or (v_probe-array['schemaVersion','startedAt','verifiedAt','lciNonzeroCount','lciPageCount','lciaCount','queryCount','observationsSha256']) is distinct from v_expected
@@ -34837,7 +34844,7 @@ begin
     or v_candidate#>>'{publicationCatalog,sha256}' is distinct from v_catalog_hash
     or v_candidate#>>'{validation,outcome}' is distinct from 'passed'
     or v_candidate#>>'{validation,finalResultParity}' is distinct from 'passed'
-    or v_candidate#>>'{validation,identityRegistration}' is distinct from 'verified'
+    or v_candidate#>>'{validation,finalInputBinding}' is distinct from 'verified'
     or v_candidate#>>'{validation,delegatedTo}' is distinct from 'tidas-tools'
     or jsonb_typeof(v_candidate#>'{validation,reportPath}') is distinct from 'string'
     or jsonb_typeof(v_candidate#>'{validation,archiveReadbackReportPath}') is distinct from 'string'
@@ -35001,12 +35008,11 @@ begin
     if (select count(*) from private.final_result_candidate_members m
       join private.final_result_candidate_artifacts a on a.candidate_hash=m.candidate_hash
       join private.final_result_query_rows r on r.artifact_id=a.artifact_id and r.result_id=m.dataset_id and r.result_version=m.dataset_version
-      join private.final_result_identities i on i.result_id=r.result_id and i.result_version=r.result_version
-        and i.registration_id=r.registration_id and i.content_hash=r.content_hash and i.canonical_content_hash=m.canonical_content_hash
-      where m.candidate_hash=v_hash and m.dataset_kind='process')<>v_results
+      where m.candidate_hash=v_hash and m.dataset_kind='process'
+        and r.canonical_content_hash=m.canonical_content_hash)<>v_results
       or (select count(distinct (r.result_id,r.result_version)) from private.final_result_candidate_artifacts a
         join private.final_result_query_rows r on r.artifact_id=a.artifact_id where a.candidate_hash=v_hash)<>v_results then
-      raise exception using errcode='22023',message='Final Result Candidate has mismatched or duplicated registered Results';
+      raise exception using errcode='22023',message='Final Result Candidate has mismatched or duplicated artifact Results';
     end if;
     for v_member in select value from jsonb_array_elements(v_catalog->'datasets') loop
       if (select count(distinct value) from jsonb_array_elements(v_member->'references'))<>jsonb_array_length(v_member->'references') then
@@ -35525,7 +35531,6 @@ declare
   v_names text[]; v_expected text[]; v_size bigint; v_total bigint:=0;
   v_count integer; v_impacts integer; v_ordinal integer; v_sources jsonb;
   v_existing private.final_result_query_artifacts%rowtype;
-  v_identity private.final_result_identities%rowtype;
   v_old private.final_result_query_rows%rowtype;
 begin
   if jsonb_typeof(p_artifact_ref) is distinct from 'object'
@@ -35617,7 +35622,8 @@ begin
     if (select count(*) from jsonb_object_keys(v_row))<>7
       or coalesce(v_row->>'uuid','') !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(v_row->>'version','') !~ '^[0-9]{2}\.[0-9]{2}\.[0-9]{3}$'
-      or coalesce(v_row->>'registrationId','') !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      or jsonb_typeof(v_row->'canonicalContentHash') is distinct from 'string'
+      or coalesce(v_row->>'canonicalContentHash','') !~ '^[0-9a-f]{64}$'
       or jsonb_typeof(v_row->'contentHash') is distinct from 'string'
       or coalesce(v_row->>'contentHash','') !~ '^[0-9a-f]{64}$'
       or coalesce(v_row->>'relationKind','') not in ('direct','derived')
@@ -35645,15 +35651,8 @@ begin
       raise exception using errcode='22023',message='Duplicate final Result query source identity';
     end if;
     v_row:=jsonb_set(v_row,'{sources}',v_sources);
-    select * into v_identity from private.final_result_identities
-      where result_id=(v_row->>'uuid')::uuid and result_version=v_row->>'version';
-    if not found or v_identity.registration_kind<>'registered'
-      or v_identity.registration_id<>(v_row->>'registrationId')::uuid
-      or v_identity.content_hash<>v_row->>'contentHash' then
-      raise exception using errcode='22023',message='Final Result query row has no matching registered content';
-    end if;
     select * into v_old from private.final_result_query_rows
-      where artifact_id=v_id and (row_ordinal=v_ordinal or (result_id=v_identity.result_id and result_version=v_identity.result_version));
+      where artifact_id=v_id and (row_ordinal=v_ordinal or (result_id=(v_row->>'uuid')::uuid and result_version=(v_row->>'version')));
     if found then
       if v_old.row_data<>v_row then
         raise exception using errcode='23505',message='Final Result query row identity conflict';
@@ -35662,8 +35661,8 @@ begin
       if exists(select 1 from private.final_result_query_seals where artifact_id=v_id) then
         raise exception using errcode='55000',message='Sealed final Result query rows are immutable';
       end if;
-      insert into private.final_result_query_rows values(v_id,v_ordinal,v_identity.result_id,v_identity.result_version,
-        v_identity.registration_id,v_identity.content_hash,v_row->>'relationKind',v_row,private.final_result_query_row_hash(v_row));
+      insert into private.final_result_query_rows(artifact_id,row_ordinal,result_id,result_version,canonical_content_hash,content_hash,relation_kind,row_data,row_hash) values(v_id,v_ordinal,(v_row->>'uuid')::uuid,(v_row->>'version'),
+        v_row->>'canonicalContentHash',v_row->>'contentHash',v_row->>'relationKind',v_row,private.final_result_query_row_hash(v_row));
       insert into private.final_result_query_sources
         select v_id,v_ordinal,(value->>'uuid')::uuid,value->>'version' from jsonb_array_elements(v_sources);
     end if;
@@ -69069,9 +69068,9 @@ CREATE OR REPLACE FUNCTION "private"."final_result_query_row_hash"("p_row" "json
     SET "search_path" TO ''
     AS $$
   select encode(extensions.digest(convert_to(
-    'tiangong.final-result-row.v1' || E'\n' || (p_row->>'ordinal') || E'\n'
+    'tiangong.final-result-row.v2' || E'\n' || (p_row->>'ordinal') || E'\n'
     || (p_row->>'uuid') || E'\n' || (p_row->>'version') || E'\n'
-    || (p_row->>'registrationId') || E'\n' || (p_row->>'contentHash') || E'\n'
+    || (p_row->>'canonicalContentHash') || E'\n' || (p_row->>'contentHash') || E'\n'
     || (p_row->>'relationKind') || E'\n'
     || (select string_agg((value->>'uuid') || '@' || (value->>'version') || E'\n',''
         order by (value->>'uuid') collate "C",(value->>'version') collate "C")
@@ -107892,11 +107891,12 @@ CREATE TABLE IF NOT EXISTS "private"."final_result_query_rows" (
     "row_ordinal" integer NOT NULL,
     "result_id" "uuid" NOT NULL,
     "result_version" "text" NOT NULL,
-    "registration_id" "uuid" NOT NULL,
     "content_hash" "text" NOT NULL,
     "relation_kind" "text" NOT NULL,
     "row_data" "jsonb" NOT NULL,
     "row_hash" "text" NOT NULL,
+    "canonical_content_hash" "text" NOT NULL,
+    CONSTRAINT "final_result_query_rows_canonical_content_hash_check" CHECK (("canonical_content_hash" ~ '^[0-9a-f]{64}$'::"text")),
     CONSTRAINT "final_result_query_rows_content_hash_check" CHECK (("content_hash" ~ '^[0-9a-f]{64}$'::"text")),
     CONSTRAINT "final_result_query_rows_relation_kind_check" CHECK (("relation_kind" = ANY (ARRAY['direct'::"text", 'derived'::"text"]))),
     CONSTRAINT "final_result_query_rows_row_hash_check" CHECK (("row_hash" ~ '^[0-9a-f]{64}$'::"text")),
@@ -115697,16 +115697,6 @@ ALTER TABLE ONLY "private"."final_result_publication_bindings"
 
 ALTER TABLE ONLY "private"."final_result_query_rows"
     ADD CONSTRAINT "final_result_query_rows_artifact_id_fkey" FOREIGN KEY ("artifact_id") REFERENCES "private"."final_result_query_artifacts"("id");
-
-
-
-ALTER TABLE ONLY "private"."final_result_query_rows"
-    ADD CONSTRAINT "final_result_query_rows_registration_id_fkey" FOREIGN KEY ("registration_id") REFERENCES "private"."final_result_identities"("registration_id");
-
-
-
-ALTER TABLE ONLY "private"."final_result_query_rows"
-    ADD CONSTRAINT "final_result_query_rows_result_id_result_version_fkey" FOREIGN KEY ("result_id", "result_version") REFERENCES "private"."final_result_identities"("result_id", "result_version");
 
 
 

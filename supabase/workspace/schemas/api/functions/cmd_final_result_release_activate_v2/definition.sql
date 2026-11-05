@@ -56,10 +56,23 @@ begin
    return private.lca_release_error('rollback_scope_mismatch',409,'Rollback must retain the exact historical Candidate and selection'); end if;
  if exists(select 1 from private.final_result_release_members m left join private.final_result_query_rows q
    on q.artifact_id=m.artifact_id and q.row_ordinal=m.row_ordinal and q.result_id=m.result_id and q.result_version=m.result_version
-   left join private.final_result_identities i on i.result_id=q.result_id and i.result_version=q.result_version and i.registration_id=q.registration_id
-     and i.content_hash=q.content_hash and i.registration_kind='registered'
-   where m.release_run_id=v_run.id and (q.result_id is null or i.result_id is null)) then
+   where m.release_run_id=v_run.id and q.result_id is null) then
    raise exception using errcode='55000',message='Final Result publication content identity changed'; end if;
+ -- Compare only published memberships, including superseded or withdrawn batches.
+ -- The publication lock also fences this check against a competing activation.
+ if exists(
+   select 1 from private.final_result_publication_bindings b
+   join private.lca_release_publications p on p.id=b.publication_id
+   join private.final_result_release_members historical on historical.release_run_id=p.release_run_id
+   join private.final_result_release_members selected on selected.release_run_id=v_run.id
+     and selected.result_id=historical.result_id and selected.result_version=historical.result_version
+   join private.final_result_query_rows prior_row on prior_row.artifact_id=historical.artifact_id and prior_row.row_ordinal=historical.row_ordinal
+   join private.final_result_query_rows selected_row on selected_row.artifact_id=selected.artifact_id and selected_row.row_ordinal=selected.row_ordinal
+   where prior_row.canonical_content_hash<>selected_row.canonical_content_hash
+ ) then
+   return private.lca_release_error('final_result_dataset_version_conflict',409,
+     'A published Result UUID and dataset version already have different content. Version the Result before rebuilding the Candidate.');
+ end if;
  if v_previous is not null then update private.lca_release_publications set is_current=false,status='superseded',superseded_at=v_now where id=v_previous; end if;
  insert into private.lca_release_publications(release_run_id,release_version,approval_id,approval_hash,publish_plan_hash,release_manifest_hash,
    artifact_set_hash,approved_by,executed_by,credential_fingerprint,idempotency_key,published_at,reason)

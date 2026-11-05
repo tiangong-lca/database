@@ -32,9 +32,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-04
-lastReviewedCommit: d95848a3859834cf4abe143dde3111ce71e968ce
-lastReviewedNote: "Database #912: reviewed separate V6 method/evidence/report families, exact baseline and selected-factor budgets, declared evidence without professional approval, original preview/export requests, default-off authority and owned upgrade/race/HTTP/Unicode/schema proof. Actual native/byte/scientific qualification and Main/root delivery remain separate."
+lastReviewedAt: 2026-11-05
+lastReviewedCommit: a7a0df261ef37b59ee2e881b816e194c67aa3dd6
+lastReviewedNote: "Database #916: reviewed artifact-scoped final Result query bindings and isolated schema generation."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -603,6 +603,21 @@ readiness. Verify all existing rows and ACL/owner/configuration facts, exactly s
 legacy dispatch changes, restored role/schema authority and continued v1 reads.
 Finish with a blank rebuild and two identical schema/type exports. These local
 synthetic tests do not authorize hosted activation or prove Edge/Platform adoption.
+
+## Artifact-scoped final Result validation
+
+Database #916 changes the query-row binding to the canonical Result digest in
+the Candidate catalog. New paired publications require no global Result claim.
+The migration preserves old identity records and stops if any earlier paired
+query rows exist. Validate on a dedicated local PostgreSQL 17 instance with a
+blank migration rebuild and regenerated schema snapshots. Run the full-schema
+and API closure checks and the final Result query, Candidate, selection,
+readiness, activation, ZIP and readback SQL suites.
+Release #120 provides the actual HDF5/ZIP qualification with a synthetic Edge
+actor and Worker reader. A semantic change bumps the Materialization dataset
+version before the paired build. Verify that activation rejects different content
+under an already-published UUID/version, including a superseded batch, and that
+rollback restores the exact original artifact and downloads.
 
 ## Final Result recovery view validation
 
@@ -1995,7 +2010,9 @@ cancellation across owner/editor/viewer, active/admission-off/source-withdrawn/
 archived states, and first-party/read-only OAuth clients. Preserve a red result
 against the original void-authorizer assignment and the corrected green result.
 The [method script entrypoint](../../scripts/README.md#study-methodevidence-qualification-database-912)
-defines populated V5 preservation, blank-ledger reconstruction, observed actual
+defines populated V5 preservation and blank-ledger reconstruction through the
+exact Study migration prefix. The full database job checks the checkout head.
+The Study job also covers observed actual
 transaction races, contained Worker/config/schema/Unicode parity and real
 PostgREST signed-fixture-JWT privilege checks. Source, native/Storage/signature,
 actual installed consumers, professional validity and deployment are separately
