@@ -7,7 +7,6 @@ declare
   v_names text[]; v_expected text[]; v_size bigint; v_total bigint:=0;
   v_count integer; v_impacts integer; v_ordinal integer; v_sources jsonb;
   v_existing private.final_result_query_artifacts%rowtype;
-  v_identity private.final_result_identities%rowtype;
   v_old private.final_result_query_rows%rowtype;
 begin
   if jsonb_typeof(p_artifact_ref) is distinct from 'object'
@@ -99,7 +98,8 @@ begin
     if (select count(*) from jsonb_object_keys(v_row))<>7
       or coalesce(v_row->>'uuid','') !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(v_row->>'version','') !~ '^[0-9]{2}\.[0-9]{2}\.[0-9]{3}$'
-      or coalesce(v_row->>'registrationId','') !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      or jsonb_typeof(v_row->'canonicalContentHash') is distinct from 'string'
+      or coalesce(v_row->>'canonicalContentHash','') !~ '^[0-9a-f]{64}$'
       or jsonb_typeof(v_row->'contentHash') is distinct from 'string'
       or coalesce(v_row->>'contentHash','') !~ '^[0-9a-f]{64}$'
       or coalesce(v_row->>'relationKind','') not in ('direct','derived')
@@ -127,15 +127,8 @@ begin
       raise exception using errcode='22023',message='Duplicate final Result query source identity';
     end if;
     v_row:=jsonb_set(v_row,'{sources}',v_sources);
-    select * into v_identity from private.final_result_identities
-      where result_id=(v_row->>'uuid')::uuid and result_version=v_row->>'version';
-    if not found or v_identity.registration_kind<>'registered'
-      or v_identity.registration_id<>(v_row->>'registrationId')::uuid
-      or v_identity.content_hash<>v_row->>'contentHash' then
-      raise exception using errcode='22023',message='Final Result query row has no matching registered content';
-    end if;
     select * into v_old from private.final_result_query_rows
-      where artifact_id=v_id and (row_ordinal=v_ordinal or (result_id=v_identity.result_id and result_version=v_identity.result_version));
+      where artifact_id=v_id and (row_ordinal=v_ordinal or (result_id=(v_row->>'uuid')::uuid and result_version=(v_row->>'version')));
     if found then
       if v_old.row_data<>v_row then
         raise exception using errcode='23505',message='Final Result query row identity conflict';
@@ -144,8 +137,8 @@ begin
       if exists(select 1 from private.final_result_query_seals where artifact_id=v_id) then
         raise exception using errcode='55000',message='Sealed final Result query rows are immutable';
       end if;
-      insert into private.final_result_query_rows values(v_id,v_ordinal,v_identity.result_id,v_identity.result_version,
-        v_identity.registration_id,v_identity.content_hash,v_row->>'relationKind',v_row,private.final_result_query_row_hash(v_row));
+      insert into private.final_result_query_rows(artifact_id,row_ordinal,result_id,result_version,canonical_content_hash,content_hash,relation_kind,row_data,row_hash) values(v_id,v_ordinal,(v_row->>'uuid')::uuid,(v_row->>'version'),
+        v_row->>'canonicalContentHash',v_row->>'contentHash',v_row->>'relationKind',v_row,private.final_result_query_row_hash(v_row));
       insert into private.final_result_query_sources
         select v_id,v_ordinal,(value->>'uuid')::uuid,value->>'version' from jsonb_array_elements(v_sources);
     end if;

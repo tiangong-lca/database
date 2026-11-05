@@ -38,7 +38,7 @@ begin
     or v_candidate#>>'{publicationCatalog,sha256}' is distinct from v_catalog_hash
     or v_candidate#>>'{validation,outcome}' is distinct from 'passed'
     or v_candidate#>>'{validation,finalResultParity}' is distinct from 'passed'
-    or v_candidate#>>'{validation,identityRegistration}' is distinct from 'verified'
+    or v_candidate#>>'{validation,finalInputBinding}' is distinct from 'verified'
     or v_candidate#>>'{validation,delegatedTo}' is distinct from 'tidas-tools'
     or jsonb_typeof(v_candidate#>'{validation,reportPath}') is distinct from 'string'
     or jsonb_typeof(v_candidate#>'{validation,archiveReadbackReportPath}') is distinct from 'string'
@@ -202,12 +202,11 @@ begin
     if (select count(*) from private.final_result_candidate_members m
       join private.final_result_candidate_artifacts a on a.candidate_hash=m.candidate_hash
       join private.final_result_query_rows r on r.artifact_id=a.artifact_id and r.result_id=m.dataset_id and r.result_version=m.dataset_version
-      join private.final_result_identities i on i.result_id=r.result_id and i.result_version=r.result_version
-        and i.registration_id=r.registration_id and i.content_hash=r.content_hash and i.canonical_content_hash=m.canonical_content_hash
-      where m.candidate_hash=v_hash and m.dataset_kind='process')<>v_results
+      where m.candidate_hash=v_hash and m.dataset_kind='process'
+        and r.canonical_content_hash=m.canonical_content_hash)<>v_results
       or (select count(distinct (r.result_id,r.result_version)) from private.final_result_candidate_artifacts a
         join private.final_result_query_rows r on r.artifact_id=a.artifact_id where a.candidate_hash=v_hash)<>v_results then
-      raise exception using errcode='22023',message='Final Result Candidate has mismatched or duplicated registered Results';
+      raise exception using errcode='22023',message='Final Result Candidate has mismatched or duplicated artifact Results';
     end if;
     for v_member in select value from jsonb_array_elements(v_catalog->'datasets') loop
       if (select count(distinct value) from jsonb_array_elements(v_member->'references'))<>jsonb_array_length(v_member->'references') then

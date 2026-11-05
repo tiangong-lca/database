@@ -56,9 +56,7 @@ begin
    return private.lca_release_error('rollback_scope_mismatch',409,'Rollback must retain the exact historical Candidate and selection'); end if;
  if exists(select 1 from private.final_result_release_members m left join private.final_result_query_rows q
    on q.artifact_id=m.artifact_id and q.row_ordinal=m.row_ordinal and q.result_id=m.result_id and q.result_version=m.result_version
-   left join private.final_result_identities i on i.result_id=q.result_id and i.result_version=q.result_version and i.registration_id=q.registration_id
-     and i.content_hash=q.content_hash and i.registration_kind='registered'
-   where m.release_run_id=v_run.id and (q.result_id is null or i.result_id is null)) then
+   where m.release_run_id=v_run.id and q.result_id is null) then
    raise exception using errcode='55000',message='Final Result publication content identity changed'; end if;
  if v_previous is not null then update private.lca_release_publications set is_current=false,status='superseded',superseded_at=v_now where id=v_previous; end if;
  insert into private.lca_release_publications(release_run_id,release_version,approval_id,approval_hash,publish_plan_hash,release_manifest_hash,

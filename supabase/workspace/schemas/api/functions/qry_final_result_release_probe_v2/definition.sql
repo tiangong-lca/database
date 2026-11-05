@@ -16,8 +16,6 @@ begin
     from private.final_result_release_members m join private.final_result_query_artifacts a on a.id=m.artifact_id
     join private.final_result_query_rows q on q.artifact_id=m.artifact_id and q.row_ordinal=m.row_ordinal
       and q.result_id=m.result_id and q.result_version=m.result_version
-    join private.final_result_identities i on i.result_id=q.result_id and i.result_version=q.result_version
-      and i.registration_id=q.registration_id and i.content_hash=q.content_hash and i.registration_kind='registered'
     where m.release_run_id=p_release_run_id and m.result_id=p_result_id and m.result_version=p_result_version;
   if v_data is null then return private.lca_release_error('final_result_probe_not_available',404,'Result is absent from the sealed publication selection'); end if;
   return jsonb_build_object('ok',true,'data',(v_context->'data')||v_data);

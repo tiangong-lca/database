@@ -37,9 +37,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-04
-lastReviewedCommit: d95848a3859834cf4abe143dde3111ce71e968ce
-lastReviewedNote: "Database #912: reviewed separate V6 method/evidence/report families, exact baseline and selected-factor budgets, declared evidence without professional approval, original preview/export requests, default-off authority and owned upgrade/race/HTTP/Unicode/schema proof. Actual native/byte/scientific qualification and Main/root delivery remain separate."
+lastReviewedAt: 2026-11-05
+lastReviewedCommit: a7a0df261ef37b59ee2e881b816e194c67aa3dd6
+lastReviewedNote: "Database #916: reviewed artifact-scoped final Result publication and unchanged API authority."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-validation.md
