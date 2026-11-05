@@ -766,7 +766,8 @@ python3 -B supabase/tests/regression/20261104_study_method_transport.py \
   --workdir <owned-study912> --race-receipt <race-json> --report <new-http-json>
 ```
 
-Upgrade is the only runner that resets resources. Race and HTTP runners retain
+The upgrade runner resets to the exact Study migration prefix. The main
+database contract job verifies the latest checkout head. Race and HTTP runners retain
 the exact synthetic namespace and release their sessions. The schema verifier
 uses installed pg_jsonschema 0.3.3: original contained Worker bytes remain hashed;
 only an absolute root base URI is supplied in memory after every reference is

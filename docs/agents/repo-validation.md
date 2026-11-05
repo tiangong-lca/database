@@ -613,8 +613,10 @@ query rows exist. Validate on a dedicated local PostgreSQL 17 instance with a
 blank migration rebuild and regenerated schema snapshots. Run the final Result
 query, Candidate, selection, readiness, activation, ZIP and readback SQL suites.
 Release #120 provides the actual HDF5/ZIP qualification with a synthetic Edge
-actor and Worker reader, including two batches carrying the same Result identity
-with different values and a rollback to the exact prior artifact and downloads.
+actor and Worker reader. A semantic change bumps the Materialization dataset
+version before the paired build. Verify that activation rejects different content
+under an already-published UUID/version, including a superseded batch, and that
+rollback restores the exact original artifact and downloads.
 
 ## Final Result recovery view validation
 
@@ -2007,7 +2009,9 @@ cancellation across owner/editor/viewer, active/admission-off/source-withdrawn/
 archived states, and first-party/read-only OAuth clients. Preserve a red result
 against the original void-authorizer assignment and the corrected green result.
 The [method script entrypoint](../../scripts/README.md#study-methodevidence-qualification-database-912)
-defines populated V5 preservation, blank-ledger reconstruction, observed actual
+defines populated V5 preservation and blank-ledger reconstruction through the
+exact Study migration prefix. The full database job checks the checkout head.
+The Study job also covers observed actual
 transaction races, contained Worker/config/schema/Unicode parity and real
 PostgREST signed-fixture-JWT privilege checks. Source, native/Storage/signature,
 actual installed consumers, professional validity and deployment are separately

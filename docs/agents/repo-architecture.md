@@ -31,7 +31,7 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-05
-lastReviewedCommit: a7a0df261ef37b59ee2e881b816e194c67aa3dd6
+lastReviewedCommit: 62ff6893d32b09049b5489d87d243210d3372eb7
 lastReviewedNote: "Database #916: reviewed artifact-scoped final Result query bindings and isolated schema generation."
 related:
   - ../../AGENTS.md
@@ -331,7 +331,10 @@ Activation locks the run, approval, runtime head, approver/executor manager gran
 and global publication authority. It rechecks approval/readiness expiry after lock
 waits and requires the plan's exact current-publication precondition. Fresh
 readiness may replace the original verification only under the same approved
-context. The transaction supersedes the previous current, creates a new immutable
+context. Under the same publication lock, activation rejects a selected Result
+UUID/version with a different canonical digest in any published batch, including
+superseded or withdrawn batches. It compares existing memberships and artifact
+rows. The transaction supersedes the previous current, creates a new immutable
 publication binding, consumes approval and moves the run to `published` atomically.
 An exact execution retry returns the existing record, including its terminal
 status. Rollback creates a new publication with the same historical Candidate and

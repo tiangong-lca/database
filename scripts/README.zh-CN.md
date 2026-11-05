@@ -21,7 +21,7 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-05
-lastReviewedCommit: a7a0df261ef37b59ee2e881b816e194c67aa3dd6
+lastReviewedCommit: 62ff6893d32b09049b5489d87d243210d3372eb7
 lastReviewedNote: "Database #916: reviewed artifact-scoped final Result query bindings and isolated schema generation."
 related:
   - ../AGENTS.md
@@ -1064,8 +1064,7 @@ SDK 0.5.0 资源重新生成投影并核对来源哈希。此命令不访问网�
 按英文脚本说明依次执行 `test_study_method_upgrade.py`、
 `20261104_study_method_concurrency.py`（输出实际服务 DTO）、
 `test_study_method_serialization.py` 和 `20261104_study_method_transport.py`。
-仅升级脚本在 `STUDY_METHOD_ALLOW_RESET=owned-study912` 下重建已核实的项目；
-竞争与 HTTP 脚本保留其合成命名空间并释放会话，不重建资源。
+升级脚本在 `STUDY_METHOD_ALLOW_RESET=owned-study912` 下将已核实的项目重建到 Study 的精确迁移前缀。完整数据库契约任务校验当前 checkout 的最新迁移。竞争与 HTTP 脚本保留其合成命名空间并释放会话。
 
 结构验证使用已安装的 pg_jsonschema0.3.3；固定 Worker 文件字节保持不变。
 仅在所有引用均为本地片段后，在内存中提供绝对根 URI，解决验证器的解析
