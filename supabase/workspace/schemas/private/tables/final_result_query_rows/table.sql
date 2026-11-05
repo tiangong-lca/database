@@ -3,11 +3,12 @@ CREATE TABLE IF NOT EXISTS "private"."final_result_query_rows" (
     "row_ordinal" integer NOT NULL,
     "result_id" "uuid" NOT NULL,
     "result_version" "text" NOT NULL,
-    "registration_id" "uuid" NOT NULL,
     "content_hash" "text" NOT NULL,
     "relation_kind" "text" NOT NULL,
     "row_data" "jsonb" NOT NULL,
     "row_hash" "text" NOT NULL,
+    "canonical_content_hash" "text" NOT NULL,
+    CONSTRAINT "final_result_query_rows_canonical_content_hash_check" CHECK (("canonical_content_hash" ~ '^[0-9a-f]{64}$'::"text")),
     CONSTRAINT "final_result_query_rows_content_hash_check" CHECK (("content_hash" ~ '^[0-9a-f]{64}$'::"text")),
     CONSTRAINT "final_result_query_rows_relation_kind_check" CHECK (("relation_kind" = ANY (ARRAY['direct'::"text", 'derived'::"text"]))),
     CONSTRAINT "final_result_query_rows_row_hash_check" CHECK (("row_hash" ~ '^[0-9a-f]{64}$'::"text")),
@@ -24,11 +25,5 @@ ALTER TABLE ONLY "private"."final_result_query_rows"
 
 ALTER TABLE ONLY "private"."final_result_query_rows"
     ADD CONSTRAINT "final_result_query_rows_artifact_id_fkey" FOREIGN KEY ("artifact_id") REFERENCES "private"."final_result_query_artifacts"("id");
-
-ALTER TABLE ONLY "private"."final_result_query_rows"
-    ADD CONSTRAINT "final_result_query_rows_registration_id_fkey" FOREIGN KEY ("registration_id") REFERENCES "private"."final_result_identities"("registration_id");
-
-ALTER TABLE ONLY "private"."final_result_query_rows"
-    ADD CONSTRAINT "final_result_query_rows_result_id_result_version_fkey" FOREIGN KEY ("result_id", "result_version") REFERENCES "private"."final_result_identities"("result_id", "result_version");
 
 ALTER TABLE "private"."final_result_query_rows" ENABLE ROW LEVEL SECURITY;

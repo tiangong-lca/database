@@ -30,9 +30,9 @@ def sql(value):
 
 
 def row_hash(row):
-    fields = ['ordinal', 'uuid', 'version', 'registrationId', 'contentHash', 'relationKind']
+    fields = ['ordinal', 'uuid', 'version', 'canonicalContentHash', 'contentHash', 'relationKind']
     sources = sorted(row['sources'], key=lambda s: (s['uuid'], s['version']))
-    return digest('tiangong.final-result-row.v1\n' + '\n'.join(str(row[k]) for k in fields) + '\n'
+    return digest('tiangong.final-result-row.v2\n' + '\n'.join(str(row[k]) for k in fields) + '\n'
                   + ''.join(source['uuid'] + '@' + source['version'] + '\n' for source in sources))
 
 
@@ -45,15 +45,9 @@ def root_hash(rows):
 def fixture(number, count=1):
     artifact_id = f'87921000-0000-4000-8000-{number:012d}'
     ids = [f'87922000-0000-4000-8000-{number * 1000 + i:012d}' for i in range(count)]
-    assert identity.query(f"select not exists(select 1 from private.final_result_identities where result_id='{ids[0]}');") == 't', 'owner reset required before repeating fixtures'
-    expressions = [identity.request(value).removeprefix('select ').removesuffix(';') for value in ids]
-    receipts = json.loads(identity.query('set role service_role; select jsonb_build_array(' + ','.join(expressions[:1]) + ');')) if count == 1 else []
-    # PostgreSQL function argument count is bounded; qualify large axes in batches.
-    if count > 1:
-        for start in range(0, count, 50):
-            receipts.extend(json.loads(identity.query('set role service_role; select jsonb_build_array(' + ','.join(expressions[start:start + 50]) + ');')))
-    rows = [dict(uuid=rid, version='01.00.000', ordinal=i, registrationId=receipts[i]['data']['registrationId'],
-                 contentHash=receipts[i]['data']['contentHash'], relationKind='direct',
+    assert identity.query(f"select not exists(select 1 from private.final_result_query_artifacts where id='{artifact_id}');") == 't', 'owner reset required before repeating fixtures'
+    rows = [dict(uuid=rid, version='01.00.000', ordinal=i, canonicalContentHash=digest('document:' + rid),
+                 contentHash=digest('projection:' + rid), relationKind='direct',
                  sources=[dict(uuid='87923000-0000-4000-8000-000000000001', version='01.00.000')]) for i, rid in enumerate(ids)]
     # LCI-only with zero inventory is valid: an empty inventory is not a missing capability.
     files = [dict(name=name, sha256=digest(name), byteSize=100,
@@ -131,7 +125,7 @@ def main():
     assert result['data']['rowBindingsSha256'] == root_hash(value['rows'])
     assert result['data']['sealed'] is True
     assert json.loads(identity.query('set role service_role; ' + seal(value))) == result
-    print('ok - 501 real identity receipts, out-of-order batches, two-block golden seal and retry', flush=True)
+    print('ok - 501 artifact-bound Result rows, out-of-order batches, two-block golden seal and retry', flush=True)
     number = 879501
     for isolation in ('read committed', 'repeatable read', 'serializable'):
         for conflict in (False, True):

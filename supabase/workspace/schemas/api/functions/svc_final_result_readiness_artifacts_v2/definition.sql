@@ -53,8 +53,6 @@ begin
        'contentHash',q.content_hash,'lciAvailable',true,'lciaAvailable',v_artifact.impact_count>0)
        into v_expected from private.final_result_release_members m join private.final_result_query_rows q
        on q.artifact_id=m.artifact_id and q.row_ordinal=m.row_ordinal and q.result_id=m.result_id and q.result_version=m.result_version
-       join private.final_result_identities i on i.result_id=q.result_id and i.result_version=q.result_version
-       and i.registration_id=q.registration_id and i.content_hash=q.content_hash and i.registration_kind='registered'
        where m.release_run_id=v_attempt.release_run_id and m.artifact_id=v_id and m.result_id=(v_probe#>>'{result,uuid}')::uuid and m.result_version=v_probe#>>'{result,version}';
      if v_expected is null or v_probe->>'schemaVersion' is distinct from 'tiangong.final-result-reader-probe.v1'
        or (v_probe-array['schemaVersion','startedAt','verifiedAt','lciNonzeroCount','lciPageCount','lciaCount','queryCount','observationsSha256']) is distinct from v_expected

@@ -30,12 +30,18 @@ def main():
     assert sql("select(select count(*)from auth.users)+(select count(*)from private.oauth_client_registry);")=='0','dispose the owned synthetic namespace explicitly before upgrade proof'
     assert sql("select count(*)from pg_stat_activity where datname='postgres'and state='active'and pid<>pg_backend_pid();")=='0'
     cli=os.environ.get('SUPABASE_CLI')or shutil.which('supabase');assert cli and subprocess.check_output([cli,'--version'],text=True,stderr=subprocess.DEVNULL).strip()=='2.117.0'
-    source=ROOT/'supabase/migrations';migrations={f.name:hashlib.sha256(f.read_bytes()).hexdigest()for f in sorted(source.glob('*.sql'))};assert sorted(migrations)[-1]==MIGRATION
-    for f in source.glob('*.sql'):shutil.copy2(f,a.workdir/'supabase/migrations'/f.name)
+    source = ROOT/'supabase/migrations'
+    study_version = MIGRATION.split('_')[0]
+    # Rehearse this historical Study change even when later migrations exist.
+    prefix = sorted(f for f in source.glob('*.sql') if f.name.split('_')[0] <= study_version)
+    assert prefix and prefix[-1].name == MIGRATION
+    migrations = {f.name: hashlib.sha256(f.read_bytes()).hexdigest() for f in prefix}
+    for f in prefix:
+        shutil.copy2(f, a.workdir/'supabase/migrations'/f.name)
     def reset(version=None):
         cmd=[cli,'db','reset','--local','--no-seed','--workdir',str(a.workdir)]
         if version:cmd+=['--version',version]
-        result=subprocess.run(cmd,text=True,capture_output=True,timeout=300);log=a.report.with_name(a.report.stem+('-predecessor-reset.private.log'if version else'-blank-reset.private.log'));log.write_text(result.stdout+result.stderr);log.chmod(0o600);assert result.returncode==0,'owned reset failed; private log retained'
+        result=subprocess.run(cmd,text=True,capture_output=True,timeout=300);log=a.report.with_name(a.report.stem+('-predecessor-reset.private.log' if version == PREDECESSOR else '-blank-reset.private.log'));log.write_text(result.stdout+result.stderr);log.chmod(0o600);assert result.returncode==0,'owned reset failed; private log retained'
     reset(PREDECESSOR)
     fixture=expand(ROOT/'supabase/tests/20261104_study_advanced_analysis.sql').replace('select * from finish();','').rsplit('rollback;',1)[0]
     before='''
@@ -75,7 +81,10 @@ select jsonb_build_object(
  'noPhantomMethodRows',(select count(*)=0 from private.study_method_assessments)and(select count(*)=0 from private.study_method_evidence)and(select count(*)=0 from private.study_method_evidence_intents)and(select count(*)=0 from private.study_report_method_assessments));
 """
     migration=(source/MIGRATION).read_text().replace('begin;','',1).rsplit('commit;',1)[0];out=sql(fixture+before+migration+after+'rollback;',timeout=120);assert'not ok'not in out,'populated V5 fixture failed';proof=next(json.loads(x)for x in out.splitlines()if x.startswith('{')and'allPriorTableValuesPreserved'in x);changed=proof.pop('changedRoutineIdentities');count=proof.pop('priorApplicationTables');assert sorted(changed)==sorted(REVIEWED_CHANGED_ROUTINES),(changed,REVIEWED_CHANGED_ROUTINES);assert all(x is True for x in proof.values()),proof
-    reset();assert sql('select max(version)from supabase_migrations.schema_migrations;')==MIGRATION.split('_')[0];assert sql("select(select count(*)from auth.users)+(select count(*)from private.oauth_client_registry)+(select count(*)from private.study_method_assessments)+(select count(*)from private.study_method_evidence);")=='0'
+    reset(study_version)
+    applied = sql('select version from supabase_migrations.schema_migrations order by version;').splitlines()
+    assert applied == [f.name.split('_')[0] for f in prefix], 'blank Study ledger differs from its exact migration prefix'
+    assert sql("select(select count(*)from auth.users)+(select count(*)from private.oauth_client_registry)+(select count(*)from private.study_method_assessments)+(select count(*)from private.study_method_evidence);")=='0'
     for expression in['not source_enabled and not compute_enabled and not disclosure_enabled from private.study_runtime_config','not analysis_enabled and not report_enabled and not export_enabled and export_profile is null from private.study_reporting_config','not enabled from private.study_review_config','not sensitivity_enabled and not uncertainty_enabled and not report_enabled from private.study_advanced_config','not enabled and not export_enabled and export_profile is null from private.study_advanced_review_config','not execution_enabled and not report_enabled and max_evidence_refs is null and max_selected_factor_records is null from private.study_method_config','not enabled and not export_enabled and export_profile is null from private.study_method_review_config']:
         assert sql('select '+expression+';')=='t',expression
     a.report.write_text(json.dumps({'schemaVersion':'lca.study-method-upgrade-receipt.v1','project':'study912','passed':True,'predecessor':PREDECESSOR,'candidateMigration':MIGRATION,'migrationSha256':migrations[MIGRATION],'populatedPriorTables':count,'reviewedChangedRoutines':changed,'checks':proof,'blankLedgerExact':True,'allPriorAndNewGatesDefaultOff':True,'ownershipSha256':hashlib.sha256((a.workdir/'ownership.json').read_bytes()).hexdigest(),'classification':'owned populated SQL upgrade and blank rebuild; no native,Storage-byte,scientific or hosted qualification','disposition':'owned project blank and retained for source/race/HTTP/generation qualification'},indent=2)+'\n');print(json.dumps({'passed':True,'priorTablesPreserved':count,'reviewedChangedRoutines':len(changed),'blankLedgerExact':True}))

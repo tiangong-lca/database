@@ -20,9 +20,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-04
-lastReviewedCommit: 6621e91fc4e8360bbaac1688cdbc42b976e43ab2
-lastReviewedNote: "Database #912: reviewed separate V6 method/evidence/report families, exact baseline and selected-factor budgets, declared evidence without professional approval, original preview/export requests, default-off authority and owned upgrade/race/HTTP/Unicode/schema proof. Actual native/byte/scientific qualification and Main/root delivery remain separate."
+lastReviewedAt: 2026-11-05
+lastReviewedCommit: a7a0df261ef37b59ee2e881b816e194c67aa3dd6
+lastReviewedNote: "Database #916: reviewed artifact-scoped final Result query bindings and isolated schema generation."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -766,7 +766,8 @@ python3 -B supabase/tests/regression/20261104_study_method_transport.py \
   --workdir <owned-study912> --race-receipt <race-json> --report <new-http-json>
 ```
 
-Upgrade is the only runner that resets resources. Race and HTTP runners retain
+The upgrade runner resets to the exact Study migration prefix. The main
+database contract job verifies the latest checkout head. Race and HTTP runners retain
 the exact synthetic namespace and release their sessions. The schema verifier
 uses installed pg_jsonschema 0.3.3: original contained Worker bytes remain hashed;
 only an absolute root base URI is supplied in memory after every reference is

@@ -30,9 +30,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-04
-lastReviewedCommit: d95848a3859834cf4abe143dde3111ce71e968ce
-lastReviewedNote: "Database #912: reviewed separate V6 method/evidence/report families, exact baseline and selected-factor budgets, declared evidence without professional approval, original preview/export requests, default-off authority and owned upgrade/race/HTTP/Unicode/schema proof. Actual native/byte/scientific qualification and Main/root delivery remain separate."
+lastReviewedAt: 2026-11-05
+lastReviewedCommit: 15ece1b0371ecfa6e006e69554a3fd36f9ab8f9b
+lastReviewedNote: "Database #916: reviewed artifact-scoped final Result query bindings and isolated schema generation."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -331,7 +331,10 @@ Activation locks the run, approval, runtime head, approver/executor manager gran
 and global publication authority. It rechecks approval/readiness expiry after lock
 waits and requires the plan's exact current-publication precondition. Fresh
 readiness may replace the original verification only under the same approved
-context. The transaction supersedes the previous current, creates a new immutable
+context. Under the same publication lock, activation rejects a selected Result
+UUID/version with a different canonical digest in any published batch, including
+superseded or withdrawn batches. It compares existing memberships and artifact
+rows. The transaction supersedes the previous current, creates a new immutable
 publication binding, consumes approval and moves the run to `published` atomically.
 An exact execution retry returns the existing record, including its terminal
 status. Rollback creates a new publication with the same historical Candidate and
