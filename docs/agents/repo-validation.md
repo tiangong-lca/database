@@ -610,8 +610,9 @@ Database #916 changes the query-row binding to the canonical Result digest in
 the Candidate catalog. New paired publications require no global Result claim.
 The migration preserves old identity records and stops if any earlier paired
 query rows exist. Validate on a dedicated local PostgreSQL 17 instance with a
-blank migration rebuild and regenerated schema snapshots. Run the final Result
-query, Candidate, selection, readiness, activation, ZIP and readback SQL suites.
+blank migration rebuild and regenerated schema snapshots. Run the full-schema
+and API closure checks and the final Result query, Candidate, selection,
+readiness, activation, ZIP and readback SQL suites.
 Release #120 provides the actual HDF5/ZIP qualification with a synthetic Edge
 actor and Worker reader. A semantic change bumps the Materialization dataset
 version before the paired build. Verify that activation rejects different content

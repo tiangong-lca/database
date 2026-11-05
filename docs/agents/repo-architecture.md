@@ -31,7 +31,7 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-05
-lastReviewedCommit: 62ff6893d32b09049b5489d87d243210d3372eb7
+lastReviewedCommit: 15ece1b0371ecfa6e006e69554a3fd36f9ab8f9b
 lastReviewedNote: "Database #916: reviewed artifact-scoped final Result query bindings and isolated schema generation."
 related:
   - ../../AGENTS.md

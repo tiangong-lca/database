@@ -270,7 +270,8 @@ select is(
   -- Database #906 adds 56 constraints across nine private review/share relations.
   -- Database #909 adds five private tables and two explicit intent-family CHECKs: thirty-four constraints.
   -- Database #912 adds six closed method tables and exact method report selection: forty-four constraints.
-  1146::bigint,
+  -- Database #916 replaces two Result registry FKs with one canonical content CHECK.
+  1145::bigint,
   'Twenty-nine navigation constraints plus: all application, OAuth registry and twenty-two composite-name constraints plus ten partial-import and four whole-package constraints, the review submitted-decision constraint, the Result publication attestation and dataset display exact-version and allowlist constraints remain present, and the versioned v2 Time-alias preflight/gate/request tables carry their own reviewed constraints'
 );
 
