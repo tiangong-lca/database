@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-07
-lastReviewedCommit: "1df742f81c372c5b93fe328ba4b392ee19f03b85"
-lastReviewedNote: "Database #943: reviewed single complete Search validation, closed diagnostic shape proof and local CI; deployment and permission boundaries unchanged."
+lastReviewedCommit: "6eadf9b6b28907cea0edeafde00ca1d932a5a421"
+lastReviewedNote: "Database #946: reviewed filtered V3 reuse of exact narrow facts, page hydration and extended parity/latency proof; permissions and deployment boundaries unchanged."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -60,6 +60,8 @@ Database #925 的 `portal-query-925-pg1711` 本地栈验证。两者要求精确
 完整证明边界由 validation guide 维护；本地结果不等同于线上恢复。
 
 `--compare-validation` 使用本地 PG17 事务级函数统计验证完整 Search 调用中目录校验由两次变为一次，并覆盖筛选、排序和旧游标。`check_portal_read_failure_diagnostics.py --log <SQL测试日志>` 验证实际异常日志仅含封闭的粗粒度类别；CI 在诊断 SQL 测试之后运行该检查。原文、筛选值、游标、标识符和 SQL 不进入这些诊断字段。
+
+`--compare-filtered-search` 增加大范围命中后的筛选请求，并用本地函数统计验证完整卡片事实只在结果页生成。升级 harness 的同名参数覆盖各类筛选、组合条件、排序和旧游标；扩展场景超时不能被先前的通过结果掩盖。
 
 ## 目录结构
 

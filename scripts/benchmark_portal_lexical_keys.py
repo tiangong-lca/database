@@ -42,6 +42,8 @@ def main():
                         help='Also compare the existing scoped-key bridge and branch-only RPCs')
     parser.add_argument('--compare-validation', action='store_true',
                         help='Count actual catalog-guard calls in API samples and include filtered/sorted/cursor reads')
+    parser.add_argument('--compare-filtered-search', action='store_true',
+                        help='Include broad filtered reads and count full card-facts calls before page hydration')
     parser.add_argument('--report', type=Path, required=True)
     args = parser.parse_args()
     if not (20 <= args.process_datasets <= 20000 and 40 <= args.flow_datasets <= 100000 and 2 <= args.samples <= 10):
@@ -82,20 +84,22 @@ def main():
         for kind, table in [('process','processes'),('flow','flows')])
     sql = sql.replace('do $$declare r record;begin for r in select * from original_triggers loop',
                       source_rows+'\ndo $$declare r record;begin for r in select * from original_triggers loop')
-    if args.compare_validation:
+    if args.compare_validation or args.compare_filtered_search:
         # Local session only. PG17 transaction-local function statistics update
         # continuously; no hosted setting, trust cache or instrumented guard.
         sql += "\nset local track_functions='all';\n"
     sql += """
-create temp table samples(variant text,label text,ordinal int,ms numeric,payload jsonb,error text,guard_calls bigint);
+create temp table samples(variant text,label text,ordinal int,ms numeric,payload jsonb,error text,guard_calls bigint,fact_calls bigint);
 grant select,insert on samples to anon;
 create function pg_temp.measure(v text,l text,i int,q text) returns void language plpgsql as $$
-declare t timestamptz;p jsonb;e text;before_calls bigint;after_calls bigint;begin
+declare t timestamptz;p jsonb;e text;before_calls bigint;after_calls bigint;before_facts bigint;after_facts bigint;begin
  --GUARD_BEFORE--
+ --FACTS_BEFORE--
  t:=clock_timestamp();
  begin execute q into p;exception when query_canceled then e:=sqlstate;when others then e:=sqlstate;end;
- insert into samples values(v,l,i,extract(epoch from clock_timestamp()-t)*1000,p,e,null);
+ insert into samples values(v,l,i,extract(epoch from clock_timestamp()-t)*1000,p,e,null,null);
  --GUARD_AFTER--
+ --FACTS_AFTER--
 end$$;
 grant execute on function pg_temp.measure(text,text,int,text) to anon;
 """
@@ -103,6 +107,11 @@ grant execute on function pg_temp.measure(text,text,int,text) to anon;
         counter = "select coalesce(sum(calls),0) from pg_catalog.pg_stat_xact_user_functions where schemaname='private' and funcname='assert_portal_catalog_projection_contract_cn1'"
         sql = sql.replace('--GUARD_BEFORE--', f'before_calls:=({counter});')
         sql = sql.replace('--GUARD_AFTER--', f'after_calls:=({counter});update samples set guard_calls=after_calls-before_calls where variant=v and label=l and ordinal=i;')
+        sql += 'grant update on samples to anon;\n'
+    if args.compare_filtered_search:
+        counter = "select coalesce(sum(calls),0) from pg_catalog.pg_stat_xact_user_functions where schemaname='private' and funcname='display_catalog_card_facts_v1'"
+        sql = sql.replace('--FACTS_BEFORE--', f'before_facts:=({counter});')
+        sql = sql.replace('--FACTS_AFTER--', f'after_facts:=({counter});update samples set fact_calls=after_facts-before_facts where variant=v and label=l and ordinal=i;')
         sql += 'grant update on samples to anon;\n'
     cases = {}
     for scope in ('tiangong_lca', 'tiangong_lca,bafu,uslci,worldsteel'):
@@ -122,7 +131,7 @@ grant execute on function pg_temp.measure(text,text,int,text) to anon;
                         for parent in ('root', 'class:isic' if kind=='process' else 'class:cpc'):
                             parent_sql = 'null' if parent=='root' else literal(parent)
                             cases[scope+':'+kind+':'+label+':'+api+':classification:'+parent] = f"select api.{rpc}({brands},{literal(kind)},{literal(query)},'{{}}','classification',{parent_sql})"
-    if args.compare_validation:
+    if args.compare_validation or args.compare_filtered_search:
         for scope in ('tiangong_lca', 'tiangong_lca,bafu,uslci,worldsteel'):
             brands = 'array['+','.join(literal(b) for b in scope.split(','))+']'
             for kind in ('process','flow'):
@@ -131,6 +140,17 @@ grant execute on function pg_temp.measure(text,text,int,text) to anon;
                     cases[f'{scope}:{kind}:filtered:{sort}:search'] = f"select api.{rpc}({brands},{literal('bench'+kind+' 00000')},p_filters=>'{{\"geography\":\"CN\"}}'::jsonb,p_sort=>{literal(sort)},p_limit=>10)"
                 source_label = literal(f'{scope}:{kind}:broad:search')
                 cases[f'{scope}:{kind}:predecessor-cursor:search'] = f"select api.{rpc}({brands},'history864',p_cursor=>(select payload->>'nextCursor' from samples where variant='baseline' and label={source_label} and ordinal=0),p_limit=>20)"
+    if args.compare_filtered_search:
+        for scope in ('tiangong_lca', 'tiangong_lca,bafu,uslci,worldsteel'):
+            brands = 'array['+','.join(literal(b) for b in scope.split(','))+']'
+            for kind in ('process','flow'):
+                rpc = 'portal_search_processes_v4' if kind=='process' else 'portal_search_flows_v4'
+                filters = {'geography': {'geography':'CN'}, 'absent': {'geography':'ZZ'},
+                           'hierarchy': {'geographyNodeId':'geo:cn','geographyScope':'subtree'},
+                           'combined': {'geography':'CN','referenceYearFrom':2000,'referenceYearTo':2030}}
+                for label, value in filters.items():
+                    for sort in ('relevance','name_asc','modified_desc'):
+                        cases[f'{scope}:{kind}:broad-filter-{label}:{sort}:search'] = f"select api.{rpc}({brands},'history864',p_filters=>{literal(json.dumps(value))}::jsonb,p_sort=>{literal(sort)},p_limit=>10)"
     for ordinal in range(args.samples):
         for variant in (('baseline','candidate') if ordinal%2 == 0 else ('candidate','baseline')):
             sql += '\nreset role;\n'+variants[variant]+fixture_source.REFRESH+'\nset local role anon;\n'
@@ -149,6 +169,8 @@ select jsonb_build_object(
 """
     if args.compare_validation:
         sql = sql.replace("'timings',(select", "'guardCallCounts',(select jsonb_agg(to_jsonb(g)) from (select variant,label,min(guard_calls) minimum,max(guard_calls) maximum from samples where label like '%:search' group by variant,label order by variant,label) g),'timings',(select", 1)
+    if args.compare_filtered_search:
+        sql = sql.replace("'timings',(select", "'factCallCounts',(select jsonb_agg(to_jsonb(g)) from (select variant,label,min(fact_calls) minimum,max(fact_calls) maximum,max(jsonb_array_length(payload->'items')+1) page_bound from samples where label like '%:search' group by variant,label order by variant,label) g),'timings',(select", 1)
     sql += """
 -- Bound natural nested-plan probes separately from latency samples.
 load 'auto_explain';
@@ -225,6 +247,13 @@ set local auto_explain.log_min_duration=-1;
         report['validationCallCountsPassed'] = bool(counts) and all(
             c['minimum']==c['maximum']==expected_counts[c['variant']] for c in counts)
         report['passed'] = report['passed'] and report['validationCallCountsPassed']
+    if args.compare_filtered_search:
+        counts = report.get('factCallCounts',[])
+        candidate = [c for c in counts if c['variant']=='candidate']
+        old_broad = [c for c in counts if c['variant']=='baseline' and ':broad-filter-geography:' in c['label']]
+        report['pageHydrationPassed'] = bool(candidate) and all(c['maximum'] <= c['page_bound'] for c in candidate)
+        report['baselineBroadFactsObserved'] = bool(old_broad) and all(c['minimum'] > c['page_bound'] for c in old_broad)
+        report['passed'] = report['passed'] and report['pageHydrationPassed'] and report['baselineBroadFactsObserved']
     args.report.write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps({k:v for k,v in report.items() if k != 'timings'}))
     return int(not report['passed'])
