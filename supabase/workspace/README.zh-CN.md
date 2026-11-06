@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-07
-lastReviewedCommit: 63a2cef16ee1541e5bc8f4e27ff756cfc723a6d1
-lastReviewedNote: "Database #935 / Portal #184: reviewed additive branch/totals reads; ownership, generated-workspace and deployment boundaries remain unchanged."
+lastReviewedCommit: "9b7f6571c9587ac12e06355eab5d8c12c08d0d65"
+lastReviewedNote: "Database #935 residual recovery: reviewed parameterized branch membership reads, unchanged forced RLS/visibility and explicit hosted-load qualification limits."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

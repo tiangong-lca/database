@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-07
-lastReviewedCommit: 63a2cef16ee1541e5bc8f4e27ff756cfc723a6d1
-lastReviewedNote: "Database #935 / Portal #184: reviewed demand-specific branch/totals APIs, preserved legacy behavior and qualification boundaries."
+lastReviewedCommit: "9b7f6571c9587ac12e06355eab5d8c12c08d0d65"
+lastReviewedNote: "Database #935 residual recovery: reviewed parameterized branch membership reads, unchanged forced RLS/visibility and explicit hosted-load qualification limits."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -1314,3 +1314,14 @@ nonempty fixtures or existing output paths. `--report <new-json>` records exact
 branch/totals parity, timings and bounded nested plans over 157,000 versions.
 Use a blank reset before and after the volume profile; local timings do not
 prove hosted recovery. See the validation guide for acceptance limits.
+
+
+### `benchmark_portal_branch_visibility.py`
+
+Compares complete predecessor/candidate branch responses on the explicitly owned
+local #925 PG17.11 stack. Pass an exact `--base-ref`, new `--report` JSON path and
+optional `--samples` (2–5, default 3). It alternates variant order over 300 shapes
+at 157000 versions, records source hashes, complete parity, cost bounds and
+separate natural plans, then proves rollback cleanup. It never accepts a hosted
+DSN. Run serially with the other owned fixture collectors; hosted performance and
+traffic attribution remain separate.

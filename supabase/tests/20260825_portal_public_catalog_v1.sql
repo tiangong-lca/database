@@ -4302,22 +4302,31 @@ select extensions.ok(
   'catalog summary is bounded and excludes hidden draft/review identities'
 );
 
-create temporary table portal_summary_search_cards_original on commit drop as
-select dataset_kind, id, version, card
-from private.portal_catalog_search_rows_v2;
+-- Prepare evidence through the same source writers used by the catalogue.
+-- Process cards are V2 and Flow cards V1; direct edits to one projection are
+-- not a complete source fixture and can depend on its chosen update scan.
+create temporary table portal_summary_sources_original on commit drop as
+select 'process'::text as kind,id,version,json,json_ordered from public.processes
+union all
+select 'flow',id,version,json,json_ordered from public.flows;
 
-update private.portal_catalog_search_rows_v2
-set card = card - 'classifications'
-where dataset_kind = 'process';
+update public.processes
+set json=json #- '{processDataSet,processInformation,dataSetInformation,classificationInformation}',
+    json_ordered=(json_ordered::jsonb #- '{processDataSet,processInformation,dataSetInformation,classificationInformation}')::json;
 
-update private.portal_catalog_search_rows_v2
-set card = pg_catalog.jsonb_set(
-  card,
-  '{classifications}',
-  '[{"system":"fixture","code":"1","label":[]}]'::jsonb,
-  true
-)
-where dataset_kind = 'flow';
+update public.flows
+set json=jsonb_set(json,'{flowDataSet,flowInformation,dataSetInformation,classificationInformation}',
+      '{"common:classification":[{"common:class":{"@level":"0","@classId":"1","#text":"Short fixture class"}}]}'::jsonb,true),
+    json_ordered=jsonb_set(json_ordered::jsonb,'{flowDataSet,flowInformation,dataSetInformation,classificationInformation}',
+      '{"common:classification":[{"common:class":{"@level":"0","@classId":"1","#text":"Short fixture class"}}]}'::jsonb,true)::json;
+
+select extensions.ok(not exists(select 1 from private.portal_catalog_search_rows_v2
+ where dataset_kind='process' and jsonb_array_length(coalesce(card->'classifications','[]'::jsonb))<>0),
+ 'source fixture removes classification from every Process card');
+select extensions.ok(not exists(select 1 from private.portal_catalog_search_rows_v1 p
+ cross join lateral jsonb_array_elements(coalesce(p.card->'classifications','[]'::jsonb)) c
+ where p.dataset_kind='flow' and c->>'code'<>'1'),
+ 'source fixture leaves only one-character Flow classifications');
 
 set local role anon;
 insert into portal_test_results (label, payload)
@@ -4336,12 +4345,14 @@ select extensions.ok(
   'summary omits one-character classification evidence instead of advertising a broad timeout-prone query'
 );
 
-update private.portal_catalog_search_rows_v2 as target
-set card = original.card
-from portal_summary_search_cards_original as original
-where target.dataset_kind = original.dataset_kind
-  and target.id = original.id
-  and target.version = original.version;
+update public.processes as target
+set json=original.json,json_ordered=original.json_ordered
+from portal_summary_sources_original original
+where original.kind='process' and target.id=original.id and target.version=original.version;
+update public.flows as target
+set json=original.json,json_ordered=original.json_ordered
+from portal_summary_sources_original original
+where original.kind='flow' and target.id=original.id and target.version=original.version;
 
 create temporary table portal_flow_201_original on commit drop as
 select json, json_ordered
@@ -5012,9 +5023,11 @@ select extensions.ok(
 
 update public.flows
 set
-  json = json #- '{flowDataSet,flowInformation,dataSetInformation,CASNumber}',
+  json = json #- '{flowDataSet,flowInformation,dataSetInformation,CASNumber}'
+    #- '{flowDataSet,flowInformation,dataSetInformation,classificationInformation}',
   json_ordered = (
     json_ordered::jsonb #- '{flowDataSet,flowInformation,dataSetInformation,CASNumber}'
+      #- '{flowDataSet,flowInformation,dataSetInformation,classificationInformation}'
   )::json
 where state_code in (100, 200)
   and pg_catalog.jsonb_typeof(json) = 'object'

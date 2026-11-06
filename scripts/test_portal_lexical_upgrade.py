@@ -70,7 +70,7 @@ do $$declare r record;q text;p jsonb;begin
 end$$;
 reset role;
 """
-    migration='\n'.join((bench.ROOT/('supabase/migrations/'+name)).read_text().replace('\nbegin;\n','\n',1).removesuffix('commit;\n') for name in ('20261106110000_optimize_portal_scoped_lexical_keys.sql','20261106114708_bound_portal_candidate_key_reads.sql','20261106125654_bound_selective_portal_navigation_counts.sql','20261106142546_bound_empty_portal_pages_and_diagnose_search.sql','20261106160917_split_portal_branch_and_total_reads.sql'))
+    migration='\n'.join((bench.ROOT/('supabase/migrations/'+name)).read_text().replace('\nbegin;\n','\n',1).removesuffix('commit;\n') for name in ('20261106110000_optimize_portal_scoped_lexical_keys.sql','20261106114708_bound_portal_candidate_key_reads.sql','20261106125654_bound_selective_portal_navigation_counts.sql','20261106142546_bound_empty_portal_pages_and_diagnose_search.sql','20261106160917_split_portal_branch_and_total_reads.sql','20261106175555_bound_portal_branch_visibility_reads.sql'))
     sql += migration
     sql += """
 select results_eq($$select oid,proowner,proacl,proconfig,prosecdef,provolatile,proparallel from pg_proc where oid in(select oid from original_metadata) order by oid$$,
