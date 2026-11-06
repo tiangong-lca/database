@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-07
-lastReviewedCommit: 63a2cef16ee1541e5bc8f4e27ff756cfc723a6d1
-lastReviewedNote: "Database #935 / Portal #184: reviewed demand-specific branch/totals APIs, preserved legacy behavior and qualification boundaries."
+lastReviewedCommit: "9b7f6571c9587ac12e06355eab5d8c12c08d0d65"
+lastReviewedNote: "Database #935 residual recovery: reviewed branch and lexical visibility work, complete scope intersection and explicit hosted-load qualification limits."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -1088,3 +1088,17 @@ SQL、本地签名 JWT 和模式验证不能替代真实 OAuth、原生计算、
 不接受远程 DSN，拒绝非空数据及已有输出文件。`--report <新的JSON>` 保留
 15.7 万版本下的完整计数对照、耗时和有界嵌套计划。规模测试前后均重建空库；
 本地结果不能代替托管恢复证明，验收阈值见验证指南。
+
+
+### `benchmark_portal_branch_visibility.py`
+
+在明确归属 #925 的本地 PG17.11 栈中比较前后版本的完整分支响应。
+传入精确的 `--base-ref`、新的 `--report` JSON 路径，以及可选的
+`--samples`（2–5，默认 3）。在 15.7 万版本、300 种组合上交替运行，
+保存源码哈希、完整响应对照、性能阈值及独立的自然执行计划，最后验证回滚清理。
+不接受托管 DSN；与同一栈的其他测试串行运行。托管性能和流量来源仍需单独验证。
+
+词法可见性优化还须运行 `benchmark_portal_lexical_keys.py`，加上
+`--compare-scope-bridge`，将精确前驱中的作用域桥接函数一起纳入对照，并增加
+只返回分支的 RPC 覆盖。前驱必须已包含该桥接函数；重载函数定义各自保留 SQL
+终止符。
