@@ -22,9 +22,9 @@ checkPaths:
   - .github/workflows/supabase-dev.yml
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
-lastReviewedAt: 2026-11-06
-lastReviewedCommit: 753e8c6a5ef1535bd751d5878b93ce458f0f573c
-lastReviewedNote: "Database #925: reviewed scoped lexical bridge, V3 rank reuse and new local tests; deployment and schema export procedures unchanged."
+lastReviewedAt: 2026-11-07
+lastReviewedCommit: "1df742f81c372c5b93fe328ba4b392ee19f03b85"
+lastReviewedNote: "Database #943: reviewed single complete Search validation, closed diagnostic shape proof and local CI; deployment and permission boundaries unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

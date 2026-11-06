@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-07
-lastReviewedCommit: "9b7f6571c9587ac12e06355eab5d8c12c08d0d65"
-lastReviewedNote: "Database #935 residual recovery: reviewed branch and lexical visibility work, complete scope intersection and explicit hosted-load qualification limits."
+lastReviewedCommit: "1df742f81c372c5b93fe328ba4b392ee19f03b85"
+lastReviewedNote: "Database #943: reviewed single complete Search validation, closed diagnostic shape proof and local CI; deployment and permission boundaries unchanged."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -62,6 +62,11 @@ Database #925 on its explicitly owned `portal-query-925-pg1711` local stack.
 They accept an exact `--base-ref` and new evidence paths; run them serially and
 reset between volume and writer profiles. The validation guide owns the proof
 boundary and separates local receipts from actual hosted recovery.
+The optional `--compare-validation` profile counts actual catalog-guard calls
+using local PG17 transaction statistics and adds filtered/sorted/predecessor-cursor
+Search cases. `check_portal_read_failure_diagnostics.py --log <captured-suite-log>`
+checks actual exception-log JSON against closed values and complete privacy-canary
+coverage; the CI local-contract job runs it after the diagnostic SQL suite.
 
 ## Layout
 

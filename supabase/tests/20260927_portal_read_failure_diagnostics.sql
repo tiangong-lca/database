@@ -136,6 +136,33 @@ select * from pg_temp.check_search_fault('57014','private-935-message statement 
 select * from pg_temp.check_search_fault('55000','private-935-message');
 select * from pg_temp.check_search_fault('54000','private-935-message');
 select * from pg_temp.check_search_fault('XX000','private-935-message');
+-- Exercise the real exception logger with bounded shape categories. A separate
+-- log checker validates the emitted JSON and rejects extra/raw input fields.
+create temp table diagnostic_shapes943(label text,q text,f jsonb,s text,c text,l integer);
+insert into diagnostic_shapes943 values
+ ('default',null,null,null,null,null),
+ ('empty','', '{}','relevance',null,10),
+ ('single','中','{"geography":"private-943-filter"}','name_asc','private-943-cursor',20),
+ ('multiple','private-943-query','{}','modified_desc',null,50),
+ ('oversize',repeat('x',2049),jsonb_build_object('geography',repeat('x',5000)),'private-943-sort',null,0),
+ ('invalid-filter','private-943-query','[]',repeat('x',65),'private-943-cursor',51);
+grant select on diagnostic_shapes943 to anon;
+select pg_temp.set_search_fault('57014','canceling statement due to statement timeout');
+create function pg_temp.check_shapes943() returns setof text language plpgsql as $$
+declare r record;k text;
+begin
+ execute 'set local role anon';
+ for r in select * from diagnostic_shapes943 loop
+  foreach k in array array['processes','flows'] loop
+   return next extensions.is(pg_temp.public_error(format(
+    'select api.portal_search_%s_v4(array[''tiangong_lca''],%L,%L::jsonb,%L,%L,%L::integer)',k,r.q,r.f,r.s,r.c,r.l)),
+    '{"code":"P0001","message":"portal catalog unavailable","details":null,"hint":null}'::jsonb,
+    k||' closed diagnostic shape '||r.label||' preserves public error');
+  end loop;
+ end loop;
+ execute 'reset role';
+end$$;
+select * from pg_temp.check_shapes943();
 do $$begin execute (select definition from diagnostic_original_search); end$$;
 update private.portal_display_contract_manifest set identity=private.portal_display_contract_identity_v1() where singleton;
 select private.portal_display_assert_contract_v1();
