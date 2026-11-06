@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-06
-lastReviewedCommit: 02101cfeafe8d3275a918b279598f9a97e1b62c8
-lastReviewedNote: "Database #925 follow-up: reviewed exact candidate-key joins under unchanged RLS, retained navigation counting, expanded full-response/plan qualification and hosted recovery boundaries."
+lastReviewedCommit: e4291f2eeb607501e5dc899c5cdab579dd2088b7
+lastReviewedNote: "Database #933 / #925: reviewed selective navigation key counting with the original broad path, unchanged RLS/count/cursor contracts and expanded geography/classification qualification."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1763,12 +1763,14 @@ roles, RLS and triggers, followed by repeat application. All effects roll back.
 PostgreSQL 17.11 stack. It compares complete public Search/Facets/Navigation
 responses with alternating variant order over 19,000 Process and 138,000 Flow
 versions, retaining three samples per case and separate natural nested lexical
-and exact candidate-key plans for both protected projection relations. Include
+and exact candidate-key plans for both protected projection relations and
+Process/Flow navigation membership. Include
 rare, broad, absent and empty queries. The candidate must reach the primary key
 with both id and version; selecting lexical keys followed by a full partition
 scan is insufficient. Exercise populated source and predecessor cursor parity
 for the complete lexical and candidate-join migration sequence. Navigation
-qualification must include both selective and near-complete matches: a point-read
+qualification covers geography plus classification roots and branches, including
+both selective and near-complete matches: a point-read
 plan that times out for broad matches is a failed candidate, not a valid speedup. Candidate warm local p95 must be at most two seconds; reject cost over 1.5 times
 the predecessor outside a 50-ms noise floor. Retain the original
 eight-second statement budget. Small fixtures are smoke evidence only.

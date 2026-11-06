@@ -1,8 +1,8 @@
 version: 1
 layout: repo
 lastReviewedAt: "2026-11-06"
-lastReviewedCommit: 02101cfeafe8d3275a918b279598f9a97e1b62c8
-lastReviewedNote: "Database #925 follow-up: reviewed exact candidate-key joins under unchanged RLS, retained navigation counting, expanded full-response/plan qualification and hosted recovery boundaries."
+lastReviewedCommit: e4291f2eeb607501e5dc899c5cdab579dd2088b7
+lastReviewedNote: "Database #933 / #925: reviewed selective navigation key counting with the original broad path, unchanged RLS/count/cursor contracts and expanded geography/classification qualification."
 
 # Keep deterministic governance facts here.
 # AGENTS.md remains the repo contract entrypoint.
