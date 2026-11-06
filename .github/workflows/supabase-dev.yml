@@ -236,6 +236,8 @@ jobs:
           supabase test db supabase/tests/20261101_final_result_release_readiness.sql
           supabase test db supabase/tests/20261101_final_result_release_activation.sql
           supabase test db supabase/tests/20261101_final_result_publication_packages.sql
+          supabase test db supabase/tests/20261106_final_result_process_dependency_catalog.sql
+          supabase test db supabase/tests/20261106_final_result_process_dependencies.sql
           supabase test db supabase/tests/20261101_final_result_release_recovery_views.sql
           python3 scripts/test_protected_alias_postgrest_routing.py
           python3 scripts/test_portal_navigation_backfill.py --container supabase_db_database-engine --report /tmp/portal-navigation-backfill.json

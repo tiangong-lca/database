@@ -34983,7 +34983,7 @@ begin
         or jsonb_typeof(v_member->'references') is distinct from 'array'
         or v_member->'components' is distinct from '["result"]'::jsonb
         or coalesce(length(v_member->>'role'),0) not between 1 and 64
-        or ((v_member->>'datasetType'='process') is distinct from (v_member->>'role'='result_process'))
+        or ((v_member->>'datasetType'='process') is distinct from (v_member->>'role' in ('result_process','unit_process')))
         or v_member->>'key' is distinct from (v_member->>'datasetType')||':'||(v_member->>'uuid')||'@'||(v_member->>'version') then
         raise exception using errcode='22023',message='Invalid final Result Candidate member';
       end if;
@@ -34998,7 +34998,7 @@ begin
         v_member->>'version',v_member->>'key',v_member->>'role',v_member->>'canonicalContentHash');
     end loop;
     select array_agg(dataset_key order by dataset_key collate "C"),
-      array_agg(dataset_key order by dataset_key collate "C") filter(where dataset_kind='process')
+      array_agg(dataset_key order by dataset_key collate "C") filter(where dataset_role='result_process')
       into v_actual_keys,v_actual_roots from private.final_result_candidate_members where candidate_hash=v_hash;
     select array_agg(value order by value collate "C") into v_keys from jsonb_array_elements_text(v_catalog#>'{components,result,datasets}');
     select array_agg(value order by value collate "C") into v_roots from jsonb_array_elements_text(v_catalog#>'{components,result,roots}');
@@ -35008,7 +35008,7 @@ begin
     if (select count(*) from private.final_result_candidate_members m
       join private.final_result_candidate_artifacts a on a.candidate_hash=m.candidate_hash
       join private.final_result_query_rows r on r.artifact_id=a.artifact_id and r.result_id=m.dataset_id and r.result_version=m.dataset_version
-      where m.candidate_hash=v_hash and m.dataset_kind='process'
+      where m.candidate_hash=v_hash and m.dataset_role='result_process'
         and r.canonical_content_hash=m.canonical_content_hash)<>v_results
       or (select count(distinct (r.result_id,r.result_version)) from private.final_result_candidate_artifacts a
         join private.final_result_query_rows r on r.artifact_id=a.artifact_id where a.candidate_hash=v_hash)<>v_results then

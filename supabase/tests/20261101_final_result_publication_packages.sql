@@ -48,16 +48,44 @@ reset role;
 set local session_replication_role=replica;
 update public.flows set state_code=100 where id='87920000-0000-4000-8000-000000000050';
 set local session_replication_role=origin;
+\if :{?process_support}
+set local role authenticated;
+select is(api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')->>'code','result_package_not_available','same UUID Flow cannot satisfy a Process dependency');
+reset role;
+set local session_replication_role=replica;
+insert into public.processes(id,version,json,user_id,state_code) values('87920000-0000-4000-8000-000000000050','01.00.000','{}','87930000-0000-4000-8000-000000000001',0);
+set local session_replication_role=origin;
+set local role authenticated;
+select is(api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')->>'code','result_package_not_available','private Process support denies ZIP to another actor');
+reset role;
+set local session_replication_role=replica;
+update public.processes set state_code=120 where id='87920000-0000-4000-8000-000000000050';
+set local session_replication_role=origin;
+set local role authenticated;
+select is(api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')->>'code','result_package_not_available','state 120 cannot satisfy Unit Process support');
+reset role;
+set local session_replication_role=replica;
+update public.processes set state_code=100 where id='87920000-0000-4000-8000-000000000050';
+set local session_replication_role=origin;
+\endif
 set local role authenticated;
 select is(api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')#>>'{data,file,name}','result.tidas.zip','complete readable package returns exact prebuilt TIDAS ZIP');
 select is(api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'ilcd')#>>'{data,file,name}','result.ilcd.zip','same publication returns exact prebuilt ILCD ZIP');
 select throws_ok($q$select api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'hdf5')$q$,'22023','Exact publication and supported ZIP format are required','browser download never exposes whole numeric matrices');
 reset role;
+\if :{?process_support}
+create policy final_package_canary on public.processes as restrictive for select to api_internal_executor using(false);
+\else
 create policy final_package_canary on public.flows as restrictive for select to api_internal_executor using(false);
+\endif
 set local role authenticated;
 select is(api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')->>'code','result_package_not_available','cached public ZIP check observes newly restrictive support policy');
 reset role;
+\if :{?process_support}
+drop policy final_package_canary on public.processes;
+\else
 drop policy final_package_canary on public.flows;
+\endif
 set local role authenticated;
 select is(api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')#>>'{data,file,name}','result.tidas.zip','removed restriction restores authorized package');
 select set_config('request.jwt.claim.sub','87930000-0000-4000-8000-000000000001',true);

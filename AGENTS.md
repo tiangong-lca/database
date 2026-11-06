@@ -37,9 +37,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-05
-lastReviewedCommit: 15ece1b0371ecfa6e006e69554a3fd36f9ab8f9b
-lastReviewedNote: "Database #916: reviewed artifact-scoped final Result publication and unchanged API authority."
+lastReviewedAt: 2026-11-06
+lastReviewedCommit: 76bd8773494ef66ff32fb25cb4d4548a4e5b0e16
+lastReviewedNote: "Database #919: reviewed referenced Unit Process support, Result-only root/query coverage, preserved RLS and isolated forward migration proof."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-validation.md

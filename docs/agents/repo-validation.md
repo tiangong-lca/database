@@ -34,7 +34,7 @@ checkPaths:
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-05
 lastReviewedCommit: a7a0df261ef37b59ee2e881b816e194c67aa3dd6
-lastReviewedNote: "Database #916: reviewed artifact-scoped final Result query bindings and isolated schema generation."
+lastReviewedNote: "Database #919: reviewed referenced Unit Process support, Result-only root/query coverage, preserved RLS and isolated forward migration proof."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1978,6 +1978,19 @@ Run `supabase/tests/20261025_calculation_contract_identity.sql` after a blank mi
 
 Also apply the migration to a populated canonical-base fixture with an existing request, and run the actual Worker activation CLI against the isolated database. Verify the exact descriptor digest and an activation conflict, then feed actual candidate RPC projections to the Edge admission helper. Regenerate all five schema views and Data API types twice. These local receipts do not replace the original public-100 Manager BuildV2/Storage/download qualification or hosted Preview, deployment and integration proof. No migration selects an algorithm identity automatically.
 
+
+## Result-only Process dependencies
+
+Run `supabase/tests/20261106_final_result_process_dependency_catalog.sql` and
+`supabase/tests/20261106_final_result_process_dependencies.sql` after a blank
+PG17 migration rebuild, alongside the existing final Result artifact, Candidate,
+selection, readiness, activation, query, recovery and package suites. The new
+fixtures cover typed Process support, exact root/query coverage, missing versions,
+unreachable members, atomic rejection, private/state-120 support denial, current
+RLS changes, complete ZIP descriptors and withdrawal. File attestations in SQL
+are synthetic. Release owns actual HDF5/ZIP and Worker/Edge byte/readback and
+rollback qualification. Rebuild all five schema views and Data API types twice.
+No hosted operation or formal dataset modification is implied.
 
 ## Final Result ZIP role retirement
 

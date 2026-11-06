@@ -32,7 +32,7 @@ checkPaths:
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-05
 lastReviewedCommit: 15ece1b0371ecfa6e006e69554a3fd36f9ab8f9b
-lastReviewedNote: "Database #916: reviewed artifact-scoped final Result query bindings and isolated schema generation."
+lastReviewedNote: "Database #919: reviewed referenced Unit Process support, Result-only root/query coverage, preserved RLS and isolated forward migration proof."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1856,6 +1856,13 @@ New scope-closure execution fingerprints and ordinary snapshot-build queue keys 
 
 
 ## Final Result ZIP signing
+
+Result-only Candidate membership distinguishes Process type from publication
+role. `result_process` members alone define the Result roots and exact HDF5
+coverage. Referenced `unit_process` members remain ordinary Process support in
+the complete ZIP closure, with exact version and live support-read authorization.
+An unreferenced member is rejected. Support Process membership creates neither
+a Result query row nor a canonical Process write.
 
 Edge reuses existing server credentials for native single-object, 60-second Storage links after actor/current/complete-Candidate checks. Database continues to own the exact authorized descriptor; no custom signing role is needed. Migration `20261102091416` retires only the two #887 roles, their grants/memberships and five named Storage policies. Earlier migrations remain intact. There is no application data mutation or CASCADE; unexpected dependencies stop retirement.
 

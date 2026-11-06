@@ -22,9 +22,9 @@ checkPaths:
   - .github/workflows/supabase-dev.yml
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
-lastReviewedAt: 2026-11-04
-lastReviewedCommit: 6621e91fc4e8360bbaac1688cdbc42b976e43ab2
-lastReviewedNote: "Database #912: reviewed separate V6 method/evidence/report families, exact baseline and selected-factor budgets, declared evidence without professional approval, original preview/export requests, default-off authority and owned upgrade/race/HTTP/Unicode/schema proof. Actual native/byte/scientific qualification and Main/root delivery remain separate."
+lastReviewedAt: 2026-11-06
+lastReviewedCommit: 76bd8773494ef66ff32fb25cb4d4548a4e5b0e16
+lastReviewedNote: "Database #919: reviewed referenced Unit Process support, Result-only root/query coverage, preserved RLS and isolated forward migration proof."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
