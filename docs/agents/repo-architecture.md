@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-06
-lastReviewedCommit: 753e8c6a5ef1535bd751d5878b93ce458f0f573c
-lastReviewedNote: "Database #925: closed scoped lexical keys and bounded unfiltered V3 ranking; exact-response and hosted qualification remain distinct."
+lastReviewedCommit: e4291f2eeb607501e5dc899c5cdab579dd2088b7
+lastReviewedNote: "Database #933 / #925: reviewed selective navigation key counting with the original broad path, unchanged RLS/count/cursor contracts and expanded geography/classification qualification."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1908,3 +1908,19 @@ approving opinions with pg_jsonschema0.3.3. Drafts/rejections stay incomplete
 when necessary. `api.cmd_review_apply_mv_payload` validates normalized additions
 before final writeback, including old submitted opinions. Existing business
 rows are not backfilled, API/ACL identity and Root/Reference independence remain.
+
+### Portal candidate hydration
+
+Nonempty lexical reads with at most 2,048 matched version keys join each
+forced-RLS Process or Flow projection directly before combining rows. Larger
+match sets retain the existing bulk scan/semijoin. The switch selects a read
+shape and never truncates the candidate set. Joining the protected UNION view can
+leave candidate membership outside the relation scan, so the ranker and
+filtered candidate reader use the existing relation primary keys directly.
+Navigation counting reuses its complete materialized matched keys. For nonempty
+or filtered reads, at most 2,048 keys drive exact membership primary-key reads;
+broader matches retain the original branch semijoin. Query-free unfiltered
+browsing retains the original branch counting and does not calculate unused
+matched keys. No sorted key arrays, candidate/count cap, new projection or writer
+is introduced. These reader changes preserve scope authorization, both-kind
+totals, direct/subtree counts, ranking and public cursors.

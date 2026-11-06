@@ -32,6 +32,7 @@ begin
 
   with matched as materialized (
     select * from private.display_navigation_matched_versions_v1('all',p_query,p_filters)
+  ), matched_count as materialized (select count(*) as n from matched
   ), children as materialized (
     select n.* from private.display_read_navigation_node_v1 n
     where n.dimension=p_dimension and n.parent_node_id is not distinct from p_parent_node_id
@@ -48,14 +49,29 @@ begin
     select * from children
     union all
     select n.* from private.display_read_navigation_node_v1 n where n.node_id=p_parent_node_id
-  ), counted as materialized (
-    select m.node_id,count(*) as count,count(*) filter(where m.direct) as direct_count
+  ), counted_memberships as not materialized (
+    -- Reuse complete matched keys once. Small sets use the existing exact
+    -- membership key; broad and empty reads retain the branch semijoin.
+    -- 2048 chooses the measured read shape, never a candidate/count limit.
+    select m.node_id,m.direct
+    from matched k join private.display_navigation_membership_v1 m
+      on (m.dataset_kind,m.id,m.version)=(k.dataset_kind,k.id,k.version)
+      and m.dimension=p_dimension
+    where not (p_query='' and p_filters='{}'::jsonb)
+      and (select n from matched_count)<=2048
+      and (p_kind='all' or m.dataset_kind=p_kind)
+      and m.node_id=any(array(select n.node_id from targets n))
+    union all
+    select m.node_id,m.direct
     from private.display_navigation_membership_v1 m
-    where m.dimension=p_dimension and (p_kind='all' or m.dataset_kind=p_kind)
+    where ((p_query='' and p_filters='{}'::jsonb) or (select n from matched_count)>2048)
+      and m.dimension=p_dimension and (p_kind='all' or m.dataset_kind=p_kind)
       and ((p_query='' and p_filters='{}'::jsonb)
         or (m.dataset_kind,m.id,m.version) in (select dataset_kind,id,version from matched))
-      and m.node_id = any(array(select n.node_id from targets n))
-    group by m.node_id
+      and m.node_id=any(array(select n.node_id from targets n))
+  ), counted as materialized (
+    select node_id,count(*) as count,count(*) filter(where direct) as direct_count
+    from counted_memberships group by node_id
   ), decorated as materialized (
     select n.node_id,n.code,jsonb_build_object(
       'nodeId',n.node_id,'parentNodeId',n.parent_node_id,'code',n.code,'taxonomy',n.taxonomy,

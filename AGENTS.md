@@ -38,8 +38,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-06
-lastReviewedCommit: 753e8c6a5ef1535bd751d5878b93ce458f0f573c
-lastReviewedNote: "Database #925: reviewed scoped lexical bridge, V3 rank reuse and new local tests; deployment and schema export procedures unchanged."
+lastReviewedCommit: e4291f2eeb607501e5dc899c5cdab579dd2088b7
+lastReviewedNote: "Database #933 / #925: reviewed selective navigation key counting with the original broad path, unchanged RLS/count/cursor contracts and expanded geography/classification qualification."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-validation.md

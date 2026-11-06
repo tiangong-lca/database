@@ -22,13 +22,17 @@ def main():
     for name in bench.READERS:
         path = f'supabase/workspace/schemas/private/functions/{name}/definition.sql'
         sql += subprocess.check_output(['git','show',args.base_ref+':'+path],cwd=bench.ROOT,text=True)
+    bridge_path='supabase/workspace/schemas/private/functions/display_catalog_scoped_pattern_keys_v1/definition.sql'
+    has_bridge=subprocess.run(['git','cat-file','-e',args.base_ref+':'+bridge_path],cwd=bench.ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0
+    if not has_bridge:
+        sql += 'drop function private.display_catalog_scoped_pattern_keys_v1(text,text);\n'
     sql += """
-drop function private.display_catalog_scoped_pattern_keys_v1(text,text);
 update private.portal_display_contract_manifest set identity=private.portal_display_contract_identity_v1() where singleton;
 select private.portal_display_assert_contract_v1();
 create temp table original_metadata as select oid,proowner,proacl,proconfig,prosecdef,provolatile,proparallel
  from pg_proc where pronamespace='private'::regnamespace and proname in
- ('display_catalog_process_pattern_versions_v1','display_catalog_flow_pattern_versions_v1','display_catalog_search_v3_impl');
+ ('display_catalog_process_pattern_versions_v1','display_catalog_flow_pattern_versions_v1','display_catalog_search_v3_impl',
+  'display_catalog_search_v2_impl','display_catalog_candidate_rows_v2','display_navigation_impl_v1');
 create temp table original_facts as select md5(jsonb_build_object(
  'settings',(select jsonb_agg(to_jsonb(s) order by dataset_kind,dataset_id,dataset_version) from private.dataset_display_settings s),
  'projections',(select jsonb_agg(to_jsonb(p) order by dataset_kind,id,version) from private.display_catalog_search_current_v2 p),
@@ -42,13 +46,15 @@ grant select,insert,update on replies to anon;
     for scope in ('tiangong_lca','bafu','tiangong_lca,bafu','worldsteel'):
         brands='array['+','.join(bench.literal(b) for b in scope.split(','))+']'
         for kind in ('process','flow'):
-            for query in ('shared864','%_','50-00-0','s','absent925',
+            for query in ('','shared864','%_','50-00-0','s','absent925',
                           'shared864 50-00-0 current','portal-hybrid',
                           '86400000-0000-4000-8000-000000000101'):
                 calls=[f"select api.portal_search_{'processes' if kind=='process' else 'flows'}_v4({brands},{bench.literal(query)},p_sort=>{bench.literal(sort)},p_limit=>1)"
                        for sort in ('relevance','name_asc','modified_desc')]
                 calls += [f"select api.portal_facets_v4({brands},{bench.literal(kind)},{bench.literal(query)})",
                        f"select api.portal_navigation_v2({brands},{bench.literal(kind)},{bench.literal(query)},'{{}}','geography')"]
+                calls += [f"select api.portal_navigation_v2({brands},{bench.literal(kind)},{bench.literal(query)},'{{}}','classification',{parent})"
+                          for parent in ('null',bench.literal('class:isic' if kind=='process' else 'class:cpc'))]
                 for i,call in enumerate(calls):
                     sql += f"insert into replies values({bench.literal(scope+':'+kind+':'+query+':'+str(i))},{bench.literal(call)},null);\n"
     sql += """
@@ -63,8 +69,7 @@ do $$declare r record;q text;p jsonb;begin
 end$$;
 reset role;
 """
-    migration=(bench.ROOT/'supabase/migrations/20261106110000_optimize_portal_scoped_lexical_keys.sql').read_text()
-    migration=migration.replace('\nbegin;\n','\n',1).removesuffix('commit;\n')
+    migration='\n'.join((bench.ROOT/('supabase/migrations/'+name)).read_text().replace('\nbegin;\n','\n',1).removesuffix('commit;\n') for name in ('20261106110000_optimize_portal_scoped_lexical_keys.sql','20261106114708_bound_portal_candidate_key_reads.sql','20261106125654_bound_selective_portal_navigation_counts.sql'))
     sql += migration
     sql += """
 select results_eq($$select oid,proowner,proacl,proconfig,prosecdef,provolatile,proparallel from pg_proc where oid in(select oid from original_metadata) order by oid$$,

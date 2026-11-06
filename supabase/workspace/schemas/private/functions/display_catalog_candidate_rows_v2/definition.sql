@@ -43,12 +43,22 @@ begin
     select p.id, p.version
     from private.display_catalog_search_current_v2 as p
     where p.dataset_kind = p_kind and p.id = p_exact_id and true
-  )
-  select p.id, p.version, p.card, p.state_code, p.modified_at
-  from matched
-  join private.display_catalog_search_current_v2 as p
-    on p.dataset_kind = p_kind and p.id = matched.id and p.version = matched.version
-  where true;
+  ), key_count as materialized (select count(*) as n from matched)
+  -- Join exact candidates to each RLS-protected relation before the UNION.
+  select p.id,p.version,p.card,p.state_code,p.modified_at
+    from matched k join private.display_catalog_search_rows_v2 p
+      on p.dataset_kind='process' and p.id=k.id and p.version=k.version
+    where p_kind='process' and (select n from key_count)<=2048
+    union all
+    select p.id,p.version,p.card,p.state_code,p.modified_at
+    from matched k join private.display_catalog_search_rows_v1 p
+      on p.dataset_kind='flow' and p.id=k.id and p.version=k.version
+    where p_kind='flow' and (select n from key_count)<=2048
+    union all
+    select p.id,p.version,p.card,p.state_code,p.modified_at
+    from matched k join private.display_catalog_search_current_v2 p
+      on p.dataset_kind=p_kind and p.id=k.id and p.version=k.version
+    where (select n from key_count)>2048;
 end;
 $_$;
 

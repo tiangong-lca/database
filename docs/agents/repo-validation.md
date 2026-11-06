@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-06
-lastReviewedCommit: 753e8c6a5ef1535bd751d5878b93ce458f0f573c
-lastReviewedNote: "Database #925: closed scoped lexical keys and bounded unfiltered V3 ranking; exact-response and hosted qualification remain distinct."
+lastReviewedCommit: e4291f2eeb607501e5dc899c5cdab579dd2088b7
+lastReviewedNote: "Database #933 / #925: reviewed selective navigation key counting with the original broad path, unchanged RLS/count/cursor contracts and expanded geography/classification qualification."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1756,14 +1756,23 @@ forced and no function gains `LEAKPROOF`.
 
 `scripts/test_portal_lexical_upgrade.py --base-ref <exact-predecessor> --log
 <new-log>` exercises the complete migration on real source-writer fixtures and
-compares public responses, routine OIDs/configs/ACLs, projections/settings,
+compares public responses (including empty searches), routine OIDs/configs/ACLs, projections/settings,
 roles, RLS and triggers, followed by repeat application. All effects roll back.
 `scripts/benchmark_portal_lexical_keys.py --base-ref <exact-predecessor> --report
 <new-json>` admits only the explicitly owned `portal-query-925-pg1711` local
 PostgreSQL 17.11 stack. It compares complete public Search/Facets/Navigation
 responses with alternating variant order over 19,000 Process and 138,000 Flow
 versions, retaining three samples per case and separate natural nested lexical
-plans. Candidate warm local p95 must be at most two seconds, with the original
+and exact candidate-key plans for both protected projection relations and
+Process/Flow navigation membership. Include
+rare, broad, absent and empty queries. The candidate must reach the primary key
+with both id and version; selecting lexical keys followed by a full partition
+scan is insufficient. Exercise populated source and predecessor cursor parity
+for the complete lexical and candidate-join migration sequence. Navigation
+qualification covers geography plus classification roots and branches, including
+both selective and near-complete matches: a point-read
+plan that times out for broad matches is a failed candidate, not a valid speedup. Candidate warm local p95 must be at most two seconds; reject cost over 1.5 times
+the predecessor outside a 50-ms noise floor. Retain the original
 eight-second statement budget. Small fixtures are smoke evidence only.
 
 Run these collectors serially and reset the owned stack between volume and
