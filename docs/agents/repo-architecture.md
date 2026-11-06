@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-06
-lastReviewedCommit: 89faa0acdb3dbb767227dd0007292bbadac307e0
-lastReviewedNote: "Database #922: compact membership, Release-owned closure validation, unchanged live authorization and batch binding."
+lastReviewedCommit: 753e8c6a5ef1535bd751d5878b93ce458f0f573c
+lastReviewedNote: "Database #925: closed scoped lexical keys and bounded unfiltered V3 ranking; exact-response and hosted qualification remain distinct."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1714,11 +1714,35 @@ multiple differently scoped RPCs in one statement, outer-GUC restoration after
 success and failure, and simultaneous sessions. The ordinary contract assertion
 still rejects a changed view definition or security barrier before serving.
 
+### Scoped lexical key selection (Database #925)
+
+The non-leakproof text `LIKE` condition cannot become a PGroonga index condition
+behind the projections' correlated display-scope RLS. The closed
+`display_catalog_scoped_pattern_keys_v1` owner helper runs the fixed literal
+pattern query on the Process V2 or Flow V1 projection, intersecting matches with
+the existing security-barrier visible-settings view by exact kind/id/version
+before returning any keys. Only `portal_display_executor` receives EXECUTE;
+browser, service and legacy executors cannot call it. The relation allowlist,
+empty search path, bound pattern parameter and definition/ACL manifest guard
+are part of this boundary. It returns neither documents nor cards.
+
+Existing projection RLS, owners, policies, source/settings writers and request
+budgets remain unchanged. No operator is marked leakproof. The helper creates
+no cached authorization or candidate cap: brand scope, narrowing brand filters,
+legacy global visibility and immediate withdrawal use the current statement's
+settings. Single-character dispatch, exact CAS, latest selection, ranking,
+counting and cursor semantics remain unchanged. Unfiltered nonempty V3 Search
+delegates to the existing V2 narrow ranking/page kernel: both use the same
+all-version candidate universe. The V3 caller retains its own fingerprint,
+cursor envelope and card-context decorator. Full card facts and display reasons
+are computed only for `limit + 1` selected rows; filtered V3 and empty-query
+branches retain their previous kernels.
+
 ### Scoped Facets and Navigation readers (Database #864)
 
 Lexical display matching carries exact kind/id/version keys through the existing
 UUID and literal-pattern paths, then applies navigation facts when filters are
-present. Pattern helpers already read current projections under the same RLS;
+present. Pattern helpers return only exact current display-scope keys;
 the empty-filter path avoids repeating that existence check. The selective CAS
 path retains its established candidate query. No path selects a latest version.
 Facets groups

@@ -4,32 +4,21 @@ CREATE OR REPLACE FUNCTION "private"."display_catalog_process_pattern_versions_v
     SET "statement_timeout" TO '20s'
     SET "plan_cache_mode" TO 'force_custom_plan'
     SET "row_security" TO 'on'
-    AS $_$
-declare
-  v_literal text;
+    AS $$
+declare v_literal text;
 begin
   if pg_catalog.char_length(p_like_pattern) = 3
      and pg_catalog.left(p_like_pattern, 1) = '%'
      and pg_catalog.right(p_like_pattern, 1) = '%' then
     v_literal := pg_catalog.substr(p_like_pattern, 2, 1);
-    return query
-    select candidate.id,
-      candidate.version
-    from private.display_catalog_process_single_character_versions_v1(
-      v_literal
-    ) as candidate;
+    return query select candidate.id, candidate.version
+      from private.display_catalog_process_single_character_versions_v1(v_literal) as candidate;
     return;
   end if;
-
-  return query execute pg_catalog.format($sql$
-    select projection.id,
-      projection.version
-    from private.display_catalog_search_current_v2 as projection
-    where projection.dataset_kind = 'process'
-      and projection.document like %L escape E'\\'
-  $sql$, p_like_pattern);
+  return query select candidate.id, candidate.version
+    from private.display_catalog_scoped_pattern_keys_v1('process', p_like_pattern) as candidate;
 end
-$_$;
+$$;
 
 ALTER FUNCTION "private"."display_catalog_process_pattern_versions_v1"("p_like_pattern" "text") OWNER TO "portal_display_executor";
 

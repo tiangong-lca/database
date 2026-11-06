@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-06
-lastReviewedCommit: 89faa0acdb3dbb767227dd0007292bbadac307e0
-lastReviewedNote: "Database #922: reviewed deterministic local compact-membership function export; generated-workspace procedure unchanged."
+lastReviewedCommit: 753e8c6a5ef1535bd751d5878b93ce458f0f573c
+lastReviewedNote: "Database #925: reviewed scoped lexical bridge, V3 rank reuse and new local tests; deployment and schema export procedures unchanged."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -53,6 +53,11 @@ JSON/cursor 及索引存储/写成本。这些本地资格不代表 hosted 性�
 资格查询和有界统计与精确前序实现。它仅接受明确归属本任务的指定空本地栈、
 `--samples`（1–5）和新 `--report` 路径，交替执行前序/候选并回滚全部 fixture
 和 DDL。完整验证边界见 repo validation guide。
+
+`benchmark_portal_lexical_keys.py` 与 `test_portal_lexical_upgrade.py` 只在明确归属
+Database #925 的 `portal-query-925-pg1711` 本地栈验证。两者要求精确 `--base-ref`
+和新的证据路径，须串行运行，并在规模测试和 writer 测试之间重置该栈。
+完整证明边界由 validation guide 维护；本地结果不等同于线上恢复。
 
 ## 目录结构
 
