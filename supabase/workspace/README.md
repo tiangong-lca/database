@@ -20,9 +20,9 @@ checkPaths:
   - .githooks/pre-push
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-05
-lastReviewedCommit: 62ff6893d32b09049b5489d87d243210d3372eb7
-lastReviewedNote: "Database #916: reviewed artifact-scoped final Result query bindings and isolated schema generation."
+lastReviewedAt: 2026-11-06
+lastReviewedCommit: 32095ed37bf87cd825cd6db721beedee36bfa8c9
+lastReviewedNote: "Database #919: reviewed referenced Unit Process support, Result-only root/query coverage, preserved RLS and isolated forward migration proof."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

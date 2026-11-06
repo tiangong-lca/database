@@ -21,8 +21,8 @@ checkPaths:
   - scripts/*study_advanced*.py
   - supabase/tests/fixtures/study909_worker_*.json
   - docs/agents/lca-study-runtime-contract.md
-lastReviewedAt: 2026-11-04
-lastReviewedCommit: d95848a3859834cf4abe143dde3111ce71e968ce
+lastReviewedAt: 2026-11-06
+lastReviewedCommit: 32095ed37bf87cd825cd6db721beedee36bfa8c9
 lastReviewedNote: "Database #912: reviewed separate V6 method/evidence/report families, exact baseline and selected-factor budgets, declared evidence without professional approval, original preview/export requests, default-off authority and owned upgrade/race/HTTP/Unicode/schema proof. Actual native/byte/scientific qualification and Main/root delivery remain separate."
 related:
   - ./lca-study-durable-contract.md
