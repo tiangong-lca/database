@@ -57915,6 +57915,9 @@ CREATE OR REPLACE FUNCTION "private"."display_api_search_flows_v3"("p_query" "te
     SET "search_path" TO ''
     SET "statement_timeout" TO '8s'
     AS $$
+declare
+  v_diagnostic_message text;
+  v_diagnostic_state text;
 begin
   return pg_catalog.jsonb_set(private.display_decorate_card_context_v1(
     private.display_search_v3(
@@ -57923,10 +57926,35 @@ begin
   ), '{schemaVersion}', '"portal.public-search-page.v2"'::jsonb);
 exception
   when sqlstate '22023' then
+    raise log using message = 'portal read failure diagnostic',
+      detail = pg_catalog.jsonb_build_object(
+        'schemaVersion', 'portal.read-failure.v1', 'rpc', 'display_search_flows_v3',
+        'category', 'validation', 'reason', 'input'
+      )::text;
     raise exception using errcode = '22023', message = 'invalid portal request';
   when query_canceled then
+    get stacked diagnostics v_diagnostic_message = MESSAGE_TEXT;
+    raise log using message = 'portal read failure diagnostic',
+      detail = pg_catalog.jsonb_build_object(
+        'schemaVersion', 'portal.read-failure.v1', 'rpc', 'display_search_flows_v3',
+        'category', 'cancellation', 'reason', case v_diagnostic_message
+          when 'canceling statement due to statement timeout' then 'statement_timeout'
+          when 'canceling statement due to user request' then 'cancel_request'
+          else 'unknown'
+        end
+      )::text;
     raise exception using errcode = 'P0001', message = 'portal catalog unavailable';
   when others then
+    get stacked diagnostics v_diagnostic_state = RETURNED_SQLSTATE;
+    raise log using message = 'portal read failure diagnostic',
+      detail = pg_catalog.jsonb_build_object(
+        'schemaVersion', 'portal.read-failure.v1', 'rpc', 'display_search_flows_v3',
+        'category', 'internal', 'reason', case v_diagnostic_state
+          when '54000' then 'response_budget'
+          when '55000' then 'contract_drift'
+          else 'other'
+        end
+      )::text;
     raise exception using errcode = 'P0001', message = 'portal catalog unavailable';
 end;
 $$;
@@ -57994,6 +58022,9 @@ CREATE OR REPLACE FUNCTION "private"."display_api_search_processes_v3"("p_query"
     SET "search_path" TO ''
     SET "statement_timeout" TO '8s'
     AS $$
+declare
+  v_diagnostic_message text;
+  v_diagnostic_state text;
 begin
   return pg_catalog.jsonb_set(private.display_decorate_card_context_v1(
     private.display_lcia_decorate_item_page_v1(
@@ -58004,10 +58035,35 @@ begin
   ), '{schemaVersion}', '"portal.public-search-page.v2"'::jsonb);
 exception
   when sqlstate '22023' then
+    raise log using message = 'portal read failure diagnostic',
+      detail = pg_catalog.jsonb_build_object(
+        'schemaVersion', 'portal.read-failure.v1', 'rpc', 'display_search_processes_v3',
+        'category', 'validation', 'reason', 'input'
+      )::text;
     raise exception using errcode = '22023', message = 'invalid portal request';
   when query_canceled then
+    get stacked diagnostics v_diagnostic_message = MESSAGE_TEXT;
+    raise log using message = 'portal read failure diagnostic',
+      detail = pg_catalog.jsonb_build_object(
+        'schemaVersion', 'portal.read-failure.v1', 'rpc', 'display_search_processes_v3',
+        'category', 'cancellation', 'reason', case v_diagnostic_message
+          when 'canceling statement due to statement timeout' then 'statement_timeout'
+          when 'canceling statement due to user request' then 'cancel_request'
+          else 'unknown'
+        end
+      )::text;
     raise exception using errcode = 'P0001', message = 'portal catalog unavailable';
   when others then
+    get stacked diagnostics v_diagnostic_state = RETURNED_SQLSTATE;
+    raise log using message = 'portal read failure diagnostic',
+      detail = pg_catalog.jsonb_build_object(
+        'schemaVersion', 'portal.read-failure.v1', 'rpc', 'display_search_processes_v3',
+        'category', 'internal', 'reason', case v_diagnostic_state
+          when '54000' then 'response_budget'
+          when '55000' then 'contract_drift'
+          else 'other'
+        end
+      )::text;
     raise exception using errcode = 'P0001', message = 'portal catalog unavailable';
 end;
 $$;
@@ -61380,9 +61436,23 @@ begin
     with matched_keys as materialized (
       select id,version from private.display_navigation_matched_versions_v1(p_kind,p_query,p_filters)
     ), portal_matches as materialized (
+      -- Default unfiltered browsing needs only the next page of exact keys.
+      -- Use the existing kind/id/version index before materializing candidates;
+      -- RLS remains on the source scan and the common cursor/render path stays.
+      (select f.id,f.version,f.modified_at,null::text as name_value
+       from private.display_catalog_facet_rows_v1 f
+       where p_sort='relevance' and p_filters='{}'::jsonb
+         and f.dataset_kind=p_kind and f.facet_contract_version=1
+         and (p_cursor_rank is null or 0::numeric < p_cursor_rank::numeric
+           or (0::numeric = p_cursor_rank::numeric
+             and (f.id > p_cursor_id or (f.id=p_cursor_id and f.version < p_cursor_version))))
+       order by f.id asc,f.version desc
+       limit p_limit + 1)
+      union all
       select f.id,f.version,f.modified_at,null::text as name_value
       from private.display_catalog_facet_rows_v1 f
       where p_sort<>'name_asc' and f.dataset_kind=p_kind
+        and (p_filters<>'{}'::jsonb or p_sort<>'relevance')
         and true and f.facet_contract_version=1
         and (p_filters='{}'::jsonb or (f.id,f.version) in (select id,version from matched_keys))
       union all
@@ -61783,7 +61853,7 @@ begin
   -- lexical requests. Reuse its narrow rank/page kernel instead of constructing
   -- full facts and reason codes for every matched version. The V3 caller still
   -- owns its fingerprint, cursor envelope, validation and card-context decorator.
-  if p_query <> '' and p_filters = '{}'::jsonb then
+  if p_filters = '{}'::jsonb and (p_query <> '' or p_sort = 'relevance') then
     return private.display_catalog_search_v2_impl(
       p_kind,p_query,p_filters,p_sort,p_cursor_rank,p_cursor_id,
       p_cursor_version,p_limit,p_query_fingerprint

@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-06
-lastReviewedCommit: e4291f2eeb607501e5dc899c5cdab579dd2088b7
-lastReviewedNote: "Database #933 / #925: reviewed selective navigation key counting with the original broad path, unchanged RLS/count/cursor contracts and expanded geography/classification qualification."
+lastReviewedCommit: 21e20ba34eab92310ac7f1368eedfab9329cde1e
+lastReviewedNote: "Database #935 / #925: reviewed indexed empty default paging and closed Search failure diagnostics with unchanged public, scope, writer and timeout contracts."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
