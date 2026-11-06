@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-07
-lastReviewedCommit: "1df742f81c372c5b93fe328ba4b392ee19f03b85"
-lastReviewedNote: "Database #943: reviewed single complete Search validation, closed diagnostic shape proof and local CI; deployment and permission boundaries unchanged."
+lastReviewedCommit: "6eadf9b6b28907cea0edeafde00ca1d932a5a421"
+lastReviewedNote: "Database #946: reviewed filtered V3 reuse of exact narrow facts, page hydration and extended parity/latency proof; permissions and deployment boundaries unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1731,12 +1731,16 @@ budgets remain unchanged. No operator is marked leakproof. The helper creates
 no cached authorization or candidate cap: brand scope, narrowing brand filters,
 legacy global visibility and immediate withdrawal use the current statement's
 settings. Single-character dispatch, exact CAS, latest selection, ranking,
-counting and cursor semantics remain unchanged. Unfiltered nonempty V3 Search
-delegates to the existing V2 narrow ranking/page kernel: both use the same
-all-version candidate universe. The V3 caller retains its own fingerprint,
-cursor envelope and card-context decorator. Full card facts and display reasons
-are computed only for `limit + 1` selected rows; filtered V3 and empty-query
-branches retain their previous kernels.
+counting and cursor semantics remain unchanged. Nonempty V3 Search delegates to
+the existing V2 narrow ranking/page kernel: both use the same all-version
+candidate universe. Validated filters use synchronized navigation facts with
+the same normalized scalar predicates and direct/subtree memberships, before
+ranking. This also covers broad filtered text instead of constructing full
+card facts and reasons for every candidate. The V3 caller retains its validator,
+fingerprint, cursor envelope and card-context decorator. Full card facts and
+display reasons are computed only for `limit + 1` selected rows; empty-query
+branches retain their existing behavior. No new projection, index or writer is
+introduced.
 
 V3 Search invokes the complete navigation/projection contract through its input
 validator once; that guard already includes the catalog contract, so a preceding

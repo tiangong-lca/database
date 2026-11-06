@@ -264,16 +264,38 @@ select is((select count(*) from private.api_capability_grants where routine_iden
  and allow_anon and allow_authenticated and not allow_service_role),2::bigint,'both additive APIs have exact public capability admission');
 
 -- Source and visibility writers must keep the new read path current.
+set local role anon;
+select is(jsonb_array_length(api.portal_search_processes_v4(array['bafu','tiangong_lca'],'shared864',p_filters=>'{"geography":" CN ","classification":"PORTAL-HYBRID"}')->'items'),2,
+ 'filtered lexical Search preserves both historical versions and normalized combined filters');
+select is(jsonb_array_length(api.portal_search_flows_v4(array['bafu'],'shared864',p_filters=>'{"geography":"CN"}')->'items'),1,
+ 'filtered Flow lexical Search retains its exact version');
+select is(jsonb_array_length(api.portal_search_flows_v4(array['bafu'],'shared864',p_filters=>'{"referenceYearFrom":2024}')->'items'),0,
+ 'filtered Flow lexical Search excludes a null reference year');
+reset role;
 update public.processes set json=pg_temp.portal_versions_process_payload('Changed864 name','01.00.000')
 where id='86400000-0000-4000-8000-000000000101' and version='01.00.000';
 set local role anon;
 select is(pg_temp.facet_count(api.portal_facets_v4(array['bafu','tiangong_lca'],'all','shared864'),'kind','process'),1::bigint,'source update immediately removes old lexical match');
 select is(pg_temp.facet_count(api.portal_facets_v4(array['tiangong_lca'],'all','changed864'),'kind','process'),1::bigint,'source update immediately adds new lexical match');
+select is(jsonb_array_length(api.portal_search_processes_v4(array['bafu','tiangong_lca'],'shared864',p_filters=>'{"geography":"CN"}')->'items'),1,
+ 'filtered Search immediately removes the changed source text');
+select is(jsonb_array_length(api.portal_search_processes_v4(array['tiangong_lca'],'changed864',p_filters=>'{"geography":"CN"}')->'items'),1,
+ 'filtered Search immediately includes the new source text');
+reset role;
+update public.processes set json=jsonb_set(json,'{processDataSet,processInformation,geography,locationOfOperationSupplyOrProduction,@location}','"US"')
+where id='86400000-0000-4000-8000-000000000101' and version='01.00.000';
+set local role anon;
+select is(jsonb_array_length(api.portal_search_processes_v4(array['tiangong_lca'],'changed864',p_filters=>'{"geography":"CN"}')->'items'),0,
+ 'filtered Search immediately removes the previous source geography');
+select is(jsonb_array_length(api.portal_search_processes_v4(array['tiangong_lca'],'changed864',p_filters=>'{"geography":"US"}')->'items'),1,
+ 'filtered Search immediately uses the updated source geography');
 reset role;
 update private.dataset_display_settings set is_visible=false
 where dataset_kind='process' and dataset_id='86400000-0000-4000-8000-000000000101' and dataset_version='02.00.000';
 set local role anon;
 select is(pg_temp.facet_count(api.portal_facets_v4(array['bafu','tiangong_lca'],'all','shared864'),'kind','process'),0::bigint,'withdrawal immediately removes the remaining Process');
+select is(jsonb_array_length(api.portal_search_processes_v4(array['bafu','tiangong_lca'],'shared864',p_filters=>'{"geography":"CN"}')->'items'),0,
+ 'filtered Search immediately excludes the withdrawn exact version');
 select is(api.portal_navigation_v2(array['bafu','tiangong_lca'],'all','shared864','{}','geography')->'totals','{"process":0,"flow":1}'::jsonb,'navigation observes the same withdrawal');
 select is(api.portal_catalog_totals_v1(array['bafu','tiangong_lca'])->'totals','{"process":1,"flow":1}'::jsonb,'totals observe visibility withdrawal immediately');
 select is(api.portal_navigation_branches_v1(array['bafu','tiangong_lca'],'process','shared864','{}','geography','geo:cn')#>'{parent,count}','0'::jsonb,'branch-only observes source updates and withdrawal');

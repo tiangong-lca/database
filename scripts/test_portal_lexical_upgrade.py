@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Rollback-only real-writer upgrade proof on the explicitly owned #925 stack."""
 import argparse
+import json
 import re
 from pathlib import Path
 import subprocess
@@ -11,6 +12,8 @@ import benchmark_portal_lexical_keys as bench
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--base-ref', required=True)
+    parser.add_argument('--compare-filtered-search', action='store_true',
+                        help='Compare every accepted filter family, combined/hierarchy predicates and predecessor cursors')
     parser.add_argument('--log', type=Path, required=True)
     args = parser.parse_args()
     assert 'tiangong-lca/database#925' in (bench.WORK/'OWNER.md').read_text()
@@ -54,6 +57,25 @@ grant select,insert,update on replies to anon;
                           '86400000-0000-4000-8000-000000000101'):
                 calls=[f"select api.portal_search_{'processes' if kind=='process' else 'flows'}_v4({brands},{bench.literal(query)},p_sort=>{bench.literal(sort)},p_limit=>1)"
                        for sort in ('relevance','name_asc','modified_desc')]
+                if args.compare_filtered_search:
+                    filters = [
+                        {'geography':' CN '}, {'geography':'ZZ'}, {'classification':' PORTAL-HYBRID '},
+                        {'source':' Portal Provider '}, {'source':'absent946'},
+                        {'accessLevel':'open'}, {'accessLevel':'metadata_only'},
+                        {'referenceYearFrom':2024,'referenceYearTo':2024},
+                        {'referenceYearFrom':2025}, {'referenceYearTo':2023},
+                        {'geographyNodeId':'geo:cn','geographyScope':'subtree'},
+                        {'geographyNodeId':'geo:cn','geographyScope':'direct'},
+                        {'classificationNodeId':'class:isic' if kind=='process' else 'class:cpc','classificationScope':'subtree'},
+                        {'classificationNodeId':'class:isic' if kind=='process' else 'class:cpc','classificationScope':'direct'},
+                        {'geography':'CN','classification':'PORTAL-HYBRID','accessLevel':'open'},
+                        {'geography':'CN','brand':'bafu'},
+                    ]
+                    if kind=='process':
+                        filters += [{'processSubtype':'unit_process'}, {'processSubtype':'absent946'}]
+                    for value in filters:
+                        for sort in ('relevance','name_asc','modified_desc'):
+                            calls.append(f"select api.portal_search_{'processes' if kind=='process' else 'flows'}_v4({brands},{bench.literal(query)},p_filters=>{bench.literal(json.dumps(value))}::jsonb,p_sort=>{bench.literal(sort)},p_limit=>1)")
                 calls += [f"select api.portal_facets_v4({brands},{bench.literal(kind)},{bench.literal(query)})",
                        f"select api.portal_navigation_v2({brands},{bench.literal(kind)},{bench.literal(query)},'{{}}','geography')"]
                 calls += [f"select api.portal_navigation_v2({brands},{bench.literal(kind)},{bench.literal(query)},'{{}}','classification',{parent})"
@@ -72,7 +94,7 @@ do $$declare r record;q text;p jsonb;begin
 end$$;
 reset role;
 """
-    migration='\n'.join((bench.ROOT/('supabase/migrations/'+name)).read_text().replace('\nbegin;\n','\n',1).removesuffix('commit;\n') for name in ('20261106110000_optimize_portal_scoped_lexical_keys.sql','20261106114708_bound_portal_candidate_key_reads.sql','20261106125654_bound_selective_portal_navigation_counts.sql','20261106142546_bound_empty_portal_pages_and_diagnose_search.sql','20261106160917_split_portal_branch_and_total_reads.sql','20261106175555_bound_portal_branch_visibility_reads.sql','20261106183000_bound_portal_lexical_scope_intersection.sql','20261106194000_reduce_portal_duplicate_validation.sql'))
+    migration='\n'.join((bench.ROOT/('supabase/migrations/'+name)).read_text().replace('\nbegin;\n','\n',1).removesuffix('commit;\n') for name in ('20261106110000_optimize_portal_scoped_lexical_keys.sql','20261106114708_bound_portal_candidate_key_reads.sql','20261106125654_bound_selective_portal_navigation_counts.sql','20261106142546_bound_empty_portal_pages_and_diagnose_search.sql','20261106160917_split_portal_branch_and_total_reads.sql','20261106175555_bound_portal_branch_visibility_reads.sql','20261106183000_bound_portal_lexical_scope_intersection.sql','20261106194000_reduce_portal_duplicate_validation.sql','20261106201000_bound_portal_filtered_search.sql'))
     sql += migration
     sql += """
 select results_eq($$select oid,proowner,proacl,proconfig,prosecdef,provolatile,proparallel from pg_proc where oid in(select oid from original_metadata) order by oid$$,

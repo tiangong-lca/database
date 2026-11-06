@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-07
-lastReviewedCommit: "1df742f81c372c5b93fe328ba4b392ee19f03b85"
-lastReviewedNote: "Database #943: reviewed single complete Search validation, closed diagnostic shape proof and local CI; deployment and permission boundaries unchanged."
+lastReviewedCommit: "6eadf9b6b28907cea0edeafde00ca1d932a5a421"
+lastReviewedNote: "Database #946: reviewed filtered V3 reuse of exact narrow facts, page hydration and extended parity/latency proof; permissions and deployment boundaries unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1872,6 +1872,30 @@ including small/broad/empty/filtered/sorted and predecessor-cursor shapes.
 Only the local benchmark session enables function tracking. Keep the same full
 response parity, scale, latency/regression, populated upgrade, blank rebuild and
 deterministic export requirements above; hosted recovery remains separate.
+
+### Broad filtered Search qualification (Database #946)
+
+The `--compare-filtered-search` mode of `benchmark_portal_lexical_keys.py`
+extends the complete public API matrix with broad geography, no-match,
+hierarchy and combined-year filters under each sort and brand scope. Retain the
+same production-scale fixture, alternating variants, full payload/cursor parity,
+2-second candidate warm goal and no-regression checks. Its local transaction
+function statistics must show full card-facts calls bounded by returned page
+size plus one; the predecessor broad geography path must actually evaluate
+more facts than that bound. A failed expanded latency profile stays a failure,
+even when earlier less-demanding cases passed.
+
+Run `test_portal_lexical_upgrade.py --compare-filtered-search --base-ref
+<exact-predecessor> --log <new-log>` for accepted scalar and hierarchy filters,
+normalization, combinations, all sorts, exact/CAS/literal/one-character/absent
+queries, historical versions, brands and actual predecessor cursors. Preserve
+routine OIDs/ACLs/settings, source-derived projections, roles, RLS and triggers
+through upgrade and reapplication. `20261025_portal_facets_navigation.sql` also
+checks filtered Search against immediate real source-text/geography updates,
+withdrawal, historical versions and null Flow years. Run the adjacent full SQL,
+blank rebuild, deterministic schema/type export and required CI checks. Hosted
+metadata/readback, actual Portal interaction and bounded error logs remain
+separate recovery acceptance.
 
 ### Facets and Navigation reader qualification (Database #864)
 
