@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-07
-lastReviewedCommit: "9b7f6571c9587ac12e06355eab5d8c12c08d0d65"
-lastReviewedNote: "Database #935 residual recovery: reviewed branch and lexical visibility work, complete scope intersection and explicit hosted-load qualification limits."
+lastReviewedCommit: "1df742f81c372c5b93fe328ba4b392ee19f03b85"
+lastReviewedNote: "Database #943: reviewed single complete Search validation, closed diagnostic shape proof and local CI; deployment and permission boundaries unchanged."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -58,6 +58,8 @@ JSON/cursor 及索引存储/写成本。这些本地资格不代表 hosted 性�
 Database #925 的 `portal-query-925-pg1711` 本地栈验证。两者要求精确 `--base-ref`
 和新的证据路径，须串行运行，并在规模测试和 writer 测试之间重置该栈。
 完整证明边界由 validation guide 维护；本地结果不等同于线上恢复。
+
+`--compare-validation` 使用本地 PG17 事务级函数统计验证完整 Search 调用中目录校验由两次变为一次，并覆盖筛选、排序和旧游标。`check_portal_read_failure_diagnostics.py --log <SQL测试日志>` 验证实际异常日志仅含封闭的粗粒度类别；CI 在诊断 SQL 测试之后运行该检查。原文、筛选值、游标、标识符和 SQL 不进入这些诊断字段。
 
 ## 目录结构
 

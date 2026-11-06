@@ -58014,6 +58014,26 @@ exception
     raise log using message = 'portal read failure diagnostic',
       detail = pg_catalog.jsonb_build_object(
         'schemaVersion', 'portal.read-failure.v1', 'rpc', 'display_search_flows_v3',
+        'queryClass', case
+          when p_query is null then 'default'
+          when octet_length(p_query)>2048 then 'oversize'
+          when btrim(p_query)='' then 'empty'
+          when char_length(btrim(p_query))=1 then 'single'
+          else 'multiple' end,
+        'filterClass', case
+          when p_filters is null then 'default'
+          when pg_column_size(p_filters)>4096 then 'oversize'
+          when jsonb_typeof(p_filters)<>'object' then 'invalid'
+          when p_filters='{}'::jsonb then 'empty' else 'filtered' end,
+        'sortClass', case
+          when p_sort is null then 'default'
+          when octet_length(p_sort)>64 then 'invalid'
+          when lower(btrim(p_sort)) in ('relevance','name_asc','modified_desc')
+            then lower(btrim(p_sort)) else 'invalid' end,
+        'hasCursor', p_cursor is not null,
+        'limitClass', case when p_limit is null then 'default'
+          when p_limit between 1 and 10 then '1_10'
+          when p_limit between 11 and 50 then '11_50' else 'invalid' end,
         'category', 'validation', 'reason', 'input'
       )::text;
     raise exception using errcode = '22023', message = 'invalid portal request';
@@ -58022,6 +58042,26 @@ exception
     raise log using message = 'portal read failure diagnostic',
       detail = pg_catalog.jsonb_build_object(
         'schemaVersion', 'portal.read-failure.v1', 'rpc', 'display_search_flows_v3',
+        'queryClass', case
+          when p_query is null then 'default'
+          when octet_length(p_query)>2048 then 'oversize'
+          when btrim(p_query)='' then 'empty'
+          when char_length(btrim(p_query))=1 then 'single'
+          else 'multiple' end,
+        'filterClass', case
+          when p_filters is null then 'default'
+          when pg_column_size(p_filters)>4096 then 'oversize'
+          when jsonb_typeof(p_filters)<>'object' then 'invalid'
+          when p_filters='{}'::jsonb then 'empty' else 'filtered' end,
+        'sortClass', case
+          when p_sort is null then 'default'
+          when octet_length(p_sort)>64 then 'invalid'
+          when lower(btrim(p_sort)) in ('relevance','name_asc','modified_desc')
+            then lower(btrim(p_sort)) else 'invalid' end,
+        'hasCursor', p_cursor is not null,
+        'limitClass', case when p_limit is null then 'default'
+          when p_limit between 1 and 10 then '1_10'
+          when p_limit between 11 and 50 then '11_50' else 'invalid' end,
         'category', 'cancellation', 'reason', case v_diagnostic_message
           when 'canceling statement due to statement timeout' then 'statement_timeout'
           when 'canceling statement due to user request' then 'cancel_request'
@@ -58034,6 +58074,26 @@ exception
     raise log using message = 'portal read failure diagnostic',
       detail = pg_catalog.jsonb_build_object(
         'schemaVersion', 'portal.read-failure.v1', 'rpc', 'display_search_flows_v3',
+        'queryClass', case
+          when p_query is null then 'default'
+          when octet_length(p_query)>2048 then 'oversize'
+          when btrim(p_query)='' then 'empty'
+          when char_length(btrim(p_query))=1 then 'single'
+          else 'multiple' end,
+        'filterClass', case
+          when p_filters is null then 'default'
+          when pg_column_size(p_filters)>4096 then 'oversize'
+          when jsonb_typeof(p_filters)<>'object' then 'invalid'
+          when p_filters='{}'::jsonb then 'empty' else 'filtered' end,
+        'sortClass', case
+          when p_sort is null then 'default'
+          when octet_length(p_sort)>64 then 'invalid'
+          when lower(btrim(p_sort)) in ('relevance','name_asc','modified_desc')
+            then lower(btrim(p_sort)) else 'invalid' end,
+        'hasCursor', p_cursor is not null,
+        'limitClass', case when p_limit is null then 'default'
+          when p_limit between 1 and 10 then '1_10'
+          when p_limit between 11 and 50 then '11_50' else 'invalid' end,
         'category', 'internal', 'reason', case v_diagnostic_state
           when '54000' then 'response_budget'
           when '55000' then 'contract_drift'
@@ -58123,6 +58183,26 @@ exception
     raise log using message = 'portal read failure diagnostic',
       detail = pg_catalog.jsonb_build_object(
         'schemaVersion', 'portal.read-failure.v1', 'rpc', 'display_search_processes_v3',
+        'queryClass', case
+          when p_query is null then 'default'
+          when octet_length(p_query)>2048 then 'oversize'
+          when btrim(p_query)='' then 'empty'
+          when char_length(btrim(p_query))=1 then 'single'
+          else 'multiple' end,
+        'filterClass', case
+          when p_filters is null then 'default'
+          when pg_column_size(p_filters)>4096 then 'oversize'
+          when jsonb_typeof(p_filters)<>'object' then 'invalid'
+          when p_filters='{}'::jsonb then 'empty' else 'filtered' end,
+        'sortClass', case
+          when p_sort is null then 'default'
+          when octet_length(p_sort)>64 then 'invalid'
+          when lower(btrim(p_sort)) in ('relevance','name_asc','modified_desc')
+            then lower(btrim(p_sort)) else 'invalid' end,
+        'hasCursor', p_cursor is not null,
+        'limitClass', case when p_limit is null then 'default'
+          when p_limit between 1 and 10 then '1_10'
+          when p_limit between 11 and 50 then '11_50' else 'invalid' end,
         'category', 'validation', 'reason', 'input'
       )::text;
     raise exception using errcode = '22023', message = 'invalid portal request';
@@ -58131,6 +58211,26 @@ exception
     raise log using message = 'portal read failure diagnostic',
       detail = pg_catalog.jsonb_build_object(
         'schemaVersion', 'portal.read-failure.v1', 'rpc', 'display_search_processes_v3',
+        'queryClass', case
+          when p_query is null then 'default'
+          when octet_length(p_query)>2048 then 'oversize'
+          when btrim(p_query)='' then 'empty'
+          when char_length(btrim(p_query))=1 then 'single'
+          else 'multiple' end,
+        'filterClass', case
+          when p_filters is null then 'default'
+          when pg_column_size(p_filters)>4096 then 'oversize'
+          when jsonb_typeof(p_filters)<>'object' then 'invalid'
+          when p_filters='{}'::jsonb then 'empty' else 'filtered' end,
+        'sortClass', case
+          when p_sort is null then 'default'
+          when octet_length(p_sort)>64 then 'invalid'
+          when lower(btrim(p_sort)) in ('relevance','name_asc','modified_desc')
+            then lower(btrim(p_sort)) else 'invalid' end,
+        'hasCursor', p_cursor is not null,
+        'limitClass', case when p_limit is null then 'default'
+          when p_limit between 1 and 10 then '1_10'
+          when p_limit between 11 and 50 then '11_50' else 'invalid' end,
         'category', 'cancellation', 'reason', case v_diagnostic_message
           when 'canceling statement due to statement timeout' then 'statement_timeout'
           when 'canceling statement due to user request' then 'cancel_request'
@@ -58143,6 +58243,26 @@ exception
     raise log using message = 'portal read failure diagnostic',
       detail = pg_catalog.jsonb_build_object(
         'schemaVersion', 'portal.read-failure.v1', 'rpc', 'display_search_processes_v3',
+        'queryClass', case
+          when p_query is null then 'default'
+          when octet_length(p_query)>2048 then 'oversize'
+          when btrim(p_query)='' then 'empty'
+          when char_length(btrim(p_query))=1 then 'single'
+          else 'multiple' end,
+        'filterClass', case
+          when p_filters is null then 'default'
+          when pg_column_size(p_filters)>4096 then 'oversize'
+          when jsonb_typeof(p_filters)<>'object' then 'invalid'
+          when p_filters='{}'::jsonb then 'empty' else 'filtered' end,
+        'sortClass', case
+          when p_sort is null then 'default'
+          when octet_length(p_sort)>64 then 'invalid'
+          when lower(btrim(p_sort)) in ('relevance','name_asc','modified_desc')
+            then lower(btrim(p_sort)) else 'invalid' end,
+        'hasCursor', p_cursor is not null,
+        'limitClass', case when p_limit is null then 'default'
+          when p_limit between 1 and 10 then '1_10'
+          when p_limit between 11 and 50 then '11_50' else 'invalid' end,
         'category', 'internal', 'reason', case v_diagnostic_state
           when '54000' then 'response_budget'
           when '55000' then 'contract_drift'
@@ -68429,8 +68549,8 @@ declare
   v_kernel jsonb;
   v_next_cursor_payload jsonb;
 begin
-  perform private.display_assert_catalog_projection_contract_cn1();
-
+  -- The V3 validator immediately runs the complete navigation projection
+  -- guard, including this same catalog contract. Check it once per request.
   perform private.display_validate_search_v3(
     p_kind,
     coalesce(p_query, ''),

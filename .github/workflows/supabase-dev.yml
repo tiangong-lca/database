@@ -249,6 +249,13 @@ jobs:
           supabase migration up --local
           supabase test db supabase/tests/upgrade/20260928_review_rejection_visibility_head.sql
 
+      - name: Verify Portal validation and redacted diagnostics
+        run: |
+          set -o pipefail
+          supabase test db supabase/tests/20261106_portal_validation_cost.sql
+          supabase test db supabase/tests/20260927_portal_read_failure_diagnostics.sql 2>&1 | tee "$RUNNER_TEMP/portal-read-failures.log"
+          python3 scripts/check_portal_read_failure_diagnostics.py --log "$RUNNER_TEMP/portal-read-failures.log"
+
       - name: Verify Portal JSON Schemas
         run: |
           python3 scripts/check_portal_json_schemas.py

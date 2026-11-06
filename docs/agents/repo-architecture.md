@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-07
-lastReviewedCommit: "9b7f6571c9587ac12e06355eab5d8c12c08d0d65"
-lastReviewedNote: "Database #935 residual recovery: reviewed branch and lexical visibility work, complete scope intersection and explicit hosted-load qualification limits."
+lastReviewedCommit: "1df742f81c372c5b93fe328ba4b392ee19f03b85"
+lastReviewedNote: "Database #943: reviewed single complete Search validation, closed diagnostic shape proof and local CI; deployment and permission boundaries unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1737,6 +1737,14 @@ all-version candidate universe. The V3 caller retains its own fingerprint,
 cursor envelope and card-context decorator. Full card facts and display reasons
 are computed only for `limit + 1` selected rows; filtered V3 and empty-query
 branches retain their previous kernels.
+
+V3 Search invokes the complete navigation/projection contract through its input
+validator once; that guard already includes the catalog contract, so a preceding
+identical catalog check is redundant. Every request still validates current
+schema/derivation/RLS state; no trust cache or drift-check bypass is introduced.
+Search failure logs add only closed coarse input-shape enums and cursor presence.
+They never contain query text, filter values, cursors, dataset IDs or SQL/context;
+public errors and request budgets are unchanged.
 
 ### Scoped Facets and Navigation readers (Database #864)
 
