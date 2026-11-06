@@ -60333,32 +60333,21 @@ CREATE OR REPLACE FUNCTION "private"."display_catalog_flow_pattern_versions_v1"(
     SET "statement_timeout" TO '20s'
     SET "plan_cache_mode" TO 'force_custom_plan'
     SET "row_security" TO 'on'
-    AS $_$
-declare
-  v_literal text;
+    AS $$
+declare v_literal text;
 begin
   if pg_catalog.char_length(p_like_pattern) = 3
      and pg_catalog.left(p_like_pattern, 1) = '%'
      and pg_catalog.right(p_like_pattern, 1) = '%' then
     v_literal := pg_catalog.substr(p_like_pattern, 2, 1);
-    return query
-    select candidate.id,
-      candidate.version
-    from private.display_catalog_flow_single_character_versions_v1(
-      v_literal
-    ) as candidate;
+    return query select candidate.id, candidate.version
+      from private.display_catalog_flow_single_character_versions_v1(v_literal) as candidate;
     return;
   end if;
-
-  return query execute pg_catalog.format($sql$
-    select projection.id,
-      projection.version
-    from private.display_catalog_search_rows_v1 as projection
-    where projection.dataset_kind = 'flow'
-      and projection.document like %L escape E'\\'
-  $sql$, p_like_pattern);
+  return query select candidate.id, candidate.version
+    from private.display_catalog_scoped_pattern_keys_v1('flow', p_like_pattern) as candidate;
 end
-$_$;
+$$;
 
 
 ALTER FUNCTION "private"."display_catalog_flow_pattern_versions_v1"("p_like_pattern" "text") OWNER TO "portal_display_executor";
@@ -60671,32 +60660,21 @@ CREATE OR REPLACE FUNCTION "private"."display_catalog_process_pattern_versions_v
     SET "statement_timeout" TO '20s'
     SET "plan_cache_mode" TO 'force_custom_plan'
     SET "row_security" TO 'on'
-    AS $_$
-declare
-  v_literal text;
+    AS $$
+declare v_literal text;
 begin
   if pg_catalog.char_length(p_like_pattern) = 3
      and pg_catalog.left(p_like_pattern, 1) = '%'
      and pg_catalog.right(p_like_pattern, 1) = '%' then
     v_literal := pg_catalog.substr(p_like_pattern, 2, 1);
-    return query
-    select candidate.id,
-      candidate.version
-    from private.display_catalog_process_single_character_versions_v1(
-      v_literal
-    ) as candidate;
+    return query select candidate.id, candidate.version
+      from private.display_catalog_process_single_character_versions_v1(v_literal) as candidate;
     return;
   end if;
-
-  return query execute pg_catalog.format($sql$
-    select projection.id,
-      projection.version
-    from private.display_catalog_search_current_v2 as projection
-    where projection.dataset_kind = 'process'
-      and projection.document like %L escape E'\\'
-  $sql$, p_like_pattern);
+  return query select candidate.id, candidate.version
+    from private.display_catalog_scoped_pattern_keys_v1('process', p_like_pattern) as candidate;
 end
-$_$;
+$$;
 
 
 ALTER FUNCTION "private"."display_catalog_process_pattern_versions_v1"("p_like_pattern" "text") OWNER TO "portal_display_executor";
@@ -60807,6 +60785,45 @@ $$;
 
 
 ALTER FUNCTION "private"."display_catalog_rows_v1"("p_kind" "text") OWNER TO "portal_display_executor";
+
+
+CREATE OR REPLACE FUNCTION "private"."display_catalog_scoped_pattern_keys_v1"("p_kind" "text", "p_like_pattern" "text") RETURNS TABLE("id" "uuid", "version" "text")
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER PARALLEL RESTRICTED
+    SET "search_path" TO ''
+    SET "statement_timeout" TO '20s'
+    SET "plan_cache_mode" TO 'force_custom_plan'
+    SET "row_security" TO 'on'
+    AS $_$
+declare
+  v_relation text;
+begin
+  -- Relation names come only from this allowlist, never from caller input.
+  case p_kind
+    when 'process' then v_relation := 'display_catalog_search_rows_v2';
+    when 'flow' then v_relation := 'display_catalog_search_rows_v1';
+    else raise exception using errcode='22023', message='invalid portal request';
+  end case;
+
+  -- Use the identical LIKE/ESCAPE contract. The explicit scope intersection
+  -- precedes every returned key, latest/rank/count/page operation. There is no
+  -- candidate cap, cached visibility, caller-provided SQL or payload output.
+  return query execute pg_catalog.format($sql$
+    select projection.id, projection.version
+    from private.%I as projection
+    where projection.dataset_kind = %L
+      and projection.document like $1 escape E'\\'
+      and exists (
+        select 1 from private.display_request_visible_settings_v1 as scope
+        where scope.dataset_kind = projection.dataset_kind
+          and scope.dataset_id = projection.id
+          and scope.dataset_version = projection.version
+      )
+  $sql$, v_relation, p_kind) using p_like_pattern;
+end
+$_$;
+
+
+ALTER FUNCTION "private"."display_catalog_scoped_pattern_keys_v1"("p_kind" "text", "p_like_pattern" "text") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "private"."display_catalog_search_v1_impl"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_sort" "text", "p_cursor_rank" "text", "p_cursor_id" "uuid", "p_cursor_version" "text", "p_limit" integer, "p_query_fingerprint" "text") RETURNS "jsonb"
@@ -61727,6 +61744,16 @@ declare
   v_exact_id uuid;
   v_like_pattern text;
 begin
+  -- The retained V2 and V3 candidate universes are identical for unfiltered
+  -- lexical requests. Reuse its narrow rank/page kernel instead of constructing
+  -- full facts and reason codes for every matched version. The V3 caller still
+  -- owns its fingerprint, cursor envelope, validation and card-context decorator.
+  if p_query <> '' and p_filters = '{}'::jsonb then
+    return private.display_catalog_search_v2_impl(
+      p_kind,p_query,p_filters,p_sort,p_cursor_rank,p_cursor_id,
+      p_cursor_version,p_limit,p_query_fingerprint
+    );
+  end if;
   if p_query ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
     v_exact_id := p_query::uuid;
   end if;
@@ -121514,6 +121541,11 @@ GRANT ALL ON FUNCTION "private"."display_catalog_projection_payload_v1"("p_kind"
 
 REVOKE ALL ON FUNCTION "private"."display_catalog_rows_v1"("p_kind" "text") FROM PUBLIC;
 GRANT ALL ON FUNCTION "private"."display_catalog_rows_v1"("p_kind" "text") TO "postgres";
+
+
+
+REVOKE ALL ON FUNCTION "private"."display_catalog_scoped_pattern_keys_v1"("p_kind" "text", "p_like_pattern" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "private"."display_catalog_scoped_pattern_keys_v1"("p_kind" "text", "p_like_pattern" "text") TO "portal_display_executor";
 
 
 

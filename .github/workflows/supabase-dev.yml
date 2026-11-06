@@ -184,6 +184,7 @@ jobs:
           supabase test db supabase/tests/20261011_portal_scoped_settings_reads.sql
           supabase test db supabase/tests/20261025_portal_facets_navigation.sql
           supabase test db supabase/tests/20261025_portal_flow_cas.sql
+          supabase test db supabase/tests/20261106_portal_scoped_lexical_keys.sql
           supabase test db supabase/tests/20261011_ai_queue_deadline_recovery.sql
           supabase test db supabase/tests/20261011_ai_deadline_fresh_clock.sql
           supabase test db supabase/tests/20260825_ai_worker_contract.sql

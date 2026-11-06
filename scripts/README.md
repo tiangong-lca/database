@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-06
-lastReviewedCommit: 89faa0acdb3dbb767227dd0007292bbadac307e0
-lastReviewedNote: "Database #922: reviewed deterministic local compact-membership function export; generated-workspace procedure unchanged."
+lastReviewedCommit: 753e8c6a5ef1535bd751d5878b93ce458f0f573c
+lastReviewedNote: "Database #925: reviewed scoped lexical bridge, V3 rank reuse and new local tests; deployment and schema export procedures unchanged."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -56,6 +56,12 @@ bounded summary against their exact predecessor on 140,000 synthetic versions.
 It requires the named task-owned empty local stack, accepts `--samples` (1–5)
 and a new `--report` path, alternates baseline/candidate order and rolls back all
 fixtures and DDL. See the repo validation guide for the complete proof boundary.
+
+`benchmark_portal_lexical_keys.py` and `test_portal_lexical_upgrade.py` qualify
+Database #925 on its explicitly owned `portal-query-925-pg1711` local stack.
+They accept an exact `--base-ref` and new evidence paths; run them serially and
+reset between volume and writer profiles. The validation guide owns the proof
+boundary and separates local receipts from actual hosted recovery.
 
 ## Layout
 

@@ -32,9 +32,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-05
-lastReviewedCommit: 89faa0acdb3dbb767227dd0007292bbadac307e0
-lastReviewedNote: "Database #922: compact membership, Release-owned closure validation, unchanged live authorization and batch binding."
+lastReviewedAt: 2026-11-06
+lastReviewedCommit: 753e8c6a5ef1535bd751d5878b93ce458f0f573c
+lastReviewedNote: "Database #925: closed scoped lexical keys and bounded unfiltered V3 ranking; exact-response and hosted qualification remain distinct."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1744,6 +1744,34 @@ continuation cursors on one rollback-only fixture, alternates variant order,
 retains nested natural plans, and covers empty/filtered/lexical/UUID/escaped/
 one-character/zero-result shapes in single- and multi-brand deployments. These
 are local synthetic warm samples, not hosted p95 or concurrent-load acceptance.
+
+### Scoped lexical key selection (Database #925)
+
+Run `20261106_portal_scoped_lexical_keys.sql`, all Portal suites and adjacent
+schema/API/OAuth/display/publication suites after blank replay. The focused
+suite proves exact version scope, successive prepared scopes, narrowing filters,
+global compatibility, stale-projection withdrawal, literal escaping, closed
+EXECUTE and manifest refusal after ACL drift. Existing projection RLS stays
+forced and no function gains `LEAKPROOF`.
+
+`scripts/test_portal_lexical_upgrade.py --base-ref <exact-predecessor> --log
+<new-log>` exercises the complete migration on real source-writer fixtures and
+compares public responses, routine OIDs/configs/ACLs, projections/settings,
+roles, RLS and triggers, followed by repeat application. All effects roll back.
+`scripts/benchmark_portal_lexical_keys.py --base-ref <exact-predecessor> --report
+<new-json>` admits only the explicitly owned `portal-query-925-pg1711` local
+PostgreSQL 17.11 stack. It compares complete public Search/Facets/Navigation
+responses with alternating variant order over 19,000 Process and 138,000 Flow
+versions, retaining three samples per case and separate natural nested lexical
+plans. Candidate warm local p95 must be at most two seconds, with the original
+eight-second statement budget. Small fixtures are smoke evidence only.
+
+Run these collectors serially and reset the owned stack between volume and
+writer/upgrade profiles: rolled-back synthetic rows still leave physical index
+pages. Preserve failed/invalid receipts, including interference, instead of
+counting them as passing samples. Rebuild blank state before deterministic
+five-schema/type export. Local latency, source CI, exact Dev/Main deployment
+and actual hosted Portal search/navigation/refine remain separate proofs.
 
 ### Facets and Navigation reader qualification (Database #864)
 
