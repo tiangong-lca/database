@@ -285,8 +285,8 @@ select extensions.is(
     from private.api_capability_grants as manifest
     where manifest.capability_id = 'PORTAL-CATALOG-01'
   ),
-  29::bigint,
-  'PORTAL-CATALOG-01 contains seventeen legacy and twelve display catalogue routines'
+  31::bigint,
+  'PORTAL-CATALOG-01 contains seventeen legacy and fourteen display catalogue routines'
 );
 
 select extensions.is(

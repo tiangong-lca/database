@@ -19,7 +19,7 @@ def main():
     fixture = (bench.ROOT/'supabase/tests/20261025_portal_facets_navigation.sql').read_text()
     sql = fixture[:fixture.index('create function pg_temp.facet_count')]
     sql = sql.replace('begin;\n', "begin;\nset application_name='portal925-upgrade';\ndo $$begin if not pg_try_advisory_xact_lock(925,1) then raise exception 'Another #925 qualification owns this database';end if;end$$;\n", 1)
-    for name in bench.READERS:
+    for name in (*bench.READERS, 'display_navigation_v1', 'display_api_navigation_v1'):
         path = f'supabase/workspace/schemas/private/functions/{name}/definition.sql'
         sql += subprocess.check_output(['git','show',args.base_ref+':'+path],cwd=bench.ROOT,text=True)
     bridge_path='supabase/workspace/schemas/private/functions/display_catalog_scoped_pattern_keys_v1/definition.sql'
@@ -70,7 +70,7 @@ do $$declare r record;q text;p jsonb;begin
 end$$;
 reset role;
 """
-    migration='\n'.join((bench.ROOT/('supabase/migrations/'+name)).read_text().replace('\nbegin;\n','\n',1).removesuffix('commit;\n') for name in ('20261106110000_optimize_portal_scoped_lexical_keys.sql','20261106114708_bound_portal_candidate_key_reads.sql','20261106125654_bound_selective_portal_navigation_counts.sql','20261106142546_bound_empty_portal_pages_and_diagnose_search.sql'))
+    migration='\n'.join((bench.ROOT/('supabase/migrations/'+name)).read_text().replace('\nbegin;\n','\n',1).removesuffix('commit;\n') for name in ('20261106110000_optimize_portal_scoped_lexical_keys.sql','20261106114708_bound_portal_candidate_key_reads.sql','20261106125654_bound_selective_portal_navigation_counts.sql','20261106142546_bound_empty_portal_pages_and_diagnose_search.sql','20261106160917_split_portal_branch_and_total_reads.sql'))
     sql += migration
     sql += """
 select results_eq($$select oid,proowner,proacl,proconfig,prosecdef,provolatile,proparallel from pg_proc where oid in(select oid from original_metadata) order by oid$$,

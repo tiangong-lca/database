@@ -30,9 +30,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-06
-lastReviewedCommit: 21e20ba34eab92310ac7f1368eedfab9329cde1e
-lastReviewedNote: "Database #935 / #925: reviewed indexed empty default paging and closed Search failure diagnostics with unchanged public, scope, writer and timeout contracts."
+lastReviewedAt: 2026-11-07
+lastReviewedCommit: 63a2cef16ee1541e5bc8f4e27ff756cfc723a6d1
+lastReviewedNote: "Database #935 / Portal #184: reviewed demand-specific branch/totals APIs, preserved legacy behavior and qualification boundaries."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1931,3 +1931,22 @@ keeps RLS and the exact cursor predicate; common ordering, page rendering and
 cursor encoding remain shared with the existing reader. Filtered browsing and
 alternate sorts keep their prior kernels. No candidate cap applies to text
 matching, navigation totals or facet counts.
+
+
+### Portal reads by consumer demand
+
+`api.portal_navigation_branches_v1` accepts the existing navigation V2 input and
+returns `portal.public-navigation-branches.v1`: the same nodes, parent, ancestors,
+kind, dimension and cursor without whole-request totals. Its shared private
+navigation overload restricts matched keys to the requested kind and skips the
+totals aggregate. Existing navigation V2 delegates with totals enabled and retains
+its complete response and cursor binding.
+
+`api.portal_catalog_totals_v1(p_allowed_brands text[])` returns
+`portal.public-catalog-totals.v1`: exact public-version Process/Flow counts under
+the existing forced-RLS deployment scope. It accepts no query, filter or navigation
+arguments and never reads branch memberships. Counts include historical public
+versions rather than latest datasets. Both additive APIs keep the existing
+restricted executor, capability admission and eight-second timeout; no projection,
+writer, persistent cache or index is added. Portal adoption belongs to its own
+reviewed delivery and must follow deployed Database capability verification.

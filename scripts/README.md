@@ -20,9 +20,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-06
-lastReviewedCommit: 21e20ba34eab92310ac7f1368eedfab9329cde1e
-lastReviewedNote: "Database #935 / #925: reviewed indexed empty default paging and closed Search failure diagnostics with unchanged public, scope, writer and timeout contracts."
+lastReviewedAt: 2026-11-07
+lastReviewedCommit: 63a2cef16ee1541e5bc8f4e27ff756cfc723a6d1
+lastReviewedNote: "Database #935 / Portal #184: reviewed demand-specific branch/totals APIs, preserved legacy behavior and qualification boundaries."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -1305,3 +1305,12 @@ job-kind routing. Neither test grants hosted or business-data authority.
 references and exact migration embedding. Optional `--sdk-assets <directory>`
 reprojects the installed SDK0.5.0 assets and verifies source hashes. It performs
 no network, database operation, package installation or file mutation.
+
+### `benchmark_portal_read_demand.py`
+
+Runs the #935 rollback-only complete-versus-demand read comparison on the
+explicitly owned local #925 PG17.11 stack. It accepts no remote DSN and refuses
+nonempty fixtures or existing output paths. `--report <new-json>` records exact
+branch/totals parity, timings and bounded nested plans over 157,000 versions.
+Use a blank reset before and after the volume profile; local timings do not
+prove hosted recovery. See the validation guide for acceptance limits.

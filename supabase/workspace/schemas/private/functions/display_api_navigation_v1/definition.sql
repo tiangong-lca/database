@@ -4,12 +4,25 @@ CREATE OR REPLACE FUNCTION "private"."display_api_navigation_v1"("p_kind" "text"
     SET "statement_timeout" TO '8s'
     SET "row_security" TO 'on'
     AS $$
+begin
+  return private.display_api_navigation_v1(p_kind,p_query,p_filters,p_dimension,p_parent_node_id,p_cursor,p_limit,true);
+end;
+$$;
+
+ALTER FUNCTION "private"."display_api_navigation_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer) OWNER TO "portal_display_executor";
+
+CREATE OR REPLACE FUNCTION "private"."display_api_navigation_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer, "p_include_totals" boolean) RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    SET "statement_timeout" TO '8s'
+    SET "row_security" TO 'on'
+    AS $$
 declare
   v_diagnostic_message text;
   v_diagnostic_context text;
   v_diagnostic_state text;
 begin
-  return private.display_navigation_v1(p_kind,p_query,p_filters,p_dimension,p_parent_node_id,p_cursor,p_limit);
+  return private.display_navigation_v1(p_kind,p_query,p_filters,p_dimension,p_parent_node_id,p_cursor,p_limit,p_include_totals);
 exception
   when sqlstate '22023' then
     get stacked diagnostics v_diagnostic_context = PG_EXCEPTION_CONTEXT;
@@ -59,8 +72,12 @@ exception
 end;
 $$;
 
-ALTER FUNCTION "private"."display_api_navigation_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer) OWNER TO "portal_display_executor";
+ALTER FUNCTION "private"."display_api_navigation_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer, "p_include_totals" boolean) OWNER TO "portal_display_executor";
 
 REVOKE ALL ON FUNCTION "private"."display_api_navigation_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer) FROM PUBLIC;
 
 GRANT ALL ON FUNCTION "private"."display_api_navigation_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer) TO "portal_public_executor";
+
+REVOKE ALL ON FUNCTION "private"."display_api_navigation_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer, "p_include_totals" boolean) FROM PUBLIC;
+
+GRANT ALL ON FUNCTION "private"."display_api_navigation_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer, "p_include_totals" boolean) TO "portal_public_executor";

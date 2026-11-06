@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "portal.public-navigation-branches.v1.schema.json",
+  "title": "TianGong Portal public navigation branches v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "countBasis",
+    "dimension",
+    "kind",
+    "parent",
+    "ancestors",
+    "nodes",
+    "nextCursor"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "portal.public-navigation-branches.v1"
+    },
+    "countBasis": {
+      "description": "What each count counts. `public_versions` means distinct exact kind/id/version identities matching the request predicate; it is never a de-duplicated data-set count.",
+      "const": "public_versions"
+    },
+    "dimension": {
+      "$ref": "./portal.public-navigation.v2.schema.json#/$defs/NavigationDimension"
+    },
+    "kind": {
+      "description": "The object-kind scope the counts were computed for. `all` keeps both kinds and is reported as-is.",
+      "type": "string",
+      "enum": [
+        "process",
+        "flow",
+        "all"
+      ]
+    },
+    "parent": {
+      "description": "The requested branch node as a complete node. It carries its own `count`/`directCount`/`hasChildren` so a consumer can offer \"this level only\" versus \"whole branch\" without a second request. Null for a root page.",
+      "oneOf": [
+        {
+          "$ref": "./portal.public-navigation.v2.schema.json#/$defs/NavigationNode"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "ancestors": {
+      "description": "Root-to-parent ancestors of the requested branch, excluding the parent itself, in root-first order. Identity only: a breadcrumb never needs counts. Empty for a root page.",
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "$ref": "./portal.public-navigation.v2.schema.json#/$defs/NavigationNodeIdentity"
+      }
+    },
+    "nodes": {
+      "description": "The complete page of immediate children of `parent`. A page is bounded by the response byte budget, never by a hidden per-node cap; when more siblings remain, `nextCursor` is present.",
+      "type": "array",
+      "maxItems": 500,
+      "items": {
+        "$ref": "./portal.public-navigation.v2.schema.json#/$defs/NavigationNode"
+      }
+    },
+    "nextCursor": {
+      "$ref": "./portal.common-types.v1.schema.json#/$defs/NullableCursor"
+    }
+  },
+  "description": "One exact public-version branch page without whole-catalog totals. Scope, filters, node identity and cursor binding match public navigation v2."
+}

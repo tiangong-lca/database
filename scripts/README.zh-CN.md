@@ -20,9 +20,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-06
-lastReviewedCommit: 21e20ba34eab92310ac7f1368eedfab9329cde1e
-lastReviewedNote: "Database #935 / #925: reviewed indexed empty default paging and closed Search failure diagnostics with unchanged public, scope, writer and timeout contracts."
+lastReviewedAt: 2026-11-07
+lastReviewedCommit: 63a2cef16ee1541e5bc8f4e27ff756cfc723a6d1
+lastReviewedNote: "Database #935 / Portal #184: reviewed demand-specific branch/totals APIs, preserved legacy behavior and qualification boundaries."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -1081,3 +1081,10 @@ SQL、本地签名 JWT 和模式验证不能替代真实 OAuth、原生计算、
 五模式工作区与 public/api 类型。导出必须指定已核实的 study912 数据库 URL；
 无参数 local 导出指向共享项目。结束时按精确项目标签执行受治理资源清理，
 验证容器、卷及网络均为零，或记录明确的保留交接。
+
+### `benchmark_portal_read_demand.py`
+
+仅在明确归属 #925 的本地 PG17.11 栈中，回滚式比较完整导航与按需分支/总数读取。
+不接受远程 DSN，拒绝非空数据及已有输出文件。`--report <新的JSON>` 保留
+15.7 万版本下的完整计数对照、耗时和有界嵌套计划。规模测试前后均重建空库；
+本地结果不能代替托管恢复证明，验收阈值见验证指南。
