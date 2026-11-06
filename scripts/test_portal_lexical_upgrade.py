@@ -31,6 +31,12 @@ def main():
         sql += 'drop function private.display_catalog_scoped_pattern_keys_v1(text,text);\n'
     else:
         sql += subprocess.check_output(['git','show',args.base_ref+':'+bridge_path],cwd=bench.ROOT,text=True)
+    filter_bridge_path='supabase/workspace/schemas/private/functions/display_navigation_scoped_filter_keys_v1/definition.sql'
+    has_filter_bridge=subprocess.run(['git','cat-file','-e',args.base_ref+':'+filter_bridge_path],cwd=bench.ROOT,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode==0
+    if not has_filter_bridge:
+        sql += 'drop function private.display_navigation_scoped_filter_keys_v1(text,jsonb);\n'
+    else:
+        sql += subprocess.check_output(['git','show',args.base_ref+':'+filter_bridge_path],cwd=bench.ROOT,text=True)
     sql += """
 update private.portal_display_contract_manifest set identity=private.portal_display_contract_identity_v1() where singleton;
 select private.portal_display_assert_contract_v1();
@@ -38,7 +44,7 @@ create temp table original_metadata as select oid,proowner,proacl,proconfig,pros
  from pg_proc where pronamespace='private'::regnamespace and proname in
  ('display_catalog_process_pattern_versions_v1','display_catalog_flow_pattern_versions_v1','display_catalog_search_v3_impl',
   'display_catalog_search_v2_impl','display_catalog_candidate_rows_v2','display_navigation_impl_v1',
-  'display_api_search_processes_v3','display_api_search_flows_v3','display_catalog_scoped_pattern_keys_v1','display_search_v3');
+  'display_api_search_processes_v3','display_api_search_flows_v3','display_catalog_scoped_pattern_keys_v1','display_search_v3','display_navigation_matched_versions_v1');
 create temp table original_facts as select md5(jsonb_build_object(
  'settings',(select jsonb_agg(to_jsonb(s) order by dataset_kind,dataset_id,dataset_version) from private.dataset_display_settings s),
  'projections',(select jsonb_agg(to_jsonb(p) order by dataset_kind,id,version) from private.display_catalog_search_current_v2 p),
@@ -94,9 +100,43 @@ do $$declare r record;q text;p jsonb;begin
 end$$;
 reset role;
 """
-    migration='\n'.join((bench.ROOT/('supabase/migrations/'+name)).read_text().replace('\nbegin;\n','\n',1).removesuffix('commit;\n') for name in ('20261106110000_optimize_portal_scoped_lexical_keys.sql','20261106114708_bound_portal_candidate_key_reads.sql','20261106125654_bound_selective_portal_navigation_counts.sql','20261106142546_bound_empty_portal_pages_and_diagnose_search.sql','20261106160917_split_portal_branch_and_total_reads.sql','20261106175555_bound_portal_branch_visibility_reads.sql','20261106183000_bound_portal_lexical_scope_intersection.sql','20261106194000_reduce_portal_duplicate_validation.sql','20261106201000_bound_portal_filtered_search.sql'))
+    # Compare exact native keys independently of DTO decoration, including the
+    # legacy global scope and contradictory brand narrowing. Same real writers.
+    sql += """
+create temp table filter_keys949(k text,f jsonb,brands text,g text,narrow text,payload jsonb);
+grant all on filter_keys949 to portal_display_executor;
+set local role portal_display_executor;
+"""
+    for kind in ('all','process','flow'):
+        for value in ({}, {'geography':'cn'}, {'classification':'portal-hybrid'},
+                      {'source':'portal provider'}, {'accessLevel':'open'},
+                      {'referenceYearFrom':2024}, {'referenceYearTo':2023},
+                      {'processSubtype':'unit_process'},
+                      {'geographyNodeId':'geo:cn','geographyScope':'direct'},
+                      {'geographyNodeId':'geo:cn','geographyScope':'subtree'},
+                      {'classificationNodeId':'class:isic','classificationScope':'subtree'},
+                      {'geography':'cn','referenceYearFrom':2024,'source':'portal provider'}):
+            for brands,glob,narrow in (('tiangong_lca','false',''),('bafu','false',''),
+                                      ('tiangong_lca,bafu','false',''),('','false',''),
+                                      ('','true',''),('','true','tiangong_lca'),
+                                      ('bafu','false','tiangong_lca')):
+                sql += f"insert into filter_keys949 values({bench.literal(kind)},{bench.literal(json.dumps(value))},{bench.literal(brands)},{bench.literal(glob)},{bench.literal(narrow)},null);\n"
+    sql += """
+create function pg_temp.key_payload949(k text,f jsonb,b text,g text,n text) returns jsonb language plpgsql as $$
+declare p jsonb;begin
+ perform set_config('portal.display_brands',b,true),set_config('portal.display_global',g,true),set_config('portal.display_filter_brand',n,true);
+ select coalesce(jsonb_agg(to_jsonb(v) order by dataset_kind,id,version),'[]') into p from private.display_navigation_matched_versions_v1(k,'',f) v;
+ return p;
+end$$;
+update filter_keys949 set payload=pg_temp.key_payload949(k,f,brands,g,narrow);
+reset role;
+"""
+    migration='\n'.join((bench.ROOT/('supabase/migrations/'+name)).read_text().replace('\nbegin;\n','\n',1).removesuffix('commit;\n') for name in ('20261106110000_optimize_portal_scoped_lexical_keys.sql','20261106114708_bound_portal_candidate_key_reads.sql','20261106125654_bound_selective_portal_navigation_counts.sql','20261106142546_bound_empty_portal_pages_and_diagnose_search.sql','20261106160917_split_portal_branch_and_total_reads.sql','20261106175555_bound_portal_branch_visibility_reads.sql','20261106183000_bound_portal_lexical_scope_intersection.sql','20261106194000_reduce_portal_duplicate_validation.sql','20261106201000_bound_portal_filtered_search.sql','20261106212400_bound_portal_filter_scope_keys.sql'))
     sql += migration
     sql += """
+set local role portal_display_executor;
+select is(pg_temp.key_payload949(k,f,brands,g,narrow),payload,'exact native filter keys preserve scope: '||k||':'||f||':'||brands||':'||g||':'||narrow) from filter_keys949;
+reset role;
 select results_eq($$select oid,proowner,proacl,proconfig,prosecdef,provolatile,proparallel from pg_proc where oid in(select oid from original_metadata) order by oid$$,
  $$select * from original_metadata order by oid$$,'existing routine OIDs, owners, ACLs and configs survive upgrade');
 select is((select md5(jsonb_build_object(

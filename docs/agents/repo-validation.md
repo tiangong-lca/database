@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-07
-lastReviewedCommit: "6eadf9b6b28907cea0edeafde00ca1d932a5a421"
-lastReviewedNote: "Database #946: reviewed filtered V3 reuse of exact narrow facts, page hydration and extended parity/latency proof; permissions and deployment boundaries unchanged."
+lastReviewedCommit: "b449b9d820d5eaa0cbb2160bd4a43f36d93cc3fd"
+lastReviewedNote: "Database #949: re-reviewed explicit kind and typed version index qualification after failed scale gates; exact text equality, manifest/ACL isolation and deployment boundaries remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1896,6 +1896,36 @@ withdrawal, historical versions and null Flow years. Run the adjacent full SQL,
 blank rebuild, deterministic schema/type export and required CI checks. Hosted
 metadata/readback, actual Portal interaction and bounded error logs remain
 separate recovery acceptance.
+
+### Native filter scope qualification (Database #949)
+
+Run `benchmark_portal_lexical_keys.py --compare-scope-bridge
+--compare-filter-scope --base-ref <exact-predecessor> --samples 5 --report
+<new-json>` on the same owned, empty PG17.11 stack. The synthetic reader fixture
+adds 100 rare-source datasets per kind before deriving native filter facts.
+Compare selective, broad and absent filters for empty and nonempty Search,
+Facets, both navigation readers, all sorts and predecessor cursors. Both
+variants retain page-bound hydration; do not require the predecessor's already
+fixed full-card cost to recur. Preserve the unchanged 2-second and 1.5x/50-ms
+limits. Capture natural exact settings index probes from the new helper's own
+nested query, including the version index component, not unrelated lexical probes.
+Keep the requested kind explicit in bulk scope reads and preserve exact text
+equality beside the typed version condition. The first profile
+failed nine relative timing gates and full-version index proof; retain that
+failure and qualify the corrected complete profile without relaxing thresholds.
+Restore the predecessor matched-key
+reader and remove the new bridge for baseline samples; recreate its exact
+owner/grants and refresh the full manifest before candidate samples.
+
+The real-writer upgrade harness also compares all/process/flow exact key sets
+across scalar, combined, direct/subtree, global, allowed and narrowed scopes,
+including no-scope and contradictory-brand cases. Existing routine identities,
+source projections, RLS and writers survive upgrade/reapply. The SQL suites
+exercise current brand switching, hidden versions, source/visibility updates,
+direct-call denial and actual definition/grant drift of the new closed helper.
+Require full SQL, blank rebuild, deterministic exports, required source CI and
+Dev/Main deployment. Actual Search/navigation/Smart recovery and bounded hosted
+logs remain separate from local functional or latency success.
 
 ### Facets and Navigation reader qualification (Database #864)
 

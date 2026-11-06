@@ -36,7 +36,8 @@ reset role;
 
 create temp table originals943 as select p.oid,pg_get_functiondef(p.oid) definition
 from pg_proc p where p.oid in ('private.portal_process_names_v1(jsonb)'::regprocedure,
- 'private.sync_portal_navigation_row_v1()'::regprocedure);
+ 'private.sync_portal_navigation_row_v1()'::regprocedure,
+ 'private.display_navigation_scoped_filter_keys_v1(text,jsonb)'::regprocedure);
 create function pg_temp.drift943(target regprocedure) returns void language plpgsql as $$
 declare original text;changed text;
 begin
@@ -59,6 +60,27 @@ select lives_ok('select private.portal_display_assert_contract_v1()',
  'outer display manifest alone does not cover the legacy navigation writer');
 select * from pg_temp.refused943('navigation writer definition drift');
 select pg_temp.restore943('private.sync_portal_navigation_row_v1()');
+
+-- The additional owner bridge is part of the same full manifest, never a
+-- publicly callable bypass. Exercise real definition and grant drift.
+select pg_temp.drift943('private.display_navigation_scoped_filter_keys_v1(text,jsonb)');
+select * from pg_temp.refused943('filter-key bridge definition drift');
+select pg_temp.restore943('private.display_navigation_scoped_filter_keys_v1(text,jsonb)');
+grant execute on function private.display_navigation_scoped_filter_keys_v1(text,jsonb) to anon;
+select * from pg_temp.refused943('filter-key bridge grant drift');
+revoke execute on function private.display_navigation_scoped_filter_keys_v1(text,jsonb) from anon;
+select ok(not has_function_privilege('anon','private.display_navigation_scoped_filter_keys_v1(text,jsonb)','EXECUTE'),
+ 'filter-key bridge is closed to anonymous direct calls');
+select ok(not has_function_privilege('authenticated','private.display_navigation_scoped_filter_keys_v1(text,jsonb)','EXECUTE'),
+ 'filter-key bridge is closed to authenticated direct calls');
+select ok(not has_function_privilege('service_role','private.display_navigation_scoped_filter_keys_v1(text,jsonb)','EXECUTE'),
+ 'filter-key bridge grants no service role access');
+select ok(has_function_privilege('portal_display_executor','private.display_navigation_scoped_filter_keys_v1(text,jsonb)','EXECUTE'),
+ 'only the existing display executor receives bridge execution');
+set local role anon;
+select is(pg_temp.error943($q$select * from private.display_navigation_scoped_filter_keys_v1('all','{}')$q$)->>'code','42501',
+ 'anonymous SQL cannot invoke the owner bridge');
+reset role;
 
 alter table private.portal_catalog_search_rows_v1 no force row level security;
 select * from pg_temp.refused943('projection FORCE RLS drift');

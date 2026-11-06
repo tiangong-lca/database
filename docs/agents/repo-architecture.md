@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-07
-lastReviewedCommit: "6eadf9b6b28907cea0edeafde00ca1d932a5a421"
-lastReviewedNote: "Database #946: reviewed filtered V3 reuse of exact narrow facts, page hydration and extended parity/latency proof; permissions and deployment boundaries unchanged."
+lastReviewedCommit: "b449b9d820d5eaa0cbb2160bd4a43f36d93cc3fd"
+lastReviewedNote: "Database #949: re-reviewed explicit kind and typed version index qualification after failed scale gates; exact text equality, manifest/ACL isolation and deployment boundaries remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1741,6 +1741,24 @@ fingerprint, cursor envelope and card-context decorator. Full card facts and
 display reasons are computed only for `limit + 1` selected rows; empty-query
 branches retain their existing behavior. No new projection, index or writer is
 introduced.
+
+The shared query-free filter-key branch of
+`display_navigation_matched_versions_v1` delegates to the closed
+`display_navigation_scoped_filter_keys_v1` owner helper. It evaluates the same
+normalized scalar and exact-version hierarchy predicates against synchronized
+native facts, then intersects every candidate with the unchanged current-scope
+security-barrier view. At most 2048 candidates select correlated indexed scope
+probes; larger sets use a bulk intersection. This threshold changes the plan,
+never the result cardinality. Scope queries retain the requested kind explicitly.
+An additional unbounded `bpchar` equality qualifies the existing settings version
+index; the original text equality remains authoritative, preserving exact-version
+and trailing-space semantics without truncation. Filtering before visibility avoids building the
+entire allowed scope for a small native match set. It serves both filtered
+keyword Search and query-free browse/Facet/navigation. The helper returns only
+exact keys, has an empty search path, and grants execution only to the existing
+display executor; its definition, owner, configuration and ACL join the complete
+manifest. Native projection RLS remains intact for other readers. No public
+privilege, source writer, relation, index or authorization cache is added.
 
 V3 Search invokes the complete navigation/projection contract through its input
 validator once; that guard already includes the catalog contract, so a preceding
