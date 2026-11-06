@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-07
-lastReviewedCommit: "9b7f6571c9587ac12e06355eab5d8c12c08d0d65"
-lastReviewedNote: "Database #935 residual recovery: reviewed branch and lexical visibility work, complete scope intersection and explicit hosted-load qualification limits."
+lastReviewedCommit: "1df742f81c372c5b93fe328ba4b392ee19f03b85"
+lastReviewedNote: "Database #943: reviewed single complete Search validation, closed diagnostic shape proof and local CI; deployment and permission boundaries unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1846,6 +1846,32 @@ single read-only samples under varying concurrent traffic. They are not an SLA o
 same-load percentile. Actual Search/navigation failures remain a separate hosted
 acceptance criterion; a successful SQL optimization does not identify original
 visitors or qualify EdgeOne traffic/security controls.
+
+### Search validation cost and private diagnostics (Database #943)
+
+V3 Search retains the complete navigation/projection guard, which includes the
+catalog contract; it does not execute the same catalog guard twice. Run
+`20261106_portal_validation_cost.sql` to inject real catalog-writer,
+navigation-writer and FORCE-RLS drift and prove both public Search facades still
+fail closed and recover only after exact restoration. Keep the existing public
+error code/message and empty detail/hint.
+
+Run `20260927_portal_read_failure_diagnostics.sql`, capture its actual LOG DETAIL
+output, then run `scripts/check_portal_read_failure_diagnostics.py --log <file>`.
+Both Search readers emit only closed query/filter/sort/limit classes and cursor
+presence alongside the existing diagnostic category/reason. Test default, empty,
+single-code-point, multiple, oversized, invalid, filtered and cursor-bearing
+inputs. Raw input, SQL/context, identifiers and arbitrary values stay absent.
+The local-contract CI job executes both suites and the real-output checker.
+
+Use the owned `benchmark_portal_lexical_keys.py --compare-scope-bridge
+--compare-validation --base-ref <exact-predecessor> --report <new-json>` profile.
+Its transaction-local PG17 function statistics must observe two catalog guard
+calls in the predecessor and exactly one in every candidate Search response,
+including small/broad/empty/filtered/sorted and predecessor-cursor shapes.
+Only the local benchmark session enables function tracking. Keep the same full
+response parity, scale, latency/regression, populated upgrade, blank rebuild and
+deterministic export requirements above; hosted recovery remains separate.
 
 ### Facets and Navigation reader qualification (Database #864)
 

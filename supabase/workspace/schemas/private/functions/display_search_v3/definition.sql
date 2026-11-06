@@ -15,8 +15,8 @@ declare
   v_kernel jsonb;
   v_next_cursor_payload jsonb;
 begin
-  perform private.display_assert_catalog_projection_contract_cn1();
-
+  -- The V3 validator immediately runs the complete navigation projection
+  -- guard, including this same catalog contract. Check it once per request.
   perform private.display_validate_search_v3(
     p_kind,
     coalesce(p_query, ''),

@@ -19,7 +19,7 @@ CONTAINER = 'supabase_db_portal-query-925-pg1711'
 READERS = ('display_catalog_process_pattern_versions_v1', 'display_catalog_flow_pattern_versions_v1',
            'display_catalog_search_v3_impl', 'display_catalog_search_v2_impl',
            'display_catalog_candidate_rows_v2', 'display_navigation_impl_v1',
-           'display_api_search_processes_v3', 'display_api_search_flows_v3')
+           'display_api_search_processes_v3', 'display_api_search_flows_v3', 'display_search_v3')
 
 
 def literal(value):
@@ -40,6 +40,8 @@ def main():
     parser.add_argument('--samples', type=int, default=3)
     parser.add_argument('--compare-scope-bridge', action='store_true',
                         help='Also compare the existing scoped-key bridge and branch-only RPCs')
+    parser.add_argument('--compare-validation', action='store_true',
+                        help='Count actual catalog-guard calls in API samples and include filtered/sorted/cursor reads')
     parser.add_argument('--report', type=Path, required=True)
     args = parser.parse_args()
     if not (20 <= args.process_datasets <= 20000 and 40 <= args.flow_datasets <= 100000 and 2 <= args.samples <= 10):
@@ -80,16 +82,28 @@ def main():
         for kind, table in [('process','processes'),('flow','flows')])
     sql = sql.replace('do $$declare r record;begin for r in select * from original_triggers loop',
                       source_rows+'\ndo $$declare r record;begin for r in select * from original_triggers loop')
+    if args.compare_validation:
+        # Local session only. PG17 transaction-local function statistics update
+        # continuously; no hosted setting, trust cache or instrumented guard.
+        sql += "\nset local track_functions='all';\n"
     sql += """
-create temp table samples(variant text,label text,ordinal int,ms numeric,payload jsonb,error text);
+create temp table samples(variant text,label text,ordinal int,ms numeric,payload jsonb,error text,guard_calls bigint);
 grant select,insert on samples to anon;
 create function pg_temp.measure(v text,l text,i int,q text) returns void language plpgsql as $$
-declare t timestamptz:=clock_timestamp();p jsonb;e text;begin
+declare t timestamptz;p jsonb;e text;before_calls bigint;after_calls bigint;begin
+ --GUARD_BEFORE--
+ t:=clock_timestamp();
  begin execute q into p;exception when query_canceled then e:=sqlstate;when others then e:=sqlstate;end;
- insert into samples values(v,l,i,extract(epoch from clock_timestamp()-t)*1000,p,e);
+ insert into samples values(v,l,i,extract(epoch from clock_timestamp()-t)*1000,p,e,null);
+ --GUARD_AFTER--
 end$$;
 grant execute on function pg_temp.measure(text,text,int,text) to anon;
 """
+    if args.compare_validation:
+        counter = "select coalesce(sum(calls),0) from pg_catalog.pg_stat_xact_user_functions where schemaname='private' and funcname='assert_portal_catalog_projection_contract_cn1'"
+        sql = sql.replace('--GUARD_BEFORE--', f'before_calls:=({counter});')
+        sql = sql.replace('--GUARD_AFTER--', f'after_calls:=({counter});update samples set guard_calls=after_calls-before_calls where variant=v and label=l and ordinal=i;')
+        sql += 'grant update on samples to anon;\n'
     cases = {}
     for scope in ('tiangong_lca', 'tiangong_lca,bafu,uslci,worldsteel'):
         brands = 'array['+','.join(literal(b) for b in scope.split(','))+']'
@@ -108,6 +122,15 @@ grant execute on function pg_temp.measure(text,text,int,text) to anon;
                         for parent in ('root', 'class:isic' if kind=='process' else 'class:cpc'):
                             parent_sql = 'null' if parent=='root' else literal(parent)
                             cases[scope+':'+kind+':'+label+':'+api+':classification:'+parent] = f"select api.{rpc}({brands},{literal(kind)},{literal(query)},'{{}}','classification',{parent_sql})"
+    if args.compare_validation:
+        for scope in ('tiangong_lca', 'tiangong_lca,bafu,uslci,worldsteel'):
+            brands = 'array['+','.join(literal(b) for b in scope.split(','))+']'
+            for kind in ('process','flow'):
+                rpc = 'portal_search_processes_v4' if kind=='process' else 'portal_search_flows_v4'
+                for sort in ('relevance','name_asc','modified_desc'):
+                    cases[f'{scope}:{kind}:filtered:{sort}:search'] = f"select api.{rpc}({brands},{literal('bench'+kind+' 00000')},p_filters=>'{{\"geography\":\"CN\"}}'::jsonb,p_sort=>{literal(sort)},p_limit=>10)"
+                source_label = literal(f'{scope}:{kind}:broad:search')
+                cases[f'{scope}:{kind}:predecessor-cursor:search'] = f"select api.{rpc}({brands},'history864',p_cursor=>(select payload->>'nextCursor' from samples where variant='baseline' and label={source_label} and ordinal=0),p_limit=>20)"
     for ordinal in range(args.samples):
         for variant in (('baseline','candidate') if ordinal%2 == 0 else ('candidate','baseline')):
             sql += '\nreset role;\n'+variants[variant]+fixture_source.REFRESH+'\nset local role anon;\n'
@@ -124,6 +147,8 @@ select jsonb_build_object(
    where a.variant='baseline' and b.variant='candidate' and (a.error is not null or b.error is not null or a.payload is distinct from b.payload)),
  'responseErrors',(select coalesce(jsonb_agg(jsonb_build_object('variant',variant,'label',label,'code',error)),'[]') from samples where error is not null));
 """
+    if args.compare_validation:
+        sql = sql.replace("'timings',(select", "'guardCallCounts',(select jsonb_agg(to_jsonb(g)) from (select variant,label,min(guard_calls) minimum,max(guard_calls) maximum from samples where label like '%:search' group by variant,label order by variant,label) g),'timings',(select", 1)
     sql += """
 -- Bound natural nested-plan probes separately from latency samples.
 load 'auto_explain';
@@ -194,6 +219,12 @@ set local auto_explain.log_min_duration=-1;
     empty_page_kinds = {kind for kind in ('process','flow') if any(f"dataset_kind = '{kind}'::text" in n['Index Cond'] and n['Actual Rows'] <= 11 for n in empty_page_reads)}
     report['passed'] = empty_page_kinds == {'process','flow'} and navigation_kinds == {'process','flow'} and result.returncode == 0 and report.get('parityFailures') == 0 and not report['costRegressions'] and report['cleanupVerified'] and {r['Relation Name'] for r in key_reads} == {'display_catalog_search_rows_v1','display_catalog_search_rows_v2'} and all(
         r['p95_ms'] <= 2000 and r['failures'] == 0 for r in report.get('timings',[]) if r['variant']=='candidate')
+    if args.compare_validation:
+        expected_counts = {'baseline':2,'candidate':1}
+        counts = report.get('guardCallCounts',[])
+        report['validationCallCountsPassed'] = bool(counts) and all(
+            c['minimum']==c['maximum']==expected_counts[c['variant']] for c in counts)
+        report['passed'] = report['passed'] and report['validationCallCountsPassed']
     args.report.write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps({k:v for k,v in report.items() if k != 'timings'}))
     return int(not report['passed'])
