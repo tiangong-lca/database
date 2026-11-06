@@ -10,6 +10,16 @@ declare
   v_exact_id uuid;
   v_like_pattern text;
 begin
+  -- The retained V2 and V3 candidate universes are identical for unfiltered
+  -- lexical requests. Reuse its narrow rank/page kernel instead of constructing
+  -- full facts and reason codes for every matched version. The V3 caller still
+  -- owns its fingerprint, cursor envelope, validation and card-context decorator.
+  if p_query <> '' and p_filters = '{}'::jsonb then
+    return private.display_catalog_search_v2_impl(
+      p_kind,p_query,p_filters,p_sort,p_cursor_rank,p_cursor_id,
+      p_cursor_version,p_limit,p_query_fingerprint
+    );
+  end if;
   if p_query ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
     v_exact_id := p_query::uuid;
   end if;
