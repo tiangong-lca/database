@@ -32,7 +32,7 @@ select private.portal_display_assert_contract_v1();
 create temp table original_metadata as select oid,proowner,proacl,proconfig,prosecdef,provolatile,proparallel
  from pg_proc where pronamespace='private'::regnamespace and proname in
  ('display_catalog_process_pattern_versions_v1','display_catalog_flow_pattern_versions_v1','display_catalog_search_v3_impl',
-  'display_catalog_search_v2_impl','display_catalog_candidate_rows_v2');
+  'display_catalog_search_v2_impl','display_catalog_candidate_rows_v2','display_navigation_impl_v1');
 create temp table original_facts as select md5(jsonb_build_object(
  'settings',(select jsonb_agg(to_jsonb(s) order by dataset_kind,dataset_id,dataset_version) from private.dataset_display_settings s),
  'projections',(select jsonb_agg(to_jsonb(p) order by dataset_kind,id,version) from private.display_catalog_search_current_v2 p),
@@ -53,6 +53,8 @@ grant select,insert,update on replies to anon;
                        for sort in ('relevance','name_asc','modified_desc')]
                 calls += [f"select api.portal_facets_v4({brands},{bench.literal(kind)},{bench.literal(query)})",
                        f"select api.portal_navigation_v2({brands},{bench.literal(kind)},{bench.literal(query)},'{{}}','geography')"]
+                calls += [f"select api.portal_navigation_v2({brands},{bench.literal(kind)},{bench.literal(query)},'{{}}','classification',{parent})"
+                          for parent in ('null',bench.literal('class:isic' if kind=='process' else 'class:cpc'))]
                 for i,call in enumerate(calls):
                     sql += f"insert into replies values({bench.literal(scope+':'+kind+':'+query+':'+str(i))},{bench.literal(call)},null);\n"
     sql += """
@@ -67,7 +69,7 @@ do $$declare r record;q text;p jsonb;begin
 end$$;
 reset role;
 """
-    migration='\n'.join((bench.ROOT/('supabase/migrations/'+name)).read_text().replace('\nbegin;\n','\n',1).removesuffix('commit;\n') for name in ('20261106110000_optimize_portal_scoped_lexical_keys.sql','20261106114708_bound_portal_candidate_key_reads.sql'))
+    migration='\n'.join((bench.ROOT/('supabase/migrations/'+name)).read_text().replace('\nbegin;\n','\n',1).removesuffix('commit;\n') for name in ('20261106110000_optimize_portal_scoped_lexical_keys.sql','20261106114708_bound_portal_candidate_key_reads.sql','20261106125654_bound_selective_portal_navigation_counts.sql'))
     sql += migration
     sql += """
 select results_eq($$select oid,proowner,proacl,proconfig,prosecdef,provolatile,proparallel from pg_proc where oid in(select oid from original_metadata) order by oid$$,

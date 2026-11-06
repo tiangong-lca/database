@@ -18,7 +18,7 @@ WORK = Path('/tmp/portal-query-925-pg1711')
 CONTAINER = 'supabase_db_portal-query-925-pg1711'
 READERS = ('display_catalog_process_pattern_versions_v1', 'display_catalog_flow_pattern_versions_v1',
            'display_catalog_search_v3_impl', 'display_catalog_search_v2_impl',
-           'display_catalog_candidate_rows_v2')
+           'display_catalog_candidate_rows_v2', 'display_navigation_impl_v1')
 
 
 def literal(value):
@@ -99,6 +99,10 @@ grant execute on function pg_temp.measure(text,text,int,text) to anon;
                     else:
                         q = f"select api.portal_navigation_v2({brands},{literal(kind)},{literal(query)},'{{}}','geography')"
                     cases[scope+':'+kind+':'+label+':'+api] = q
+                    if api == 'navigation':
+                        for parent in ('root', 'class:isic' if kind=='process' else 'class:cpc'):
+                            parent_sql = 'null' if parent=='root' else literal(parent)
+                            cases[scope+':'+kind+':'+label+':classification:'+parent] = f"select api.portal_navigation_v2({brands},{literal(kind)},{literal(query)},'{{}}','classification',{parent_sql})"
     for ordinal in range(args.samples):
         for variant in (('baseline','candidate') if ordinal%2 == 0 else ('candidate','baseline')):
             sql += '\nreset role;\n'+variants[variant]+fixture_source.REFRESH+'\nset local role anon;\n'
@@ -134,6 +138,10 @@ select count(*) from private.display_catalog_scoped_pattern_keys_v1('process','%
 select count(*) from private.display_catalog_candidate_rows_v2('flow','benchflow 00000001',null,'%benchflow 00000001%');
 select count(*) from private.display_catalog_candidate_rows_v2('process','benchprocess 00000001',null,'%benchprocess 00000001%');
 reset role;
+set local role anon;
+select api.portal_navigation_v2(array['tiangong_lca'],'flow','benchflow 00000001','{}','classification','class:cpc');
+select api.portal_navigation_v2(array['tiangong_lca'],'process','benchprocess 00000001','{}','classification','class:isic');
+reset role;
 set local auto_explain.log_min_duration=-1;
 """
     sql += '\nrollback;\n'
@@ -144,11 +152,14 @@ set local auto_explain.log_min_duration=-1;
     plan_log = args.report.with_suffix('.log').read_text()
     assert len(plan_log.encode()) <= 4*1024*1024, 'bounded plan receipt exceeded'
     key_reads = []
+    navigation_reads = []
     decoder = json.JSONDecoder()
     def visit(node):
         condition = node.get('Index Cond', '')
         if node.get('Relation Name') in ('display_catalog_search_rows_v1','display_catalog_search_rows_v2') and 'id =' in condition and 'version =' in condition and node.get('Actual Loops',0)>0:
             key_reads.append({k:node[k] for k in ('Relation Name','Index Name','Index Cond','Actual Rows','Actual Loops')})
+        if node.get('Relation Name') == 'display_navigation_membership_v1' and 'id =' in condition and 'version =' in condition and node.get('Actual Loops',0)>0:
+            navigation_reads.append({k:node[k] for k in ('Relation Name','Index Name','Index Cond','Actual Rows','Actual Loops')})
         for child in node.get('Plans',[]):
             visit(child)
     for part in plan_log.split('plan:\n')[1:]:
@@ -159,7 +170,7 @@ set local auto_explain.log_min_duration=-1;
               'sourceSha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
               'fixtureSourceSha256':hashlib.sha256(Path(fixture_source.__file__).read_bytes()).hexdigest(),
               'sqlSha256':hashlib.sha256(sql.encode()).hexdigest(), 'psqlExitCode':result.returncode,
-              'naturalCandidateKeyReads': key_reads,
+              'naturalCandidateKeyReads': key_reads, 'naturalNavigationKeyReads': navigation_reads,
               'naturalLexicalIndexConditions': plan_log.count('"Index Cond": "(document ~~'),
               'classification':'local synthetic rollback reader samples, not hosted performance'}
     if len(rows) == 1:
@@ -167,7 +178,8 @@ set local auto_explain.log_min_duration=-1;
     timings={(r['variant'],r['label']):r['p95_ms'] for r in report.get('timings',[])}
     report['costRegressions']=[label for (variant,label),ms in timings.items() if variant=='candidate' and ms>max(50,timings['baseline',label]*1.5)]
     report['cleanupVerified'] = run(guard,capture_output=True,check=True).stdout.splitlines() == expected
-    report['passed'] = result.returncode == 0 and report.get('parityFailures') == 0 and not report['costRegressions'] and report['cleanupVerified'] and {r['Relation Name'] for r in key_reads} == {'display_catalog_search_rows_v1','display_catalog_search_rows_v2'} and all(
+    navigation_kinds = {kind for kind in ('process','flow') if any(f"dataset_kind = '{kind}'::text" in n['Index Cond'] for n in navigation_reads)}
+    report['passed'] = navigation_kinds == {'process','flow'} and result.returncode == 0 and report.get('parityFailures') == 0 and not report['costRegressions'] and report['cleanupVerified'] and {r['Relation Name'] for r in key_reads} == {'display_catalog_search_rows_v1','display_catalog_search_rows_v2'} and all(
         r['p95_ms'] <= 2000 and r['failures'] == 0 for r in report.get('timings',[]) if r['variant']=='candidate')
     args.report.write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps({k:v for k,v in report.items() if k != 'timings'}))

@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-06
-lastReviewedCommit: 02101cfeafe8d3275a918b279598f9a97e1b62c8
-lastReviewedNote: "Database #925 follow-up: reviewed exact candidate-key joins under unchanged RLS, retained navigation counting, expanded full-response/plan qualification and hosted recovery boundaries."
+lastReviewedCommit: e4291f2eeb607501e5dc899c5cdab579dd2088b7
+lastReviewedNote: "Database #933 / #925: reviewed selective navigation key counting with the original broad path, unchanged RLS/count/cursor contracts and expanded geography/classification qualification."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1917,7 +1917,10 @@ match sets retain the existing bulk scan/semijoin. The switch selects a read
 shape and never truncates the candidate set. Joining the protected UNION view can
 leave candidate membership outside the relation scan, so the ranker and
 filtered candidate reader use the existing relation primary keys directly.
-Navigation counting retains its existing implementation: direct membership joins
-regressed broad-query cost and were rejected during volume qualification. These
-reader changes do not alter scope authorization, projection writers, ranking or
-public cursors.
+Navigation counting reuses its complete materialized matched keys. For nonempty
+or filtered reads, at most 2,048 keys drive exact membership primary-key reads;
+broader matches retain the original branch semijoin. Query-free unfiltered
+browsing retains the original branch counting and does not calculate unused
+matched keys. No sorted key arrays, candidate/count cap, new projection or writer
+is introduced. These reader changes preserve scope authorization, both-kind
+totals, direct/subtree counts, ranking and public cursors.
