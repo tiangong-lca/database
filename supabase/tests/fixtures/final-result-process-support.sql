@@ -10,7 +10,7 @@ begin
  c:=jsonb_set(c,'{publicationCatalog,sha256}',to_jsonb(encode(extensions.digest(convert_to(d::text,'UTF8'),'sha256'),'hex')));
  r:=jsonb_set(r,'{candidateSha256}',to_jsonb(encode(extensions.digest(convert_to(c::text,'UTF8'),'sha256'),'hex')));
  select jsonb_agg(file order by file->>'name') into files from (
-  select jsonb_build_object('name','result.'||(value->>'format')||'.zip','sha256',value->'sha256','byteSize',value->'byteSize') file from jsonb_array_elements(c->'packages')
+  select jsonb_build_object('name','result.'||(value->>'format')||'.7z','sha256',value->'sha256','byteSize',value->'byteSize') file from jsonb_array_elements(c->'packages')
   union all select jsonb_build_object('name','release-candidate.json','sha256',r->'candidateSha256','byteSize',octet_length(c::text))
   union all select jsonb_build_object('name','publication-catalog.json','sha256',c#>'{publicationCatalog,sha256}','byteSize',octet_length(d::text))
  ) x;

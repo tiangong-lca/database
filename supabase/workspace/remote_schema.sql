@@ -27036,7 +27036,7 @@ declare v_candidate text; v_target text; v_file jsonb;
 begin
  if auth.uid() is null then return private.lca_release_error('auth_required',401,'Authentication required'); end if;
  if p_publication_id is null or p_format is null or p_format not in ('tidas','ilcd') then
-   raise exception using errcode='22023',message='Exact publication and supported ZIP format are required'; end if;
+   raise exception using errcode='22023',message='Exact publication and supported archive format are required'; end if;
  select plan.candidate_hash,plan.target_hash into v_candidate,v_target from private.lca_release_publications p
  join private.final_result_publication_bindings b on b.publication_id=p.id
  join private.final_result_release_plans plan on plan.release_run_id=p.release_run_id
@@ -27046,10 +27046,10 @@ begin
    and not exists(select 1 from private.lca_release_publications p join private.final_result_release_members m on m.release_run_id=p.release_run_id
      where p.id=p_publication_id and m.result_id=q.result_id and m.result_version=q.result_version))
    or not private.final_result_candidate_support_readable(v_candidate) then
-   return private.lca_release_error('result_package_not_available',404,'No complete prebuilt ZIP is authorized for this actor'); end if;
+   return private.lca_release_error('result_package_not_available',404,'No complete prebuilt archive is authorized for this actor'); end if;
  select f.value into v_file from private.final_result_candidate_storage s cross join lateral jsonb_array_elements(s.receipt->'files') f
-   where s.candidate_hash=v_candidate and s.target_hash=v_target and f.value->>'name'='result.'||p_format||'.zip';
- if v_file is null then return private.lca_release_error('result_package_not_available',404,'No complete prebuilt ZIP is authorized for this actor'); end if;
+   where s.candidate_hash=v_candidate and s.target_hash=v_target and f.value->>'name'='result.'||p_format||'.7z';
+ if v_file is null then return private.lca_release_error('result_package_not_available',404,'No complete prebuilt archive is authorized for this actor'); end if;
  return jsonb_build_object('ok',true,'data',jsonb_build_object('publicationId',p_publication_id,'candidateHash',v_candidate,'targetHash',v_target,'file',v_file));
 end;
 $$;
@@ -34939,17 +34939,17 @@ begin
     end if;
     if (select count(*) from jsonb_object_keys(v_file))<>5
       or jsonb_typeof(v_file->'path') is distinct from 'string'
-      or coalesce(length(v_file->>'path'),0) not between 1 and 512
+      or (v_file->>'path') is distinct from ('pair/packages/TiangongLCA-'||(v_candidate->>'releaseVersion')||'-ResultDatabase.'||(v_file->>'format')||'.7z')
       or private.final_result_query_uint(v_file->'memberCount',2000000)=0 then
       raise exception using errcode='22023',message='Invalid final Result Candidate package';
     end if;
   end loop;
   select array_agg(value->>'format' order by (value->>'format') collate "C") into v_formats from jsonb_array_elements(v_candidate->'packages');
   if v_formats<>array['ilcd','tidas'] then
-    raise exception using errcode='22023',message='Final Result Candidate requires the exact Result-only ZIP pair';
+    raise exception using errcode='22023',message='Final Result Candidate requires the exact Result-only 7z pair';
   end if;
   select jsonb_agg(file order by (file->>'name') collate "C") into v_files from (
-    select jsonb_build_object('name','result.'||(value->>'format')||'.zip','sha256',value->'sha256','byteSize',value->'byteSize') file
+    select jsonb_build_object('name','result.'||(value->>'format')||'.7z','sha256',value->'sha256','byteSize',value->'byteSize') file
       from jsonb_array_elements(v_candidate->'packages')
     union all select jsonb_build_object('name','release-candidate.json','sha256',v_hash,'byteSize',octet_length(p_candidate_text))
     union all select jsonb_build_object('name','publication-catalog.json','sha256',v_catalog_hash,'byteSize',octet_length(p_catalog_text))

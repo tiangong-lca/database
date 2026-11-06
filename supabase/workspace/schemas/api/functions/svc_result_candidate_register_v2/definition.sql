@@ -133,17 +133,17 @@ begin
     end if;
     if (select count(*) from jsonb_object_keys(v_file))<>5
       or jsonb_typeof(v_file->'path') is distinct from 'string'
-      or coalesce(length(v_file->>'path'),0) not between 1 and 512
+      or (v_file->>'path') is distinct from ('pair/packages/TiangongLCA-'||(v_candidate->>'releaseVersion')||'-ResultDatabase.'||(v_file->>'format')||'.7z')
       or private.final_result_query_uint(v_file->'memberCount',2000000)=0 then
       raise exception using errcode='22023',message='Invalid final Result Candidate package';
     end if;
   end loop;
   select array_agg(value->>'format' order by (value->>'format') collate "C") into v_formats from jsonb_array_elements(v_candidate->'packages');
   if v_formats<>array['ilcd','tidas'] then
-    raise exception using errcode='22023',message='Final Result Candidate requires the exact Result-only ZIP pair';
+    raise exception using errcode='22023',message='Final Result Candidate requires the exact Result-only 7z pair';
   end if;
   select jsonb_agg(file order by (file->>'name') collate "C") into v_files from (
-    select jsonb_build_object('name','result.'||(value->>'format')||'.zip','sha256',value->'sha256','byteSize',value->'byteSize') file
+    select jsonb_build_object('name','result.'||(value->>'format')||'.7z','sha256',value->'sha256','byteSize',value->'byteSize') file
       from jsonb_array_elements(v_candidate->'packages')
     union all select jsonb_build_object('name','release-candidate.json','sha256',v_hash,'byteSize',octet_length(p_candidate_text))
     union all select jsonb_build_object('name','publication-catalog.json','sha256',v_catalog_hash,'byteSize',octet_length(p_catalog_text))

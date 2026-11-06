@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-06
-lastReviewedCommit: 89faa0acdb3dbb767227dd0007292bbadac307e0
-lastReviewedNote: "Database #922: compact membership, Release-owned closure validation, unchanged live authorization and batch binding."
+lastReviewedCommit: 753e8c6a5ef1535bd751d5878b93ce458f0f573c
+lastReviewedNote: "Database #926: reviewed exact final Result 7z descriptor adoption; membership authorization, immutable evidence and rollback remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -164,7 +164,7 @@ to 32,500 bytes per block and 260,000 bytes for the root's block list.
 
 This storage foundation has no actor resolver or activation path yet. The
 versioned publication adapter must bind Candidate/selection, multiple sealed
-artifacts, ZIP closure scope and fresh readiness into the existing
+artifacts, archive closure scope and fresh readiness into the existing
 `lca_release_publications` authority before exposing v2 results. It must not
 reuse the following v1 Bundle-only resolver as a v2 fallback.
 
@@ -178,16 +178,16 @@ Result rows across one or more sealed v2 artifacts. Each artifact must have the
 same final input hash and an independent seal on the specified storage target.
 The combined metadata budget is 128 MiB; receipts are bounded to 16 KiB.
 
-Only the Result-only two-ZIP profile is accepted. Catalog references use exact
+Only the Result-only two-7z profile is accepted. Catalog references use exact
 key strings, as emitted by Release. Exact roots, unique identities, registered
 canonical hashes, all reference targets and forward reachability are checked;
-unrelated documents cannot enlarge ZIP scope. Complete ZIP membership remains
+unrelated documents cannot enlarge archive scope. Complete archive membership remains
 separate from the selected Result membership of a future publication.
 
 The trusted service verifier attests full GET hashes and actual package closure
-for `release-candidate.json`, `publication-catalog.json`, `result.ilcd.zip` and
-`result.tidas.zip`. SQL verifies their hashes/sizes against the bound metadata;
-it does not fetch ZIP bytes, rerun Toolkit or trust ETags as content proof.
+for `release-candidate.json`, `publication-catalog.json`, `result.ilcd.7z` and
+`result.tidas.7z`. SQL verifies their hashes/sizes against the bound metadata;
+it does not fetch 7z bytes, rerun Toolkit or trust ETags as content proof.
 First admission uses the same 15-minute / 30-second timestamp window as query
 seals. A Candidate-hash transaction lock serializes registration. Exact retries
 recover the original receipt; another receipt cannot replace it. Independent
@@ -200,7 +200,7 @@ bounded metadata and the original target receipt for lost-ACK reconciliation.
 All three APIs are service-only under `EDGE-DATA-PRODUCT-01`; raw tables remain
 ACL-closed with RLS. Neither storage receipts nor reconciliation grants actor
 access or creates a release/current pointer. The versioned publication adapter,
-reader readiness, selection activation and full-ZIP authorization remain required.
+reader readiness, selection activation and full-archive authorization remain required.
 
 ## Final Result publication selection
 
@@ -1860,7 +1860,7 @@ New scope-closure execution fingerprints and ordinary snapshot-build queue keys 
 Result-only Candidate membership distinguishes Process type from publication
 role. `result_process` members alone define the Result roots and exact HDF5
 coverage. Referenced `unit_process` members remain ordinary Process support in
-the complete ZIP closure, with exact version and live support-read authorization.
+the complete archive closure, with exact version and live support-read authorization.
 Release rejects unreferenced members during offline closure validation. Database
 accepts only compact catalog v2 (schema, canonical index hash, count and members);
 each member has kind, UUID, version, role and canonical content hash. It does not

@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-06
-lastReviewedCommit: 89faa0acdb3dbb767227dd0007292bbadac307e0
-lastReviewedNote: "Database #922: reviewed deterministic local compact-membership function export; generated-workspace procedure unchanged."
+lastReviewedCommit: 753e8c6a5ef1535bd751d5878b93ce458f0f573c
+lastReviewedNote: "Database #926: reviewed local 7z descriptor export and repeatable schema/type generation; workflow unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

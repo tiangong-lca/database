@@ -34,7 +34,7 @@ checkPaths:
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-05
 lastReviewedCommit: 89faa0acdb3dbb767227dd0007292bbadac307e0
-lastReviewedNote: "Database #922: compact membership, Release-owned closure validation, unchanged live authorization and batch binding."
+lastReviewedNote: "Database #926: reviewed exact final Result 7z descriptor adoption; membership authorization, immutable evidence and rollback remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -2053,3 +2053,7 @@ branches remain unchanged. Regenerate the five-schema workspace and public/api
 types from a blank exact candidate twice and compare bytes. Keep unrelated
 historical lint findings explicit; new-surface errors or missing FK indexes must
 be resolved. CI owns and releases only its exact study912 resources.
+
+## Final Result 7z distribution
+
+After a blank migration rebuild, run all `*final_result*.sql` suites plus the full-schema and API-closure suites sequentially on the same disposable database. Final package descriptors use exact `pair/packages/TiangongLCA-<releaseVersion>-ResultDatabase.<tidas|ilcd>.7z` paths and `result.<format>.7z` storage names; old ZIP paths, mismatched format/version and incomplete readback reject. Existing current-publication, support RLS, exact Result selection, withdrawal and historical rollback checks remain unchanged. Run Release's real Candidate/Worker/download/rollback integration separately from the transactional SQL suites: its committed synthetic fixtures invalidate empty-database assumptions. Rebuild after that fixture, then export the five schema views twice with no drift. This migration does not rewrite existing evidence or authorize hosted operations.
