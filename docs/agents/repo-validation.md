@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-07
-lastReviewedCommit: 63a2cef16ee1541e5bc8f4e27ff756cfc723a6d1
-lastReviewedNote: "Database #935 / Portal #184: reviewed demand-specific branch/totals APIs, preserved legacy behavior and qualification boundaries."
+lastReviewedCommit: "9b7f6571c9587ac12e06355eab5d8c12c08d0d65"
+lastReviewedNote: "Database #935 residual recovery: reviewed branch and lexical visibility work, complete scope intersection and explicit hosted-load qualification limits."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1805,6 +1805,47 @@ limits. Separate nested natural plans must show totals never aggregate branch
 memberships and empty branch-only reads skip the whole-catalog version aggregate.
 Reset between volume and writer profiles and before deterministic schema/type
 export. Actual hosted latency and Portal adoption remain separate acceptance.
+
+### Parameterized branch visibility reads (Database #935 continuation)
+
+`20261106175555_bound_portal_branch_visibility_reads.sql` keeps complete branch
+membership counting under the existing forced RLS. Its lateral subquery retains
+per-node index qualification; `OFFSET 0` is an optimization boundary, never a row
+limit. Null-parent lookup uses an explicit null/equality disjunction so a known
+parent can use the existing parent index. No policy, grant, writer, DTO, cursor,
+function owner/configuration or public timeout changes.
+
+Run the complete Portal SQL and adjacent schema/ACL suites, populated predecessor
+upgrade/reapply, deterministic schema export and the source CI. The legacy
+summary edge-case fixture must prepare and restore classification evidence through
+source writers (Process V2 and Flow V1), assert the prepared evidence, and clear
+both kinds for the no-classification case. Direct edits to one projection do not
+represent a complete source change. The owned local
+`benchmark_portal_branch_visibility.py --base-ref <exact-predecessor> --report
+<new-json>` alternates three baseline/candidate samples across 300 shapes and
+157000 versions. It covers kinds, one/multiple brands, rare/broad/empty/absent text,
+filters, roots, deep/skewed classification and China geography. Require complete
+JSON parity, no errors, two-second local p95 and the existing 1.5x/50-ms regression
+limit. Preserve natural plans separately; do not force a planner mode in the
+collector. Reset between reader-scale, concurrency and real-writer proofs.
+
+`20261106183000_bound_portal_lexical_scope_intersection.sql` also selects current
+scope work using the complete raw PGroonga match cardinality: indexed correlated
+visibility at <=2048 keys, existing broad semijoin above that threshold. Every
+returned key still intersects the same security-barrier scope view. No key cap,
+new index, grant, owner/configuration or writer change is permitted. Run
+`benchmark_portal_lexical_keys.py --compare-scope-bridge --base-ref
+<exact-predecessor> --report <new-json>` so both bridge definitions participate
+in full Search/Facet/legacy-navigation/branch response parity. Cover selective,
+wide and broad matches, multiple brands, empty and absent terms and natural
+indexed visibility probes. The upgrade collector must restore the predecessor
+bridge before capturing baseline responses and include its owner/ACL/configs.
+
+The production narrow-branch count experiment and subsequent complete query are
+single read-only samples under varying concurrent traffic. They are not an SLA or
+same-load percentile. Actual Search/navigation failures remain a separate hosted
+acceptance criterion; a successful SQL optimization does not identify original
+visitors or qualify EdgeOne traffic/security controls.
 
 ### Facets and Navigation reader qualification (Database #864)
 

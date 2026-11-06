@@ -241,6 +241,22 @@ deallocate portal935_totals;
 select is((select page from prepared_totals where scope='tiangong_lca'),'{"process":1,"flow":0}'::jsonb,'prepared totals retain first deployment scope');
 select is((select page from prepared_totals where scope='bafu'),'{"process":1,"flow":1}'::jsonb,'prepared totals do not reuse previous deployment visibility');
 reset role;
+-- Reuse a prepared caller across null/deep parents and deployment scopes.
+create temp table prepared_branches(scope text,parent text,page jsonb);
+grant select,insert on prepared_branches to anon;
+set local role anon;
+prepare portal935_branches(text[],text) as insert into prepared_branches
+ select $1[1],$2,api.portal_navigation_branches_v1($1,'flow','','{}','classification',$2);
+execute portal935_branches(array['bafu'],null);
+execute portal935_branches(array['tiangong_lca'],'class:cpc:1');
+execute portal935_branches(array['bafu'],'class:cpc:1');
+execute portal935_branches(array['tiangong_lca'],null);
+execute portal935_branches(array['bafu'],'class:cpc:1.6');
+execute portal935_branches(array['tiangong_lca'],'class:cpc:1.6');
+deallocate portal935_branches;
+select is(page,api.portal_navigation_branches_v1(array[scope],'flow','','{}','classification',parent),
+ 'prepared branches preserve scope and null/deep parent identity') from prepared_branches;
+reset role;
 select ok(not has_function_privilege('service_role','api.portal_catalog_totals_v1(text[])','EXECUTE'),'totals closed to service role');
 select ok(not has_function_privilege('anon','private.display_navigation_impl_v1(text,text,jsonb,text,text,text,integer,text,boolean)','EXECUTE'),'shared navigation kernel remains private');
 select is((select count(*) from private.api_capability_grants where routine_identity in (

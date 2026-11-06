@@ -1,8 +1,8 @@
 version: 1
 layout: repo
 lastReviewedAt: "2026-11-07"
-lastReviewedCommit: "63a2cef16ee1541e5bc8f4e27ff756cfc723a6d1"
-lastReviewedNote: "Database #935 / Portal #184: reviewed additive branch/totals reads; ownership, generated-workspace and deployment boundaries remain unchanged."
+lastReviewedCommit: "9b7f6571c9587ac12e06355eab5d8c12c08d0d65"
+lastReviewedNote: "Database #935 residual recovery: reviewed branch and lexical visibility work, complete scope intersection and explicit hosted-load qualification limits."
 
 # Keep deterministic governance facts here.
 # AGENTS.md remains the repo contract entrypoint.

@@ -60948,28 +60948,41 @@ CREATE OR REPLACE FUNCTION "private"."display_catalog_scoped_pattern_keys_v1"("p
 declare
   v_relation text;
 begin
-  -- Relation names come only from this allowlist, never from caller input.
   case p_kind
     when 'process' then v_relation := 'display_catalog_search_rows_v2';
     when 'flow' then v_relation := 'display_catalog_search_rows_v1';
     else raise exception using errcode='22023', message='invalid portal request';
   end case;
 
-  -- Use the identical LIKE/ESCAPE contract. The explicit scope intersection
-  -- precedes every returned key, latest/rank/count/page operation. There is no
-  -- candidate cap, cached visibility, caller-provided SQL or payload output.
+  -- Materialize only exact keys, once, with the unchanged LIKE/ESCAPE rule.
+  -- 2048 selects a plan shape, never a result limit. Both paths intersect every
+  -- returned key with the current deployment/visibility/brand scope.
   return query execute pg_catalog.format($sql$
-    select projection.id, projection.version
-    from private.%I as projection
-    where projection.dataset_kind = %L
-      and projection.document like $1 escape E'\\'
+    with matches as materialized (
+      select projection.id, projection.version
+      from private.%I as projection
+      where projection.dataset_kind = %L
+        and projection.document like $1 escape E'\\'
+    ), match_count as materialized (select count(*) as n from matches)
+    select matched.id, matched.version
+    from matches matched
+    where (select n from match_count) <= 2048
       and exists (
-        select 1 from private.display_request_visible_settings_v1 as scope
-        where scope.dataset_kind = projection.dataset_kind
-          and scope.dataset_id = projection.id
-          and scope.dataset_version = projection.version
+        select 1 from private.display_request_visible_settings_v1 scope
+        where scope.dataset_kind = %L and scope.dataset_id = matched.id
+          and scope.dataset_version = matched.version
+        offset 0
       )
-  $sql$, v_relation, p_kind) using p_like_pattern;
+    union all
+    select matched.id, matched.version
+    from matches matched
+    where (select n from match_count) > 2048
+      and exists (
+        select 1 from private.display_request_visible_settings_v1 scope
+        where scope.dataset_kind = %L and scope.dataset_id = matched.id
+          and scope.dataset_version = matched.version
+      )
+  $sql$, v_relation, p_kind, p_kind, p_kind) using p_like_pattern;
 end
 $_$;
 
@@ -65768,7 +65781,7 @@ begin
   if p_cursor_node_id is not null then
     select n.code into v_after_code from private.display_read_navigation_node_v1 n
     where n.node_id=p_cursor_node_id and n.dimension=p_dimension
-      and n.parent_node_id is not distinct from p_parent_node_id;
+      and (n.parent_node_id=p_parent_node_id or (p_parent_node_id is null and n.parent_node_id is null));
     if not found then raise exception using errcode='22023',message='invalid portal request'; end if;
   end if;
 
@@ -65777,7 +65790,7 @@ begin
   ), matched_count as materialized (select count(*) as n from matched
   ), children as materialized (
     select n.* from private.display_read_navigation_node_v1 n
-    where n.dimension=p_dimension and n.parent_node_id is not distinct from p_parent_node_id
+    where n.dimension=p_dimension and (n.parent_node_id=p_parent_node_id or (p_parent_node_id is null and n.parent_node_id is null))
       and (n.source_file is not null or n.node_id in ('class:isic','class:cpc','class:elementary','geo:unmapped') or exists (
         select 1 from private.display_navigation_membership_v1 m
         where m.node_id=n.node_id and (p_kind='all' or m.dataset_kind=p_kind)
@@ -65805,12 +65818,18 @@ begin
       and m.node_id=any(array(select n.node_id from targets n))
     union all
     select m.node_id,m.direct
-    from private.display_navigation_membership_v1 m
+    -- Keep each branch as a parameterized protected read. Narrow branches
+    -- can use indexed visibility checks instead of hashing every visible key.
+    -- OFFSET 0 prevents flattening; it never caps, truncates or skips a row.
+    from targets t cross join lateral (
+      select m.node_id,m.direct from private.display_navigation_membership_v1 m
+      where m.dimension=p_dimension and m.node_id=t.node_id
+        and (p_kind='all' or m.dataset_kind=p_kind)
+        and ((p_query='' and p_filters='{}'::jsonb)
+          or (m.dataset_kind,m.id,m.version) in (select dataset_kind,id,version from matched))
+      offset 0
+    ) m
     where ((p_query='' and p_filters='{}'::jsonb) or (select n from matched_count)>2048)
-      and m.dimension=p_dimension and (p_kind='all' or m.dataset_kind=p_kind)
-      and ((p_query='' and p_filters='{}'::jsonb)
-        or (m.dataset_kind,m.id,m.version) in (select dataset_kind,id,version from matched))
-      and m.node_id=any(array(select n.node_id from targets n))
   ), counted as materialized (
     select node_id,count(*) as count,count(*) filter(where direct) as direct_count
     from counted_memberships group by node_id
