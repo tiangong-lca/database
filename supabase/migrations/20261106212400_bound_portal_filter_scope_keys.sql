@@ -18,6 +18,9 @@ begin
   -- Membership rows refer to the same exact key; their visibility is checked
   -- by that final intersection. No card, raw source or authorization cache.
   -- 2048 selects indexed probes versus a bulk intersection, never a row cap.
+  -- Preserve the exact text check; unbounded bpchar equality additionally lets
+  -- the existing character(9) settings index qualify the version component.
+  -- Keep the requested kind explicit so bulk scope work excludes other kinds.
   return query
   with matches as materialized (
 select v.dataset_kind,v.id,v.version
@@ -58,8 +61,10 @@ select v.dataset_kind,v.id,v.version
   where (select n from match_count)<=2048
     and exists (
       select 1 from private.display_request_visible_settings_v1 scope
-      where scope.dataset_kind=matched.dataset_kind
-        and scope.dataset_id=matched.id and scope.dataset_version=matched.version
+      where (p_kind='all' or scope.dataset_kind=p_kind)
+        and scope.dataset_kind=matched.dataset_kind and scope.dataset_id=matched.id
+        and scope.dataset_version=matched.version::pg_catalog.bpchar
+        and scope.dataset_version::text=matched.version
       offset 0
     )
   union all
@@ -68,8 +73,10 @@ select v.dataset_kind,v.id,v.version
   where (select n from match_count)>2048
     and exists (
       select 1 from private.display_request_visible_settings_v1 scope
-      where scope.dataset_kind=matched.dataset_kind
-        and scope.dataset_id=matched.id and scope.dataset_version=matched.version
+      where (p_kind='all' or scope.dataset_kind=p_kind)
+        and scope.dataset_kind=matched.dataset_kind and scope.dataset_id=matched.id
+        and scope.dataset_version=matched.version::pg_catalog.bpchar
+        and scope.dataset_version::text=matched.version
     );
 end;
 $filter_keys$;

@@ -38,8 +38,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-07
-lastReviewedCommit: "1ba11de625d118965abd690e791efa0de5a94443"
-lastReviewedNote: "Database #949: reviewed the closed native filter-key bridge, exact current-scope intersection, manifest/ACL proof and selective/broad full-API qualification; public grants and deployment boundaries unchanged."
+lastReviewedCommit: "b449b9d820d5eaa0cbb2160bd4a43f36d93cc3fd"
+lastReviewedNote: "Database #949: re-reviewed explicit kind and typed version index qualification after failed scale gates; exact text equality, manifest/ACL isolation and deployment boundaries remain unchanged."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-validation.md

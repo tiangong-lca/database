@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-07
-lastReviewedCommit: "1ba11de625d118965abd690e791efa0de5a94443"
-lastReviewedNote: "Database #949: reviewed the closed native filter-key bridge, exact current-scope intersection, manifest/ACL proof and selective/broad full-API qualification; public grants and deployment boundaries unchanged."
+lastReviewedCommit: "b449b9d820d5eaa0cbb2160bd4a43f36d93cc3fd"
+lastReviewedNote: "Database #949: re-reviewed explicit kind and typed version index qualification after failed scale gates; exact text equality, manifest/ACL isolation and deployment boundaries remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1749,7 +1749,10 @@ normalized scalar and exact-version hierarchy predicates against synchronized
 native facts, then intersects every candidate with the unchanged current-scope
 security-barrier view. At most 2048 candidates select correlated indexed scope
 probes; larger sets use a bulk intersection. This threshold changes the plan,
-never the result cardinality. Filtering before visibility avoids building the
+never the result cardinality. Scope queries retain the requested kind explicitly.
+An additional unbounded `bpchar` equality qualifies the existing settings version
+index; the original text equality remains authoritative, preserving exact-version
+and trailing-space semantics without truncation. Filtering before visibility avoids building the
 entire allowed scope for a small native match set. It serves both filtered
 keyword Search and query-free browse/Facet/navigation. The helper returns only
 exact keys, has an empty search path, and grants execution only to the existing

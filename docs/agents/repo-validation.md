@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-07
-lastReviewedCommit: "1ba11de625d118965abd690e791efa0de5a94443"
-lastReviewedNote: "Database #949: reviewed the closed native filter-key bridge, exact current-scope intersection, manifest/ACL proof and selective/broad full-API qualification; public grants and deployment boundaries unchanged."
+lastReviewedCommit: "b449b9d820d5eaa0cbb2160bd4a43f36d93cc3fd"
+lastReviewedNote: "Database #949: re-reviewed explicit kind and typed version index qualification after failed scale gates; exact text equality, manifest/ACL isolation and deployment boundaries remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1908,7 +1908,12 @@ Facets, both navigation readers, all sorts and predecessor cursors. Both
 variants retain page-bound hydration; do not require the predecessor's already
 fixed full-card cost to recur. Preserve the unchanged 2-second and 1.5x/50-ms
 limits. Capture natural exact settings index probes from the new helper's own
-nested query, not unrelated lexical probes. Restore the predecessor matched-key
+nested query, including the version index component, not unrelated lexical probes.
+Keep the requested kind explicit in bulk scope reads and preserve exact text
+equality beside the typed version condition. The first profile
+failed nine relative timing gates and full-version index proof; retain that
+failure and qualify the corrected complete profile without relaxing thresholds.
+Restore the predecessor matched-key
 reader and remove the new bridge for baseline samples; recreate its exact
 owner/grants and refresh the full manifest before candidate samples.
 
