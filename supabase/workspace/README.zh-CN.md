@@ -20,9 +20,9 @@ checkPaths:
   - .githooks/pre-push
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-06
-lastReviewedCommit: 21e20ba34eab92310ac7f1368eedfab9329cde1e
-lastReviewedNote: "Database #935 / #925: reviewed indexed empty default paging and closed Search failure diagnostics with unchanged public, scope, writer and timeout contracts."
+lastReviewedAt: 2026-11-07
+lastReviewedCommit: 63a2cef16ee1541e5bc8f4e27ff756cfc723a6d1
+lastReviewedNote: "Database #935 / Portal #184: reviewed additive branch/totals reads; ownership, generated-workspace and deployment boundaries remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

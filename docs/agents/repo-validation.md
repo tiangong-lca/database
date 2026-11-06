@@ -32,9 +32,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-06
-lastReviewedCommit: 21e20ba34eab92310ac7f1368eedfab9329cde1e
-lastReviewedNote: "Database #935 / #925: reviewed indexed empty default paging and closed Search failure diagnostics with unchanged public, scope, writer and timeout contracts."
+lastReviewedAt: 2026-11-07
+lastReviewedCommit: 63a2cef16ee1541e5bc8f4e27ff756cfc723a6d1
+lastReviewedNote: "Database #935 / Portal #184: reviewed demand-specific branch/totals APIs, preserved legacy behavior and qualification boundaries."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1785,6 +1785,26 @@ pages. Preserve failed/invalid receipts, including interference, instead of
 counting them as passing samples. Rebuild blank state before deterministic
 five-schema/type export. Local latency, source CI, exact Dev/Main deployment
 and actual hosted Portal search/navigation/refine remain separate proofs.
+
+### Consumer-specific Portal reads (Database #935)
+
+The existing real-writer `20261025_portal_facets_navigation.sql` suite additionally
+compares branch-only responses against complete navigation across kinds, scopes,
+queries, filters and predecessor-issued cursors. Totals-only responses must equal
+the exact public-version totals, retain historical versions and observe immediate
+visibility withdrawal. Keep public/private ACL and capability checks, exact schema
+inventories, legacy response compatibility and repeat migration proof.
+
+`scripts/benchmark_portal_read_demand.py --report <new-json>` runs only on the
+explicitly owned local PG17.11 stack used by #925. It compares the complete and
+demand-specific reads at 157,000 versions, with alternating order, three samples,
+all kinds, single/multiple brands, empty/absent/selective/broad queries, filtered
+reads, classification roots/branches and geography. Preserve complete branch
+payload parity, no errors, the two-second local p95 and 1.5x/50-ms regression
+limits. Separate nested natural plans must show totals never aggregate branch
+memberships and empty branch-only reads skip the whole-catalog version aggregate.
+Reset between volume and writer profiles and before deterministic schema/type
+export. Actual hosted latency and Portal adoption remain separate acceptance.
 
 ### Facets and Navigation reader qualification (Database #864)
 
