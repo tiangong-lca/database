@@ -17,7 +17,8 @@ ROOT = Path(__file__).resolve().parents[1]
 WORK = Path('/tmp/portal-query-925-pg1711')
 CONTAINER = 'supabase_db_portal-query-925-pg1711'
 READERS = ('display_catalog_process_pattern_versions_v1', 'display_catalog_flow_pattern_versions_v1',
-           'display_catalog_search_v3_impl')
+           'display_catalog_search_v3_impl', 'display_catalog_search_v2_impl',
+           'display_catalog_candidate_rows_v2')
 
 
 def literal(value):
@@ -89,7 +90,7 @@ grant execute on function pg_temp.measure(text,text,int,text) to anon;
     for scope in ('tiangong_lca', 'tiangong_lca,bafu,uslci,worldsteel'):
         brands = 'array['+','.join(literal(b) for b in scope.split(','))+']'
         for kind in ('process', 'flow'):
-            for label, query in [('rare','bench'+kind+' 00000001'),('broad','history864'),('absent','absent925')]:
+            for label, query in [('rare','bench'+kind+' 00000001'),('broad','history864'),('absent','absent925'),('empty',''),('selective','bench'+kind+' 00000'),('wide','bench'+kind+' 0000')]:
                 for api in ('search','facets','navigation'):
                     if api == 'search':
                         q = f"select api.portal_search_{kind}es_v4({brands},{literal(query)})" if kind == 'process' else f"select api.portal_search_flows_v4({brands},{literal(query)})"
@@ -104,6 +105,16 @@ grant execute on function pg_temp.measure(text,text,int,text) to anon;
             for label, query in cases.items():
                 sql += f"select pg_temp.measure({literal(variant)},{literal(label)},{ordinal},{literal(query)});\n"
     sql += '\nreset role;\n'+variants['candidate']+fixture_source.REFRESH
+    sql += """
+reset role;
+select jsonb_build_object(
+ 'timings',(select jsonb_agg(to_jsonb(t)) from (
+   select variant,label,count(*) samples,max(ms) max_ms,percentile_disc(.95) within group(order by ms) p95_ms,
+     count(*) filter(where error is not null) failures from samples group by variant,label order by variant,label) t),
+ 'parityFailures',(select count(*) from samples a join samples b using(label,ordinal)
+   where a.variant='baseline' and b.variant='candidate' and (a.error is not null or b.error is not null or a.payload is distinct from b.payload)),
+ 'responseErrors',(select coalesce(jsonb_agg(jsonb_build_object('variant',variant,'label',label,'code',error)),'[]') from samples where error is not null));
+"""
     sql += """
 -- Bound natural nested-plan probes separately from latency samples.
 load 'auto_explain';
@@ -120,36 +131,43 @@ set local portal.display_global='false';
 set local portal.display_filter_brand='';
 select count(*) from private.display_catalog_scoped_pattern_keys_v1('flow','%benchflow 00000001%');
 select count(*) from private.display_catalog_scoped_pattern_keys_v1('process','%benchprocess 00000001%');
+select count(*) from private.display_catalog_candidate_rows_v2('flow','benchflow 00000001',null,'%benchflow 00000001%');
+select count(*) from private.display_catalog_candidate_rows_v2('process','benchprocess 00000001',null,'%benchprocess 00000001%');
 reset role;
 set local auto_explain.log_min_duration=-1;
 """
-    sql += """
-reset role;
-select jsonb_build_object(
- 'timings',(select jsonb_agg(to_jsonb(t)) from (
-   select variant,label,count(*) samples,max(ms) max_ms,percentile_disc(.95) within group(order by ms) p95_ms,
-     count(*) filter(where error is not null) failures from samples group by variant,label order by variant,label) t),
- 'parityFailures',(select count(*) from samples a join samples b using(label,ordinal)
-   where a.variant='baseline' and b.variant='candidate' and (a.error is not null or b.error is not null or a.payload is distinct from b.payload)),
- 'responseErrors',(select coalesce(jsonb_agg(jsonb_build_object('variant',variant,'label',label,'code',error)),'[]') from samples where error is not null));
-rollback;
-"""
+    sql += '\nrollback;\n'
     args.report.with_suffix('.sql').write_text(sql)
     with args.report.with_suffix('.out').open('x') as out, args.report.with_suffix('.log').open('x') as log:
         result = run(sql, stdout=out, stderr=log, timeout=3600)
-    rows = [json.loads(s) for s in args.report.with_suffix('.out').read_text().splitlines() if s.startswith('{')]
+    rows = [json.loads(s) for s in args.report.with_suffix('.out').read_text().splitlines() if s.startswith('{') and '"timings"' in s]
     plan_log = args.report.with_suffix('.log').read_text()
     assert len(plan_log.encode()) <= 4*1024*1024, 'bounded plan receipt exceeded'
+    key_reads = []
+    decoder = json.JSONDecoder()
+    def visit(node):
+        condition = node.get('Index Cond', '')
+        if node.get('Relation Name') in ('display_catalog_search_rows_v1','display_catalog_search_rows_v2') and 'id =' in condition and 'version =' in condition and node.get('Actual Loops',0)>0:
+            key_reads.append({k:node[k] for k in ('Relation Name','Index Name','Index Cond','Actual Rows','Actual Loops')})
+        for child in node.get('Plans',[]):
+            visit(child)
+    for part in plan_log.split('plan:\n')[1:]:
+        plan, _ = decoder.raw_decode(part.lstrip())
+        visit(plan['Plan'])
+
     report = {'base':base, 'postgresVersion':server, 'processDatasets':args.process_datasets, 'flowDatasets':args.flow_datasets,
               'sourceSha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
               'fixtureSourceSha256':hashlib.sha256(Path(fixture_source.__file__).read_bytes()).hexdigest(),
               'sqlSha256':hashlib.sha256(sql.encode()).hexdigest(), 'psqlExitCode':result.returncode,
+              'naturalCandidateKeyReads': key_reads,
               'naturalLexicalIndexConditions': plan_log.count('"Index Cond": "(document ~~'),
               'classification':'local synthetic rollback reader samples, not hosted performance'}
     if len(rows) == 1:
         report.update(rows[0])
+    timings={(r['variant'],r['label']):r['p95_ms'] for r in report.get('timings',[])}
+    report['costRegressions']=[label for (variant,label),ms in timings.items() if variant=='candidate' and ms>max(50,timings['baseline',label]*1.5)]
     report['cleanupVerified'] = run(guard,capture_output=True,check=True).stdout.splitlines() == expected
-    report['passed'] = result.returncode == 0 and report.get('parityFailures') == 0 and report['cleanupVerified'] and all(
+    report['passed'] = result.returncode == 0 and report.get('parityFailures') == 0 and not report['costRegressions'] and report['cleanupVerified'] and {r['Relation Name'] for r in key_reads} == {'display_catalog_search_rows_v1','display_catalog_search_rows_v2'} and all(
         r['p95_ms'] <= 2000 and r['failures'] == 0 for r in report.get('timings',[]) if r['variant']=='candidate')
     args.report.write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps({k:v for k,v in report.items() if k != 'timings'}))

@@ -194,6 +194,37 @@ begin
     select pattern.id,pattern.version
     from private.display_catalog_flow_pattern_versions_v1(v_like_pattern) pattern
     where p_kind='flow' and not private.display_catalog_summary_valid_cas_v1(p_query)
+  ), matched_keys as materialized (
+    select id,version from pattern_matches
+    union
+    select p.id,p.version from private.display_catalog_search_current_v2 p
+    where p.dataset_kind=p_kind and p.id=v_exact_id
+      and not (p_kind='flow' and private.display_catalog_summary_valid_cas_v1(p_query))
+  ), key_count as materialized (select count(*) as n from matched_keys
+  ), candidate_rows as not materialized (
+    select p.id,p.version,p.card,p.state_code,p.modified_at
+    from matched_keys k join private.display_catalog_search_rows_v2 p
+      on p.dataset_kind='process' and p.id=k.id and p.version=k.version
+    where p_kind='process' and (select n from key_count)<=2048
+    union all
+    select p.id,p.version,p.card,p.state_code,p.modified_at
+    from matched_keys k join private.display_catalog_search_rows_v1 p
+      on p.dataset_kind='flow' and p.id=k.id and p.version=k.version
+    where p_kind='flow' and (select n from key_count)<=2048
+    union all
+    select p.id,p.version,p.card,p.state_code,p.modified_at
+    from private.display_catalog_search_current_v2 p
+    where (select n from key_count)>2048 and p.dataset_kind=p_kind
+      and (p.id,p.version) in (select id,version from matched_keys)
+    union all
+    select p.id,p.version,p.card,p.state_code,p.modified_at
+    from private.display_catalog_search_current_v2 p
+    where p_kind='flow' and private.display_catalog_summary_valid_cas_v1(p_query)
+      and p.dataset_kind='flow'
+      and pg_catalog.jsonb_typeof(p.card->'casNumber')='string'
+      and p.card->>'casNumber' ~ '^[0-9]{2,7}-[0-9]{2}-[0-9]$'
+      and pg_catalog.length(p.card->>'casNumber') between 7 and 12
+      and p.card->>'casNumber'=p_query
   ), portal_facts as materialized (
     -- Inline the exact immutable card-facts expression to avoid one SPI call
     -- per candidate; only narrow facts cross the materialization boundary.
@@ -207,16 +238,10 @@ begin
           where pg_catalog.lower(pg_catalog.btrim(c.item->>'code'))=p_query),
         'casNumber',card_attrs."casNumber"
       ) as facts
-    from private.display_catalog_search_current_v2 p
+    from candidate_rows p
     cross join lateral pg_catalog.jsonb_to_record(p.card)
       as card_attrs(names jsonb,classifications jsonb,"casNumber" jsonb)
-    where p.dataset_kind=p_kind and true
-      and case when p_kind='flow' and private.display_catalog_summary_valid_cas_v1(p_query) then
-        pg_catalog.jsonb_typeof(p.card->'casNumber')='string'
-        and p.card->>'casNumber' ~ '^[0-9]{2,7}-[0-9]{2}-[0-9]$'
-        and pg_catalog.length(p.card->>'casNumber') between 7 and 12
-        and p.card->>'casNumber'=p_query
-      else p.id=v_exact_id or (p.id,p.version) in (select id,version from pattern_matches) end
+    where true
       and (p_filters='{}'::jsonb or (p.id,p.version) in (select id,version from private.display_navigation_matched_versions_v1(p_kind,'',p_filters)))
   ), portal_scored as materialized (
     select portal_facts.*,

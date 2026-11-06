@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-06
-lastReviewedCommit: 753e8c6a5ef1535bd751d5878b93ce458f0f573c
-lastReviewedNote: "Database #925: closed scoped lexical keys and bounded unfiltered V3 ranking; exact-response and hosted qualification remain distinct."
+lastReviewedCommit: 02101cfeafe8d3275a918b279598f9a97e1b62c8
+lastReviewedNote: "Database #925 follow-up: reviewed exact candidate-key joins under unchanged RLS, retained navigation counting, expanded full-response/plan qualification and hosted recovery boundaries."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1908,3 +1908,16 @@ approving opinions with pg_jsonschema0.3.3. Drafts/rejections stay incomplete
 when necessary. `api.cmd_review_apply_mv_payload` validates normalized additions
 before final writeback, including old submitted opinions. Existing business
 rows are not backfilled, API/ACL identity and Root/Reference independence remain.
+
+### Portal candidate hydration
+
+Nonempty lexical reads with at most 2,048 matched version keys join each
+forced-RLS Process or Flow projection directly before combining rows. Larger
+match sets retain the existing bulk scan/semijoin. The switch selects a read
+shape and never truncates the candidate set. Joining the protected UNION view can
+leave candidate membership outside the relation scan, so the ranker and
+filtered candidate reader use the existing relation primary keys directly.
+Navigation counting retains its existing implementation: direct membership joins
+regressed broad-query cost and were rejected during volume qualification. These
+reader changes do not alter scope authorization, projection writers, ranking or
+public cursors.
