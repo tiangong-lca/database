@@ -263,6 +263,34 @@ select is((select count(*) from private.api_capability_grants where routine_iden
  'api.portal_catalog_totals_v1(text[])','api.portal_navigation_branches_v1(text[], text, text, jsonb, text, text, text, integer)')
  and allow_anon and allow_authenticated and not allow_service_role),2::bigint,'both additive APIs have exact public capability admission');
 
+-- Database #949: internal filter keys recheck exact current scope on each call.
+set local role portal_display_executor;
+set local portal.display_global='false';
+set local portal.display_filter_brand='';
+set local portal.display_brands='tiangong_lca';
+select is((select count(*) from private.display_navigation_scoped_filter_keys_v1('all','{"geography":"cn"}')),1::bigint,
+ 'filter bridge returns only the visible Tiangong historical key');
+set local portal.display_brands='bafu';
+select is((select count(*) from private.display_navigation_scoped_filter_keys_v1('all','{"geography":"cn"}')),2::bigint,
+ 'filter bridge immediately switches to exact BAFU versions');
+select is((select count(*) from private.display_navigation_scoped_filter_keys_v1('flow','{"referenceYearFrom":2024}')),0::bigint,
+ 'filter bridge excludes null years before scope work');
+set local portal.display_global='true';
+select is((select count(*) from private.display_navigation_scoped_filter_keys_v1('all','{}')),3::bigint,
+ 'legacy global scope retains all visible versions but excludes the hidden source');
+set local portal.display_filter_brand='tiangong_lca';
+select is((select count(*) from private.display_navigation_scoped_filter_keys_v1('all','{}')),1::bigint,
+ 'brand narrowing still applies in legacy global scope');
+set local portal.display_global='false';
+set local portal.display_brands='bafu';
+select is((select count(*) from private.display_navigation_scoped_filter_keys_v1('all','{}')),0::bigint,
+ 'narrowing cannot expand the allowed brand set');
+set local portal.display_filter_brand='';
+set local portal.display_brands='';
+select is((select count(*) from private.display_navigation_scoped_filter_keys_v1('all','{}')),0::bigint,
+ 'missing current scope returns no version keys');
+reset role;
+
 -- Source and visibility writers must keep the new read path current.
 set local role anon;
 select is(jsonb_array_length(api.portal_search_processes_v4(array['bafu','tiangong_lca'],'shared864',p_filters=>'{"geography":" CN ","classification":"PORTAL-HYBRID"}')->'items'),2,
