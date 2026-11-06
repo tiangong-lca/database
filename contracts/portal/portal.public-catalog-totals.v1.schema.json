@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "$id": "portal.public-catalog-totals.v1.schema.json",
+  "title": "TianGong Portal public catalog totals v1",
+  "description": "Exact visible kind/id/version counts within the explicitly allowed deployment brands, without query filters or navigation aggregation. Historical public versions remain counted.",
+  "required": [
+    "schemaVersion",
+    "countBasis",
+    "totals"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "portal.public-catalog-totals.v1"
+    },
+    "countBasis": {
+      "description": "What each count counts. `public_versions` means distinct exact kind/id/version identities matching the request predicate; it is never a de-duplicated data-set count.",
+      "const": "public_versions"
+    },
+    "totals": {
+      "description": "Exact public versions for each kind within deployment scope.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "process",
+        "flow"
+      ],
+      "properties": {
+        "process": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "flow": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}
