@@ -5,11 +5,8 @@ create function pg_temp.make_process_support_fixture() returns jsonb language pl
 declare f jsonb:=pg_temp.base_candidate_fixture(); c jsonb:=(f->>'candidateText')::jsonb;
  d jsonb; r jsonb:=f->'receipt'; h text; files jsonb;
 begin
- d:=replace(f->>'catalogText','flow:87920000-0000-4000-8000-000000000050','process:87920000-0000-4000-8000-000000000050')::jsonb;
- d:=jsonb_set(jsonb_set(jsonb_set(d,'{datasets,0,datasetType}','"process"'),'{datasets,0,role}','"unit_process"'),'{datasets,0,path}','"processes/support.json"');
- select encode(extensions.digest(convert_to(private.lcia_scope_closure_worker_canonical_json_text(jsonb_agg(to_jsonb(encode(extensions.digest(convert_to(private.lcia_scope_closure_worker_canonical_json_text(jsonb_build_object('key',m->'key','sha256',m->'sha256','references',m->'references')),'UTF8'),'sha256'),'hex')) order by ordinal)),'UTF8'),'sha256'),'hex') into h
- from jsonb_array_elements(d->'datasets') with ordinality a(m,ordinal);
- d:=jsonb_set(d,'{catalogSetHash}',to_jsonb(h));
+ d:=(f->>'catalogText')::jsonb;
+ d:=jsonb_set(jsonb_set(d,'{datasets,0,datasetType}','"process"'),'{datasets,0,role}','"unit_process"');
  c:=jsonb_set(c,'{publicationCatalog,sha256}',to_jsonb(encode(extensions.digest(convert_to(d::text,'UTF8'),'sha256'),'hex')));
  r:=jsonb_set(r,'{candidateSha256}',to_jsonb(encode(extensions.digest(convert_to(c::text,'UTF8'),'sha256'),'hex')));
  select jsonb_agg(file order by file->>'name') into files from (

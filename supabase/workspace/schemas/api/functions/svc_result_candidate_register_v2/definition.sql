@@ -5,8 +5,8 @@ CREATE OR REPLACE FUNCTION "api"."svc_result_candidate_register_v2"("p_candidate
 declare
   v_candidate jsonb; v_catalog jsonb; v_hash text; v_catalog_hash text; v_target text;
   v_artifact jsonb; v_member jsonb; v_file jsonb; v_reference jsonb; v_name text;
-  v_expected_ref jsonb; v_files jsonb; v_keys text[]; v_roots text[];
-  v_actual_keys text[]; v_actual_roots text[]; v_formats text[];
+  v_expected_ref jsonb; v_files jsonb;
+  v_formats text[];
   v_count integer; v_results bigint:=0; v_old private.final_result_candidates%rowtype;
   v_stored private.final_result_query_artifacts%rowtype; v_storage private.final_result_candidate_storage%rowtype;
   v_time timestamptz;
@@ -24,7 +24,7 @@ begin
   v_hash:=encode(extensions.digest(convert_to(p_candidate_text,'UTF8'),'sha256'),'hex');
   v_catalog_hash:=encode(extensions.digest(convert_to(p_catalog_text,'UTF8'),'sha256'),'hex');
   if (select count(*) from jsonb_object_keys(v_candidate))<>18
-    or (select count(*) from jsonb_object_keys(v_catalog))<>6
+    or (select count(*) from jsonb_object_keys(v_catalog))<>4
     or v_candidate->>'schemaVersion' is distinct from 'tiangong.release.release-candidate.v3'
     or v_candidate->>'status' is distinct from 'local_candidate'
     or v_candidate->'candidateQualified' is distinct from 'true'::jsonb
@@ -44,25 +44,14 @@ begin
     or jsonb_typeof(v_candidate#>'{validation,archiveReadbackReportPath}') is distinct from 'string'
     or jsonb_typeof(v_candidate->'queryArtifacts') is distinct from 'array'
     or jsonb_typeof(v_candidate->'packages') is distinct from 'array'
-    or v_catalog->>'schemaVersion' is distinct from 'tiangong.release.candidate-publication-catalog.v1'
+    or v_catalog->>'schemaVersion' is distinct from 'tiangong.release.candidate-publication-catalog.v2'
     or coalesce(v_catalog->>'canonicalDatasetIndexSha256','') !~ '^[0-9a-f]{64}$'
     or jsonb_typeof(v_catalog->'canonicalDatasetIndexSha256') is distinct from 'string'
-    or coalesce(v_catalog->>'catalogSetHash','') !~ '^[0-9a-f]{64}$'
-    or jsonb_typeof(v_catalog->'catalogSetHash') is distinct from 'string'
     or v_catalog->>'canonicalDatasetIndexSha256' is distinct from v_candidate->>'canonicalDatasetIndexSha256'
-    or jsonb_typeof(v_catalog->'datasets') is distinct from 'array'
-    or v_catalog#>'{components,unitProcess,available}' is distinct from 'false'::jsonb
-    or v_catalog#>'{components,unitProcess,roots}' is distinct from '[]'::jsonb
-    or v_catalog#>'{components,unitProcess,datasets}' is distinct from '[]'::jsonb
-    or v_catalog#>'{components,result,available}' is distinct from 'true'::jsonb
-    or jsonb_typeof(v_catalog#>'{components,result,roots}') is distinct from 'array'
-    or jsonb_typeof(v_catalog#>'{components,result,datasets}') is distinct from 'array' then
+    or jsonb_typeof(v_catalog->'datasets') is distinct from 'array' then
     raise exception using errcode='22023',message='Final Result Candidate/catalog binding mismatch';
   end if;
-  if (select count(*) from jsonb_object_keys(v_candidate->'validation'))<>6
-    or (select count(*) from jsonb_object_keys(v_catalog->'components'))<>2
-    or (select count(*) from jsonb_object_keys(v_catalog#>'{components,result}'))<>3
-    or (select count(*) from jsonb_object_keys(v_catalog#>'{components,unitProcess}'))<>3 then
+  if (select count(*) from jsonb_object_keys(v_candidate->'validation'))<>6 then
     raise exception using errcode='22023',message='Invalid final Result Candidate qualification fields';
   end if;
   foreach v_name in array array['finalInput','inputPlan','sourceLineage','pair','queryResults','publicationCatalog'] loop
@@ -174,29 +163,17 @@ begin
         or coalesce(v_member->>'version','') !~ '^[0-9]{2}\.[0-9]{2}\.[0-9]{3}$'
         or coalesce(v_member->>'canonicalContentHash','') !~ '^[0-9a-f]{64}$'
         or jsonb_typeof(v_member->'canonicalContentHash') is distinct from 'string'
-        or jsonb_typeof(v_member->'references') is distinct from 'array'
-        or v_member->'components' is distinct from '["result"]'::jsonb
         or coalesce(length(v_member->>'role'),0) not between 1 and 64
-        or ((v_member->>'datasetType'='process') is distinct from (v_member->>'role' in ('result_process','unit_process')))
-        or v_member->>'key' is distinct from (v_member->>'datasetType')||':'||(v_member->>'uuid')||'@'||(v_member->>'version') then
+        or ((v_member->>'datasetType'='process') is distinct from (v_member->>'role' in ('result_process','unit_process'))) then
         raise exception using errcode='22023',message='Invalid final Result Candidate member';
       end if;
-      if (select count(*) from jsonb_object_keys(v_member))<>10
-        or jsonb_typeof(v_member->'sha256') is distinct from 'string'
-        or coalesce(v_member->>'sha256','') !~ '^[0-9a-f]{64}$'
-        or jsonb_typeof(v_member->'path') is distinct from 'string'
-        or coalesce(length(v_member->>'path'),0) not between 1 and 512 then
+      if (select count(*) from jsonb_object_keys(v_member))<>5 then
         raise exception using errcode='22023',message='Invalid final Result Candidate member';
       end if;
       insert into private.final_result_candidate_members values(v_hash,v_member->>'datasetType',(v_member->>'uuid')::uuid,
-        v_member->>'version',v_member->>'key',v_member->>'role',v_member->>'canonicalContentHash');
+        v_member->>'version',(v_member->>'datasetType')||':'||(v_member->>'uuid')||'@'||(v_member->>'version'),v_member->>'role',v_member->>'canonicalContentHash');
     end loop;
-    select array_agg(dataset_key order by dataset_key collate "C"),
-      array_agg(dataset_key order by dataset_key collate "C") filter(where dataset_role='result_process')
-      into v_actual_keys,v_actual_roots from private.final_result_candidate_members where candidate_hash=v_hash;
-    select array_agg(value order by value collate "C") into v_keys from jsonb_array_elements_text(v_catalog#>'{components,result,datasets}');
-    select array_agg(value order by value collate "C") into v_roots from jsonb_array_elements_text(v_catalog#>'{components,result,roots}');
-    if v_keys is distinct from v_actual_keys or v_roots is distinct from v_actual_roots or coalesce(cardinality(v_actual_roots),0)<>v_results then
+    if (select count(*) from private.final_result_candidate_members where candidate_hash=v_hash and dataset_role='result_process')<>v_results then
       raise exception using errcode='22023',message='Final Result Candidate root/closure coverage mismatch';
     end if;
     if (select count(*) from private.final_result_candidate_members m
@@ -207,29 +184,6 @@ begin
       or (select count(distinct (r.result_id,r.result_version)) from private.final_result_candidate_artifacts a
         join private.final_result_query_rows r on r.artifact_id=a.artifact_id where a.candidate_hash=v_hash)<>v_results then
       raise exception using errcode='22023',message='Final Result Candidate has mismatched or duplicated artifact Results';
-    end if;
-    for v_member in select value from jsonb_array_elements(v_catalog->'datasets') loop
-      if (select count(distinct value) from jsonb_array_elements(v_member->'references'))<>jsonb_array_length(v_member->'references') then
-        raise exception using errcode='22023',message='Duplicate final Result Candidate closure reference';
-      end if;
-      for v_reference in select value from jsonb_array_elements(v_member->'references') loop
-        if jsonb_typeof(v_reference) is distinct from 'string' or not exists(
-          select 1 from private.final_result_candidate_members where candidate_hash=v_hash and dataset_key=v_reference#>>'{}') then
-          raise exception using errcode='22023',message='Final Result Candidate closure reference is absent';
-        end if;
-      end loop;
-    end loop;
-    -- The package scope is the actual forward closure, not just an asserted
-    -- list that could smuggle unrelated documents into an authorized ZIP.
-    if (with recursive edges as materialized (
-      select member->>'key' as source,reference#>>'{}' as target
-      from jsonb_array_elements(v_catalog->'datasets') member
-      cross join lateral jsonb_array_elements(member->'references') reference
-    ), reachable(key) as (
-      select unnest(v_actual_roots)
-      union select e.target from reachable r join edges e on e.source=r.key
-    ) select count(*) from reachable)<>v_count then
-      raise exception using errcode='22023',message='Final Result Candidate contains unreachable package members';
     end if;
   elsif v_old.catalog_hash<>v_catalog_hash then
     raise exception using errcode='23505',message='Final Result Candidate catalog identity conflict';

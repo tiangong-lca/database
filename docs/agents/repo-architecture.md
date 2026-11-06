@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-06
-lastReviewedCommit: 32095ed37bf87cd825cd6db721beedee36bfa8c9
-lastReviewedNote: "Database #919: reviewed referenced Unit Process support, Result-only root/query coverage, preserved RLS and isolated forward migration proof."
+lastReviewedCommit: 89faa0acdb3dbb767227dd0007292bbadac307e0
+lastReviewedNote: "Database #922: compact membership, Release-owned closure validation, unchanged live authorization and batch binding."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1861,7 +1861,14 @@ Result-only Candidate membership distinguishes Process type from publication
 role. `result_process` members alone define the Result roots and exact HDF5
 coverage. Referenced `unit_process` members remain ordinary Process support in
 the complete ZIP closure, with exact version and live support-read authorization.
-An unreferenced member is rejected. Support Process membership creates neither
+Release rejects unreferenced members during offline closure validation. Database
+accepts only compact catalog v2 (schema, canonical index hash, count and members);
+each member has kind, UUID, version, role and canonical content hash. It does not
+receive or traverse dependency edges. Exact Result/query coverage, immutable
+batch/file binding and current support-read authorization remain enforced. The
+full graph is neither uploaded nor persisted as a publication requirement. Old
+unpublished graph payloads are rejected; no compatibility reader or data rewrite
+is introduced. Support Process membership creates neither
 a Result query row nor a canonical Process write.
 
 Edge reuses existing server credentials for native single-object, 60-second Storage links after actor/current/complete-Candidate checks. Database continues to own the exact authorized descriptor; no custom signing role is needed. Migration `20261102091416` retires only the two #887 roles, their grants/memberships and five named Storage policies. Earlier migrations remain intact. There is no application data mutation or CASCADE; unexpected dependencies stop retirement.

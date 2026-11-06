@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-05
-lastReviewedCommit: a7a0df261ef37b59ee2e881b816e194c67aa3dd6
-lastReviewedNote: "Database #919: reviewed referenced Unit Process support, Result-only root/query coverage, preserved RLS and isolated forward migration proof."
+lastReviewedCommit: 89faa0acdb3dbb767227dd0007292bbadac307e0
+lastReviewedNote: "Database #922: compact membership, Release-owned closure validation, unchanged live authorization and batch binding."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1992,11 +1992,17 @@ Run `supabase/tests/20261106_final_result_process_dependency_catalog.sql` and
 `supabase/tests/20261106_final_result_process_dependencies.sql` after a blank
 PG17 migration rebuild, alongside the existing final Result artifact, Candidate,
 selection, readiness, activation, query, recovery and package suites. The new
-fixtures cover typed Process support, exact root/query coverage, missing versions,
-unreachable members, atomic rejection, private/state-120 support denial, current
+fixtures cover typed Process support, exact root/query coverage, rejected graph
+fields and old schema, atomic rejection, private/state-120 support denial, current
 RLS changes, complete ZIP descriptors and withdrawal. File attestations in SQL
 are synthetic. Release owns actual HDF5/ZIP and Worker/Edge byte/readback and
 rollback qualification. Rebuild all five schema views and Data API types twice.
+The compact-membership migration preserves the existing service-only facade,
+permissions and table layout. Verify exact index/raw-file bindings, duplicate
+members, incomplete Result coverage, old/unknown shape rejection and successful
+idempotent target replication. Full missing/unreachable dependency tests belong
+to Release, which must additionally prove a graph exceeding 128 MiB produces
+compact membership and complete ZIP listings exceed diagnostic-tail limits.
 No hosted operation or formal dataset modification is implied.
 
 ## Final Result ZIP role retirement
