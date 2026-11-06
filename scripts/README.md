@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-07
-lastReviewedCommit: "6eadf9b6b28907cea0edeafde00ca1d932a5a421"
-lastReviewedNote: "Database #946: reviewed filtered V3 reuse of exact narrow facts, page hydration and extended parity/latency proof; permissions and deployment boundaries unchanged."
+lastReviewedCommit: "1ba11de625d118965abd690e791efa0de5a94443"
+lastReviewedNote: "Database #949: reviewed the closed native filter-key bridge, exact current-scope intersection, manifest/ACL proof and selective/broad full-API qualification; public grants and deployment boundaries unchanged."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -70,6 +70,12 @@ coverage; the CI local-contract job runs it after the diagnostic SQL suite.
 `--compare-filtered-search` adds broad filtered public API shapes and counts
 full card-facts calls against the page boundary. The upgrade harness accepts
 the same flag to cover all filter families and predecessor cursors.
+
+`--compare-filter-scope` compares selective/broad native filters across Search,
+Facets and navigation. It restores the predecessor key reader and removes the
+new closed bridge for baseline measurements, then reinstates its exact grants.
+The upgrade harness also checks exact native key sets across current/legacy
+scopes. See the validation guide for the unchanged latency and isolation gates.
 
 ## Layout
 

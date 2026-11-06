@@ -19,7 +19,8 @@ CONTAINER = 'supabase_db_portal-query-925-pg1711'
 READERS = ('display_catalog_process_pattern_versions_v1', 'display_catalog_flow_pattern_versions_v1',
            'display_catalog_search_v3_impl', 'display_catalog_search_v2_impl',
            'display_catalog_candidate_rows_v2', 'display_navigation_impl_v1',
-           'display_api_search_processes_v3', 'display_api_search_flows_v3', 'display_search_v3')
+           'display_api_search_processes_v3', 'display_api_search_flows_v3', 'display_search_v3',
+           'display_navigation_matched_versions_v1')
 
 
 def literal(value):
@@ -44,6 +45,8 @@ def main():
                         help='Count actual catalog-guard calls in API samples and include filtered/sorted/cursor reads')
     parser.add_argument('--compare-filtered-search', action='store_true',
                         help='Include broad filtered reads and count full card-facts calls before page hydration')
+    parser.add_argument('--compare-filter-scope', action='store_true',
+                        help='Compare selective and broad native filters, including empty Search, Facets and navigation')
     parser.add_argument('--report', type=Path, required=True)
     args = parser.parse_args()
     if not (20 <= args.process_datasets <= 20000 and 40 <= args.flow_datasets <= 100000 and 2 <= args.samples <= 10):
@@ -72,8 +75,17 @@ def main():
         baseline.append(subprocess.check_output(['git', 'show', base+':'+path], cwd=ROOT, text=True))
         candidate.append(run(f"select pg_get_functiondef(oid)||';' from pg_proc where pronamespace='private'::regnamespace and proname='{name}';",
                              capture_output=True, check=True).stdout + ';\n')
+    if args.compare_filter_scope:
+        baseline.append('drop function if exists private.display_navigation_scoped_filter_keys_v1(text,jsonb);')
+        candidate.append(run("select pg_get_functiondef('private.display_navigation_scoped_filter_keys_v1(text,jsonb)'::regprocedure);", capture_output=True, check=True).stdout + ';\n' +
+                         'alter function private.display_navigation_scoped_filter_keys_v1(text,jsonb) owner to postgres;\n' +
+                         'revoke all on function private.display_navigation_scoped_filter_keys_v1(text,jsonb) from public;\n' +
+                         'grant execute on function private.display_navigation_scoped_filter_keys_v1(text,jsonb) to portal_display_executor;\n')
     variants = {'baseline': '\n'.join(baseline), 'candidate': '\n'.join(candidate)}
     sql = fixture_source.fixture(args.process_datasets, args.flow_datasets, 1024, 'cas-dense', True)
+    if args.compare_filter_scope:
+        sql = sql.replace("'source',case when i%13=0",
+                          "'source',case when i<=100 then 'selective949' when i%13=0")
     sql = sql.replace("set application_name='portal864-serial';", "set application_name='portal925-benchmark';")
     sql = sql.replace('begin;\n', "begin;\ndo $$begin if not pg_try_advisory_xact_lock(925,1) then raise exception 'Another #925 qualification owns this database';end if;end$$;\n", 1)
     # Search's public card decorator requires exact source support. Populate
@@ -84,7 +96,7 @@ def main():
         for kind, table in [('process','processes'),('flow','flows')])
     sql = sql.replace('do $$declare r record;begin for r in select * from original_triggers loop',
                       source_rows+'\ndo $$declare r record;begin for r in select * from original_triggers loop')
-    if args.compare_validation or args.compare_filtered_search:
+    if args.compare_validation or args.compare_filtered_search or args.compare_filter_scope:
         # Local session only. PG17 transaction-local function statistics update
         # continuously; no hosted setting, trust cache or instrumented guard.
         sql += "\nset local track_functions='all';\n"
@@ -108,7 +120,7 @@ grant execute on function pg_temp.measure(text,text,int,text) to anon;
         sql = sql.replace('--GUARD_BEFORE--', f'before_calls:=({counter});')
         sql = sql.replace('--GUARD_AFTER--', f'after_calls:=({counter});update samples set guard_calls=after_calls-before_calls where variant=v and label=l and ordinal=i;')
         sql += 'grant update on samples to anon;\n'
-    if args.compare_filtered_search:
+    if args.compare_filtered_search or args.compare_filter_scope:
         counter = "select coalesce(sum(calls),0) from pg_catalog.pg_stat_xact_user_functions where schemaname='private' and funcname='display_catalog_card_facts_v1'"
         sql = sql.replace('--FACTS_BEFORE--', f'before_facts:=({counter});')
         sql = sql.replace('--FACTS_AFTER--', f'after_facts:=({counter});update samples set fact_calls=after_facts-before_facts where variant=v and label=l and ordinal=i;')
@@ -131,7 +143,7 @@ grant execute on function pg_temp.measure(text,text,int,text) to anon;
                         for parent in ('root', 'class:isic' if kind=='process' else 'class:cpc'):
                             parent_sql = 'null' if parent=='root' else literal(parent)
                             cases[scope+':'+kind+':'+label+':'+api+':classification:'+parent] = f"select api.{rpc}({brands},{literal(kind)},{literal(query)},'{{}}','classification',{parent_sql})"
-    if args.compare_validation or args.compare_filtered_search:
+    if args.compare_validation or args.compare_filtered_search or args.compare_filter_scope:
         for scope in ('tiangong_lca', 'tiangong_lca,bafu,uslci,worldsteel'):
             brands = 'array['+','.join(literal(b) for b in scope.split(','))+']'
             for kind in ('process','flow'):
@@ -140,7 +152,7 @@ grant execute on function pg_temp.measure(text,text,int,text) to anon;
                     cases[f'{scope}:{kind}:filtered:{sort}:search'] = f"select api.{rpc}({brands},{literal('bench'+kind+' 00000')},p_filters=>'{{\"geography\":\"CN\"}}'::jsonb,p_sort=>{literal(sort)},p_limit=>10)"
                 source_label = literal(f'{scope}:{kind}:broad:search')
                 cases[f'{scope}:{kind}:predecessor-cursor:search'] = f"select api.{rpc}({brands},'history864',p_cursor=>(select payload->>'nextCursor' from samples where variant='baseline' and label={source_label} and ordinal=0),p_limit=>20)"
-    if args.compare_filtered_search:
+    if args.compare_filtered_search or args.compare_filter_scope:
         for scope in ('tiangong_lca', 'tiangong_lca,bafu,uslci,worldsteel'):
             brands = 'array['+','.join(literal(b) for b in scope.split(','))+']'
             for kind in ('process','flow'):
@@ -151,6 +163,24 @@ grant execute on function pg_temp.measure(text,text,int,text) to anon;
                 for label, value in filters.items():
                     for sort in ('relevance','name_asc','modified_desc'):
                         cases[f'{scope}:{kind}:broad-filter-{label}:{sort}:search'] = f"select api.{rpc}({brands},'history864',p_filters=>{literal(json.dumps(value))}::jsonb,p_sort=>{literal(sort)},p_limit=>10)"
+    if args.compare_filter_scope:
+        for scope in ('tiangong_lca', 'tiangong_lca,bafu,uslci,worldsteel'):
+            brands = 'array['+','.join(literal(b) for b in scope.split(','))+']'
+            for kind in ('process','flow'):
+                rpc = 'portal_search_processes_v4' if kind=='process' else 'portal_search_flows_v4'
+                for filter_label, filters in (('selective', {'source':'selective949'}),
+                                             ('broad', {'geography':'CN'}),
+                                             ('absent', {'source':'absent949'})):
+                    f = literal(json.dumps(filters))+'::jsonb'
+                    for query_label, query in (('empty',''),('text','history864')):
+                        label = f'{scope}:{kind}:filter-scope:{filter_label}:{query_label}'
+                        q = literal(query)
+                        for sort in ('relevance','name_asc','modified_desc'):
+                            cases[label+':'+sort+':search'] = f"select api.{rpc}({brands},{q},p_filters=>{f},p_sort=>{literal(sort)},p_limit=>10)"
+                        cases[label+':facets'] = f"select api.portal_facets_v4({brands},{literal(kind)},{q},p_filters=>{f})"
+                        for api in ('portal_navigation_v2','portal_navigation_branches_v1'):
+                            for dimension, parent in (('geography','null'),('classification',literal('class:isic' if kind=='process' else 'class:cpc'))):
+                                cases[label+':'+api+':'+dimension] = f"select api.{api}({brands},{literal(kind)},{q},{f},{literal(dimension)},{parent})"
     for ordinal in range(args.samples):
         for variant in (('baseline','candidate') if ordinal%2 == 0 else ('candidate','baseline')):
             sql += '\nreset role;\n'+variants[variant]+fixture_source.REFRESH+'\nset local role anon;\n'
@@ -169,7 +199,7 @@ select jsonb_build_object(
 """
     if args.compare_validation:
         sql = sql.replace("'timings',(select", "'guardCallCounts',(select jsonb_agg(to_jsonb(g)) from (select variant,label,min(guard_calls) minimum,max(guard_calls) maximum from samples where label like '%:search' group by variant,label order by variant,label) g),'timings',(select", 1)
-    if args.compare_filtered_search:
+    if args.compare_filtered_search or args.compare_filter_scope:
         sql = sql.replace("'timings',(select", "'factCallCounts',(select jsonb_agg(to_jsonb(g)) from (select variant,label,min(fact_calls) minimum,max(fact_calls) maximum,max(jsonb_array_length(payload->'items')+1) page_bound from samples where label like '%:search' group by variant,label order by variant,label) g),'timings',(select", 1)
     sql += """
 -- Bound natural nested-plan probes separately from latency samples.
@@ -185,6 +215,8 @@ set local role portal_display_executor;
 set local portal.display_brands='tiangong_lca';
 set local portal.display_global='false';
 set local portal.display_filter_brand='';
+select count(*) from private.display_navigation_matched_versions_v1('flow','','{"source":"selective949"}');
+select count(*) from private.display_navigation_matched_versions_v1('process','','{"source":"selective949"}');
 select count(*) from private.display_catalog_scoped_pattern_keys_v1('flow','%benchflow 00000001%');
 select count(*) from private.display_catalog_scoped_pattern_keys_v1('process','%benchprocess 00000001%');
 select count(*) from private.display_catalog_candidate_rows_v2('flow','benchflow 00000001',null,'%benchflow 00000001%');
@@ -208,8 +240,9 @@ set local auto_explain.log_min_duration=-1;
     key_reads = []
     navigation_reads = []
     empty_page_reads = []
+    filter_scope_reads = []
     decoder = json.JSONDecoder()
-    def visit(node):
+    def visit(node, filter_query=False):
         condition = node.get('Index Cond', '')
         if node.get('Relation Name') in ('display_catalog_search_rows_v1','display_catalog_search_rows_v2') and 'id =' in condition and 'version =' in condition and node.get('Actual Loops',0)>0:
             key_reads.append({k:node[k] for k in ('Relation Name','Index Name','Index Cond','Actual Rows','Actual Loops')})
@@ -217,18 +250,20 @@ set local auto_explain.log_min_duration=-1;
             navigation_reads.append({k:node[k] for k in ('Relation Name','Index Name','Index Cond','Actual Rows','Actual Loops')})
         if node.get('Index Name') == 'd807_portal_catalog_facet_rows_latest_v1_idx' and node.get('Actual Loops',0)>0:
             empty_page_reads.append({k:node[k] for k in ('Relation Name','Index Name','Index Cond','Actual Rows','Actual Loops')})
+        if filter_query and node.get('Relation Name') == 'dataset_display_settings' and 'dataset_id =' in condition and 'dataset_version' in condition and node.get('Actual Loops',0)>0:
+            filter_scope_reads.append({k:node[k] for k in ('Relation Name','Index Name','Index Cond','Actual Rows','Actual Loops')})
         for child in node.get('Plans',[]):
-            visit(child)
+            visit(child, filter_query)
     for part in plan_log.split('plan:\n')[1:]:
         plan, _ = decoder.raw_decode(part.lstrip())
-        visit(plan['Plan'])
+        visit(plan['Plan'], 'with matches as materialized' in plan.get('Query Text','').lower() and 'display_navigation_versions_v1' in plan.get('Query Text',''))
 
     report = {'base':base, 'postgresVersion':server, 'processDatasets':args.process_datasets, 'flowDatasets':args.flow_datasets,
               'comparedReaders':readers, 'cases':len(cases),
               'sourceSha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
               'fixtureSourceSha256':hashlib.sha256(Path(fixture_source.__file__).read_bytes()).hexdigest(),
               'sqlSha256':hashlib.sha256(sql.encode()).hexdigest(), 'psqlExitCode':result.returncode,
-              'naturalEmptyPageReads': empty_page_reads,
+              'naturalEmptyPageReads': empty_page_reads, 'naturalFilterScopeReads': filter_scope_reads,
               'naturalCandidateKeyReads': key_reads, 'naturalNavigationKeyReads': navigation_reads,
               'naturalLexicalIndexConditions': plan_log.count('"Index Cond": "(document ~~'),
               'classification':'local synthetic rollback reader samples, not hosted performance'}
@@ -247,13 +282,16 @@ set local auto_explain.log_min_duration=-1;
         report['validationCallCountsPassed'] = bool(counts) and all(
             c['minimum']==c['maximum']==expected_counts[c['variant']] for c in counts)
         report['passed'] = report['passed'] and report['validationCallCountsPassed']
-    if args.compare_filtered_search:
+    if args.compare_filtered_search or args.compare_filter_scope:
         counts = report.get('factCallCounts',[])
         candidate = [c for c in counts if c['variant']=='candidate']
         old_broad = [c for c in counts if c['variant']=='baseline' and ':broad-filter-geography:' in c['label']]
         report['pageHydrationPassed'] = bool(candidate) and all(c['maximum'] <= c['page_bound'] for c in candidate)
         report['baselineBroadFactsObserved'] = bool(old_broad) and all(c['minimum'] > c['page_bound'] for c in old_broad)
-        report['passed'] = report['passed'] and report['pageHydrationPassed'] and report['baselineBroadFactsObserved']
+        report['passed'] = report['passed'] and report['pageHydrationPassed'] and (not args.compare_filtered_search or report['baselineBroadFactsObserved'])
+    if args.compare_filter_scope:
+        report['filterScopeIndexPassed'] = bool(filter_scope_reads)
+        report['passed'] = report['passed'] and report['filterScopeIndexPassed']
     args.report.write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps({k:v for k,v in report.items() if k != 'timings'}))
     return int(not report['passed'])
