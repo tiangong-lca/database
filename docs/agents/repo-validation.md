@@ -1981,6 +1981,13 @@ Also apply the migration to a populated canonical-base fixture with an existing 
 
 ## Result-only Process dependencies
 
+Before the owned Study P2 upgrade reset, the existing no-active-session guard
+polls for up to 30 seconds so preceding rebuild activity may finish. Persistent
+activity still fails with backend-type/wait-type counts, without query text or
+credentials. Ownership, no-live-user/job checks and reset authority are unchanged.
+Run `python3 scripts/test_study_reporting_quiescence.py` for transient, persistent,
+already-idle and SQL-error cases; the real isolated PG17 CI job remains required.
+
 Run `supabase/tests/20261106_final_result_process_dependency_catalog.sql` and
 `supabase/tests/20261106_final_result_process_dependencies.sql` after a blank
 PG17 migration rebuild, alongside the existing final Result artifact, Candidate,

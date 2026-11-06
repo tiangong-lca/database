@@ -23,7 +23,7 @@ checkPaths:
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
 lastReviewedAt: 2026-11-06
-lastReviewedCommit: 76bd8773494ef66ff32fb25cb4d4548a4e5b0e16
+lastReviewedCommit: 32095ed37bf87cd825cd6db721beedee36bfa8c9
 lastReviewedNote: "Database #919: reviewed referenced Unit Process support, Result-only root/query coverage, preserved RLS and isolated forward migration proof."
 related:
   - ../../AGENTS.md

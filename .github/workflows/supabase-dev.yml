@@ -74,6 +74,7 @@ jobs:
         run: |
           python scripts/check_review_metadata_contract.py
           python scripts/test_resolve_migration_head.py
+          python scripts/test_study_reporting_quiescence.py
           python3 scripts/test_configure_derivative_scheduler.py
           python scripts/test_supabase_dev_workflow_contract.py
           python scripts/test_portal_rank_retirement_governance.py

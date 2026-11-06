@@ -13,6 +13,7 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import time
 from prepare_study_runtime_project import settings
 from resolve_migration_head import resolve_migration_head
 
@@ -27,6 +28,22 @@ def sql(statement):
     if result.returncode:
         raise RuntimeError('owned upgrade SQL failed: '+result.stderr[-2000:])
     return result.stdout
+
+
+def wait_for_database_quiescence(timeout_seconds=30):
+    """Retain the no-active-session guard while reset background work settles."""
+    deadline = time.monotonic() + timeout_seconds
+    predicate = "datname='postgres' and state='active' and pid<>pg_backend_pid()"
+    while True:
+        active = int(sql("select count(*) from pg_stat_activity where " + predicate + ";").strip())
+        if active == 0:
+            return
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            # No query text, user names, connection strings or application arguments.
+            summary = sql("select coalesce(jsonb_agg(s),'[]') from (select backend_type, wait_event_type, count(*) from pg_stat_activity where " + predicate + " group by backend_type, wait_event_type) s;").strip()
+            raise RuntimeError("owned Study database did not become quiescent: " + summary)
+        time.sleep(min(0.25, remaining))
 
 
 def main():
@@ -50,7 +67,7 @@ def main():
     assert {x['HostPort'] for x in info['HostConfig']['PortBindings']['5432/tcp']} == {'56422'}
     assert sql("select current_setting('server_version_num')::integer/10000;").strip() == '17'
     assert sql("select (select count(*) from auth.users)+(select count(*) from private.oauth_client_registry)+(select count(*) from private.worker_jobs where status in ('queued','running'));").strip() == '0'
-    assert sql("select count(*) from pg_stat_activity where datname='postgres' and state='active' and pid<>pg_backend_pid();").strip() == '0'
+    wait_for_database_quiescence()
     cli = os.environ.get('SUPABASE_CLI') or shutil.which('supabase')
     assert cli
     assert subprocess.check_output([cli,'--version'],text=True).strip() == '2.117.0'
