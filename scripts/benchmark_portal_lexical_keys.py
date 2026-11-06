@@ -18,7 +18,8 @@ WORK = Path('/tmp/portal-query-925-pg1711')
 CONTAINER = 'supabase_db_portal-query-925-pg1711'
 READERS = ('display_catalog_process_pattern_versions_v1', 'display_catalog_flow_pattern_versions_v1',
            'display_catalog_search_v3_impl', 'display_catalog_search_v2_impl',
-           'display_catalog_candidate_rows_v2', 'display_navigation_impl_v1')
+           'display_catalog_candidate_rows_v2', 'display_navigation_impl_v1',
+           'display_api_search_processes_v3', 'display_api_search_flows_v3')
 
 
 def literal(value):
@@ -141,6 +142,8 @@ reset role;
 set local role anon;
 select api.portal_navigation_v2(array['tiangong_lca'],'flow','benchflow 00000001','{}','classification','class:cpc');
 select api.portal_navigation_v2(array['tiangong_lca'],'process','benchprocess 00000001','{}','classification','class:isic');
+select api.portal_search_flows_v4(array['tiangong_lca'],'',p_limit=>10);
+select api.portal_search_processes_v4(array['tiangong_lca'],'',p_limit=>10);
 reset role;
 set local auto_explain.log_min_duration=-1;
 """
@@ -153,6 +156,7 @@ set local auto_explain.log_min_duration=-1;
     assert len(plan_log.encode()) <= 4*1024*1024, 'bounded plan receipt exceeded'
     key_reads = []
     navigation_reads = []
+    empty_page_reads = []
     decoder = json.JSONDecoder()
     def visit(node):
         condition = node.get('Index Cond', '')
@@ -160,6 +164,8 @@ set local auto_explain.log_min_duration=-1;
             key_reads.append({k:node[k] for k in ('Relation Name','Index Name','Index Cond','Actual Rows','Actual Loops')})
         if node.get('Relation Name') == 'display_navigation_membership_v1' and 'id =' in condition and 'version =' in condition and node.get('Actual Loops',0)>0:
             navigation_reads.append({k:node[k] for k in ('Relation Name','Index Name','Index Cond','Actual Rows','Actual Loops')})
+        if node.get('Index Name') == 'd807_portal_catalog_facet_rows_latest_v1_idx' and node.get('Actual Loops',0)>0:
+            empty_page_reads.append({k:node[k] for k in ('Relation Name','Index Name','Index Cond','Actual Rows','Actual Loops')})
         for child in node.get('Plans',[]):
             visit(child)
     for part in plan_log.split('plan:\n')[1:]:
@@ -170,6 +176,7 @@ set local auto_explain.log_min_duration=-1;
               'sourceSha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
               'fixtureSourceSha256':hashlib.sha256(Path(fixture_source.__file__).read_bytes()).hexdigest(),
               'sqlSha256':hashlib.sha256(sql.encode()).hexdigest(), 'psqlExitCode':result.returncode,
+              'naturalEmptyPageReads': empty_page_reads,
               'naturalCandidateKeyReads': key_reads, 'naturalNavigationKeyReads': navigation_reads,
               'naturalLexicalIndexConditions': plan_log.count('"Index Cond": "(document ~~'),
               'classification':'local synthetic rollback reader samples, not hosted performance'}
@@ -179,7 +186,8 @@ set local auto_explain.log_min_duration=-1;
     report['costRegressions']=[label for (variant,label),ms in timings.items() if variant=='candidate' and ms>max(50,timings['baseline',label]*1.5)]
     report['cleanupVerified'] = run(guard,capture_output=True,check=True).stdout.splitlines() == expected
     navigation_kinds = {kind for kind in ('process','flow') if any(f"dataset_kind = '{kind}'::text" in n['Index Cond'] for n in navigation_reads)}
-    report['passed'] = navigation_kinds == {'process','flow'} and result.returncode == 0 and report.get('parityFailures') == 0 and not report['costRegressions'] and report['cleanupVerified'] and {r['Relation Name'] for r in key_reads} == {'display_catalog_search_rows_v1','display_catalog_search_rows_v2'} and all(
+    empty_page_kinds = {kind for kind in ('process','flow') if any(f"dataset_kind = '{kind}'::text" in n['Index Cond'] and n['Actual Rows'] <= 11 for n in empty_page_reads)}
+    report['passed'] = empty_page_kinds == {'process','flow'} and navigation_kinds == {'process','flow'} and result.returncode == 0 and report.get('parityFailures') == 0 and not report['costRegressions'] and report['cleanupVerified'] and {r['Relation Name'] for r in key_reads} == {'display_catalog_search_rows_v1','display_catalog_search_rows_v2'} and all(
         r['p95_ms'] <= 2000 and r['failures'] == 0 for r in report.get('timings',[]) if r['variant']=='candidate')
     args.report.write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps({k:v for k,v in report.items() if k != 'timings'}))

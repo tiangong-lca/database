@@ -101,5 +101,44 @@ do $$begin execute (select definition from diagnostic_original_dataset); end$$;
 select ok(not has_schema_privilege('anon','private','usage'),'no private diagnostic surface is exposed');
 select ok(not has_function_privilege('anon','private.portal_navigation_v1(text,text,jsonb,text,text,text,integer)','execute'),
   'anonymous callers cannot call private validation directly');
+-- Display Search uses the same closed diagnostic contract for both kinds.
+-- Replace only its inner reader; manifest refresh admits the test definition.
+-- Rollback restores the reader, manifest, rollout, memberships and all fixtures.
+grant portal_display_executor to postgres;
+update private.portal_display_rollout set mode='display' where singleton;
+create temp table diagnostic_original_search as
+select pg_get_functiondef('private.display_search_v3(text,text,jsonb,text,text,integer)'::regprocedure) as definition;
+create function pg_temp.set_search_fault(p_code text,p_message text) returns void language plpgsql as $test$
+begin
+  execute format('create or replace function private.display_search_v3(p_kind text,p_query text,p_filters jsonb,p_sort text,p_cursor text,p_limit integer) returns jsonb language plpgsql stable parallel restricted set search_path='''' as $fault$ begin raise exception using errcode=%L,message=%L,detail=''private-935-detail'',hint=''private-935-hint''; end; $fault$',p_code,p_message);
+  update private.portal_display_contract_manifest set identity=private.portal_display_contract_identity_v1() where singleton;
+end;
+$test$;
+create function pg_temp.check_search_fault(p_code text,p_message text) returns setof text language plpgsql as $test$
+declare k text; expected jsonb;
+begin
+  perform pg_temp.set_search_fault(p_code,p_message);
+  expected:=jsonb_build_object('code',case when p_code='22023' then '22023' else 'P0001' end,
+    'message',case when p_code='22023' then 'invalid portal request' else 'portal catalog unavailable' end,
+    'details',null,'hint',null);
+  execute 'set local role anon';
+  foreach k in array array['processes','flows'] loop
+    return next extensions.is(pg_temp.public_error(format('select api.portal_search_%s_v4(array[''tiangong_lca''],''private-935-query'',p_cursor=>''private-935-cursor'')',k)),expected,
+      'display '||k||' '||p_code||' preserves public code/message and hides original message/detail/hint');
+  end loop;
+  execute 'reset role';
+end;
+$test$;
+select * from pg_temp.check_search_fault('22023','private-935-message');
+select * from pg_temp.check_search_fault('57014','canceling statement due to statement timeout');
+select * from pg_temp.check_search_fault('57014','canceling statement due to user request');
+select * from pg_temp.check_search_fault('57014','private-935-message statement timeout');
+select * from pg_temp.check_search_fault('55000','private-935-message');
+select * from pg_temp.check_search_fault('54000','private-935-message');
+select * from pg_temp.check_search_fault('XX000','private-935-message');
+do $$begin execute (select definition from diagnostic_original_search); end$$;
+update private.portal_display_contract_manifest set identity=private.portal_display_contract_identity_v1() where singleton;
+select private.portal_display_assert_contract_v1();
+
 select * from finish();
 rollback;

@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-06
-lastReviewedCommit: e4291f2eeb607501e5dc899c5cdab579dd2088b7
-lastReviewedNote: "Database #933 / #925: reviewed selective navigation key counting with the original broad path, unchanged RLS/count/cursor contracts and expanded geography/classification qualification."
+lastReviewedCommit: 21e20ba34eab92310ac7f1368eedfab9329cde1e
+lastReviewedNote: "Database #935 / #925: reviewed indexed empty default paging and closed Search failure diagnostics with unchanged public, scope, writer and timeout contracts."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1764,7 +1764,11 @@ PostgreSQL 17.11 stack. It compares complete public Search/Facets/Navigation
 responses with alternating variant order over 19,000 Process and 138,000 Flow
 versions, retaining three samples per case and separate natural nested lexical
 and exact candidate-key plans for both protected projection relations and
-Process/Flow navigation membership. Include
+Process/Flow navigation membership. Empty default paging must naturally use
+`d807_portal_catalog_facet_rows_latest_v1_idx` for both kinds and emit at most
+`limit + 1` rows before materialization. Compare all three sort orders and
+predecessor-issued cursors on populated writer fixtures; include broad and empty
+reads in overlapping multi-client qualification. Include
 rare, broad, absent and empty queries. The candidate must reach the primary key
 with both id and version; selecting lexical keys followed by a full partition
 scan is insufficient. Exercise populated source and predecessor cursor parity

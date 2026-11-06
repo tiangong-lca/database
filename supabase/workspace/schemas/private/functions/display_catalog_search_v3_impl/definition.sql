@@ -14,7 +14,7 @@ begin
   -- lexical requests. Reuse its narrow rank/page kernel instead of constructing
   -- full facts and reason codes for every matched version. The V3 caller still
   -- owns its fingerprint, cursor envelope, validation and card-context decorator.
-  if p_query <> '' and p_filters = '{}'::jsonb then
+  if p_filters = '{}'::jsonb and (p_query <> '' or p_sort = 'relevance') then
     return private.display_catalog_search_v2_impl(
       p_kind,p_query,p_filters,p_sort,p_cursor_rank,p_cursor_id,
       p_cursor_version,p_limit,p_query_fingerprint

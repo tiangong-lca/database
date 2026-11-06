@@ -36,9 +36,23 @@ begin
     with matched_keys as materialized (
       select id,version from private.display_navigation_matched_versions_v1(p_kind,p_query,p_filters)
     ), portal_matches as materialized (
+      -- Default unfiltered browsing needs only the next page of exact keys.
+      -- Use the existing kind/id/version index before materializing candidates;
+      -- RLS remains on the source scan and the common cursor/render path stays.
+      (select f.id,f.version,f.modified_at,null::text as name_value
+       from private.display_catalog_facet_rows_v1 f
+       where p_sort='relevance' and p_filters='{}'::jsonb
+         and f.dataset_kind=p_kind and f.facet_contract_version=1
+         and (p_cursor_rank is null or 0::numeric < p_cursor_rank::numeric
+           or (0::numeric = p_cursor_rank::numeric
+             and (f.id > p_cursor_id or (f.id=p_cursor_id and f.version < p_cursor_version))))
+       order by f.id asc,f.version desc
+       limit p_limit + 1)
+      union all
       select f.id,f.version,f.modified_at,null::text as name_value
       from private.display_catalog_facet_rows_v1 f
       where p_sort<>'name_asc' and f.dataset_kind=p_kind
+        and (p_filters<>'{}'::jsonb or p_sort<>'relevance')
         and true and f.facet_contract_version=1
         and (p_filters='{}'::jsonb or (f.id,f.version) in (select id,version from matched_keys))
       union all
