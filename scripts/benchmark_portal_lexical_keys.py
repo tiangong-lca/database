@@ -38,6 +38,8 @@ def main():
     parser.add_argument('--process-datasets', type=int, default=9500)
     parser.add_argument('--flow-datasets', type=int, default=69000)
     parser.add_argument('--samples', type=int, default=3)
+    parser.add_argument('--compare-scope-bridge', action='store_true',
+                        help='Also compare the existing scoped-key bridge and branch-only RPCs')
     parser.add_argument('--report', type=Path, required=True)
     args = parser.parse_args()
     if not (20 <= args.process_datasets <= 20000 and 40 <= args.flow_datasets <= 100000 and 2 <= args.samples <= 10):
@@ -60,10 +62,11 @@ def main():
     base = subprocess.check_output(['git', 'rev-parse', args.base_ref+'^{commit}'], cwd=ROOT, text=True).strip()
     baseline = []
     candidate = []
-    for name in READERS:
+    readers = READERS + (('display_catalog_scoped_pattern_keys_v1',) if args.compare_scope_bridge else ())
+    for name in readers:
         path = f'supabase/workspace/schemas/private/functions/{name}/definition.sql'
         baseline.append(subprocess.check_output(['git', 'show', base+':'+path], cwd=ROOT, text=True))
-        candidate.append(run(f"select pg_get_functiondef(oid) from pg_proc where pronamespace='private'::regnamespace and proname='{name}';",
+        candidate.append(run(f"select pg_get_functiondef(oid)||';' from pg_proc where pronamespace='private'::regnamespace and proname='{name}';",
                              capture_output=True, check=True).stdout + ';\n')
     variants = {'baseline': '\n'.join(baseline), 'candidate': '\n'.join(candidate)}
     sql = fixture_source.fixture(args.process_datasets, args.flow_datasets, 1024, 'cas-dense', True)
@@ -92,18 +95,19 @@ grant execute on function pg_temp.measure(text,text,int,text) to anon;
         brands = 'array['+','.join(literal(b) for b in scope.split(','))+']'
         for kind in ('process', 'flow'):
             for label, query in [('rare','bench'+kind+' 00000001'),('broad','history864'),('absent','absent925'),('empty',''),('selective','bench'+kind+' 00000'),('wide','bench'+kind+' 0000')]:
-                for api in ('search','facets','navigation'):
+                for api in ('search','facets','navigation') + (('branches',) if args.compare_scope_bridge else ()):
                     if api == 'search':
                         q = f"select api.portal_search_{kind}es_v4({brands},{literal(query)})" if kind == 'process' else f"select api.portal_search_flows_v4({brands},{literal(query)})"
                     elif api == 'facets':
                         q = f"select api.portal_facets_v4({brands},{literal(kind)},{literal(query)})"
                     else:
-                        q = f"select api.portal_navigation_v2({brands},{literal(kind)},{literal(query)},'{{}}','geography')"
+                        rpc = 'portal_navigation_branches_v1' if api == 'branches' else 'portal_navigation_v2'
+                        q = f"select api.{rpc}({brands},{literal(kind)},{literal(query)},'{{}}','geography')"
                     cases[scope+':'+kind+':'+label+':'+api] = q
-                    if api == 'navigation':
+                    if api in ('navigation', 'branches'):
                         for parent in ('root', 'class:isic' if kind=='process' else 'class:cpc'):
                             parent_sql = 'null' if parent=='root' else literal(parent)
-                            cases[scope+':'+kind+':'+label+':classification:'+parent] = f"select api.portal_navigation_v2({brands},{literal(kind)},{literal(query)},'{{}}','classification',{parent_sql})"
+                            cases[scope+':'+kind+':'+label+':'+api+':classification:'+parent] = f"select api.{rpc}({brands},{literal(kind)},{literal(query)},'{{}}','classification',{parent_sql})"
     for ordinal in range(args.samples):
         for variant in (('baseline','candidate') if ordinal%2 == 0 else ('candidate','baseline')):
             sql += '\nreset role;\n'+variants[variant]+fixture_source.REFRESH+'\nset local role anon;\n'
@@ -173,6 +177,7 @@ set local auto_explain.log_min_duration=-1;
         visit(plan['Plan'])
 
     report = {'base':base, 'postgresVersion':server, 'processDatasets':args.process_datasets, 'flowDatasets':args.flow_datasets,
+              'comparedReaders':readers, 'cases':len(cases),
               'sourceSha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
               'fixtureSourceSha256':hashlib.sha256(Path(fixture_source.__file__).read_bytes()).hexdigest(),
               'sqlSha256':hashlib.sha256(sql.encode()).hexdigest(), 'psqlExitCode':result.returncode,

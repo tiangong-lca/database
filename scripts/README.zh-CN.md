@@ -22,7 +22,7 @@ checkPaths:
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-07
 lastReviewedCommit: "9b7f6571c9587ac12e06355eab5d8c12c08d0d65"
-lastReviewedNote: "Database #935 residual recovery: reviewed parameterized branch membership reads, unchanged forced RLS/visibility and explicit hosted-load qualification limits."
+lastReviewedNote: "Database #935 residual recovery: reviewed branch and lexical visibility work, complete scope intersection and explicit hosted-load qualification limits."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -1097,3 +1097,8 @@ SQL、本地签名 JWT 和模式验证不能替代真实 OAuth、原生计算、
 `--samples`（2–5，默认 3）。在 15.7 万版本、300 种组合上交替运行，
 保存源码哈希、完整响应对照、性能阈值及独立的自然执行计划，最后验证回滚清理。
 不接受托管 DSN；与同一栈的其他测试串行运行。托管性能和流量来源仍需单独验证。
+
+词法可见性优化还须运行 `benchmark_portal_lexical_keys.py`，加上
+`--compare-scope-bridge`，将精确前驱中的作用域桥接函数一起纳入对照，并增加
+只返回分支的 RPC 覆盖。前驱必须已包含该桥接函数；重载函数定义各自保留 SQL
+终止符。

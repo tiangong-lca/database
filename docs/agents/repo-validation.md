@@ -34,7 +34,7 @@ checkPaths:
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-07
 lastReviewedCommit: "9b7f6571c9587ac12e06355eab5d8c12c08d0d65"
-lastReviewedNote: "Database #935 residual recovery: reviewed parameterized branch membership reads, unchanged forced RLS/visibility and explicit hosted-load qualification limits."
+lastReviewedNote: "Database #935 residual recovery: reviewed branch and lexical visibility work, complete scope intersection and explicit hosted-load qualification limits."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1828,6 +1828,18 @@ filters, roots, deep/skewed classification and China geography. Require complete
 JSON parity, no errors, two-second local p95 and the existing 1.5x/50-ms regression
 limit. Preserve natural plans separately; do not force a planner mode in the
 collector. Reset between reader-scale, concurrency and real-writer proofs.
+
+`20261106183000_bound_portal_lexical_scope_intersection.sql` also selects current
+scope work using the complete raw PGroonga match cardinality: indexed correlated
+visibility at <=2048 keys, existing broad semijoin above that threshold. Every
+returned key still intersects the same security-barrier scope view. No key cap,
+new index, grant, owner/configuration or writer change is permitted. Run
+`benchmark_portal_lexical_keys.py --compare-scope-bridge --base-ref
+<exact-predecessor> --report <new-json>` so both bridge definitions participate
+in full Search/Facet/legacy-navigation/branch response parity. Cover selective,
+wide and broad matches, multiple brands, empty and absent terms and natural
+indexed visibility probes. The upgrade collector must restore the predecessor
+bridge before capturing baseline responses and include its owner/ACL/configs.
 
 The production narrow-branch count experiment and subsequent complete query are
 single read-only samples under varying concurrent traffic. They are not an SLA or

@@ -22,7 +22,7 @@ checkPaths:
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-07
 lastReviewedCommit: "9b7f6571c9587ac12e06355eab5d8c12c08d0d65"
-lastReviewedNote: "Database #935 residual recovery: reviewed parameterized branch membership reads, unchanged forced RLS/visibility and explicit hosted-load qualification limits."
+lastReviewedNote: "Database #935 residual recovery: reviewed branch and lexical visibility work, complete scope intersection and explicit hosted-load qualification limits."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -1325,3 +1325,8 @@ at 157000 versions, records source hashes, complete parity, cost bounds and
 separate natural plans, then proves rollback cleanup. It never accepts a hosted
 DSN. Run serially with the other owned fixture collectors; hosted performance and
 traffic attribution remain separate.
+
+For the lexical visibility continuation, add `--compare-scope-bridge` to
+`benchmark_portal_lexical_keys.py`. This requires the exact predecessor to contain
+the bridge and compares it alongside the readers; it also adds branch-only RPC
+coverage. Overloaded function definitions retain individual SQL terminators.
