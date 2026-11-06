@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-07
-lastReviewedCommit: "1df742f81c372c5b93fe328ba4b392ee19f03b85"
-lastReviewedNote: "Database #943: reviewed single complete Search validation, closed diagnostic shape proof and local CI; deployment and permission boundaries unchanged."
+lastReviewedCommit: "6eadf9b6b28907cea0edeafde00ca1d932a5a421"
+lastReviewedNote: "Database #946: reviewed filtered V3 reuse of exact narrow facts, page hydration and extended parity/latency proof; permissions and deployment boundaries unchanged."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -67,6 +67,9 @@ using local PG17 transaction statistics and adds filtered/sorted/predecessor-cur
 Search cases. `check_portal_read_failure_diagnostics.py --log <captured-suite-log>`
 checks actual exception-log JSON against closed values and complete privacy-canary
 coverage; the CI local-contract job runs it after the diagnostic SQL suite.
+`--compare-filtered-search` adds broad filtered public API shapes and counts
+full card-facts calls against the page boundary. The upgrade harness accepts
+the same flag to cover all filter families and predecessor cursors.
 
 ## Layout
 

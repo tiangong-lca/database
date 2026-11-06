@@ -10,11 +10,12 @@ declare
   v_exact_id uuid;
   v_like_pattern text;
 begin
-  -- The retained V2 and V3 candidate universes are identical for unfiltered
-  -- lexical requests. Reuse its narrow rank/page kernel instead of constructing
-  -- full facts and reason codes for every matched version. The V3 caller still
-  -- owns its fingerprint, cursor envelope, validation and card-context decorator.
-  if p_filters = '{}'::jsonb and (p_query <> '' or p_sort = 'relevance') then
+  -- V2 and V3 share the exact lexical candidate universe. For validated V3
+  -- filters, V2's synchronized navigation facts preserve the same predicates,
+  -- including direct/subtree hierarchy membership. Rank narrow keys and hydrate
+  -- only the page instead of building full facts/reasons for every match.
+  -- The V3 caller retains validation, fingerprint, cursor and card context.
+  if p_query <> '' or (p_filters = '{}'::jsonb and p_sort = 'relevance') then
     return private.display_catalog_search_v2_impl(
       p_kind,p_query,p_filters,p_sort,p_cursor_rank,p_cursor_id,
       p_cursor_version,p_limit,p_query_fingerprint

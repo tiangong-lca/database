@@ -38,8 +38,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-07
-lastReviewedCommit: "1df742f81c372c5b93fe328ba4b392ee19f03b85"
-lastReviewedNote: "Database #943: reviewed single complete Search validation, closed diagnostic shape proof and local CI; deployment and permission boundaries unchanged."
+lastReviewedCommit: "6eadf9b6b28907cea0edeafde00ca1d932a5a421"
+lastReviewedNote: "Database #946: reviewed filtered V3 reuse of exact narrow facts, page hydration and extended parity/latency proof; permissions and deployment boundaries unchanged."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-validation.md
