@@ -7,7 +7,7 @@ declare v_candidate text; v_target text; v_file jsonb;
 begin
  if auth.uid() is null then return private.lca_release_error('auth_required',401,'Authentication required'); end if;
  if p_publication_id is null or p_format is null or p_format not in ('tidas','ilcd') then
-   raise exception using errcode='22023',message='Exact publication and supported ZIP format are required'; end if;
+   raise exception using errcode='22023',message='Exact publication and supported archive format are required'; end if;
  select plan.candidate_hash,plan.target_hash into v_candidate,v_target from private.lca_release_publications p
  join private.final_result_publication_bindings b on b.publication_id=p.id
  join private.final_result_release_plans plan on plan.release_run_id=p.release_run_id
@@ -17,10 +17,10 @@ begin
    and not exists(select 1 from private.lca_release_publications p join private.final_result_release_members m on m.release_run_id=p.release_run_id
      where p.id=p_publication_id and m.result_id=q.result_id and m.result_version=q.result_version))
    or not private.final_result_candidate_support_readable(v_candidate) then
-   return private.lca_release_error('result_package_not_available',404,'No complete prebuilt ZIP is authorized for this actor'); end if;
+   return private.lca_release_error('result_package_not_available',404,'No complete prebuilt archive is authorized for this actor'); end if;
  select f.value into v_file from private.final_result_candidate_storage s cross join lateral jsonb_array_elements(s.receipt->'files') f
-   where s.candidate_hash=v_candidate and s.target_hash=v_target and f.value->>'name'='result.'||p_format||'.zip';
- if v_file is null then return private.lca_release_error('result_package_not_available',404,'No complete prebuilt ZIP is authorized for this actor'); end if;
+   where s.candidate_hash=v_candidate and s.target_hash=v_target and f.value->>'name'='result.'||p_format||'.7z';
+ if v_file is null then return private.lca_release_error('result_package_not_available',404,'No complete prebuilt archive is authorized for this actor'); end if;
  return jsonb_build_object('ok',true,'data',jsonb_build_object('publicationId',p_publication_id,'candidateHash',v_candidate,'targetHash',v_target,'file',v_file));
 end;
 $$;
