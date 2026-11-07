@@ -32,9 +32,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-05
-lastReviewedCommit: 89faa0acdb3dbb767227dd0007292bbadac307e0
-lastReviewedNote: "Database #926: reviewed exact final Result 7z descriptor adoption; membership authorization, immutable evidence and rollback remain unchanged."
+lastReviewedAt: 2026-11-07
+lastReviewedCommit: "b449b9d820d5eaa0cbb2160bd4a43f36d93cc3fd"
+lastReviewedNote: "Database #949: re-reviewed explicit kind and typed version index qualification after failed scale gates; exact text equality, manifest/ACL isolation and deployment boundaries remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1744,6 +1744,188 @@ continuation cursors on one rollback-only fixture, alternates variant order,
 retains nested natural plans, and covers empty/filtered/lexical/UUID/escaped/
 one-character/zero-result shapes in single- and multi-brand deployments. These
 are local synthetic warm samples, not hosted p95 or concurrent-load acceptance.
+
+### Scoped lexical key selection (Database #925)
+
+Run `20261106_portal_scoped_lexical_keys.sql`, all Portal suites and adjacent
+schema/API/OAuth/display/publication suites after blank replay. The focused
+suite proves exact version scope, successive prepared scopes, narrowing filters,
+global compatibility, stale-projection withdrawal, literal escaping, closed
+EXECUTE and manifest refusal after ACL drift. Existing projection RLS stays
+forced and no function gains `LEAKPROOF`.
+
+`scripts/test_portal_lexical_upgrade.py --base-ref <exact-predecessor> --log
+<new-log>` exercises the complete migration on real source-writer fixtures and
+compares public responses (including empty searches), routine OIDs/configs/ACLs, projections/settings,
+roles, RLS and triggers, followed by repeat application. All effects roll back.
+`scripts/benchmark_portal_lexical_keys.py --base-ref <exact-predecessor> --report
+<new-json>` admits only the explicitly owned `portal-query-925-pg1711` local
+PostgreSQL 17.11 stack. It compares complete public Search/Facets/Navigation
+responses with alternating variant order over 19,000 Process and 138,000 Flow
+versions, retaining three samples per case and separate natural nested lexical
+and exact candidate-key plans for both protected projection relations and
+Process/Flow navigation membership. Empty default paging must naturally use
+`d807_portal_catalog_facet_rows_latest_v1_idx` for both kinds and emit at most
+`limit + 1` rows before materialization. Compare all three sort orders and
+predecessor-issued cursors on populated writer fixtures; include broad and empty
+reads in overlapping multi-client qualification. Include
+rare, broad, absent and empty queries. The candidate must reach the primary key
+with both id and version; selecting lexical keys followed by a full partition
+scan is insufficient. Exercise populated source and predecessor cursor parity
+for the complete lexical and candidate-join migration sequence. Navigation
+qualification covers geography plus classification roots and branches, including
+both selective and near-complete matches: a point-read
+plan that times out for broad matches is a failed candidate, not a valid speedup. Candidate warm local p95 must be at most two seconds; reject cost over 1.5 times
+the predecessor outside a 50-ms noise floor. Retain the original
+eight-second statement budget. Small fixtures are smoke evidence only.
+
+Run these collectors serially and reset the owned stack between volume and
+writer/upgrade profiles: rolled-back synthetic rows still leave physical index
+pages. Preserve failed/invalid receipts, including interference, instead of
+counting them as passing samples. Rebuild blank state before deterministic
+five-schema/type export. Local latency, source CI, exact Dev/Main deployment
+and actual hosted Portal search/navigation/refine remain separate proofs.
+
+### Consumer-specific Portal reads (Database #935)
+
+The existing real-writer `20261025_portal_facets_navigation.sql` suite additionally
+compares branch-only responses against complete navigation across kinds, scopes,
+queries, filters and predecessor-issued cursors. Totals-only responses must equal
+the exact public-version totals, retain historical versions and observe immediate
+visibility withdrawal. Keep public/private ACL and capability checks, exact schema
+inventories, legacy response compatibility and repeat migration proof.
+
+`scripts/benchmark_portal_read_demand.py --report <new-json>` runs only on the
+explicitly owned local PG17.11 stack used by #925. It compares the complete and
+demand-specific reads at 157,000 versions, with alternating order, three samples,
+all kinds, single/multiple brands, empty/absent/selective/broad queries, filtered
+reads, classification roots/branches and geography. Preserve complete branch
+payload parity, no errors, the two-second local p95 and 1.5x/50-ms regression
+limits. Separate nested natural plans must show totals never aggregate branch
+memberships and empty branch-only reads skip the whole-catalog version aggregate.
+Reset between volume and writer profiles and before deterministic schema/type
+export. Actual hosted latency and Portal adoption remain separate acceptance.
+
+### Parameterized branch visibility reads (Database #935 continuation)
+
+`20261106175555_bound_portal_branch_visibility_reads.sql` keeps complete branch
+membership counting under the existing forced RLS. Its lateral subquery retains
+per-node index qualification; `OFFSET 0` is an optimization boundary, never a row
+limit. Null-parent lookup uses an explicit null/equality disjunction so a known
+parent can use the existing parent index. No policy, grant, writer, DTO, cursor,
+function owner/configuration or public timeout changes.
+
+Run the complete Portal SQL and adjacent schema/ACL suites, populated predecessor
+upgrade/reapply, deterministic schema export and the source CI. The legacy
+summary edge-case fixture must prepare and restore classification evidence through
+source writers (Process V2 and Flow V1), assert the prepared evidence, and clear
+both kinds for the no-classification case. Direct edits to one projection do not
+represent a complete source change. The owned local
+`benchmark_portal_branch_visibility.py --base-ref <exact-predecessor> --report
+<new-json>` alternates three baseline/candidate samples across 300 shapes and
+157000 versions. It covers kinds, one/multiple brands, rare/broad/empty/absent text,
+filters, roots, deep/skewed classification and China geography. Require complete
+JSON parity, no errors, two-second local p95 and the existing 1.5x/50-ms regression
+limit. Preserve natural plans separately; do not force a planner mode in the
+collector. Reset between reader-scale, concurrency and real-writer proofs.
+
+`20261106183000_bound_portal_lexical_scope_intersection.sql` also selects current
+scope work using the complete raw PGroonga match cardinality: indexed correlated
+visibility at <=2048 keys, existing broad semijoin above that threshold. Every
+returned key still intersects the same security-barrier scope view. No key cap,
+new index, grant, owner/configuration or writer change is permitted. Run
+`benchmark_portal_lexical_keys.py --compare-scope-bridge --base-ref
+<exact-predecessor> --report <new-json>` so both bridge definitions participate
+in full Search/Facet/legacy-navigation/branch response parity. Cover selective,
+wide and broad matches, multiple brands, empty and absent terms and natural
+indexed visibility probes. The upgrade collector must restore the predecessor
+bridge before capturing baseline responses and include its owner/ACL/configs.
+
+The production narrow-branch count experiment and subsequent complete query are
+single read-only samples under varying concurrent traffic. They are not an SLA or
+same-load percentile. Actual Search/navigation failures remain a separate hosted
+acceptance criterion; a successful SQL optimization does not identify original
+visitors or qualify EdgeOne traffic/security controls.
+
+### Search validation cost and private diagnostics (Database #943)
+
+V3 Search retains the complete navigation/projection guard, which includes the
+catalog contract; it does not execute the same catalog guard twice. Run
+`20261106_portal_validation_cost.sql` to inject real catalog-writer,
+navigation-writer and FORCE-RLS drift and prove both public Search facades still
+fail closed and recover only after exact restoration. Keep the existing public
+error code/message and empty detail/hint.
+
+Run `20260927_portal_read_failure_diagnostics.sql`, capture its actual LOG DETAIL
+output, then run `scripts/check_portal_read_failure_diagnostics.py --log <file>`.
+Both Search readers emit only closed query/filter/sort/limit classes and cursor
+presence alongside the existing diagnostic category/reason. Test default, empty,
+single-code-point, multiple, oversized, invalid, filtered and cursor-bearing
+inputs. Raw input, SQL/context, identifiers and arbitrary values stay absent.
+The local-contract CI job executes both suites and the real-output checker.
+
+Use the owned `benchmark_portal_lexical_keys.py --compare-scope-bridge
+--compare-validation --base-ref <exact-predecessor> --report <new-json>` profile.
+Its transaction-local PG17 function statistics must observe two catalog guard
+calls in the predecessor and exactly one in every candidate Search response,
+including small/broad/empty/filtered/sorted and predecessor-cursor shapes.
+Only the local benchmark session enables function tracking. Keep the same full
+response parity, scale, latency/regression, populated upgrade, blank rebuild and
+deterministic export requirements above; hosted recovery remains separate.
+
+### Broad filtered Search qualification (Database #946)
+
+The `--compare-filtered-search` mode of `benchmark_portal_lexical_keys.py`
+extends the complete public API matrix with broad geography, no-match,
+hierarchy and combined-year filters under each sort and brand scope. Retain the
+same production-scale fixture, alternating variants, full payload/cursor parity,
+2-second candidate warm goal and no-regression checks. Its local transaction
+function statistics must show full card-facts calls bounded by returned page
+size plus one; the predecessor broad geography path must actually evaluate
+more facts than that bound. A failed expanded latency profile stays a failure,
+even when earlier less-demanding cases passed.
+
+Run `test_portal_lexical_upgrade.py --compare-filtered-search --base-ref
+<exact-predecessor> --log <new-log>` for accepted scalar and hierarchy filters,
+normalization, combinations, all sorts, exact/CAS/literal/one-character/absent
+queries, historical versions, brands and actual predecessor cursors. Preserve
+routine OIDs/ACLs/settings, source-derived projections, roles, RLS and triggers
+through upgrade and reapplication. `20261025_portal_facets_navigation.sql` also
+checks filtered Search against immediate real source-text/geography updates,
+withdrawal, historical versions and null Flow years. Run the adjacent full SQL,
+blank rebuild, deterministic schema/type export and required CI checks. Hosted
+metadata/readback, actual Portal interaction and bounded error logs remain
+separate recovery acceptance.
+
+### Native filter scope qualification (Database #949)
+
+Run `benchmark_portal_lexical_keys.py --compare-scope-bridge
+--compare-filter-scope --base-ref <exact-predecessor> --samples 5 --report
+<new-json>` on the same owned, empty PG17.11 stack. The synthetic reader fixture
+adds 100 rare-source datasets per kind before deriving native filter facts.
+Compare selective, broad and absent filters for empty and nonempty Search,
+Facets, both navigation readers, all sorts and predecessor cursors. Both
+variants retain page-bound hydration; do not require the predecessor's already
+fixed full-card cost to recur. Preserve the unchanged 2-second and 1.5x/50-ms
+limits. Capture natural exact settings index probes from the new helper's own
+nested query, including the version index component, not unrelated lexical probes.
+Keep the requested kind explicit in bulk scope reads and preserve exact text
+equality beside the typed version condition. The first profile
+failed nine relative timing gates and full-version index proof; retain that
+failure and qualify the corrected complete profile without relaxing thresholds.
+Restore the predecessor matched-key
+reader and remove the new bridge for baseline samples; recreate its exact
+owner/grants and refresh the full manifest before candidate samples.
+
+The real-writer upgrade harness also compares all/process/flow exact key sets
+across scalar, combined, direct/subtree, global, allowed and narrowed scopes,
+including no-scope and contradictory-brand cases. Existing routine identities,
+source projections, RLS and writers survive upgrade/reapply. The SQL suites
+exercise current brand switching, hidden versions, source/visibility updates,
+direct-call denial and actual definition/grant drift of the new closed helper.
+Require full SQL, blank rebuild, deterministic exports, required source CI and
+Dev/Main deployment. Actual Search/navigation/Smart recovery and bounded hosted
+logs remain separate from local functional or latency success.
 
 ### Facets and Navigation reader qualification (Database #864)
 

@@ -184,6 +184,7 @@ jobs:
           supabase test db supabase/tests/20261011_portal_scoped_settings_reads.sql
           supabase test db supabase/tests/20261025_portal_facets_navigation.sql
           supabase test db supabase/tests/20261025_portal_flow_cas.sql
+          supabase test db supabase/tests/20261106_portal_scoped_lexical_keys.sql
           supabase test db supabase/tests/20261011_ai_queue_deadline_recovery.sql
           supabase test db supabase/tests/20261011_ai_deadline_fresh_clock.sql
           supabase test db supabase/tests/20260825_ai_worker_contract.sql
@@ -247,6 +248,13 @@ jobs:
           supabase test db supabase/tests/upgrade/20260928_review_rejection_visibility_base.sql
           supabase migration up --local
           supabase test db supabase/tests/upgrade/20260928_review_rejection_visibility_head.sql
+
+      - name: Verify Portal validation and redacted diagnostics
+        run: |
+          set -o pipefail
+          supabase test db supabase/tests/20261106_portal_validation_cost.sql
+          supabase test db supabase/tests/20260927_portal_read_failure_diagnostics.sql 2>&1 | tee "$RUNNER_TEMP/portal-read-failures.log"
+          python3 scripts/check_portal_read_failure_diagnostics.py --log "$RUNNER_TEMP/portal-read-failures.log"
 
       - name: Verify Portal JSON Schemas
         run: |

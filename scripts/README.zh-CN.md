@@ -20,9 +20,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-06
-lastReviewedCommit: 753e8c6a5ef1535bd751d5878b93ce458f0f573c
-lastReviewedNote: "Database #926: reviewed generated schema/type export procedures for exact 7z descriptors; authorization and rollback unchanged."
+lastReviewedAt: 2026-11-07
+lastReviewedCommit: "b449b9d820d5eaa0cbb2160bd4a43f36d93cc3fd"
+lastReviewedNote: "Database #949: re-reviewed explicit kind and typed version index qualification after failed scale gates; exact text equality, manifest/ACL isolation and deployment boundaries remain unchanged."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -53,6 +53,17 @@ JSON/cursor 及索引存储/写成本。这些本地资格不代表 hosted 性�
 资格查询和有界统计与精确前序实现。它仅接受明确归属本任务的指定空本地栈、
 `--samples`（1–5）和新 `--report` 路径，交替执行前序/候选并回滚全部 fixture
 和 DDL。完整验证边界见 repo validation guide。
+
+`benchmark_portal_lexical_keys.py` 与 `test_portal_lexical_upgrade.py` 只在明确归属
+Database #925 的 `portal-query-925-pg1711` 本地栈验证。两者要求精确 `--base-ref`
+和新的证据路径，须串行运行，并在规模测试和 writer 测试之间重置该栈。
+完整证明边界由 validation guide 维护；本地结果不等同于线上恢复。
+
+`--compare-validation` 使用本地 PG17 事务级函数统计验证完整 Search 调用中目录校验由两次变为一次，并覆盖筛选、排序和旧游标。`check_portal_read_failure_diagnostics.py --log <SQL测试日志>` 验证实际异常日志仅含封闭的粗粒度类别；CI 在诊断 SQL 测试之后运行该检查。原文、筛选值、游标、标识符和 SQL 不进入这些诊断字段。
+
+`--compare-filtered-search` 增加大范围命中后的筛选请求，并用本地函数统计验证完整卡片事实只在结果页生成。升级 harness 的同名参数覆盖各类筛选、组合条件、排序和旧游标；扩展场景超时不能被先前的通过结果掩盖。
+`--compare-filter-scope` 对比精确及大范围原生筛选下的搜索、Facet 和导航；基线还原旧的键读取器并移除新增封闭函数，候选再恢复准确权限。升级测试同时比较当前与历史全局作用域下的完整键集合；性能和隔离门槛见验证指南。
+
 
 ## 目录结构
 
@@ -1076,3 +1087,24 @@ SQL、本地签名 JWT 和模式验证不能替代真实 OAuth、原生计算、
 五模式工作区与 public/api 类型。导出必须指定已核实的 study912 数据库 URL；
 无参数 local 导出指向共享项目。结束时按精确项目标签执行受治理资源清理，
 验证容器、卷及网络均为零，或记录明确的保留交接。
+
+### `benchmark_portal_read_demand.py`
+
+仅在明确归属 #925 的本地 PG17.11 栈中，回滚式比较完整导航与按需分支/总数读取。
+不接受远程 DSN，拒绝非空数据及已有输出文件。`--report <新的JSON>` 保留
+15.7 万版本下的完整计数对照、耗时和有界嵌套计划。规模测试前后均重建空库；
+本地结果不能代替托管恢复证明，验收阈值见验证指南。
+
+
+### `benchmark_portal_branch_visibility.py`
+
+在明确归属 #925 的本地 PG17.11 栈中比较前后版本的完整分支响应。
+传入精确的 `--base-ref`、新的 `--report` JSON 路径，以及可选的
+`--samples`（2–5，默认 3）。在 15.7 万版本、300 种组合上交替运行，
+保存源码哈希、完整响应对照、性能阈值及独立的自然执行计划，最后验证回滚清理。
+不接受托管 DSN；与同一栈的其他测试串行运行。托管性能和流量来源仍需单独验证。
+
+词法可见性优化还须运行 `benchmark_portal_lexical_keys.py`，加上
+`--compare-scope-bridge`，将精确前驱中的作用域桥接函数一起纳入对照，并增加
+只返回分支的 RPC 覆盖。前驱必须已包含该桥接函数；重载函数定义各自保留 SQL
+终止符。

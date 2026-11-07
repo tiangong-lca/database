@@ -30,9 +30,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-06
-lastReviewedCommit: 753e8c6a5ef1535bd751d5878b93ce458f0f573c
-lastReviewedNote: "Database #926: reviewed exact final Result 7z descriptor adoption; membership authorization, immutable evidence and rollback remain unchanged."
+lastReviewedAt: 2026-11-07
+lastReviewedCommit: "b449b9d820d5eaa0cbb2160bd4a43f36d93cc3fd"
+lastReviewedNote: "Database #949: re-reviewed explicit kind and typed version index qualification after failed scale gates; exact text equality, manifest/ACL isolation and deployment boundaries remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1714,11 +1714,65 @@ multiple differently scoped RPCs in one statement, outer-GUC restoration after
 success and failure, and simultaneous sessions. The ordinary contract assertion
 still rejects a changed view definition or security barrier before serving.
 
+### Scoped lexical key selection (Database #925)
+
+The non-leakproof text `LIKE` condition cannot become a PGroonga index condition
+behind the projections' correlated display-scope RLS. The closed
+`display_catalog_scoped_pattern_keys_v1` owner helper runs the fixed literal
+pattern query on the Process V2 or Flow V1 projection, intersecting matches with
+the existing security-barrier visible-settings view by exact kind/id/version
+before returning any keys. Only `portal_display_executor` receives EXECUTE;
+browser, service and legacy executors cannot call it. The relation allowlist,
+empty search path, bound pattern parameter and definition/ACL manifest guard
+are part of this boundary. It returns neither documents nor cards.
+
+Existing projection RLS, owners, policies, source/settings writers and request
+budgets remain unchanged. No operator is marked leakproof. The helper creates
+no cached authorization or candidate cap: brand scope, narrowing brand filters,
+legacy global visibility and immediate withdrawal use the current statement's
+settings. Single-character dispatch, exact CAS, latest selection, ranking,
+counting and cursor semantics remain unchanged. Nonempty V3 Search delegates to
+the existing V2 narrow ranking/page kernel: both use the same all-version
+candidate universe. Validated filters use synchronized navigation facts with
+the same normalized scalar predicates and direct/subtree memberships, before
+ranking. This also covers broad filtered text instead of constructing full
+card facts and reasons for every candidate. The V3 caller retains its validator,
+fingerprint, cursor envelope and card-context decorator. Full card facts and
+display reasons are computed only for `limit + 1` selected rows; empty-query
+branches retain their existing behavior. No new projection, index or writer is
+introduced.
+
+The shared query-free filter-key branch of
+`display_navigation_matched_versions_v1` delegates to the closed
+`display_navigation_scoped_filter_keys_v1` owner helper. It evaluates the same
+normalized scalar and exact-version hierarchy predicates against synchronized
+native facts, then intersects every candidate with the unchanged current-scope
+security-barrier view. At most 2048 candidates select correlated indexed scope
+probes; larger sets use a bulk intersection. This threshold changes the plan,
+never the result cardinality. Scope queries retain the requested kind explicitly.
+An additional unbounded `bpchar` equality qualifies the existing settings version
+index; the original text equality remains authoritative, preserving exact-version
+and trailing-space semantics without truncation. Filtering before visibility avoids building the
+entire allowed scope for a small native match set. It serves both filtered
+keyword Search and query-free browse/Facet/navigation. The helper returns only
+exact keys, has an empty search path, and grants execution only to the existing
+display executor; its definition, owner, configuration and ACL join the complete
+manifest. Native projection RLS remains intact for other readers. No public
+privilege, source writer, relation, index or authorization cache is added.
+
+V3 Search invokes the complete navigation/projection contract through its input
+validator once; that guard already includes the catalog contract, so a preceding
+identical catalog check is redundant. Every request still validates current
+schema/derivation/RLS state; no trust cache or drift-check bypass is introduced.
+Search failure logs add only closed coarse input-shape enums and cursor presence.
+They never contain query text, filter values, cursors, dataset IDs or SQL/context;
+public errors and request budgets are unchanged.
+
 ### Scoped Facets and Navigation readers (Database #864)
 
 Lexical display matching carries exact kind/id/version keys through the existing
 UUID and literal-pattern paths, then applies navigation facts when filters are
-present. Pattern helpers already read current projections under the same RLS;
+present. Pattern helpers return only exact current display-scope keys;
 the empty-filter path avoids repeating that existence check. The selective CAS
 path retains its established candidate query. No path selects a latest version.
 Facets groups
@@ -1884,3 +1938,45 @@ approving opinions with pg_jsonschema0.3.3. Drafts/rejections stay incomplete
 when necessary. `api.cmd_review_apply_mv_payload` validates normalized additions
 before final writeback, including old submitted opinions. Existing business
 rows are not backfilled, API/ACL identity and Root/Reference independence remain.
+
+### Portal candidate hydration
+
+Nonempty lexical reads with at most 2,048 matched version keys join each
+forced-RLS Process or Flow projection directly before combining rows. Larger
+match sets retain the existing bulk scan/semijoin. The switch selects a read
+shape and never truncates the candidate set. Joining the protected UNION view can
+leave candidate membership outside the relation scan, so the ranker and
+filtered candidate reader use the existing relation primary keys directly.
+Navigation counting reuses its complete materialized matched keys. For nonempty
+or filtered reads, at most 2,048 keys drive exact membership primary-key reads;
+broader matches retain the original branch semijoin. Query-free unfiltered
+browsing retains the original branch counting and does not calculate unused
+matched keys. No sorted key arrays, candidate/count cap, new projection or writer
+is introduced. These reader changes preserve scope authorization, both-kind
+totals, direct/subtree counts, ranking and public cursors.
+
+Unfiltered empty-query relevance pages use the existing facet kind/id/version
+index to select at most `limit + 1` visible keys before materialization. The scan
+keeps RLS and the exact cursor predicate; common ordering, page rendering and
+cursor encoding remain shared with the existing reader. Filtered browsing and
+alternate sorts keep their prior kernels. No candidate cap applies to text
+matching, navigation totals or facet counts.
+
+
+### Portal reads by consumer demand
+
+`api.portal_navigation_branches_v1` accepts the existing navigation V2 input and
+returns `portal.public-navigation-branches.v1`: the same nodes, parent, ancestors,
+kind, dimension and cursor without whole-request totals. Its shared private
+navigation overload restricts matched keys to the requested kind and skips the
+totals aggregate. Existing navigation V2 delegates with totals enabled and retains
+its complete response and cursor binding.
+
+`api.portal_catalog_totals_v1(p_allowed_brands text[])` returns
+`portal.public-catalog-totals.v1`: exact public-version Process/Flow counts under
+the existing forced-RLS deployment scope. It accepts no query, filter or navigation
+arguments and never reads branch memberships. Counts include historical public
+versions rather than latest datasets. Both additive APIs keep the existing
+restricted executor, capability admission and eight-second timeout; no projection,
+writer, persistent cache or index is added. Portal adoption belongs to its own
+reviewed delivery and must follow deployed Database capability verification.

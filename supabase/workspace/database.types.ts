@@ -1907,6 +1907,10 @@ export type Database = {
         Args: { p_allowed_brands: string[] }
         Returns: Json
       }
+      portal_catalog_totals_v1: {
+        Args: { p_allowed_brands: string[] }
+        Returns: Json
+      }
       portal_facets_v1: {
         Args: { p_filters?: Json; p_kind: string; p_query: string }
         Returns: Json
@@ -2036,6 +2040,19 @@ export type Database = {
           p_id: string
           p_kind: string
           p_limit?: number
+        }
+        Returns: Json
+      }
+      portal_navigation_branches_v1: {
+        Args: {
+          p_allowed_brands: string[]
+          p_cursor?: string
+          p_dimension?: string
+          p_filters?: Json
+          p_kind: string
+          p_limit?: number
+          p_parent_node_id?: string
+          p_query?: string
         }
         Returns: Json
       }

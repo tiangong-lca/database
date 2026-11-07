@@ -1,7 +1,7 @@
 ---
 lastReviewedAt: 2026-10-16
-lastReviewedCommit: f7c0b829dcf41b7b80b903f91fe13773ac2119df
-lastReviewedNote: "Reviewed for Worker #320 phase one: independent immutable-bundle export jobs, default Parquet, bounded compressed CSV and terminal polling protection. Existing authorization, numerical, lease and production boundaries remain; validation results belong to the linked Issues and PRs."
+lastReviewedCommit: "9b7f6571c9587ac12e06355eab5d8c12c08d0d65"
+lastReviewedNote: "Database #935 residual recovery: reviewed branch and lexical visibility work, complete scope intersection and explicit hosted-load qualification limits."
 title: Portal Projection Migration Recovery
 docType: runbook
 scope: repo
@@ -1043,6 +1043,13 @@ successful queries and external errors. Replacements run as the current owner;
 temporary migration membership options and API schema CREATE privilege are
 restored to their exact prestate before commit. They add no table, writer,
 index, exposed RPC or persistent role/logging setting.
+
+The display Process/Flow Search wrappers also use this closed contract after
+`20261106142546_bound_empty_portal_pages_and_diagnose_search.sql`. Their stable
+`rpc` values are `display_search_processes_v3` and `display_search_flows_v3`;
+validation uses only `input`. Successful page bodies and public failures remain
+unchanged; the manifest covers the replacements. Qualify these wrappers via the
+anonymous V4 facades as well as the legacy diagnostic cases.
 
 Their exception handlers emit a server LOG with message
 `portal read failure diagnostic`. Its DETAIL is a closed JSON object with

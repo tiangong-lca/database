@@ -22,9 +22,9 @@ checkPaths:
   - .github/workflows/supabase-dev.yml
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
-lastReviewedAt: 2026-11-06
-lastReviewedCommit: 32095ed37bf87cd825cd6db721beedee36bfa8c9
-lastReviewedNote: "Database #919: reviewed referenced Unit Process support, Result-only root/query coverage, preserved RLS and isolated forward migration proof."
+lastReviewedAt: 2026-11-07
+lastReviewedCommit: "1df742f81c372c5b93fe328ba4b392ee19f03b85"
+lastReviewedNote: "Database #943: reviewed single complete Search validation, closed diagnostic shape proof and local CI; deployment and permission boundaries unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

@@ -20,9 +20,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-06
-lastReviewedCommit: 753e8c6a5ef1535bd751d5878b93ce458f0f573c
-lastReviewedNote: "Database #926: reviewed generated schema/type export procedures for exact 7z descriptors; authorization and rollback unchanged."
+lastReviewedAt: 2026-11-07
+lastReviewedCommit: "b449b9d820d5eaa0cbb2160bd4a43f36d93cc3fd"
+lastReviewedNote: "Database #949: re-reviewed explicit kind and typed version index qualification after failed scale gates; exact text equality, manifest/ACL isolation and deployment boundaries remain unchanged."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -56,6 +56,26 @@ bounded summary against their exact predecessor on 140,000 synthetic versions.
 It requires the named task-owned empty local stack, accepts `--samples` (1–5)
 and a new `--report` path, alternates baseline/candidate order and rolls back all
 fixtures and DDL. See the repo validation guide for the complete proof boundary.
+
+`benchmark_portal_lexical_keys.py` and `test_portal_lexical_upgrade.py` qualify
+Database #925 on its explicitly owned `portal-query-925-pg1711` local stack.
+They accept an exact `--base-ref` and new evidence paths; run them serially and
+reset between volume and writer profiles. The validation guide owns the proof
+boundary and separates local receipts from actual hosted recovery.
+The optional `--compare-validation` profile counts actual catalog-guard calls
+using local PG17 transaction statistics and adds filtered/sorted/predecessor-cursor
+Search cases. `check_portal_read_failure_diagnostics.py --log <captured-suite-log>`
+checks actual exception-log JSON against closed values and complete privacy-canary
+coverage; the CI local-contract job runs it after the diagnostic SQL suite.
+`--compare-filtered-search` adds broad filtered public API shapes and counts
+full card-facts calls against the page boundary. The upgrade harness accepts
+the same flag to cover all filter families and predecessor cursors.
+
+`--compare-filter-scope` compares selective/broad native filters across Search,
+Facets and navigation. It restores the predecessor key reader and removes the
+new closed bridge for baseline measurements, then reinstates its exact grants.
+The upgrade harness also checks exact native key sets across current/legacy
+scopes. See the validation guide for the unchanged latency and isolation gates.
 
 ## Layout
 
@@ -1299,3 +1319,28 @@ job-kind routing. Neither test grants hosted or business-data authority.
 references and exact migration embedding. Optional `--sdk-assets <directory>`
 reprojects the installed SDK0.5.0 assets and verifies source hashes. It performs
 no network, database operation, package installation or file mutation.
+
+### `benchmark_portal_read_demand.py`
+
+Runs the #935 rollback-only complete-versus-demand read comparison on the
+explicitly owned local #925 PG17.11 stack. It accepts no remote DSN and refuses
+nonempty fixtures or existing output paths. `--report <new-json>` records exact
+branch/totals parity, timings and bounded nested plans over 157,000 versions.
+Use a blank reset before and after the volume profile; local timings do not
+prove hosted recovery. See the validation guide for acceptance limits.
+
+
+### `benchmark_portal_branch_visibility.py`
+
+Compares complete predecessor/candidate branch responses on the explicitly owned
+local #925 PG17.11 stack. Pass an exact `--base-ref`, new `--report` JSON path and
+optional `--samples` (2–5, default 3). It alternates variant order over 300 shapes
+at 157000 versions, records source hashes, complete parity, cost bounds and
+separate natural plans, then proves rollback cleanup. It never accepts a hosted
+DSN. Run serially with the other owned fixture collectors; hosted performance and
+traffic attribution remain separate.
+
+For the lexical visibility continuation, add `--compare-scope-bridge` to
+`benchmark_portal_lexical_keys.py`. This requires the exact predecessor to contain
+the bridge and compares it alongside the readers; it also adds branch-only RPC
+coverage. Overloaded function definitions retain individual SQL terminators.

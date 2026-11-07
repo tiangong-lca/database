@@ -24832,6 +24832,59 @@ end $$;
 ALTER FUNCTION "api"."portal_catalog_summary_v2"("p_allowed_brands" "text"[]) OWNER TO "portal_display_executor";
 
 
+CREATE OR REPLACE FUNCTION "api"."portal_catalog_totals_v1"("p_allowed_brands" "text"[]) RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    SET "row_security" TO 'on'
+    SET "statement_timeout" TO '8s'
+    SET "plan_cache_mode" TO 'force_custom_plan'
+    AS $$
+declare
+  result jsonb;
+  old_brands text:=current_setting('portal.display_brands',true);
+  old_global text:=current_setting('portal.display_global',true);
+  old_filter text:=current_setting('portal.display_filter_brand',true);
+  diagnostic_message text;
+  diagnostic_state text;
+begin
+  perform private.portal_display_begin_request_v1(p_allowed_brands,'{}');
+  perform private.display_assert_navigation_contract_v1();
+  -- Exact public versions under the existing deployment scope and forced RLS.
+  -- No branch membership, vocabulary expansion, latest-version collapse or cache.
+  select jsonb_build_object('schemaVersion','portal.public-catalog-totals.v1',
+    'countBasis','public_versions','totals',jsonb_build_object(
+      'process',count(*) filter(where dataset_kind='process'),
+      'flow',count(*) filter(where dataset_kind='flow')))
+    into result from private.display_navigation_versions_v1;
+  perform set_config('portal.display_brands',coalesce(old_brands,''),true);
+  perform set_config('portal.display_global',coalesce(old_global,''),true);
+  perform set_config('portal.display_filter_brand',coalesce(old_filter,''),true);
+  return result;
+exception
+  when sqlstate '22023' then
+    raise exception using errcode='22023',message='invalid portal request';
+  when query_canceled then
+    get stacked diagnostics diagnostic_message=MESSAGE_TEXT;
+    raise log using message='portal read failure diagnostic',detail=jsonb_build_object(
+      'schemaVersion','portal.read-failure.v1','rpc','display_catalog_totals_v1',
+      'category','cancellation','reason',case diagnostic_message
+        when 'canceling statement due to statement timeout' then 'statement_timeout'
+        when 'canceling statement due to user request' then 'cancel_request'
+        else 'unknown' end)::text;
+    raise exception using errcode='P0001',message='portal catalog unavailable';
+  when others then
+    get stacked diagnostics diagnostic_state=RETURNED_SQLSTATE;
+    raise log using message='portal read failure diagnostic',detail=jsonb_build_object(
+      'schemaVersion','portal.read-failure.v1','rpc','display_catalog_totals_v1',
+      'category','internal','reason',case diagnostic_state when '55000' then 'contract_drift' else 'other' end)::text;
+    raise exception using errcode='P0001',message='portal catalog unavailable';
+end;
+$$;
+
+
+ALTER FUNCTION "api"."portal_catalog_totals_v1"("p_allowed_brands" "text"[]) OWNER TO "portal_display_executor";
+
+
 CREATE OR REPLACE FUNCTION "api"."portal_facets_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb" DEFAULT '{}'::"jsonb") RETURNS "jsonb"
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
@@ -26181,6 +26234,23 @@ end $$;
 
 
 ALTER FUNCTION "api"."portal_list_versions_v2"("p_allowed_brands" "text"[], "p_kind" "text", "p_id" "uuid", "p_cursor" "text", "p_limit" integer) OWNER TO "portal_display_executor";
+
+
+CREATE OR REPLACE FUNCTION "api"."portal_navigation_branches_v1"("p_allowed_brands" "text"[], "p_kind" "text", "p_query" "text" DEFAULT ''::"text", "p_filters" "jsonb" DEFAULT '{}'::"jsonb", "p_dimension" "text" DEFAULT 'classification'::"text", "p_parent_node_id" "text" DEFAULT NULL::"text", "p_cursor" "text" DEFAULT NULL::"text", "p_limit" integer DEFAULT 100) RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    SET "statement_timeout" TO '8s'
+    AS $$ declare result jsonb; old_brands text:=current_setting('portal.display_brands',true); old_global text:=current_setting('portal.display_global',true); old_filter text:=current_setting('portal.display_filter_brand',true); begin
+ perform private.portal_display_begin_request_v1(p_allowed_brands,p_filters);
+ result:=jsonb_set(private.portal_display_brand_decorate_v1(private.display_api_navigation_v1(p_kind, p_query, p_filters - 'brand', p_dimension, p_parent_node_id, p_cursor, p_limit, false)),'{schemaVersion}',to_jsonb('portal.public-navigation-branches.v1'::text));
+ perform set_config('portal.display_brands',coalesce(old_brands,''),true);
+ perform set_config('portal.display_global',coalesce(old_global,''),true);
+ perform set_config('portal.display_filter_brand',coalesce(old_filter,''),true);
+ return result;
+end $$;
+
+
+ALTER FUNCTION "api"."portal_navigation_branches_v1"("p_allowed_brands" "text"[], "p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer) OWNER TO "portal_display_executor";
 
 
 CREATE OR REPLACE FUNCTION "api"."portal_navigation_v1"("p_kind" "text", "p_query" "text" DEFAULT ''::"text", "p_filters" "jsonb" DEFAULT '{}'::"jsonb", "p_dimension" "text" DEFAULT 'classification'::"text", "p_parent_node_id" "text" DEFAULT NULL::"text", "p_cursor" "text" DEFAULT NULL::"text", "p_limit" integer DEFAULT 100) RETURNS "jsonb"
@@ -57801,12 +57871,27 @@ CREATE OR REPLACE FUNCTION "private"."display_api_navigation_v1"("p_kind" "text"
     SET "statement_timeout" TO '8s'
     SET "row_security" TO 'on'
     AS $$
+begin
+  return private.display_api_navigation_v1(p_kind,p_query,p_filters,p_dimension,p_parent_node_id,p_cursor,p_limit,true);
+end;
+$$;
+
+
+ALTER FUNCTION "private"."display_api_navigation_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer) OWNER TO "portal_display_executor";
+
+
+CREATE OR REPLACE FUNCTION "private"."display_api_navigation_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer, "p_include_totals" boolean) RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    SET "statement_timeout" TO '8s'
+    SET "row_security" TO 'on'
+    AS $$
 declare
   v_diagnostic_message text;
   v_diagnostic_context text;
   v_diagnostic_state text;
 begin
-  return private.display_navigation_v1(p_kind,p_query,p_filters,p_dimension,p_parent_node_id,p_cursor,p_limit);
+  return private.display_navigation_v1(p_kind,p_query,p_filters,p_dimension,p_parent_node_id,p_cursor,p_limit,p_include_totals);
 exception
   when sqlstate '22023' then
     get stacked diagnostics v_diagnostic_context = PG_EXCEPTION_CONTEXT;
@@ -57857,7 +57942,7 @@ end;
 $$;
 
 
-ALTER FUNCTION "private"."display_api_navigation_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer) OWNER TO "portal_display_executor";
+ALTER FUNCTION "private"."display_api_navigation_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer, "p_include_totals" boolean) OWNER TO "portal_display_executor";
 
 
 CREATE OR REPLACE FUNCTION "private"."display_api_search_flows_v1"("p_query" "text", "p_filters" "jsonb" DEFAULT '{}'::"jsonb", "p_sort" "text" DEFAULT 'relevance'::"text", "p_cursor" "text" DEFAULT NULL::"text", "p_limit" integer DEFAULT 20) RETURNS "jsonb"
@@ -57915,6 +58000,9 @@ CREATE OR REPLACE FUNCTION "private"."display_api_search_flows_v3"("p_query" "te
     SET "search_path" TO ''
     SET "statement_timeout" TO '8s'
     AS $$
+declare
+  v_diagnostic_message text;
+  v_diagnostic_state text;
 begin
   return pg_catalog.jsonb_set(private.display_decorate_card_context_v1(
     private.display_search_v3(
@@ -57923,10 +58011,95 @@ begin
   ), '{schemaVersion}', '"portal.public-search-page.v2"'::jsonb);
 exception
   when sqlstate '22023' then
+    raise log using message = 'portal read failure diagnostic',
+      detail = pg_catalog.jsonb_build_object(
+        'schemaVersion', 'portal.read-failure.v1', 'rpc', 'display_search_flows_v3',
+        'queryClass', case
+          when p_query is null then 'default'
+          when octet_length(p_query)>2048 then 'oversize'
+          when btrim(p_query)='' then 'empty'
+          when char_length(btrim(p_query))=1 then 'single'
+          else 'multiple' end,
+        'filterClass', case
+          when p_filters is null then 'default'
+          when pg_column_size(p_filters)>4096 then 'oversize'
+          when jsonb_typeof(p_filters)<>'object' then 'invalid'
+          when p_filters='{}'::jsonb then 'empty' else 'filtered' end,
+        'sortClass', case
+          when p_sort is null then 'default'
+          when octet_length(p_sort)>64 then 'invalid'
+          when lower(btrim(p_sort)) in ('relevance','name_asc','modified_desc')
+            then lower(btrim(p_sort)) else 'invalid' end,
+        'hasCursor', p_cursor is not null,
+        'limitClass', case when p_limit is null then 'default'
+          when p_limit between 1 and 10 then '1_10'
+          when p_limit between 11 and 50 then '11_50' else 'invalid' end,
+        'category', 'validation', 'reason', 'input'
+      )::text;
     raise exception using errcode = '22023', message = 'invalid portal request';
   when query_canceled then
+    get stacked diagnostics v_diagnostic_message = MESSAGE_TEXT;
+    raise log using message = 'portal read failure diagnostic',
+      detail = pg_catalog.jsonb_build_object(
+        'schemaVersion', 'portal.read-failure.v1', 'rpc', 'display_search_flows_v3',
+        'queryClass', case
+          when p_query is null then 'default'
+          when octet_length(p_query)>2048 then 'oversize'
+          when btrim(p_query)='' then 'empty'
+          when char_length(btrim(p_query))=1 then 'single'
+          else 'multiple' end,
+        'filterClass', case
+          when p_filters is null then 'default'
+          when pg_column_size(p_filters)>4096 then 'oversize'
+          when jsonb_typeof(p_filters)<>'object' then 'invalid'
+          when p_filters='{}'::jsonb then 'empty' else 'filtered' end,
+        'sortClass', case
+          when p_sort is null then 'default'
+          when octet_length(p_sort)>64 then 'invalid'
+          when lower(btrim(p_sort)) in ('relevance','name_asc','modified_desc')
+            then lower(btrim(p_sort)) else 'invalid' end,
+        'hasCursor', p_cursor is not null,
+        'limitClass', case when p_limit is null then 'default'
+          when p_limit between 1 and 10 then '1_10'
+          when p_limit between 11 and 50 then '11_50' else 'invalid' end,
+        'category', 'cancellation', 'reason', case v_diagnostic_message
+          when 'canceling statement due to statement timeout' then 'statement_timeout'
+          when 'canceling statement due to user request' then 'cancel_request'
+          else 'unknown'
+        end
+      )::text;
     raise exception using errcode = 'P0001', message = 'portal catalog unavailable';
   when others then
+    get stacked diagnostics v_diagnostic_state = RETURNED_SQLSTATE;
+    raise log using message = 'portal read failure diagnostic',
+      detail = pg_catalog.jsonb_build_object(
+        'schemaVersion', 'portal.read-failure.v1', 'rpc', 'display_search_flows_v3',
+        'queryClass', case
+          when p_query is null then 'default'
+          when octet_length(p_query)>2048 then 'oversize'
+          when btrim(p_query)='' then 'empty'
+          when char_length(btrim(p_query))=1 then 'single'
+          else 'multiple' end,
+        'filterClass', case
+          when p_filters is null then 'default'
+          when pg_column_size(p_filters)>4096 then 'oversize'
+          when jsonb_typeof(p_filters)<>'object' then 'invalid'
+          when p_filters='{}'::jsonb then 'empty' else 'filtered' end,
+        'sortClass', case
+          when p_sort is null then 'default'
+          when octet_length(p_sort)>64 then 'invalid'
+          when lower(btrim(p_sort)) in ('relevance','name_asc','modified_desc')
+            then lower(btrim(p_sort)) else 'invalid' end,
+        'hasCursor', p_cursor is not null,
+        'limitClass', case when p_limit is null then 'default'
+          when p_limit between 1 and 10 then '1_10'
+          when p_limit between 11 and 50 then '11_50' else 'invalid' end,
+        'category', 'internal', 'reason', case v_diagnostic_state
+          when '54000' then 'response_budget'
+          when '55000' then 'contract_drift'
+          else 'other'
+        end
+      )::text;
     raise exception using errcode = 'P0001', message = 'portal catalog unavailable';
 end;
 $$;
@@ -57994,6 +58167,9 @@ CREATE OR REPLACE FUNCTION "private"."display_api_search_processes_v3"("p_query"
     SET "search_path" TO ''
     SET "statement_timeout" TO '8s'
     AS $$
+declare
+  v_diagnostic_message text;
+  v_diagnostic_state text;
 begin
   return pg_catalog.jsonb_set(private.display_decorate_card_context_v1(
     private.display_lcia_decorate_item_page_v1(
@@ -58004,10 +58180,95 @@ begin
   ), '{schemaVersion}', '"portal.public-search-page.v2"'::jsonb);
 exception
   when sqlstate '22023' then
+    raise log using message = 'portal read failure diagnostic',
+      detail = pg_catalog.jsonb_build_object(
+        'schemaVersion', 'portal.read-failure.v1', 'rpc', 'display_search_processes_v3',
+        'queryClass', case
+          when p_query is null then 'default'
+          when octet_length(p_query)>2048 then 'oversize'
+          when btrim(p_query)='' then 'empty'
+          when char_length(btrim(p_query))=1 then 'single'
+          else 'multiple' end,
+        'filterClass', case
+          when p_filters is null then 'default'
+          when pg_column_size(p_filters)>4096 then 'oversize'
+          when jsonb_typeof(p_filters)<>'object' then 'invalid'
+          when p_filters='{}'::jsonb then 'empty' else 'filtered' end,
+        'sortClass', case
+          when p_sort is null then 'default'
+          when octet_length(p_sort)>64 then 'invalid'
+          when lower(btrim(p_sort)) in ('relevance','name_asc','modified_desc')
+            then lower(btrim(p_sort)) else 'invalid' end,
+        'hasCursor', p_cursor is not null,
+        'limitClass', case when p_limit is null then 'default'
+          when p_limit between 1 and 10 then '1_10'
+          when p_limit between 11 and 50 then '11_50' else 'invalid' end,
+        'category', 'validation', 'reason', 'input'
+      )::text;
     raise exception using errcode = '22023', message = 'invalid portal request';
   when query_canceled then
+    get stacked diagnostics v_diagnostic_message = MESSAGE_TEXT;
+    raise log using message = 'portal read failure diagnostic',
+      detail = pg_catalog.jsonb_build_object(
+        'schemaVersion', 'portal.read-failure.v1', 'rpc', 'display_search_processes_v3',
+        'queryClass', case
+          when p_query is null then 'default'
+          when octet_length(p_query)>2048 then 'oversize'
+          when btrim(p_query)='' then 'empty'
+          when char_length(btrim(p_query))=1 then 'single'
+          else 'multiple' end,
+        'filterClass', case
+          when p_filters is null then 'default'
+          when pg_column_size(p_filters)>4096 then 'oversize'
+          when jsonb_typeof(p_filters)<>'object' then 'invalid'
+          when p_filters='{}'::jsonb then 'empty' else 'filtered' end,
+        'sortClass', case
+          when p_sort is null then 'default'
+          when octet_length(p_sort)>64 then 'invalid'
+          when lower(btrim(p_sort)) in ('relevance','name_asc','modified_desc')
+            then lower(btrim(p_sort)) else 'invalid' end,
+        'hasCursor', p_cursor is not null,
+        'limitClass', case when p_limit is null then 'default'
+          when p_limit between 1 and 10 then '1_10'
+          when p_limit between 11 and 50 then '11_50' else 'invalid' end,
+        'category', 'cancellation', 'reason', case v_diagnostic_message
+          when 'canceling statement due to statement timeout' then 'statement_timeout'
+          when 'canceling statement due to user request' then 'cancel_request'
+          else 'unknown'
+        end
+      )::text;
     raise exception using errcode = 'P0001', message = 'portal catalog unavailable';
   when others then
+    get stacked diagnostics v_diagnostic_state = RETURNED_SQLSTATE;
+    raise log using message = 'portal read failure diagnostic',
+      detail = pg_catalog.jsonb_build_object(
+        'schemaVersion', 'portal.read-failure.v1', 'rpc', 'display_search_processes_v3',
+        'queryClass', case
+          when p_query is null then 'default'
+          when octet_length(p_query)>2048 then 'oversize'
+          when btrim(p_query)='' then 'empty'
+          when char_length(btrim(p_query))=1 then 'single'
+          else 'multiple' end,
+        'filterClass', case
+          when p_filters is null then 'default'
+          when pg_column_size(p_filters)>4096 then 'oversize'
+          when jsonb_typeof(p_filters)<>'object' then 'invalid'
+          when p_filters='{}'::jsonb then 'empty' else 'filtered' end,
+        'sortClass', case
+          when p_sort is null then 'default'
+          when octet_length(p_sort)>64 then 'invalid'
+          when lower(btrim(p_sort)) in ('relevance','name_asc','modified_desc')
+            then lower(btrim(p_sort)) else 'invalid' end,
+        'hasCursor', p_cursor is not null,
+        'limitClass', case when p_limit is null then 'default'
+          when p_limit between 1 and 10 then '1_10'
+          when p_limit between 11 and 50 then '11_50' else 'invalid' end,
+        'category', 'internal', 'reason', case v_diagnostic_state
+          when '54000' then 'response_budget'
+          when '55000' then 'contract_drift'
+          else 'other'
+        end
+      )::text;
     raise exception using errcode = 'P0001', message = 'portal catalog unavailable';
 end;
 $$;
@@ -58943,12 +59204,22 @@ begin
     select p.id, p.version
     from private.display_catalog_search_current_v2 as p
     where p.dataset_kind = p_kind and p.id = p_exact_id and true
-  )
-  select p.id, p.version, p.card, p.state_code, p.modified_at
-  from matched
-  join private.display_catalog_search_current_v2 as p
-    on p.dataset_kind = p_kind and p.id = matched.id and p.version = matched.version
-  where true;
+  ), key_count as materialized (select count(*) as n from matched)
+  -- Join exact candidates to each RLS-protected relation before the UNION.
+  select p.id,p.version,p.card,p.state_code,p.modified_at
+    from matched k join private.display_catalog_search_rows_v2 p
+      on p.dataset_kind='process' and p.id=k.id and p.version=k.version
+    where p_kind='process' and (select n from key_count)<=2048
+    union all
+    select p.id,p.version,p.card,p.state_code,p.modified_at
+    from matched k join private.display_catalog_search_rows_v1 p
+      on p.dataset_kind='flow' and p.id=k.id and p.version=k.version
+    where p_kind='flow' and (select n from key_count)<=2048
+    union all
+    select p.id,p.version,p.card,p.state_code,p.modified_at
+    from matched k join private.display_catalog_search_current_v2 p
+      on p.dataset_kind=p_kind and p.id=k.id and p.version=k.version
+    where (select n from key_count)>2048;
 end;
 $_$;
 
@@ -60333,32 +60604,21 @@ CREATE OR REPLACE FUNCTION "private"."display_catalog_flow_pattern_versions_v1"(
     SET "statement_timeout" TO '20s'
     SET "plan_cache_mode" TO 'force_custom_plan'
     SET "row_security" TO 'on'
-    AS $_$
-declare
-  v_literal text;
+    AS $$
+declare v_literal text;
 begin
   if pg_catalog.char_length(p_like_pattern) = 3
      and pg_catalog.left(p_like_pattern, 1) = '%'
      and pg_catalog.right(p_like_pattern, 1) = '%' then
     v_literal := pg_catalog.substr(p_like_pattern, 2, 1);
-    return query
-    select candidate.id,
-      candidate.version
-    from private.display_catalog_flow_single_character_versions_v1(
-      v_literal
-    ) as candidate;
+    return query select candidate.id, candidate.version
+      from private.display_catalog_flow_single_character_versions_v1(v_literal) as candidate;
     return;
   end if;
-
-  return query execute pg_catalog.format($sql$
-    select projection.id,
-      projection.version
-    from private.display_catalog_search_rows_v1 as projection
-    where projection.dataset_kind = 'flow'
-      and projection.document like %L escape E'\\'
-  $sql$, p_like_pattern);
+  return query select candidate.id, candidate.version
+    from private.display_catalog_scoped_pattern_keys_v1('flow', p_like_pattern) as candidate;
 end
-$_$;
+$$;
 
 
 ALTER FUNCTION "private"."display_catalog_flow_pattern_versions_v1"("p_like_pattern" "text") OWNER TO "portal_display_executor";
@@ -60671,32 +60931,21 @@ CREATE OR REPLACE FUNCTION "private"."display_catalog_process_pattern_versions_v
     SET "statement_timeout" TO '20s'
     SET "plan_cache_mode" TO 'force_custom_plan'
     SET "row_security" TO 'on'
-    AS $_$
-declare
-  v_literal text;
+    AS $$
+declare v_literal text;
 begin
   if pg_catalog.char_length(p_like_pattern) = 3
      and pg_catalog.left(p_like_pattern, 1) = '%'
      and pg_catalog.right(p_like_pattern, 1) = '%' then
     v_literal := pg_catalog.substr(p_like_pattern, 2, 1);
-    return query
-    select candidate.id,
-      candidate.version
-    from private.display_catalog_process_single_character_versions_v1(
-      v_literal
-    ) as candidate;
+    return query select candidate.id, candidate.version
+      from private.display_catalog_process_single_character_versions_v1(v_literal) as candidate;
     return;
   end if;
-
-  return query execute pg_catalog.format($sql$
-    select projection.id,
-      projection.version
-    from private.display_catalog_search_current_v2 as projection
-    where projection.dataset_kind = 'process'
-      and projection.document like %L escape E'\\'
-  $sql$, p_like_pattern);
+  return query select candidate.id, candidate.version
+    from private.display_catalog_scoped_pattern_keys_v1('process', p_like_pattern) as candidate;
 end
-$_$;
+$$;
 
 
 ALTER FUNCTION "private"."display_catalog_process_pattern_versions_v1"("p_like_pattern" "text") OWNER TO "portal_display_executor";
@@ -60807,6 +61056,58 @@ $$;
 
 
 ALTER FUNCTION "private"."display_catalog_rows_v1"("p_kind" "text") OWNER TO "portal_display_executor";
+
+
+CREATE OR REPLACE FUNCTION "private"."display_catalog_scoped_pattern_keys_v1"("p_kind" "text", "p_like_pattern" "text") RETURNS TABLE("id" "uuid", "version" "text")
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER PARALLEL RESTRICTED
+    SET "search_path" TO ''
+    SET "statement_timeout" TO '20s'
+    SET "plan_cache_mode" TO 'force_custom_plan'
+    SET "row_security" TO 'on'
+    AS $_$
+declare
+  v_relation text;
+begin
+  case p_kind
+    when 'process' then v_relation := 'display_catalog_search_rows_v2';
+    when 'flow' then v_relation := 'display_catalog_search_rows_v1';
+    else raise exception using errcode='22023', message='invalid portal request';
+  end case;
+
+  -- Materialize only exact keys, once, with the unchanged LIKE/ESCAPE rule.
+  -- 2048 selects a plan shape, never a result limit. Both paths intersect every
+  -- returned key with the current deployment/visibility/brand scope.
+  return query execute pg_catalog.format($sql$
+    with matches as materialized (
+      select projection.id, projection.version
+      from private.%I as projection
+      where projection.dataset_kind = %L
+        and projection.document like $1 escape E'\\'
+    ), match_count as materialized (select count(*) as n from matches)
+    select matched.id, matched.version
+    from matches matched
+    where (select n from match_count) <= 2048
+      and exists (
+        select 1 from private.display_request_visible_settings_v1 scope
+        where scope.dataset_kind = %L and scope.dataset_id = matched.id
+          and scope.dataset_version = matched.version
+        offset 0
+      )
+    union all
+    select matched.id, matched.version
+    from matches matched
+    where (select n from match_count) > 2048
+      and exists (
+        select 1 from private.display_request_visible_settings_v1 scope
+        where scope.dataset_kind = %L and scope.dataset_id = matched.id
+          and scope.dataset_version = matched.version
+      )
+  $sql$, v_relation, p_kind, p_kind, p_kind) using p_like_pattern;
+end
+$_$;
+
+
+ALTER FUNCTION "private"."display_catalog_scoped_pattern_keys_v1"("p_kind" "text", "p_like_pattern" "text") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "private"."display_catalog_search_v1_impl"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_sort" "text", "p_cursor_rank" "text", "p_cursor_id" "uuid", "p_cursor_version" "text", "p_limit" integer, "p_query_fingerprint" "text") RETURNS "jsonb"
@@ -61353,9 +61654,23 @@ begin
     with matched_keys as materialized (
       select id,version from private.display_navigation_matched_versions_v1(p_kind,p_query,p_filters)
     ), portal_matches as materialized (
+      -- Default unfiltered browsing needs only the next page of exact keys.
+      -- Use the existing kind/id/version index before materializing candidates;
+      -- RLS remains on the source scan and the common cursor/render path stays.
+      (select f.id,f.version,f.modified_at,null::text as name_value
+       from private.display_catalog_facet_rows_v1 f
+       where p_sort='relevance' and p_filters='{}'::jsonb
+         and f.dataset_kind=p_kind and f.facet_contract_version=1
+         and (p_cursor_rank is null or 0::numeric < p_cursor_rank::numeric
+           or (0::numeric = p_cursor_rank::numeric
+             and (f.id > p_cursor_id or (f.id=p_cursor_id and f.version < p_cursor_version))))
+       order by f.id asc,f.version desc
+       limit p_limit + 1)
+      union all
       select f.id,f.version,f.modified_at,null::text as name_value
       from private.display_catalog_facet_rows_v1 f
       where p_sort<>'name_asc' and f.dataset_kind=p_kind
+        and (p_filters<>'{}'::jsonb or p_sort<>'relevance')
         and true and f.facet_contract_version=1
         and (p_filters='{}'::jsonb or (f.id,f.version) in (select id,version from matched_keys))
       union all
@@ -61511,6 +61826,37 @@ begin
     select pattern.id,pattern.version
     from private.display_catalog_flow_pattern_versions_v1(v_like_pattern) pattern
     where p_kind='flow' and not private.display_catalog_summary_valid_cas_v1(p_query)
+  ), matched_keys as materialized (
+    select id,version from pattern_matches
+    union
+    select p.id,p.version from private.display_catalog_search_current_v2 p
+    where p.dataset_kind=p_kind and p.id=v_exact_id
+      and not (p_kind='flow' and private.display_catalog_summary_valid_cas_v1(p_query))
+  ), key_count as materialized (select count(*) as n from matched_keys
+  ), candidate_rows as not materialized (
+    select p.id,p.version,p.card,p.state_code,p.modified_at
+    from matched_keys k join private.display_catalog_search_rows_v2 p
+      on p.dataset_kind='process' and p.id=k.id and p.version=k.version
+    where p_kind='process' and (select n from key_count)<=2048
+    union all
+    select p.id,p.version,p.card,p.state_code,p.modified_at
+    from matched_keys k join private.display_catalog_search_rows_v1 p
+      on p.dataset_kind='flow' and p.id=k.id and p.version=k.version
+    where p_kind='flow' and (select n from key_count)<=2048
+    union all
+    select p.id,p.version,p.card,p.state_code,p.modified_at
+    from private.display_catalog_search_current_v2 p
+    where (select n from key_count)>2048 and p.dataset_kind=p_kind
+      and (p.id,p.version) in (select id,version from matched_keys)
+    union all
+    select p.id,p.version,p.card,p.state_code,p.modified_at
+    from private.display_catalog_search_current_v2 p
+    where p_kind='flow' and private.display_catalog_summary_valid_cas_v1(p_query)
+      and p.dataset_kind='flow'
+      and pg_catalog.jsonb_typeof(p.card->'casNumber')='string'
+      and p.card->>'casNumber' ~ '^[0-9]{2,7}-[0-9]{2}-[0-9]$'
+      and pg_catalog.length(p.card->>'casNumber') between 7 and 12
+      and p.card->>'casNumber'=p_query
   ), portal_facts as materialized (
     -- Inline the exact immutable card-facts expression to avoid one SPI call
     -- per candidate; only narrow facts cross the materialization boundary.
@@ -61524,16 +61870,10 @@ begin
           where pg_catalog.lower(pg_catalog.btrim(c.item->>'code'))=p_query),
         'casNumber',card_attrs."casNumber"
       ) as facts
-    from private.display_catalog_search_current_v2 p
+    from candidate_rows p
     cross join lateral pg_catalog.jsonb_to_record(p.card)
       as card_attrs(names jsonb,classifications jsonb,"casNumber" jsonb)
-    where p.dataset_kind=p_kind and true
-      and case when p_kind='flow' and private.display_catalog_summary_valid_cas_v1(p_query) then
-        pg_catalog.jsonb_typeof(p.card->'casNumber')='string'
-        and p.card->>'casNumber' ~ '^[0-9]{2,7}-[0-9]{2}-[0-9]$'
-        and pg_catalog.length(p.card->>'casNumber') between 7 and 12
-        and p.card->>'casNumber'=p_query
-      else p.id=v_exact_id or (p.id,p.version) in (select id,version from pattern_matches) end
+    where true
       and (p_filters='{}'::jsonb or (p.id,p.version) in (select id,version from private.display_navigation_matched_versions_v1(p_kind,'',p_filters)))
   ), portal_scored as materialized (
     select portal_facts.*,
@@ -61727,6 +62067,17 @@ declare
   v_exact_id uuid;
   v_like_pattern text;
 begin
+  -- V2 and V3 share the exact lexical candidate universe. For validated V3
+  -- filters, V2's synchronized navigation facts preserve the same predicates,
+  -- including direct/subtree hierarchy membership. Rank narrow keys and hydrate
+  -- only the page instead of building full facts/reasons for every match.
+  -- The V3 caller retains validation, fingerprint, cursor and card context.
+  if p_query <> '' or (p_filters = '{}'::jsonb and p_sort = 'relevance') then
+    return private.display_catalog_search_v2_impl(
+      p_kind,p_query,p_filters,p_sort,p_cursor_rank,p_cursor_id,
+      p_cursor_version,p_limit,p_query_fingerprint
+    );
+  end if;
   if p_query ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
     v_exact_id := p_query::uuid;
   end if;
@@ -65514,6 +65865,23 @@ CREATE OR REPLACE FUNCTION "private"."display_navigation_impl_v1"("p_kind" "text
     SET "statement_timeout" TO '8s'
     SET "work_mem" TO '32MB'
     AS $$
+begin
+  return private.display_navigation_impl_v1(p_kind,p_query,p_filters,p_dimension,p_parent_node_id,p_cursor_node_id,p_limit,p_fingerprint,true);
+end;
+$$;
+
+
+ALTER FUNCTION "private"."display_navigation_impl_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor_node_id" "text", "p_limit" integer, "p_fingerprint" "text") OWNER TO "portal_display_executor";
+
+
+CREATE OR REPLACE FUNCTION "private"."display_navigation_impl_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor_node_id" "text", "p_limit" integer, "p_fingerprint" "text", "p_include_totals" boolean) RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER PARALLEL RESTRICTED
+    SET "search_path" TO ''
+    SET "row_security" TO 'on'
+    SET "plan_cache_mode" TO 'force_custom_plan'
+    SET "statement_timeout" TO '8s'
+    SET "work_mem" TO '32MB'
+    AS $$
 declare
   v_parent jsonb;
   v_ancestors jsonb:='[]';
@@ -65534,15 +65902,16 @@ begin
   if p_cursor_node_id is not null then
     select n.code into v_after_code from private.display_read_navigation_node_v1 n
     where n.node_id=p_cursor_node_id and n.dimension=p_dimension
-      and n.parent_node_id is not distinct from p_parent_node_id;
+      and (n.parent_node_id=p_parent_node_id or (p_parent_node_id is null and n.parent_node_id is null));
     if not found then raise exception using errcode='22023',message='invalid portal request'; end if;
   end if;
 
   with matched as materialized (
-    select * from private.display_navigation_matched_versions_v1('all',p_query,p_filters)
+    select * from private.display_navigation_matched_versions_v1(case when p_include_totals then 'all' else p_kind end,p_query,p_filters)
+  ), matched_count as materialized (select count(*) as n from matched
   ), children as materialized (
     select n.* from private.display_read_navigation_node_v1 n
-    where n.dimension=p_dimension and n.parent_node_id is not distinct from p_parent_node_id
+    where n.dimension=p_dimension and (n.parent_node_id=p_parent_node_id or (p_parent_node_id is null and n.parent_node_id is null))
       and (n.source_file is not null or n.node_id in ('class:isic','class:cpc','class:elementary','geo:unmapped') or exists (
         select 1 from private.display_navigation_membership_v1 m
         where m.node_id=n.node_id and (p_kind='all' or m.dataset_kind=p_kind)
@@ -65556,14 +65925,35 @@ begin
     select * from children
     union all
     select n.* from private.display_read_navigation_node_v1 n where n.node_id=p_parent_node_id
+  ), counted_memberships as not materialized (
+    -- Reuse complete matched keys once. Small sets use the existing exact
+    -- membership key; broad and empty reads retain the branch semijoin.
+    -- 2048 chooses the measured read shape, never a candidate/count limit.
+    select m.node_id,m.direct
+    from matched k join private.display_navigation_membership_v1 m
+      on (m.dataset_kind,m.id,m.version)=(k.dataset_kind,k.id,k.version)
+      and m.dimension=p_dimension
+    where not (p_query='' and p_filters='{}'::jsonb)
+      and (select n from matched_count)<=2048
+      and (p_kind='all' or m.dataset_kind=p_kind)
+      and m.node_id=any(array(select n.node_id from targets n))
+    union all
+    select m.node_id,m.direct
+    -- Keep each branch as a parameterized protected read. Narrow branches
+    -- can use indexed visibility checks instead of hashing every visible key.
+    -- OFFSET 0 prevents flattening; it never caps, truncates or skips a row.
+    from targets t cross join lateral (
+      select m.node_id,m.direct from private.display_navigation_membership_v1 m
+      where m.dimension=p_dimension and m.node_id=t.node_id
+        and (p_kind='all' or m.dataset_kind=p_kind)
+        and ((p_query='' and p_filters='{}'::jsonb)
+          or (m.dataset_kind,m.id,m.version) in (select dataset_kind,id,version from matched))
+      offset 0
+    ) m
+    where ((p_query='' and p_filters='{}'::jsonb) or (select n from matched_count)>2048)
   ), counted as materialized (
-    select m.node_id,count(*) as count,count(*) filter(where m.direct) as direct_count
-    from private.display_navigation_membership_v1 m
-    where m.dimension=p_dimension and (p_kind='all' or m.dataset_kind=p_kind)
-      and ((p_query='' and p_filters='{}'::jsonb)
-        or (m.dataset_kind,m.id,m.version) in (select dataset_kind,id,version from matched))
-      and m.node_id = any(array(select n.node_id from targets n))
-    group by m.node_id
+    select node_id,count(*) as count,count(*) filter(where direct) as direct_count
+    from counted_memberships group by node_id
   ), decorated as materialized (
     select n.node_id,n.code,jsonb_build_object(
       'nodeId',n.node_id,'parentNodeId',n.parent_node_id,'code',n.code,'taxonomy',n.taxonomy,
@@ -65578,7 +65968,7 @@ begin
     coalesce((select jsonb_agg(value order by rn) from paged where rn<=p_limit),'[]'::jsonb),
     (select case when count(*)>p_limit then (array_agg(node_id order by rn))[p_limit] else null end from paged),
     (select value from decorated where node_id=p_parent_node_id),
-    (case when p_query='' and p_filters='{}'::jsonb then
+    (case when not p_include_totals then null when p_query='' and p_filters='{}'::jsonb then
       (select jsonb_build_object('process',count(*) filter(where dataset_kind='process'),'flow',count(*) filter(where dataset_kind='flow'))
        from private.display_navigation_versions_v1)
      else (select jsonb_build_object('process',count(*) filter(where dataset_kind='process'),'flow',count(*) filter(where dataset_kind='flow')) from matched) end)
@@ -65600,6 +65990,7 @@ begin
       'dimension',p_dimension,'kind',p_kind,'totals',v_totals,'parent',v_parent,'ancestors',v_ancestors,'nodes',v_nodes,
       'nextCursor',case when v_next is null then null else private.display_cursor_encode_v1(jsonb_build_object(
         'v',1,'fp',p_fingerprint,'dimension',p_dimension,'kind',p_kind,'parent',p_parent_node_id,'node',v_next)) end);
+    if not p_include_totals then v_result:=v_result-'totals'; end if;
     exit when octet_length(v_result::text)<=65536;
     if jsonb_array_length(v_nodes)<=1 then
       raise exception using errcode='54000',message='Portal navigation response exceeds its byte budget';
@@ -65612,7 +66003,7 @@ end;
 $$;
 
 
-ALTER FUNCTION "private"."display_navigation_impl_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor_node_id" "text", "p_limit" integer, "p_fingerprint" "text") OWNER TO "portal_display_executor";
+ALTER FUNCTION "private"."display_navigation_impl_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor_node_id" "text", "p_limit" integer, "p_fingerprint" "text", "p_include_totals" boolean) OWNER TO "portal_display_executor";
 
 
 CREATE OR REPLACE FUNCTION "private"."display_navigation_matched_versions_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb") RETURNS TABLE("dataset_kind" "text", "id" "uuid", "version" "text")
@@ -65626,39 +66017,9 @@ declare
   v_pattern text;
 begin
   if p_query='' then
-    -- Empty/query-free navigation never detoasts public cards or raw source JSON.
-    return query select v.dataset_kind,v.id,v.version
-    from private.display_navigation_versions_v1 v
-    where (p_kind='all' or v.dataset_kind=p_kind) and
-      (not (p_filters ? 'accessLevel') or v.access_level=p_filters->>'accessLevel')
-      and (not (p_filters ? 'geography') or v.geography_code=p_filters->>'geography')
-      and (not (p_filters ? 'classification') or v.classification_codes @> array[p_filters->>'classification'])
-      and (not (p_filters ? 'referenceYearFrom') or v.reference_year >= (p_filters->>'referenceYearFrom')::integer)
-      and (not (p_filters ? 'referenceYearTo') or v.reference_year <= (p_filters->>'referenceYearTo')::integer)
-      and (not (p_filters ? 'processSubtype') or v.process_subtype=p_filters->>'processSubtype')
-      and (not (p_filters ? 'source') or v.source=p_filters->>'source')
-      and (
-        not (p_filters ? 'classificationNodeId')
-        or (v.dataset_kind,v.id,v.version) in (
-          select m.dataset_kind,m.id,m.version
-          from private.display_navigation_membership_v1 m
-          where m.dimension='classification'
-            and m.node_id=p_filters->>'classificationNodeId'
-            and (p_kind='all' or m.dataset_kind=p_kind)
-            and (coalesce(p_filters->>'classificationScope','subtree')<>'direct' or m.direct)
-        )
-      ) and (
-        not (p_filters ? 'geographyNodeId')
-        or (v.dataset_kind,v.id,v.version) in (
-          select m.dataset_kind,m.id,m.version
-          from private.display_navigation_membership_v1 m
-          where m.dimension='geography'
-            and m.node_id=p_filters->>'geographyNodeId'
-            and (p_kind='all' or m.dataset_kind=p_kind)
-            and (coalesce(p_filters->>'geographyScope','subtree')<>'direct' or m.direct)
-        )
-      )
-;
+    -- The shared query-free filter set is also used by filtered lexical Search.
+    -- Its closed bridge avoids hashing the whole scope for a selective filter.
+    return query select * from private.display_navigation_scoped_filter_keys_v1(p_kind,p_filters);
   else
     if p_query ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then v_exact:=p_query::uuid; end if;
     v_pattern := '%' || replace(replace(replace(p_query,chr(92),chr(92)||chr(92)),'%',chr(92)||'%'),'_',chr(92)||'_') || '%';
@@ -65945,7 +66306,102 @@ $_$;
 ALTER FUNCTION "private"."display_navigation_resolve_classification_v1"("p_kind" "text", "p_system" "jsonb", "p_value" "jsonb", "p_level" integer) OWNER TO "portal_display_executor";
 
 
+CREATE OR REPLACE FUNCTION "private"."display_navigation_scoped_filter_keys_v1"("p_kind" "text", "p_filters" "jsonb") RETURNS TABLE("dataset_kind" "text", "id" "uuid", "version" "text")
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER PARALLEL RESTRICTED
+    SET "search_path" TO ''
+    SET "row_security" TO 'on'
+    SET "plan_cache_mode" TO 'force_custom_plan'
+    AS $$
+begin
+  if p_kind is null or p_kind not in ('all','process','flow') then
+    raise exception using errcode='22023',message='invalid portal request';
+  end if;
+  -- The closed owner bridge filters synchronized native facts first, then
+  -- intersects EVERY exact version with the authoritative current scope view.
+  -- Membership rows refer to the same exact key; their visibility is checked
+  -- by that final intersection. No card, raw source or authorization cache.
+  -- 2048 selects indexed probes versus a bulk intersection, never a row cap.
+  -- Preserve the exact text check; unbounded bpchar equality additionally lets
+  -- the existing character(9) settings index qualify the version component.
+  -- Keep the requested kind explicit so bulk scope work excludes other kinds.
+  return query
+  with matches as materialized (
+select v.dataset_kind,v.id,v.version
+    from private.display_navigation_versions_v1 v
+    where (p_kind='all' or v.dataset_kind=p_kind) and
+      (not (p_filters ? 'accessLevel') or v.access_level=p_filters->>'accessLevel')
+      and (not (p_filters ? 'geography') or v.geography_code=p_filters->>'geography')
+      and (not (p_filters ? 'classification') or v.classification_codes @> array[p_filters->>'classification'])
+      and (not (p_filters ? 'referenceYearFrom') or v.reference_year >= (p_filters->>'referenceYearFrom')::integer)
+      and (not (p_filters ? 'referenceYearTo') or v.reference_year <= (p_filters->>'referenceYearTo')::integer)
+      and (not (p_filters ? 'processSubtype') or v.process_subtype=p_filters->>'processSubtype')
+      and (not (p_filters ? 'source') or v.source=p_filters->>'source')
+      and (
+        not (p_filters ? 'classificationNodeId')
+        or (v.dataset_kind,v.id,v.version) in (
+          select m.dataset_kind,m.id,m.version
+          from private.display_navigation_membership_v1 m
+          where m.dimension='classification'
+            and m.node_id=p_filters->>'classificationNodeId'
+            and (p_kind='all' or m.dataset_kind=p_kind)
+            and (coalesce(p_filters->>'classificationScope','subtree')<>'direct' or m.direct)
+        )
+      ) and (
+        not (p_filters ? 'geographyNodeId')
+        or (v.dataset_kind,v.id,v.version) in (
+          select m.dataset_kind,m.id,m.version
+          from private.display_navigation_membership_v1 m
+          where m.dimension='geography'
+            and m.node_id=p_filters->>'geographyNodeId'
+            and (p_kind='all' or m.dataset_kind=p_kind)
+            and (coalesce(p_filters->>'geographyScope','subtree')<>'direct' or m.direct)
+        )
+      )
+
+  ), match_count as materialized (select count(*) as n from matches)
+  select matched.dataset_kind,matched.id,matched.version
+  from matches matched
+  where (select n from match_count)<=2048
+    and exists (
+      select 1 from private.display_request_visible_settings_v1 scope
+      where (p_kind='all' or scope.dataset_kind=p_kind)
+        and scope.dataset_kind=matched.dataset_kind and scope.dataset_id=matched.id
+        and scope.dataset_version=matched.version::pg_catalog.bpchar
+        and scope.dataset_version::text=matched.version
+      offset 0
+    )
+  union all
+  select matched.dataset_kind,matched.id,matched.version
+  from matches matched
+  where (select n from match_count)>2048
+    and exists (
+      select 1 from private.display_request_visible_settings_v1 scope
+      where (p_kind='all' or scope.dataset_kind=p_kind)
+        and scope.dataset_kind=matched.dataset_kind and scope.dataset_id=matched.id
+        and scope.dataset_version=matched.version::pg_catalog.bpchar
+        and scope.dataset_version::text=matched.version
+    );
+end;
+$$;
+
+
+ALTER FUNCTION "private"."display_navigation_scoped_filter_keys_v1"("p_kind" "text", "p_filters" "jsonb") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "private"."display_navigation_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer) RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE PARALLEL RESTRICTED
+    SET "search_path" TO ''
+    AS $$
+begin
+  return private.display_navigation_v1(p_kind,p_query,p_filters,p_dimension,p_parent_node_id,p_cursor,p_limit,true);
+end;
+$$;
+
+
+ALTER FUNCTION "private"."display_navigation_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer) OWNER TO "portal_display_executor";
+
+
+CREATE OR REPLACE FUNCTION "private"."display_navigation_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer, "p_include_totals" boolean) RETURNS "jsonb"
     LANGUAGE "plpgsql" STABLE PARALLEL RESTRICTED
     SET "search_path" TO ''
     AS $_$
@@ -65978,12 +66434,12 @@ begin
     then raise exception using errcode='22023',message='invalid portal request'; end if;
     v_cursor_node:=v_cursor->>'node';
   end if;
-  return private.display_navigation_impl_v1(p_kind,v_query,v_filters,p_dimension,p_parent_node_id,v_cursor_node,v_limit,v_fingerprint);
+  return private.display_navigation_impl_v1(p_kind,v_query,v_filters,p_dimension,p_parent_node_id,v_cursor_node,v_limit,v_fingerprint,p_include_totals);
 end;
 $_$;
 
 
-ALTER FUNCTION "private"."display_navigation_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer) OWNER TO "portal_display_executor";
+ALTER FUNCTION "private"."display_navigation_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer, "p_include_totals" boolean) OWNER TO "portal_display_executor";
 
 
 CREATE OR REPLACE FUNCTION "private"."display_navigation_version_matches_v3"("p_kind" "text", "p_filters" "jsonb", "p_id" "uuid", "p_version" "text") RETURNS boolean
@@ -68146,8 +68602,8 @@ declare
   v_kernel jsonb;
   v_next_cursor_payload jsonb;
 begin
-  perform private.display_assert_catalog_projection_contract_cn1();
-
+  -- The V3 validator immediately runs the complete navigation projection
+  -- guard, including this same catalog contract. Check it once per request.
   perform private.display_validate_search_v3(
     p_kind,
     coalesce(p_query, ''),
@@ -119281,6 +119737,12 @@ GRANT ALL ON FUNCTION "api"."portal_catalog_summary_v2"("p_allowed_brands" "text
 
 
 
+REVOKE ALL ON FUNCTION "api"."portal_catalog_totals_v1"("p_allowed_brands" "text"[]) FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."portal_catalog_totals_v1"("p_allowed_brands" "text"[]) TO "anon";
+GRANT ALL ON FUNCTION "api"."portal_catalog_totals_v1"("p_allowed_brands" "text"[]) TO "authenticated";
+
+
+
 REVOKE ALL ON FUNCTION "api"."portal_facets_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb") FROM PUBLIC;
 GRANT ALL ON FUNCTION "api"."portal_facets_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb") TO "anon";
 GRANT ALL ON FUNCTION "api"."portal_facets_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb") TO "authenticated";
@@ -119374,6 +119836,12 @@ GRANT ALL ON FUNCTION "api"."portal_list_versions_v1"("p_kind" "text", "p_id" "u
 REVOKE ALL ON FUNCTION "api"."portal_list_versions_v2"("p_allowed_brands" "text"[], "p_kind" "text", "p_id" "uuid", "p_cursor" "text", "p_limit" integer) FROM PUBLIC;
 GRANT ALL ON FUNCTION "api"."portal_list_versions_v2"("p_allowed_brands" "text"[], "p_kind" "text", "p_id" "uuid", "p_cursor" "text", "p_limit" integer) TO "anon";
 GRANT ALL ON FUNCTION "api"."portal_list_versions_v2"("p_allowed_brands" "text"[], "p_kind" "text", "p_id" "uuid", "p_cursor" "text", "p_limit" integer) TO "authenticated";
+
+
+
+REVOKE ALL ON FUNCTION "api"."portal_navigation_branches_v1"("p_allowed_brands" "text"[], "p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer) FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."portal_navigation_branches_v1"("p_allowed_brands" "text"[], "p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer) TO "anon";
+GRANT ALL ON FUNCTION "api"."portal_navigation_branches_v1"("p_allowed_brands" "text"[], "p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer) TO "authenticated";
 
 
 
@@ -121272,6 +121740,11 @@ GRANT ALL ON FUNCTION "private"."display_api_navigation_v1"("p_kind" "text", "p_
 
 
 
+REVOKE ALL ON FUNCTION "private"."display_api_navigation_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer, "p_include_totals" boolean) FROM PUBLIC;
+GRANT ALL ON FUNCTION "private"."display_api_navigation_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer, "p_include_totals" boolean) TO "portal_public_executor";
+
+
+
 REVOKE ALL ON FUNCTION "private"."display_api_search_flows_v1"("p_query" "text", "p_filters" "jsonb", "p_sort" "text", "p_cursor" "text", "p_limit" integer) FROM PUBLIC;
 GRANT ALL ON FUNCTION "private"."display_api_search_flows_v1"("p_query" "text", "p_filters" "jsonb", "p_sort" "text", "p_cursor" "text", "p_limit" integer) TO "portal_public_executor";
 
@@ -121514,6 +121987,11 @@ GRANT ALL ON FUNCTION "private"."display_catalog_projection_payload_v1"("p_kind"
 
 REVOKE ALL ON FUNCTION "private"."display_catalog_rows_v1"("p_kind" "text") FROM PUBLIC;
 GRANT ALL ON FUNCTION "private"."display_catalog_rows_v1"("p_kind" "text") TO "postgres";
+
+
+
+REVOKE ALL ON FUNCTION "private"."display_catalog_scoped_pattern_keys_v1"("p_kind" "text", "p_like_pattern" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "private"."display_catalog_scoped_pattern_keys_v1"("p_kind" "text", "p_like_pattern" "text") TO "portal_display_executor";
 
 
 
@@ -121772,6 +122250,11 @@ GRANT ALL ON FUNCTION "private"."display_navigation_impl_v1"("p_kind" "text", "p
 
 
 
+REVOKE ALL ON FUNCTION "private"."display_navigation_impl_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor_node_id" "text", "p_limit" integer, "p_fingerprint" "text", "p_include_totals" boolean) FROM PUBLIC;
+GRANT ALL ON FUNCTION "private"."display_navigation_impl_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor_node_id" "text", "p_limit" integer, "p_fingerprint" "text", "p_include_totals" boolean) TO "postgres";
+
+
+
 REVOKE ALL ON FUNCTION "private"."display_navigation_matched_versions_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb") FROM PUBLIC;
 GRANT ALL ON FUNCTION "private"."display_navigation_matched_versions_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb") TO "postgres";
 
@@ -121797,8 +122280,18 @@ GRANT ALL ON FUNCTION "private"."display_navigation_resolve_classification_v1"("
 
 
 
+REVOKE ALL ON FUNCTION "private"."display_navigation_scoped_filter_keys_v1"("p_kind" "text", "p_filters" "jsonb") FROM PUBLIC;
+GRANT ALL ON FUNCTION "private"."display_navigation_scoped_filter_keys_v1"("p_kind" "text", "p_filters" "jsonb") TO "portal_display_executor";
+
+
+
 REVOKE ALL ON FUNCTION "private"."display_navigation_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer) FROM PUBLIC;
 GRANT ALL ON FUNCTION "private"."display_navigation_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer) TO "postgres";
+
+
+
+REVOKE ALL ON FUNCTION "private"."display_navigation_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer, "p_include_totals" boolean) FROM PUBLIC;
+GRANT ALL ON FUNCTION "private"."display_navigation_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor" "text", "p_limit" integer, "p_include_totals" boolean) TO "postgres";
 
 
 

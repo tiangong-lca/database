@@ -10,6 +10,17 @@ declare
   v_exact_id uuid;
   v_like_pattern text;
 begin
+  -- V2 and V3 share the exact lexical candidate universe. For validated V3
+  -- filters, V2's synchronized navigation facts preserve the same predicates,
+  -- including direct/subtree hierarchy membership. Rank narrow keys and hydrate
+  -- only the page instead of building full facts/reasons for every match.
+  -- The V3 caller retains validation, fingerprint, cursor and card context.
+  if p_query <> '' or (p_filters = '{}'::jsonb and p_sort = 'relevance') then
+    return private.display_catalog_search_v2_impl(
+      p_kind,p_query,p_filters,p_sort,p_cursor_rank,p_cursor_id,
+      p_cursor_version,p_limit,p_query_fingerprint
+    );
+  end if;
   if p_query ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
     v_exact_id := p_query::uuid;
   end if;

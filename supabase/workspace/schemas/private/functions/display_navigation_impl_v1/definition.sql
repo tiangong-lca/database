@@ -6,6 +6,21 @@ CREATE OR REPLACE FUNCTION "private"."display_navigation_impl_v1"("p_kind" "text
     SET "statement_timeout" TO '8s'
     SET "work_mem" TO '32MB'
     AS $$
+begin
+  return private.display_navigation_impl_v1(p_kind,p_query,p_filters,p_dimension,p_parent_node_id,p_cursor_node_id,p_limit,p_fingerprint,true);
+end;
+$$;
+
+ALTER FUNCTION "private"."display_navigation_impl_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor_node_id" "text", "p_limit" integer, "p_fingerprint" "text") OWNER TO "portal_display_executor";
+
+CREATE OR REPLACE FUNCTION "private"."display_navigation_impl_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor_node_id" "text", "p_limit" integer, "p_fingerprint" "text", "p_include_totals" boolean) RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER PARALLEL RESTRICTED
+    SET "search_path" TO ''
+    SET "row_security" TO 'on'
+    SET "plan_cache_mode" TO 'force_custom_plan'
+    SET "statement_timeout" TO '8s'
+    SET "work_mem" TO '32MB'
+    AS $$
 declare
   v_parent jsonb;
   v_ancestors jsonb:='[]';
@@ -26,15 +41,16 @@ begin
   if p_cursor_node_id is not null then
     select n.code into v_after_code from private.display_read_navigation_node_v1 n
     where n.node_id=p_cursor_node_id and n.dimension=p_dimension
-      and n.parent_node_id is not distinct from p_parent_node_id;
+      and (n.parent_node_id=p_parent_node_id or (p_parent_node_id is null and n.parent_node_id is null));
     if not found then raise exception using errcode='22023',message='invalid portal request'; end if;
   end if;
 
   with matched as materialized (
-    select * from private.display_navigation_matched_versions_v1('all',p_query,p_filters)
+    select * from private.display_navigation_matched_versions_v1(case when p_include_totals then 'all' else p_kind end,p_query,p_filters)
+  ), matched_count as materialized (select count(*) as n from matched
   ), children as materialized (
     select n.* from private.display_read_navigation_node_v1 n
-    where n.dimension=p_dimension and n.parent_node_id is not distinct from p_parent_node_id
+    where n.dimension=p_dimension and (n.parent_node_id=p_parent_node_id or (p_parent_node_id is null and n.parent_node_id is null))
       and (n.source_file is not null or n.node_id in ('class:isic','class:cpc','class:elementary','geo:unmapped') or exists (
         select 1 from private.display_navigation_membership_v1 m
         where m.node_id=n.node_id and (p_kind='all' or m.dataset_kind=p_kind)
@@ -48,14 +64,35 @@ begin
     select * from children
     union all
     select n.* from private.display_read_navigation_node_v1 n where n.node_id=p_parent_node_id
+  ), counted_memberships as not materialized (
+    -- Reuse complete matched keys once. Small sets use the existing exact
+    -- membership key; broad and empty reads retain the branch semijoin.
+    -- 2048 chooses the measured read shape, never a candidate/count limit.
+    select m.node_id,m.direct
+    from matched k join private.display_navigation_membership_v1 m
+      on (m.dataset_kind,m.id,m.version)=(k.dataset_kind,k.id,k.version)
+      and m.dimension=p_dimension
+    where not (p_query='' and p_filters='{}'::jsonb)
+      and (select n from matched_count)<=2048
+      and (p_kind='all' or m.dataset_kind=p_kind)
+      and m.node_id=any(array(select n.node_id from targets n))
+    union all
+    select m.node_id,m.direct
+    -- Keep each branch as a parameterized protected read. Narrow branches
+    -- can use indexed visibility checks instead of hashing every visible key.
+    -- OFFSET 0 prevents flattening; it never caps, truncates or skips a row.
+    from targets t cross join lateral (
+      select m.node_id,m.direct from private.display_navigation_membership_v1 m
+      where m.dimension=p_dimension and m.node_id=t.node_id
+        and (p_kind='all' or m.dataset_kind=p_kind)
+        and ((p_query='' and p_filters='{}'::jsonb)
+          or (m.dataset_kind,m.id,m.version) in (select dataset_kind,id,version from matched))
+      offset 0
+    ) m
+    where ((p_query='' and p_filters='{}'::jsonb) or (select n from matched_count)>2048)
   ), counted as materialized (
-    select m.node_id,count(*) as count,count(*) filter(where m.direct) as direct_count
-    from private.display_navigation_membership_v1 m
-    where m.dimension=p_dimension and (p_kind='all' or m.dataset_kind=p_kind)
-      and ((p_query='' and p_filters='{}'::jsonb)
-        or (m.dataset_kind,m.id,m.version) in (select dataset_kind,id,version from matched))
-      and m.node_id = any(array(select n.node_id from targets n))
-    group by m.node_id
+    select node_id,count(*) as count,count(*) filter(where direct) as direct_count
+    from counted_memberships group by node_id
   ), decorated as materialized (
     select n.node_id,n.code,jsonb_build_object(
       'nodeId',n.node_id,'parentNodeId',n.parent_node_id,'code',n.code,'taxonomy',n.taxonomy,
@@ -70,7 +107,7 @@ begin
     coalesce((select jsonb_agg(value order by rn) from paged where rn<=p_limit),'[]'::jsonb),
     (select case when count(*)>p_limit then (array_agg(node_id order by rn))[p_limit] else null end from paged),
     (select value from decorated where node_id=p_parent_node_id),
-    (case when p_query='' and p_filters='{}'::jsonb then
+    (case when not p_include_totals then null when p_query='' and p_filters='{}'::jsonb then
       (select jsonb_build_object('process',count(*) filter(where dataset_kind='process'),'flow',count(*) filter(where dataset_kind='flow'))
        from private.display_navigation_versions_v1)
      else (select jsonb_build_object('process',count(*) filter(where dataset_kind='process'),'flow',count(*) filter(where dataset_kind='flow')) from matched) end)
@@ -92,6 +129,7 @@ begin
       'dimension',p_dimension,'kind',p_kind,'totals',v_totals,'parent',v_parent,'ancestors',v_ancestors,'nodes',v_nodes,
       'nextCursor',case when v_next is null then null else private.display_cursor_encode_v1(jsonb_build_object(
         'v',1,'fp',p_fingerprint,'dimension',p_dimension,'kind',p_kind,'parent',p_parent_node_id,'node',v_next)) end);
+    if not p_include_totals then v_result:=v_result-'totals'; end if;
     exit when octet_length(v_result::text)<=65536;
     if jsonb_array_length(v_nodes)<=1 then
       raise exception using errcode='54000',message='Portal navigation response exceeds its byte budget';
@@ -103,8 +141,12 @@ begin
 end;
 $$;
 
-ALTER FUNCTION "private"."display_navigation_impl_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor_node_id" "text", "p_limit" integer, "p_fingerprint" "text") OWNER TO "portal_display_executor";
+ALTER FUNCTION "private"."display_navigation_impl_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor_node_id" "text", "p_limit" integer, "p_fingerprint" "text", "p_include_totals" boolean) OWNER TO "portal_display_executor";
 
 REVOKE ALL ON FUNCTION "private"."display_navigation_impl_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor_node_id" "text", "p_limit" integer, "p_fingerprint" "text") FROM PUBLIC;
 
 GRANT ALL ON FUNCTION "private"."display_navigation_impl_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor_node_id" "text", "p_limit" integer, "p_fingerprint" "text") TO "postgres";
+
+REVOKE ALL ON FUNCTION "private"."display_navigation_impl_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor_node_id" "text", "p_limit" integer, "p_fingerprint" "text", "p_include_totals" boolean) FROM PUBLIC;
+
+GRANT ALL ON FUNCTION "private"."display_navigation_impl_v1"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_dimension" "text", "p_parent_node_id" "text", "p_cursor_node_id" "text", "p_limit" integer, "p_fingerprint" "text", "p_include_totals" boolean) TO "postgres";
