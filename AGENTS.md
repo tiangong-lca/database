@@ -38,8 +38,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-07
-lastReviewedCommit: dc55ad5c006e857c372c5ac87bf6d01c9f62bfb3
-lastReviewedNote: "Database #926: re-reviewed Result 7z migration and generated contracts against current Dev; retained newer migration-head assertion and concurrent Portal scope/index contracts."
+lastReviewedCommit: 42db1df5130e89e9c15f64f7ab063d307f393d83
+lastReviewedNote: "Database #728: reviewed current standard result references and exact owner/version collection; retained review permissions, schema boundary, branch/deploy and full-baseline validation requirements."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-validation.md
