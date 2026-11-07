@@ -17,9 +17,9 @@ checkPaths:
   - AGENTS.md
   - .docpact/config.yaml
   - docs/agents/**
-lastReviewedAt: 2026-08-26
-lastReviewedCommit: 12f54fe1188223d434a40799466167d5dd83c48e
-lastReviewedNote: "已为 Issue #529 复核：README 补充最小权限且 fail-closed 的 PR Preview 运行态门，以及隔离的持久化 Dev 部署边界。"
+lastReviewedAt: 2026-11-06
+lastReviewedCommit: 753e8c6a5ef1535bd751d5878b93ce458f0f573c
+lastReviewedNote: "Database #926: reviewed generated schema/type export procedures for exact 7z descriptors; authorization and rollback unchanged."
 related:
   - AGENTS.md
   - .docpact/config.yaml

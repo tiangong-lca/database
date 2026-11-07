@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-07
-lastReviewedCommit: "b449b9d820d5eaa0cbb2160bd4a43f36d93cc3fd"
-lastReviewedNote: "Database #949: re-reviewed explicit kind and typed version index qualification after failed scale gates; exact text equality, manifest/ACL isolation and deployment boundaries remain unchanged."
+lastReviewedCommit: dc55ad5c006e857c372c5ac87bf6d01c9f62bfb3
+lastReviewedNote: "Database #926: re-reviewed Result 7z migration and generated contracts against current Dev; retained newer migration-head assertion and concurrent Portal scope/index contracts."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -2235,3 +2235,7 @@ branches remain unchanged. Regenerate the five-schema workspace and public/api
 types from a blank exact candidate twice and compare bytes. Keep unrelated
 historical lint findings explicit; new-surface errors or missing FK indexes must
 be resolved. CI owns and releases only its exact study912 resources.
+
+## Final Result 7z distribution
+
+After a blank migration rebuild, run all `*final_result*.sql` suites plus the full-schema and API-closure suites sequentially on the same disposable database. Final package descriptors use exact `pair/packages/TiangongLCA-<releaseVersion>-ResultDatabase.<tidas|ilcd>.7z` paths and `result.<format>.7z` storage names; old ZIP paths, mismatched format/version and incomplete readback reject. Existing current-publication, support RLS, exact Result selection, withdrawal and historical rollback checks remain unchanged. Run Release's real Candidate/Worker/download/rollback integration separately from the transactional SQL suites: its committed synthetic fixtures invalidate empty-database assumptions. Rebuild after that fixture, then export the five schema views twice with no drift. This migration does not rewrite existing evidence or authorize hosted operations.

@@ -69,9 +69,9 @@ update public.processes set state_code=100 where id='87920000-0000-4000-8000-000
 set local session_replication_role=origin;
 \endif
 set local role authenticated;
-select is(api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')#>>'{data,file,name}','result.tidas.zip','complete readable package returns exact prebuilt TIDAS ZIP');
-select is(api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'ilcd')#>>'{data,file,name}','result.ilcd.zip','same publication returns exact prebuilt ILCD ZIP');
-select throws_ok($q$select api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'hdf5')$q$,'22023','Exact publication and supported ZIP format are required','browser download never exposes whole numeric matrices');
+select is(api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')#>>'{data,file,name}','result.tidas.7z','complete readable package returns exact prebuilt TIDAS ZIP');
+select is(api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'ilcd')#>>'{data,file,name}','result.ilcd.7z','same publication returns exact prebuilt ILCD ZIP');
+select throws_ok($q$select api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'hdf5')$q$,'22023','Exact publication and supported archive format are required','browser download never exposes whole numeric matrices');
 reset role;
 \if :{?process_support}
 create policy final_package_canary on public.processes as restrictive for select to api_internal_executor using(false);
@@ -87,7 +87,7 @@ drop policy final_package_canary on public.processes;
 drop policy final_package_canary on public.flows;
 \endif
 set local role authenticated;
-select is(api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')#>>'{data,file,name}','result.tidas.zip','removed restriction restores authorized package');
+select is(api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')#>>'{data,file,name}','result.tidas.7z','removed restriction restores authorized package');
 select set_config('request.jwt.claim.sub','87930000-0000-4000-8000-000000000001',true);
 reset role;
 create temporary table package_readback(observation jsonb);
