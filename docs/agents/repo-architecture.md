@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-07
-lastReviewedCommit: "b449b9d820d5eaa0cbb2160bd4a43f36d93cc3fd"
-lastReviewedNote: "Database #949: re-reviewed explicit kind and typed version index qualification after failed scale gates; exact text equality, manifest/ACL isolation and deployment boundaries remain unchanged."
+lastReviewedCommit: dc55ad5c006e857c372c5ac87bf6d01c9f62bfb3
+lastReviewedNote: "Database #926: re-reviewed Result 7z migration and generated contracts against current Dev; retained newer migration-head assertion and concurrent Portal scope/index contracts."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
