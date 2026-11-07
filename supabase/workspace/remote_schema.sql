@@ -14581,8 +14581,8 @@ declare
   v_current_state_code integer;
   v_ref record;
   v_ref_table text;
-  v_paired_model_exists boolean;
-  v_paired_process_exists boolean;
+  v_owner_id uuid;
+  v_owner_version text;
 begin
   create temporary table if not exists cmd_review_collect_queue (
     table_name text not null,
@@ -14708,32 +14708,21 @@ begin
     )
     on conflict do nothing;
 
-    if v_current_state_code >= 100 and not v_current.is_root then
-      if v_current.table_name = 'processes' then
-        v_paired_model_exists := api.cmd_review_get_dataset_row(
-          'lifecyclemodels',
-          v_current.dataset_id,
-          v_current.dataset_version,
-          false
-        ) is not null;
-
-        if v_paired_model_exists then
-          insert into cmd_review_collect_queue (
-            table_name,
-            dataset_id,
-            dataset_version,
-            is_root
-          )
-          values (
-            'lifecyclemodels',
-            v_current.dataset_id,
-            v_current.dataset_version,
-            false
-          )
-          on conflict do nothing;
-        end if;
+    -- An owned result leads back to its exact Model even when submitted as root.
+    -- Never infer ownership from matching UUIDs or a latest-version lookup.
+    if v_current.table_name = 'processes' then
+      v_owner_id := nullif(v_current_row->>'model_id', '')::uuid;
+      v_owner_version := coalesce(nullif(v_current_row->>'model_version', ''), v_current.dataset_version);
+      if v_owner_id is not null and api.cmd_review_get_dataset_row(
+        'lifecyclemodels', v_owner_id, v_owner_version, false
+      ) is not null then
+        insert into cmd_review_collect_queue (table_name, dataset_id, dataset_version, is_root)
+        values ('lifecyclemodels', v_owner_id, v_owner_version, false)
+        on conflict do nothing;
       end if;
+    end if;
 
+    if v_current_state_code >= 100 and not v_current.is_root then
       continue;
     end if;
 
@@ -14771,69 +14760,24 @@ begin
       on conflict do nothing;
     end loop;
 
-    if v_current.table_name = 'processes' and not v_current.is_root then
-      v_paired_model_exists := api.cmd_review_get_dataset_row(
-        'lifecyclemodels',
-        v_current.dataset_id,
-        v_current.dataset_version,
-        false
-      ) is not null;
-
-      if v_paired_model_exists then
-        insert into cmd_review_collect_queue (
-          table_name,
-          dataset_id,
-          dataset_version,
-          is_root
-        )
-        values (
-          'lifecyclemodels',
-          v_current.dataset_id,
-          v_current.dataset_version,
-          false
-        )
-        on conflict do nothing;
-      end if;
-    end if;
-
     if v_current.table_name = 'lifecyclemodels' then
-      if v_current.is_root then
-        v_paired_process_exists := api.cmd_review_get_dataset_row(
-          'processes',
-          v_current.dataset_id,
-          v_current.dataset_version,
-          false
-        ) is not null;
-
-        if v_paired_process_exists then
-          insert into cmd_review_collect_queue (
-            table_name,
-            dataset_id,
-            dataset_version,
-            is_root
-          )
-          values (
-            'processes',
-            v_current.dataset_id,
-            v_current.dataset_version,
-            false
-          )
-          on conflict do nothing;
-        end if;
-      end if;
-
-      insert into cmd_review_collect_queue (
-        table_name,
-        dataset_id,
-        dataset_version,
-        is_root
-      )
-      select
-        'processes',
-        model_process.id,
-        model_process.version,
-        false
+      -- Only exact current references plus stored ownership establish generated membership.
+      -- json_tg is frontend reconstruction data and is never review authority.
+      insert into cmd_review_collect_queue (table_name, dataset_id, dataset_version, is_root)
+      select 'processes', model_process.id, model_process.version, false
       from public.processes as model_process
+      join (
+        select refs.value->>'@refObjectId' as id, refs.value->>'@version' as version
+        from (values (v_current_row->'json_ordered'), (v_current_row->'json')) as doc(payload)
+        cross join lateral (
+          select value from jsonb_path_query(coalesce(doc.payload, '{}'::jsonb),
+            '$.lifeCycleModelDataSet.lifeCycleModelInformation.dataSetInformation.referenceToResultingProcess[*]') as item(value)
+          union
+          select value from jsonb_path_query(coalesce(doc.payload, '{}'::jsonb),
+            '$.lifeCycleModelDataSet.lifeCycleModelInformation.technology.processes.processInstance[*].referenceToProcess') as item(value)
+        ) as refs
+      ) as current_ref on current_ref.id = model_process.id::text
+        and current_ref.version = model_process.version
       where model_process.model_id = v_current.dataset_id
         and coalesce(model_process.model_version, model_process.version) = v_current.dataset_version
       on conflict do nothing;

@@ -139,6 +139,7 @@ jobs:
           supabase test db supabase/tests/20261102_final_result_zip_retirement.sql
           supabase test db supabase/tests/20260611_dataset_create_version_rpc.sql
           supabase test db supabase/tests/20260902_process_model_version.sql
+          supabase test db supabase/tests/20261107_review_current_model_results.sql
           supabase test db supabase/tests/20261009_model_bundle_process_references.sql
           supabase test db supabase/tests/20260806_identity_center_facades.sql
           supabase test db supabase/tests/20260806_lca_package_capability_facades.sql
