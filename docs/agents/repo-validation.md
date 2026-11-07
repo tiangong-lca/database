@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-07
-lastReviewedCommit: dc55ad5c006e857c372c5ac87bf6d01c9f62bfb3
-lastReviewedNote: "Database #926: re-reviewed Result 7z migration and generated contracts against current Dev; retained newer migration-head assertion and concurrent Portal scope/index contracts."
+lastReviewedCommit: 42db1df5130e89e9c15f64f7ab063d307f393d83
+lastReviewedNote: "Database #728: reviewed current standard result references and exact owner/version collection; retained review permissions, schema boundary, branch/deploy and full-baseline validation requirements."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -48,6 +48,17 @@ related:
 2. run the minimum proof for that change type
 3. add stronger proof only when the risk actually increases
 4. record exact commands, SQL files, and environments in the PR
+
+## Current Model result collection (#728)
+
+Run `supabase/tests/20261107_review_current_model_results.sql` after the ordinary
+isolated PG17 rebuild, alongside `20260811_review_json_tg_decoupling.sql` and
+`20260902_process_model_version.sql`. The new rollback-only fixture compares Model
+and independent-ID result roots, exact differing result versions, allocated
+providers, standalone inputs, ignored `json_tg` members, excluded historical
+results and singleton standard references. A minimal-table function harness is
+useful local regression evidence but does not replace full-schema, RLS, review
+command or migration qualification.
 
 ## Default Baseline
 

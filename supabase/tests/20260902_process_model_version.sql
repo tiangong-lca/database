@@ -247,6 +247,15 @@ select is(
       "parent": {
         "jsonOrdered": {
           "lifeCycleModelDataSet": {
+            "lifeCycleModelInformation": {
+              "dataSetInformation": {
+                "referenceToResultingProcess": {
+                  "@type": "process data set",
+                  "@refObjectId": "b9500000-0000-0000-000000000001",
+                  "@version": "01.05.000"
+                }
+              }
+            },
             "administrativeInformation": {
               "publicationAndOwnership": {
                 "common:dataSetVersion": "02.00.000"

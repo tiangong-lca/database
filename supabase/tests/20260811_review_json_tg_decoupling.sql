@@ -25,6 +25,7 @@ values (
   '{
     "lifeCycleModelDataSet": {
       "lifeCycleModelInformation": {
+        "dataSetInformation": {"referenceToResultingProcess": {"@type":"process data set","@refObjectId":"96800000-0000-0000-0000-000000000004","@version":"01.00.000"}},
         "technology": {
           "processes": {
             "processInstance": [{
@@ -42,6 +43,7 @@ values (
   '{
     "lifeCycleModelDataSet": {
       "lifeCycleModelInformation": {
+        "dataSetInformation": {"referenceToResultingProcess": {"@type":"process data set","@refObjectId":"96800000-0000-0000-0000-000000000004","@version":"01.00.000"}},
         "technology": {
           "processes": {
             "processInstance": [{
@@ -160,7 +162,7 @@ select ok(
       and dataset_id = '96800000-0000-0000-0000-000000000004'
       and dataset_version = '01.00.000'
   ),
-  'model_id plus exact version identifies generated model-result membership'
+  'current standard result reference plus exact owner version identifies generated membership'
 );
 
 select ok(
