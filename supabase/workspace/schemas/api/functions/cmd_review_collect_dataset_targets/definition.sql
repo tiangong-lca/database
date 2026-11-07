@@ -1,9 +1,7 @@
-CREATE OR REPLACE FUNCTION api.cmd_review_collect_dataset_targets(p_roots jsonb, p_lock boolean DEFAULT false)
- RETURNS TABLE(table_name text, dataset_id uuid, dataset_version text, state_code integer, reviews jsonb, dataset_row jsonb, is_root boolean)
- LANGUAGE plpgsql
- SECURITY DEFINER
- SET search_path TO 'api', 'private', 'public', 'util', 'extensions', 'pg_temp'
-AS $function$
+CREATE OR REPLACE FUNCTION "api"."cmd_review_collect_dataset_targets"("p_roots" "jsonb", "p_lock" boolean DEFAULT false) RETURNS TABLE("table_name" "text", "dataset_id" "uuid", "dataset_version" "text", "state_code" integer, "reviews" "jsonb", "dataset_row" "jsonb", "is_root" boolean)
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'api', 'private', 'public', 'util', 'extensions', 'pg_temp'
+    AS $_$
 declare
   v_root jsonb;
   v_current record;
@@ -226,7 +224,7 @@ begin
   from cmd_review_collect_targets as t
   order by t.is_root desc, t.table_name, t.dataset_id, t.dataset_version;
 end;
-$function$;
+$_$;
 
 ALTER FUNCTION "api"."cmd_review_collect_dataset_targets"("p_roots" "jsonb", "p_lock" boolean) OWNER TO "postgres";
 

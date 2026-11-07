@@ -251,7 +251,7 @@ select is(
               "dataSetInformation": {
                 "referenceToResultingProcess": {
                   "@type": "process data set",
-                  "@refObjectId": "b9500000-0000-0000-000000000001",
+                  "@refObjectId": "b9500000-0000-0000-0000-000000000001",
                   "@version": "01.05.000"
                 }
               }
