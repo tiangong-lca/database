@@ -32,9 +32,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-07
-lastReviewedCommit: 42db1df5130e89e9c15f64f7ab063d307f393d83
-lastReviewedNote: "Database #728: reviewed current standard result references and exact owner/version collection; retained review permissions, schema boundary, branch/deploy and full-baseline validation requirements."
+lastReviewedAt: 2026-11-08
+lastReviewedCommit: fb67fa90d31addfd62476561bb1b8398f68e34cd
+lastReviewedNote: "Database #955: reviewed published-reference read-only submit writes, full-trigger regression and unchanged schema tooling, access, branch and deployment boundaries."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -59,6 +59,17 @@ providers, standalone inputs, ignored `json_tg` members, excluded historical
 results and singleton standard references. A minimal-table function harness is
 useful local regression evidence but does not replace full-schema, RLS, review
 command or migration qualification.
+
+For #955, also run `supabase/tests/20261108_review_submit_published_readonly.sql`
+on that full-schema database. Seed setup alone suppresses triggers; submission
+runs with every production trigger enabled under the authenticated owner. The
+fixture observes actual row writes on all seven dataset tables, including
+approved 100 and commercial 200 where supported, and requires no published-row
+or timestamp change. Draft/reference freezing, independent result identity and
+version, in-review root links, denied/repeated submissions and an injected
+SQLSTATE 57014 rollback remain covered. Compare the predecessor as a negative
+control. Local timing is not production performance proof; repeat the real
+authenticated model submission after exact Dev/Main deployment.
 
 ## Default Baseline
 

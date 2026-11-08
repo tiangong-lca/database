@@ -30,9 +30,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-07
-lastReviewedCommit: 42db1df5130e89e9c15f64f7ab063d307f393d83
-lastReviewedNote: "Database #728: reviewed current standard result references and exact owner/version collection; retained review permissions, schema boundary, branch/deploy and full-baseline validation requirements."
+lastReviewedAt: 2026-11-08
+lastReviewedCommit: fb67fa90d31addfd62476561bb1b8398f68e34cd
+lastReviewedNote: "Database #955: reviewed published-reference read-only submit writes, full-trigger regression and unchanged schema tooling, access, branch and deployment boundaries."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -53,6 +53,13 @@ limits; method report adoption and actual runtime qualification remain distinct.
 ## Repo Shape
 
 This repo is organized around one checked-in Supabase project plus a generated schema-inspection workspace.
+
+Review submission collects published dependencies for access checks and its
+reference inventory, but keeps those rows read-only. `api.cmd_review_submit`
+updates only targets below state 100; approved/commercial references must not
+receive timestamp-only writes that fan out through catalog/search triggers.
+Collection, exact ownership/version checks, draft freezing and Root/Reference
+Review semantics remain unchanged.
 
 ## Study durable domain
 

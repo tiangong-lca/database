@@ -22,9 +22,9 @@ checkPaths:
   - .github/workflows/supabase-dev.yml
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
-lastReviewedAt: 2026-11-07
-lastReviewedCommit: 42db1df5130e89e9c15f64f7ab063d307f393d83
-lastReviewedNote: "Database #728: reviewed current standard result references and exact owner/version collection; retained review permissions, schema boundary, branch/deploy and full-baseline validation requirements."
+lastReviewedAt: 2026-11-08
+lastReviewedCommit: fb67fa90d31addfd62476561bb1b8398f68e34cd
+lastReviewedNote: "Database #955: reviewed published-reference read-only submit writes, full-trigger regression and unchanged schema tooling, access, branch and deployment boundaries."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

@@ -20,9 +20,9 @@ checkPaths:
   - .githooks/pre-push
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-07
-lastReviewedCommit: 42db1df5130e89e9c15f64f7ab063d307f393d83
-lastReviewedNote: "Database #728: reviewed generated workspace helper usage; scoped function readback is not full-schema rebuild qualification."
+lastReviewedAt: 2026-11-08
+lastReviewedCommit: fb67fa90d31addfd62476561bb1b8398f68e34cd
+lastReviewedNote: "Database #955: reviewed published-reference read-only submit writes, full-trigger regression and unchanged schema tooling, access, branch and deployment boundaries."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

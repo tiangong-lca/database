@@ -290,7 +290,8 @@ begin
               end,
               modified_at = now()
         where id = $2
-          and version = $3',
+          and version = $3
+          and state_code < 100',
       v_target.table_name
     ) using v_root_review_id, v_target.dataset_id, v_target.dataset_version;
 
