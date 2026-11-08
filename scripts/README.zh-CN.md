@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-08
-lastReviewedCommit: fb67fa90d31addfd62476561bb1b8398f68e34cd
-lastReviewedNote: "Database #955: reviewed published-reference read-only submit writes, full-trigger regression and unchanged schema tooling, access, branch and deployment boundaries."
+lastReviewedCommit: 016ebf4968c28909909bad8c62eaa8423eeccfdc
+lastReviewedNote: "Database #958: reviewed calculation admission proof rendering and generated schema refresh; migration source and workspace ownership remain unchanged."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -34,6 +34,10 @@ related:
 # Scripts
 
 这个目录包含用于远程 schema 导出、workspace 刷新、修改复制、migration 生成和受控数据迁移的命令行脚本。
+
+`render_calculation_admission_proof.py upgrade|transactions --output <新SQL路径>`
+将计算提交测试中引用的 fixture 和实际 migration 展开为单一文件，供容器内运行；
+不连接数据库，拒绝覆盖已有输出。前序版本、隔离和重置要求由 validation guide 维护。
 
 Database #785 的 `benchmark_advisor_invoker_paths.py` 与
 `benchmark_advisor_navigation_indexes.py` 仅接收明确复用的 `workspace-1701` /

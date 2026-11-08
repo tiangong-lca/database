@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-08
-lastReviewedCommit: fb67fa90d31addfd62476561bb1b8398f68e34cd
-lastReviewedNote: "Database #955: reviewed published-reference read-only submit writes, full-trigger regression and unchanged schema tooling, access, branch and deployment boundaries."
+lastReviewedCommit: 016ebf4968c28909909bad8c62eaa8423eeccfdc
+lastReviewedNote: "Database #958: reviewed calculation admission proof rendering and generated schema refresh; migration source and workspace ownership remain unchanged."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -34,6 +34,11 @@ related:
 # Scripts
 
 This directory contains the command-line helpers used for remote schema export, workspace refresh, change-copying, migration generation, and controlled data migrations.
+
+`render_calculation_admission_proof.py upgrade|transactions --output <new-sql>`
+expands the checked-in calculation-admission SQL's sibling includes into one
+container-runnable proof without connecting to a database. Existing output paths
+are refused. The validation guide owns predecessor, isolation and reset rules.
 
 Database #785's `benchmark_advisor_invoker_paths.py` and
 `benchmark_advisor_navigation_indexes.py` accept only the explicitly reused

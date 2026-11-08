@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-08
-lastReviewedCommit: fb67fa90d31addfd62476561bb1b8398f68e34cd
-lastReviewedNote: "Database #955: reviewed published-reference read-only submit writes, full-trigger regression and unchanged schema tooling, access, branch and deployment boundaries."
+lastReviewedCommit: 016ebf4968c28909909bad8c62eaa8423eeccfdc
+lastReviewedNote: "Database #958: reviewed certificate-scoped calculation admission, populated upgrade and committed retries; schema ownership, access, branch and deployment boundaries remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -60,6 +60,14 @@ updates only targets below state 100; approved/commercial references must not
 receive timestamp-only writes that fan out through catalog/search triggers.
 Collection, exact ownership/version checks, draft freezing and Root/Reference
 Review semantics remain unchanged.
+
+Certificate-bound calculation admission uses the Closure's frozen effective
+scope for eligibility metadata and counts. The owner-only envelope helper keeps
+exact selected-row checks shared with legacy admission; legacy manual/global
+calls retain their live global manifest. V2 retains certificate ownership,
+expiry, policy freshness and numerical artifact bindings before enqueue. New
+payload timestamps use certificate completion; exact existing jobs retain their
+original descriptive metadata so retries do not rewrite queued work.
 
 ## Study durable domain
 
