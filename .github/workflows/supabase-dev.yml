@@ -115,6 +115,19 @@ jobs:
           supabase test db supabase/tests/20260724_initial_candidate_scope_closure_e2e.sql
           supabase test db supabase/tests/20260722_scope_closure_release_binding_e2e.sql
           supabase test db supabase/tests/20260722_data_product_scope_closure_and_task_feed.sql
+          supabase test db supabase/tests/20261108_calculation_certificate_admission.sql
+
+      - name: Verify populated calculation admission upgrade and committed retry
+        run: |
+          proof_dir="$(mktemp -d "$RUNNER_TEMP/calculation-admission-XXXXXX")"
+          trap 'rm -f "$proof_dir/upgrade.sql" "$proof_dir/transactions.sql"; rmdir "$proof_dir"' EXIT
+          python3 scripts/render_calculation_admission_proof.py upgrade --output "$proof_dir/upgrade.sql"
+          python3 scripts/render_calculation_admission_proof.py transactions --output "$proof_dir/transactions.sql"
+          supabase db reset --local --version 20261108065201 --no-seed
+          supabase test db "$proof_dir/upgrade.sql"
+          supabase migration up --local
+          supabase test db "$proof_dir/transactions.sql"
+          supabase db reset --local --no-seed
 
       - name: Verify calculation export populated upgrade
         env:

@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-08
-lastReviewedCommit: fb67fa90d31addfd62476561bb1b8398f68e34cd
-lastReviewedNote: "Database #955: reviewed published-reference read-only submit writes, full-trigger regression and unchanged schema tooling, access, branch and deployment boundaries."
+lastReviewedCommit: 016ebf4968c28909909bad8c62eaa8423eeccfdc
+lastReviewedNote: "Database #958: reviewed certificate-scoped calculation admission, populated upgrade and committed retries; schema ownership, access, branch and deployment boundaries remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -695,6 +695,31 @@ production performance or hosted deployment. Those need paired Worker, Edge,
 Release and Platform qualification before rollout.
 
 ## Proof Matrix
+
+For Database #958, run `20261108_calculation_certificate_admission.sql` on a
+blank full-schema PG17 rebuild. Its 5741-process/25-method fixture uses the
+normal Closure/evidence/admission RPCs and replaces the global manifest reader
+with an exception oracle. V2 must succeed without that reader; both legacy
+selection modes must retain their original behavior. Cover live manager/owner,
+scope/policy/freshness, evidence expiry, snapshot and selected-row eligibility
+rejections, plus an injected SQLSTATE 57014 with no partial job/event/audit.
+
+On exact predecessor migration `20261108065201`, run
+`upgrade/20261108_calculation_certificate_admission.sql`. It applies the actual
+migration twice inside a rollback-only populated fixture, preserves existing
+jobs/certificates/artifacts and unchanged façade/guard definitions/ACLs, and
+retries an already admitted pre-upgrade job. After upgrading to HEAD, run
+`regression/20261108_calculation_admission_transactions.sql` on the same owned
+disposable project: it commits synthetic fixtures and submits/retries in real
+separate transactions under a 16-second statement budget. Reset that project
+afterwards. For Supabase's container runner, first expand sibling includes with
+`python3 scripts/render_calculation_admission_proof.py upgrade --output <new-sql>`
+or the `transactions` proof, then pass the rendered file to `supabase test db`.
+Run the four Closure suites below, artifact-retention, build-claim
+revocation, calculation-contract identity, OAuth and API/full-schema suites;
+regenerate schema workspace/types twice without drift. Local cardinality and
+the structural oracle do not prove hosted latency or real Worker calculation.
+Production retry remains a separately authorized operation after deployment.
 
 For Database #842, the local-contract job runs `20261014_snapshot_build_terminal_guard.sql`: terminal failures survive repeated polling without additional jobs or draft snapshots, while explicit service retry and completed-request refresh remain available. The API closure assertion must track the exact new migration head.
 
