@@ -1,0 +1,1 @@
+CREATE CONSTRAINT TRIGGER "final_result_replacement_target_guard" AFTER UPDATE ON "private"."lca_release_runs" DEFERRABLE INITIALLY DEFERRED FOR EACH ROW WHEN (("new"."replaced_by_run_id" IS NOT NULL)) EXECUTE FUNCTION "private"."final_result_replacement_target_guard"();

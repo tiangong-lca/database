@@ -32,9 +32,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-08
-lastReviewedCommit: 016ebf4968c28909909bad8c62eaa8423eeccfdc
-lastReviewedNote: "Database #958: reviewed certificate-scoped calculation admission, populated upgrade and committed retries; schema ownership, access, branch and deployment boundaries remain unchanged."
+lastReviewedAt: 2026-11-10
+lastReviewedCommit: 9c7b0d389060ef823723c19a542a7bf2b6981b89
+lastReviewedNote: "Database #961: reviewed manager version/history reads, atomic unpublished draft replacement, reservation/history guards and isolated upgrade/concurrency proof; production and approval authority remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -2286,3 +2286,36 @@ be resolved. CI owns and releases only its exact study912 resources.
 ## Final Result 7z distribution
 
 After a blank migration rebuild, run all `*final_result*.sql` suites plus the full-schema and API-closure suites sequentially on the same disposable database. Final package descriptors use exact `pair/packages/TiangongLCA-<releaseVersion>-ResultDatabase.<tidas|ilcd>.7z` paths and `result.<format>.7z` storage names; old ZIP paths, mismatched format/version and incomplete readback reject. Existing current-publication, support RLS, exact Result selection, withdrawal and historical rollback checks remain unchanged. Run Release's real Candidate/Worker/download/rollback integration separately from the transactional SQL suites: its committed synthetic fixtures invalidate empty-database assumptions. Rebuild after that fixture, then export the five schema views twice with no drift. This migration does not rewrite existing evidence or authorize hosted operations.
+
+
+## Final Result draft reservation and replacement
+
+After a blank PG17 rebuild, run
+`supabase test db supabase/tests/20261110_final_result_draft_replacement.sql`
+and the adjacent Final Result selection/readiness/activation/recovery suites,
+release-control-plane, full-schema/API closure and OAuth release-capability tests.
+The test covers definite occupancy errors, explicit predecessor/hash CAS,
+selection/history retention, wrong Candidate rejection, injected late-insert
+rollback and denial of approved history. It invokes no business approval or
+activation; approved state is an explicitly synthetic fixture.
+
+The committed concurrency proof is
+`python3 supabase/tests/regression/20261110_final_result_draft_replacement.py --container supabase_db_draft961 --project draft961 --report <new-private-json>`.
+It refuses pre-existing fixture identities and unreviewed projects. Only the
+workflow's disposable `database-engine` project is additionally admitted under
+`GITHUB_ACTIONS=true`; CI resets its own project after this proof. Eighteen
+actual two-session cases observe blocking before release across READ COMMITTED,
+REPEATABLE READ and SERIALIZABLE: competing prepares, replacements, normal
+prepare versus replacement, first-writer rollback, approved-state and manager
+revocation races. Fresh-snapshot recovery uses only the exact synthetic request;
+independent tables verify one reserved version and retained historical runs.
+No real release is approved/activated and no publication is created. Sessions
+are closed; committed synthetic rows remain only until the exact owner's reset.
+
+Also prove populated upgrade preservation of an existing prepared/sealed run,
+its exact frozen row bytes, members and seal, followed by a blank full-head
+rebuild. Export public/api/private/util/archive plus Data API types twice and
+require zero second-generation drift. The Release consumer separately qualifies
+real small Candidate/HDF5/7z files, actor HTTP preflight/replacement, lost-ACK
+readback and history navigation on the owned local database. Local receipts do
+not authorize hosted migration, production draft retirement or publication.
