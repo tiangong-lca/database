@@ -20,9 +20,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-10
-lastReviewedCommit: 9c7b0d389060ef823723c19a542a7bf2b6981b89
-lastReviewedNote: "Database #961: reviewed controlled unpublished draft replacement, version conflicts and generated contract proof; ownership, runtime and deployment boundaries remain unchanged."
+lastReviewedAt: 2026-11-11
+lastReviewedCommit: fa7c6d7cc8e7167e9b0b4daded2e2a4bf352a8a1
+lastReviewedNote: "Database #964 reviewed the stable archive download RPC, current complete-publication scope, cutover alias and exact readback contract."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml

@@ -36,58 +36,16 @@ insert into package_publication(approval) select api.cmd_final_result_release_ap
 update package_publication set publication=api.cmd_final_result_release_activate_v2('87930000-0000-4000-8000-000000000010',pg_temp.final_plan_hash(),'87960000-0000-4000-8000-000000000001',approval#>>'{data,approvalHash}','87950000-0000-4000-8000-000000000001','synthetic-complete',repeat('f',64));
 select is((select publication#>>'{data,status}' from package_publication),'current','complete Candidate activated');
 select set_config('request.jwt.claim.sub','87930000-0000-4000-8000-000000000002',true);
-select is(api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')->>'code','result_package_not_available','all Result roots selected but missing support still denies ZIP');
+select is(api.qry_final_result_download((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')#>>'{data,file,name}','result.tidas.7z','complete publication serves TIDAS even when the exact support row is absent from authoring tables');
+select is(api.qry_final_result_download((select (publication#>>'{data,publicationId}')::uuid from package_publication),'ilcd')#>>'{data,file,name}','result.ilcd.7z','complete publication serves its exact ILCD archive to a non-manager');
+select is(api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas'),api.qry_final_result_download((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas'),'transition alias returns the same descriptor');
+select is(api.qry_final_result_download('87960000-0000-4000-8000-000000000099','tidas')->>'code','result_package_not_available','unknown publication cannot fall back to the current package');
+select throws_ok($q$select api.qry_final_result_download((select (publication#>>'{data,publicationId}')::uuid from package_publication),'hdf5')$q$,'22023','Exact publication and supported archive format are required','browser download never exposes whole numeric matrices');
 reset role;
--- Only synthetic support insertion bypasses unrelated extraction/network writers.
-set local session_replication_role=replica;
-insert into public.flows(id,version,json,user_id,state_code) values('87920000-0000-4000-8000-000000000050','01.00.000','{}','87930000-0000-4000-8000-000000000001',0);
-set local session_replication_role=origin;
+select ok(not has_function_privilege('anon','api.qry_final_result_download(uuid,text)','execute') and not has_function_privilege('service_role','api.qry_final_result_download(uuid,text)','execute'),'stable download RPC is authenticated-only');
 set local role authenticated;
-select is(api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')->>'code','result_package_not_available','complete prebuilt ZIP cannot expose another owner private support');
-reset role;
-set local session_replication_role=replica;
-update public.flows set state_code=100 where id='87920000-0000-4000-8000-000000000050';
-set local session_replication_role=origin;
-\if :{?process_support}
-set local role authenticated;
-select is(api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')->>'code','result_package_not_available','same UUID Flow cannot satisfy a Process dependency');
-reset role;
-set local session_replication_role=replica;
-insert into public.processes(id,version,json,user_id,state_code) values('87920000-0000-4000-8000-000000000050','01.00.000','{}','87930000-0000-4000-8000-000000000001',0);
-set local session_replication_role=origin;
-set local role authenticated;
-select is(api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')->>'code','result_package_not_available','private Process support denies ZIP to another actor');
-reset role;
-set local session_replication_role=replica;
-update public.processes set state_code=120 where id='87920000-0000-4000-8000-000000000050';
-set local session_replication_role=origin;
-set local role authenticated;
-select is(api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')->>'code','result_package_not_available','state 120 cannot satisfy Unit Process support');
-reset role;
-set local session_replication_role=replica;
-update public.processes set state_code=100 where id='87920000-0000-4000-8000-000000000050';
-set local session_replication_role=origin;
-\endif
-set local role authenticated;
-select is(api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')#>>'{data,file,name}','result.tidas.7z','complete readable package returns exact prebuilt TIDAS ZIP');
-select is(api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'ilcd')#>>'{data,file,name}','result.ilcd.7z','same publication returns exact prebuilt ILCD ZIP');
-select throws_ok($q$select api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'hdf5')$q$,'22023','Exact publication and supported archive format are required','browser download never exposes whole numeric matrices');
-reset role;
-\if :{?process_support}
-create policy final_package_canary on public.processes as restrictive for select to api_internal_executor using(false);
-\else
-create policy final_package_canary on public.flows as restrictive for select to api_internal_executor using(false);
-\endif
-set local role authenticated;
-select is(api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')->>'code','result_package_not_available','cached public ZIP check observes newly restrictive support policy');
-reset role;
-\if :{?process_support}
-drop policy final_package_canary on public.processes;
-\else
-drop policy final_package_canary on public.flows;
-\endif
-set local role authenticated;
-select is(api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')#>>'{data,file,name}','result.tidas.7z','removed restriction restores authorized package');
+select set_config('request.jwt.claim.sub','',true);
+select is(api.qry_final_result_download((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')->>'code','auth_required','a missing actor is denied');
 select set_config('request.jwt.claim.sub','87930000-0000-4000-8000-000000000001',true);
 reset role;
 create temporary table package_readback(observation jsonb);
@@ -97,12 +55,12 @@ insert into package_readback select jsonb_build_object('schemaVersion','tiangong
  'startedAt',clock_timestamp(),'verifiedAt',clock_timestamp(),'observationsSha256',repeat('a',64),'downloads','{"tidas":{"status":"unavailable"},"ilcd":{"status":"unavailable"}}'::jsonb) from package_publication;
 grant select,update on package_readback to authenticated;
 set local role authenticated;
-select is(api.cmd_final_result_release_readback_v2('87930000-0000-4000-8000-000000000010',pg_temp.final_plan_hash(),(select observation::text from package_readback))->>'code','final_result_readback_changed','readable ZIPs cannot be recorded as unavailable');
-update package_readback set observation=jsonb_set(observation,'{downloads}',jsonb_build_object('tidas',jsonb_build_object('status','verified','file',api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')#>'{data,file}'),'ilcd',jsonb_build_object('status','verified','file',api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'ilcd')#>'{data,file}')));
-select is(api.cmd_final_result_release_readback_v2('87930000-0000-4000-8000-000000000010',pg_temp.final_plan_hash(),(select jsonb_set(observation,'{downloads,tidas,file,sha256}',to_jsonb(repeat('f',64)))::text from package_readback))->>'code','final_result_readback_changed','wrong ZIP digest is rejected');
-select is(api.cmd_final_result_release_readback_v2('87930000-0000-4000-8000-000000000010',pg_temp.final_plan_hash(),(select observation::text from package_readback))->>'ok','true','both exact authorized ZIP attestations can be recorded');
+select is(api.cmd_final_result_release_readback_v2('87930000-0000-4000-8000-000000000010',pg_temp.final_plan_hash(),(select observation::text from package_readback))->>'code','final_result_readback_changed','available archives cannot be recorded as unavailable');
+update package_readback set observation=jsonb_set(observation,'{downloads}',jsonb_build_object('tidas',jsonb_build_object('status','verified','file',api.qry_final_result_download((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')#>'{data,file}'),'ilcd',jsonb_build_object('status','verified','file',api.qry_final_result_download((select (publication#>>'{data,publicationId}')::uuid from package_publication),'ilcd')#>'{data,file}')));
+select is(api.cmd_final_result_release_readback_v2('87930000-0000-4000-8000-000000000010',pg_temp.final_plan_hash(),(select jsonb_set(observation,'{downloads,tidas,file,sha256}',to_jsonb(repeat('f',64)))::text from package_readback))->>'code','final_result_readback_changed','wrong archive digest is rejected');
+select is(api.cmd_final_result_release_readback_v2('87930000-0000-4000-8000-000000000010',pg_temp.final_plan_hash(),(select observation::text from package_readback))->>'ok','true','both exact archive attestations can be recorded');
 select api.cmd_lca_release_unpublish((select (publication#>>'{data,publicationId}')::uuid from package_publication),'synthetic complete package withdrawal');
-select is(api.qry_final_result_download_v2((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')->>'code','result_package_not_available','withdrawn package cannot get a fresh download descriptor');
+select is(api.qry_final_result_download((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')->>'code','result_package_not_available','withdrawn package cannot get a fresh download descriptor');
 reset role;
 select * from finish();
 rollback;
