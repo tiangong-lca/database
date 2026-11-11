@@ -22,9 +22,9 @@ checkPaths:
   - .github/workflows/supabase-dev.yml
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
-lastReviewedAt: 2026-11-08
-lastReviewedCommit: 016ebf4968c28909909bad8c62eaa8423eeccfdc
-lastReviewedNote: "Database #958: reviewed certificate-scoped calculation admission, populated upgrade and committed retries; schema ownership, access, branch and deployment boundaries remain unchanged."
+lastReviewedAt: 2026-11-10
+lastReviewedCommit: 9c7b0d389060ef823723c19a542a7bf2b6981b89
+lastReviewedNote: "Database #961: reviewed controlled unpublished draft replacement, version conflicts and generated contract proof; ownership, runtime and deployment boundaries remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

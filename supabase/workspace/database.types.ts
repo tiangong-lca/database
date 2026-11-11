@@ -299,6 +299,15 @@ export type Database = {
         }
         Returns: Json
       }
+      cmd_final_result_release_replace_v2: {
+        Args: {
+          p_idempotency_key: string
+          p_plan_text: string
+          p_replace_plan_hash: string
+          p_replace_run_id: string
+        }
+        Returns: Json
+      }
       cmd_final_result_release_seal_v2: {
         Args: { p_publish_plan_hash: string; p_release_run_id: string }
         Returns: Json
@@ -2210,6 +2219,10 @@ export type Database = {
         Args: { p_approval_id: string; p_release_run_id: string }
         Returns: Json
       }
+      qry_final_result_release_draft_v2: {
+        Args: { p_release_run_id: string }
+        Returns: Json
+      }
       qry_final_result_release_probe_page_v2: {
         Args: {
           p_after_artifact_id?: string
@@ -2232,6 +2245,10 @@ export type Database = {
       }
       qry_final_result_release_v2: {
         Args: { p_release_run_id: string }
+        Returns: Json
+      }
+      qry_final_result_release_version_v2: {
+        Args: { p_release_version: string }
         Returns: Json
       }
       qry_identity_get_mine: {

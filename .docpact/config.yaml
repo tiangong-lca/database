@@ -1,8 +1,8 @@
 version: 1
 layout: repo
-lastReviewedAt: "2026-11-08"
-lastReviewedCommit: "016ebf4968c28909909bad8c62eaa8423eeccfdc"
-lastReviewedNote: "Database #958: reviewed certificate-scoped calculation admission, populated upgrade and committed retries; schema ownership, access, branch and deployment boundaries remain unchanged."
+lastReviewedAt: 2026-11-10
+lastReviewedCommit: 9c7b0d389060ef823723c19a542a7bf2b6981b89
+lastReviewedNote: "Database #961: reviewed manager version/history reads, atomic unpublished draft replacement, reservation/history guards and isolated upgrade/concurrency proof; production and approval authority remain unchanged."
 
 # Keep deterministic governance facts here.
 # AGENTS.md remains the repo contract entrypoint.

@@ -38,6 +38,7 @@ begin
        (old.status = 'prepared' and new.status in ('ready_for_approval', 'failed', 'abandoned'))
        or (old.status = 'ready_for_approval' and new.status in ('approved', 'failed', 'abandoned'))
        or (old.status = 'approved' and new.status in ('published', 'failed', 'abandoned'))
+       or (old.publication_format='final-result-pair.v2' and old.status='failed' and new.status='abandoned' and new.replaced_by_run_id is not null)
        or (old.status = 'published' and new.status in ('readback_verified', 'unpublished'))
        or (old.status = 'readback_verified' and new.status = 'unpublished')
      ) then
