@@ -30,9 +30,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-08
-lastReviewedCommit: 016ebf4968c28909909bad8c62eaa8423eeccfdc
-lastReviewedNote: "Database #958: reviewed certificate-scoped calculation admission, populated upgrade and committed retries; schema ownership, access, branch and deployment boundaries remain unchanged."
+lastReviewedAt: 2026-11-10
+lastReviewedCommit: 9c7b0d389060ef823723c19a542a7bf2b6981b89
+lastReviewedNote: "Database #961: reviewed manager version/history reads, atomic unpublished draft replacement, reservation/history guards and isolated upgrade/concurrency proof; production and approval authority remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -254,6 +254,38 @@ remain required in the subsequent adapter. Stored files and sealed membership
 alone are not readiness or authorization. Rollback preparation only admits a
 terminal v2 publication referencing the exact retained Candidate; it never
 reactivates a historical row.
+
+## Final Result unpublished draft replacement
+
+A Final Result release version is reserved by one unreplaced run. Existing runs
+receive a null `replaced_by_run_id` without rewriting their content; an ordinary
+failed or abandoned run still reserves its version. Legacy runs and published
+version uniqueness remain unchanged. Only an explicit same-version replacement
+can set the predecessor's immutable-once successor pointer and retire it as
+`abandoned`. The deferred self-reference and private target guard require a real
+same-version Final Result successor; frozen plans, members, seals and audit remain.
+
+Authenticated manager-only `qry_final_result_release_version_v2` exposes bounded
+occupancy and replaceability; `qry_final_result_release_draft_v2` exposes exact
+predecessor/hash and successor links for one run. Both are read-only, use
+`EDGE-REL-01`, and expose no contents, credentials or unrestricted table reads.
+`cmd_final_result_release_replace_v2` requires new plan bytes/idempotency plus
+exact predecessor run/hash. Version, actor/idempotency and run locks serialize
+contenders; the manager row is rechecked and share-locked before mutation.
+Only `prepared`, `ready_for_approval` or `failed` Final Result runs without any
+approval or publication history qualify. Role revocation, stale identity,
+invalid new Candidate/current precondition or a later insert failure cannot
+leave a retired predecessor without its new run. Exact replay preserves the
+same predecessor/successor and original result rather than replacing again.
+
+Ordinary prepare returns `final_result_release_version_conflict`; stale CAS and
+nonreplaceable history return their own safe codes and bounded version state.
+PostgreSQL exceptions remain transaction failures, not a publication approval.
+The deferred target guard is a closed private SECURITY DEFINER trigger because
+commit runs after the manager RPC restores caller privileges; it grants no
+callable actor or service-role capability. Replaced drafts remain readable but
+cannot be resumed into approval/publication. This changes no Result content
+version, numeric artifact, storage binding, readiness, approval or activation rule.
 
 ## Final Result query runtime and private probes
 

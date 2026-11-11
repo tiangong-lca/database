@@ -106,6 +106,14 @@ jobs:
           git diff --exit-code -- supabase/workspace
           test -z "$(git status --porcelain --untracked-files=all -- supabase/workspace)"
 
+      - name: Verify controlled Final Result draft replacement
+        run: |
+          supabase test db supabase/tests/20261110_final_result_draft_replacement.sql
+          python3 supabase/tests/regression/20261110_final_result_draft_replacement.py \
+            --container supabase_db_database-engine --project database-engine \
+            --report "$RUNNER_TEMP/final-result-draft-races.json"
+          supabase db reset --no-seed
+
       - name: Verify Scope Closure scanner admission and populated upgrade
         env:
           SCOPE_CLOSURE_UPGRADE_ALLOW_RESET: isolated
