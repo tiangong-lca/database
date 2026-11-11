@@ -32,9 +32,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-10
-lastReviewedCommit: 9c7b0d389060ef823723c19a542a7bf2b6981b89
-lastReviewedNote: "Database #961: reviewed manager version/history reads, atomic unpublished draft replacement, reservation/history guards and isolated upgrade/concurrency proof; production and approval authority remain unchanged."
+lastReviewedAt: 2026-11-11
+lastReviewedCommit: fa7c6d7cc8e7167e9b0b4daded2e2a4bf352a8a1
+lastReviewedNote: "Database #964 reviewed the stable archive download RPC, current complete-publication scope, cutover alias and exact readback contract."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -2285,7 +2285,7 @@ be resolved. CI owns and releases only its exact study912 resources.
 
 ## Final Result 7z distribution
 
-After a blank migration rebuild, run all `*final_result*.sql` suites plus the full-schema and API-closure suites sequentially on the same disposable database. Final package descriptors use exact `pair/packages/TiangongLCA-<releaseVersion>-ResultDatabase.<tidas|ilcd>.7z` paths and `result.<format>.7z` storage names; old ZIP paths, mismatched format/version and incomplete readback reject. Existing current-publication, support RLS, exact Result selection, withdrawal and historical rollback checks remain unchanged. Run Release's real Candidate/Worker/download/rollback integration separately from the transactional SQL suites: its committed synthetic fixtures invalidate empty-database assumptions. Rebuild after that fixture, then export the five schema views twice with no drift. This migration does not rewrite existing evidence or authorize hosted operations.
+After a blank migration rebuild, run all `*final_result*.sql` suites plus the full-schema and API-closure suites sequentially on the same disposable database. Final package descriptors use exact `pair/packages/TiangongLCA-<releaseVersion>-ResultDatabase.<tidas|ilcd>.7z` paths and `result.<format>.7z` storage names; old ZIP paths, mismatched format/version and incomplete readback reject. The stable download RPC requires an authenticated actor, current publication, sealed full Candidate selection and exact registered file. Verify both formats, temporary alias parity, subset and withdrawal denial, and correct readback evidence without inserting authoring support rows. Run Release's real Candidate/Worker/download/rollback integration separately from the transactional SQL suites: its committed synthetic fixtures invalidate empty-database assumptions. Rebuild after that fixture, then export the five schema views twice with no drift. This migration does not rewrite existing evidence or authorize hosted operations.
 
 
 ## Final Result draft reservation and replacement

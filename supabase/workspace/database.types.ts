@@ -2202,6 +2202,10 @@ export type Database = {
         Args: { proc: Database["public"]["Tables"]["processes"]["Row"] }
         Returns: string
       }
+      qry_final_result_download: {
+        Args: { p_format: string; p_publication_id: string }
+        Returns: Json
+      }
       qry_final_result_download_v2: {
         Args: { p_format: string; p_publication_id: string }
         Returns: Json
