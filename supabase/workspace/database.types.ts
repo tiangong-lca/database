@@ -2206,10 +2206,6 @@ export type Database = {
         Args: { p_format: string; p_publication_id: string }
         Returns: Json
       }
-      qry_final_result_download_v2: {
-        Args: { p_format: string; p_publication_id: string }
-        Returns: Json
-      }
       qry_final_result_publication_head_v2: { Args: never; Returns: Json }
       qry_final_result_query_v2: {
         Args: {
