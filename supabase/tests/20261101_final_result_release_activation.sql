@@ -81,7 +81,7 @@ select is(api.qry_final_result_query_v2('87920000-0000-4000-8000-000000000011','
 select is(api.qry_final_result_query_v2('87920000-0000-4000-8000-000000000012','01.00.001')->>'code','published_result_not_available','no nearest-version fallback');
 select is(api.qry_final_result_query_v2('87920000-0000-4000-8000-000000000012','01.00.000','87960000-0000-4000-8000-000000000099')->>'code','published_result_not_available','wrong publication never falls back to current');
 select is(api.qry_source_final_results_v2('87920000-0000-4000-8000-000000000030','01.00.000')->>'code','source_not_available','parent source cannot be disclosed by published Derived C');
-select is(api.qry_final_result_download_v2(pg_temp.published_id(),'tidas')->>'code','result_package_not_available','prebuilt ZIP cannot expose an unselected Result');
+select is(api.qry_final_result_download(pg_temp.published_id(),'tidas')->>'code','result_package_not_available','prebuilt ZIP cannot expose an unselected Result');
 reset role;
 -- Synthetic fixture only: suppress unrelated extraction/network writers.
 set local session_replication_role=replica;
@@ -98,22 +98,7 @@ set local role authenticated;
 select is(api.qry_source_final_results_v2('87920000-0000-4000-8000-000000000030','01.00.000')->>'code','source_not_available','future restrictive source policy is honored');
 reset role;
 drop policy final_result_source_canary on public.processes;
-select is(private.final_result_candidate_support_readable(pg_temp.candidate_fixture()#>>'{receipt,candidateSha256}'),false,'missing support row denies complete ZIP even under internal reader');
--- Synthetic fixture only: suppress unrelated extraction/network writers.
-set local session_replication_role=replica;
-insert into public.flows(id,version,json,user_id,state_code) values('87920000-0000-4000-8000-000000000050','01.00.000','{}','87930000-0000-4000-8000-000000000001',0);
-set local session_replication_role=origin;
-select is(private.final_result_candidate_support_readable(pg_temp.candidate_fixture()#>>'{receipt,candidateSha256}'),false,'existing private support row also denies ZIP');
--- Synthetic fixture only: suppress unrelated extraction/network writers.
-set local session_replication_role=replica;
-update public.flows set state_code=100 where id='87920000-0000-4000-8000-000000000050';
-set local session_replication_role=origin;
-select is(private.final_result_candidate_support_readable(pg_temp.candidate_fixture()#>>'{receipt,candidateSha256}'),true,'public support closure passes RLS');
-create policy final_result_support_canary on public.flows as restrictive for select to api_internal_executor using(false);
-select is(private.final_result_candidate_support_readable(pg_temp.candidate_fixture()#>>'{receipt,candidateSha256}'),false,'future restrictive support policy is honored');
-drop policy final_result_support_canary on public.flows;
 set local role authenticated;
-select is(api.qry_final_result_download_v2(pg_temp.published_id(),'tidas')->>'code','result_package_not_available','readable support does not bypass missing selected root');
 select set_config('request.jwt.claim.sub','87930000-0000-4000-8000-000000000001',true);
 select is(api.cmd_lca_release_unpublish(pg_temp.published_id(),'synthetic withdrawal')->>'ok','true','shared release authority can withdraw v2');
 select is(api.qry_final_result_query_v2('87920000-0000-4000-8000-000000000010','01.00.000')->>'code','published_result_not_available','withdrawal removes public query capability');

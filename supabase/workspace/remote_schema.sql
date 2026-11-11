@@ -11203,7 +11203,7 @@ begin
    raise exception using errcode='22023',message='Both public ZIP outcomes are required'; end if;
  foreach v_format in array array['tidas','ilcd'] loop
    v_download:=v_observation->'downloads'->v_format;
-   v_expected:=api.qry_final_result_download_v2(v_pub.id,v_format);
+   v_expected:=api.qry_final_result_download(v_pub.id,v_format);
    if (v_expected->>'ok')::boolean then
      if v_download is distinct from jsonb_build_object('status','verified','file',v_expected#>'{data,file}') then
        return private.lca_release_error('final_result_readback_changed',409,'Authorized ZIP bytes must be independently verified'); end if;
@@ -26985,31 +26985,54 @@ $$;
 ALTER FUNCTION "api"."processes_embedding_ft_input"("proc" "public"."processes") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "api"."qry_final_result_download_v2"("p_publication_id" "uuid", "p_format" "text") RETURNS "jsonb"
+CREATE OR REPLACE FUNCTION "api"."qry_final_result_download"("p_publication_id" "uuid", "p_format" "text") RETURNS "jsonb"
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
-    SET "statement_timeout" TO '20s'
     AS $$
-declare v_candidate text; v_target text; v_file jsonb;
+declare
+  v_candidate text;
+  v_target text;
+  v_file jsonb;
 begin
- if auth.uid() is null then return private.lca_release_error('auth_required',401,'Authentication required'); end if;
- if p_publication_id is null or p_format is null or p_format not in ('tidas','ilcd') then
-   raise exception using errcode='22023',message='Exact publication and supported archive format are required'; end if;
- select plan.candidate_hash,plan.target_hash into v_candidate,v_target from private.lca_release_publications p
- join private.final_result_publication_bindings b on b.publication_id=p.id
- join private.final_result_release_plans plan on plan.release_run_id=p.release_run_id
- where p.id=p_publication_id and p.is_current and p.status='current';
- if v_candidate is null or exists(select 1 from private.final_result_candidate_artifacts ca
-   join private.final_result_query_rows q on q.artifact_id=ca.artifact_id where ca.candidate_hash=v_candidate
-   and not exists(select 1 from private.lca_release_publications p join private.final_result_release_members m on m.release_run_id=p.release_run_id
-     where p.id=p_publication_id and m.result_id=q.result_id and m.result_version=q.result_version))
-   or not private.final_result_candidate_support_readable(v_candidate) then
-   return private.lca_release_error('result_package_not_available',404,'No complete prebuilt archive is authorized for this actor'); end if;
- select f.value into v_file from private.final_result_candidate_storage s cross join lateral jsonb_array_elements(s.receipt->'files') f
-   where s.candidate_hash=v_candidate and s.target_hash=v_target and f.value->>'name'='result.'||p_format||'.7z';
- if v_file is null then return private.lca_release_error('result_package_not_available',404,'No complete prebuilt archive is authorized for this actor'); end if;
- return jsonb_build_object('ok',true,'data',jsonb_build_object('publicationId',p_publication_id,'candidateHash',v_candidate,'targetHash',v_target,'file',v_file));
+  if auth.uid() is null then
+    return private.lca_release_error('auth_required', 401, 'Authentication required');
+  end if;
+  if p_publication_id is null or p_format is null or p_format not in ('tidas', 'ilcd') then
+    raise exception using errcode = '22023', message = 'Exact publication and supported archive format are required';
+  end if;
+
+  select plan.candidate_hash, plan.target_hash, file.value
+    into v_candidate, v_target, v_file
+  from private.lca_release_publications p
+  join private.final_result_publication_bindings binding on binding.publication_id = p.id
+  join private.final_result_release_plans plan on plan.release_run_id = p.release_run_id
+  join private.final_result_release_selection_seals seal on seal.release_run_id = plan.release_run_id
+  join private.final_result_candidates candidate on candidate.candidate_hash = plan.candidate_hash
+    and candidate.result_count = plan.selection_count
+  join private.final_result_candidate_storage storage on storage.candidate_hash = plan.candidate_hash
+    and storage.target_hash = plan.target_hash
+  cross join lateral jsonb_array_elements(storage.receipt->'files') file
+  where p.id = p_publication_id and p.is_current and p.status = 'current'
+    and file.value->>'name' = 'result.' || p_format || '.7z';
+
+  if not found then
+    return private.lca_release_error('result_package_not_available', 404, 'No complete prebuilt archive is available for this publication');
+  end if;
+  return jsonb_build_object('ok', true, 'data', jsonb_build_object(
+    'publicationId', p_publication_id, 'candidateHash', v_candidate,
+    'targetHash', v_target, 'file', v_file));
 end;
+$$;
+
+
+ALTER FUNCTION "api"."qry_final_result_download"("p_publication_id" "uuid", "p_format" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "api"."qry_final_result_download_v2"("p_publication_id" "uuid", "p_format" "text") RETURNS "jsonb"
+    LANGUAGE "sql" STABLE
+    SET "search_path" TO ''
+    AS $$
+  select api.qry_final_result_download(p_publication_id, p_format);
 $$;
 
 
@@ -69078,37 +69101,6 @@ $_$;
 
 
 ALTER FUNCTION "private"."display_validate_search_v3"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_sort" "text", "p_limit" integer) OWNER TO "portal_display_executor";
-
-
-CREATE OR REPLACE FUNCTION "private"."final_result_candidate_support_readable"("p_candidate" "text") RETURNS boolean
-    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
-    SET "search_path" TO ''
-    SET "row_security" TO 'on'
-    AS $$
-begin
- return not exists(
-   select m.dataset_kind,m.dataset_id,m.dataset_version from private.final_result_candidate_members m
-     where m.candidate_hash=p_candidate and m.dataset_role<>'result_process'
-   except
-   (select 'process',m.dataset_id,m.dataset_version from private.final_result_candidate_members m join public.processes d on d.id=m.dataset_id and d.version=m.dataset_version::character(9)
-       where m.candidate_hash=p_candidate and m.dataset_kind='process' and d.state_code<>120
-    union all select 'flow',m.dataset_id,m.dataset_version from private.final_result_candidate_members m join public.flows d on d.id=m.dataset_id and d.version=m.dataset_version::character(9)
-       where m.candidate_hash=p_candidate and m.dataset_kind='flow'
-    union all select 'flowproperty',m.dataset_id,m.dataset_version from private.final_result_candidate_members m join public.flowproperties d on d.id=m.dataset_id and d.version=m.dataset_version::character(9)
-       where m.candidate_hash=p_candidate and m.dataset_kind='flowproperty'
-    union all select 'unitgroup',m.dataset_id,m.dataset_version from private.final_result_candidate_members m join public.unitgroups d on d.id=m.dataset_id and d.version=m.dataset_version::character(9)
-       where m.candidate_hash=p_candidate and m.dataset_kind='unitgroup'
-    union all select 'lciamethod',m.dataset_id,m.dataset_version from private.final_result_candidate_members m join public.lciamethods d on d.id=m.dataset_id and d.version=m.dataset_version::character(9)
-       where m.candidate_hash=p_candidate and m.dataset_kind='lciamethod'
-    union all select 'contact',m.dataset_id,m.dataset_version from private.final_result_candidate_members m join public.contacts d on d.id=m.dataset_id and d.version=m.dataset_version::character(9)
-       where m.candidate_hash=p_candidate and m.dataset_kind='contact'
-    union all select 'source',m.dataset_id,m.dataset_version from private.final_result_candidate_members m join public.sources d on d.id=m.dataset_id and d.version=m.dataset_version::character(9)
-       where m.candidate_hash=p_candidate and m.dataset_kind='source'));
-end;
-$$;
-
-
-ALTER FUNCTION "private"."final_result_candidate_support_readable"("p_candidate" "text") OWNER TO "api_internal_executor";
 
 
 CREATE OR REPLACE FUNCTION "private"."final_result_fresh_readiness"("p_verification" "uuid", "p_run" "uuid", "p_plan_hash" "text", "p_actor" "uuid") RETURNS "jsonb"
@@ -120201,6 +120193,11 @@ GRANT ALL ON FUNCTION "api"."processes_embedding_ft_input"("proc" "public"."proc
 
 
 
+REVOKE ALL ON FUNCTION "api"."qry_final_result_download"("p_publication_id" "uuid", "p_format" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."qry_final_result_download"("p_publication_id" "uuid", "p_format" "text") TO "authenticated";
+
+
+
 REVOKE ALL ON FUNCTION "api"."qry_final_result_download_v2"("p_publication_id" "uuid", "p_format" "text") FROM PUBLIC;
 GRANT ALL ON FUNCTION "api"."qry_final_result_download_v2"("p_publication_id" "uuid", "p_format" "text") TO "authenticated";
 
@@ -122717,11 +122714,6 @@ GRANT ALL ON FUNCTION "private"."display_validate_search_v1"("p_kind" "text", "p
 
 REVOKE ALL ON FUNCTION "private"."display_validate_search_v3"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_sort" "text", "p_limit" integer) FROM PUBLIC;
 GRANT ALL ON FUNCTION "private"."display_validate_search_v3"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_sort" "text", "p_limit" integer) TO "postgres";
-
-
-
-REVOKE ALL ON FUNCTION "private"."final_result_candidate_support_readable"("p_candidate" "text") FROM PUBLIC;
-GRANT ALL ON FUNCTION "private"."final_result_candidate_support_readable"("p_candidate" "text") TO "postgres";
 
 
 

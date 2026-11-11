@@ -64,7 +64,7 @@ begin
    raise exception using errcode='22023',message='Both public ZIP outcomes are required'; end if;
  foreach v_format in array array['tidas','ilcd'] loop
    v_download:=v_observation->'downloads'->v_format;
-   v_expected:=api.qry_final_result_download_v2(v_pub.id,v_format);
+   v_expected:=api.qry_final_result_download(v_pub.id,v_format);
    if (v_expected->>'ok')::boolean then
      if v_download is distinct from jsonb_build_object('status','verified','file',v_expected#>'{data,file}') then
        return private.lca_release_error('final_result_readback_changed',409,'Authorized ZIP bytes must be independently verified'); end if;

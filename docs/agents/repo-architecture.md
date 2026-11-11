@@ -30,9 +30,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-10
-lastReviewedCommit: 9c7b0d389060ef823723c19a542a7bf2b6981b89
-lastReviewedNote: "Database #961: reviewed manager version/history reads, atomic unpublished draft replacement, reservation/history guards and isolated upgrade/concurrency proof; production and approval authority remain unchanged."
+lastReviewedAt: 2026-11-11
+lastReviewedCommit: fa7c6d7cc8e7167e9b0b4daded2e2a4bf352a8a1
+lastReviewedNote: "Database #964 reviewed the stable archive download RPC, current complete-publication scope, cutover alias and exact readback contract."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -401,16 +401,17 @@ pagination tied to the same current publication. The DTO explicitly identifies
 legacy/v2 format; callers must select the matching contract rather than falling
 back from a failed v2 request to a legacy reader.
 
-`qry_final_result_download_v2` returns an exact prebuilt TIDAS/ILCD ZIP descriptor
-only while that publication is current, every Candidate Result root is selected,
-and all non-result Candidate members are readable under existing dataset RLS.
-Missing/private support or a partial selection denies download; there is no ZIP
-cropping, dynamic archive construction or whole-HDF5 browser download. Edge owns
-configured-target verification and short-lived URL signing. Both RLS helpers run
-as the established NOLOGIN/NOBYPASSRLS internal executor. PL/pgSQL SPI plans retain
-policy invalidation even when an outer definer was already cached; tests add and
-remove restrictive policies after successful reads. The internal Candidate member
-SELECT policy exists only for this closed role, not browser or service raw access.
+`qry_final_result_download` returns the exact registered TIDAS or ILCD 7z
+file for the current complete publication to an authenticated caller. The
+immutable selection seal and Candidate Result count prove complete selection;
+Candidate registration validates unique Result identities and exact artifacts.
+The published archive is the distribution unit, including LCIA Methods. Its
+lookup uses the current publication and registered file without reading live
+authoring dataset state or RLS. Partial selections cannot distribute the
+whole archive. Edge verifies the configured target, signs the exact file and
+rechecks the current descriptor before returning the short-lived URL.
+`qry_final_result_download_v2` delegates to the stable RPC until Edge cutover
+has been verified. The source Process reader continues to enforce live RLS.
 
 Six legacy commands/readers reject v2 explicitly at verified dispatch boundaries.
 Legacy bodies, owners/configuration/ACLs otherwise retain their predecessor
@@ -1956,17 +1957,17 @@ Database #846 adds `api.svc_lca_calculation_export(uuid,uuid,text,boolean)`: ser
 New scope-closure execution fingerprints and ordinary snapshot-build queue keys include the active opaque identity independently of scanner and data-policy versions. Recorded actor/token retries return the original closure task even after activation; newly recorded tokens additionally reject a changed input payload. Existing immutable packages and historical task IDs stay readable. `api.svc_lca_snapshot_candidates` projects `calculationCurrent` and orders compatible candidates first so Edge can admit new compute without embedding algorithm knowledge. The unconfigured bootstrap preserves existing admission until explicit activation; after activation, a missing or different ready-snapshot identity is incompatible. Missing geography and factor coverage do not affect this contract.
 
 
-## Final Result ZIP signing
+## Final Result archive signing
 
 Result-only Candidate membership distinguishes Process type from publication
 role. `result_process` members alone define the Result roots and exact HDF5
 coverage. Referenced `unit_process` members remain ordinary Process support in
-the complete archive closure, with exact version and live support-read authorization.
+the complete archive closure with exact version binding.
 Release rejects unreferenced members during offline closure validation. Database
 accepts only compact catalog v2 (schema, canonical index hash, count and members);
 each member has kind, UUID, version, role and canonical content hash. It does not
 receive or traverse dependency edges. Exact Result/query coverage, immutable
-batch/file binding and current support-read authorization remain enforced. The
+batch/file binding and current complete-publication checks govern download. The
 full graph is neither uploaded nor persisted as a publication requirement. Old
 unpublished graph payloads are rejected; no compatibility reader or data rewrite
 is introduced. Support Process membership creates neither
