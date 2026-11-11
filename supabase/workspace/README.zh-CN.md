@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-11
-lastReviewedCommit: fa7c6d7cc8e7167e9b0b4daded2e2a4bf352a8a1
-lastReviewedNote: "Database #964 reviewed the stable archive download RPC, current complete-publication scope, cutover alias and exact readback contract."
+lastReviewedCommit: 16be0a5f2357a05c74f9d3211cba5ac723e2af18
+lastReviewedNote: "Database #966 reviewed transition alias retirement and stable archive readback."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
