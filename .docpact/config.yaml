@@ -1,8 +1,8 @@
 version: 1
 layout: repo
-lastReviewedAt: 2026-11-11
-lastReviewedCommit: 16be0a5f2357a05c74f9d3211cba5ac723e2af18
-lastReviewedNote: "Database #966 reviewed transition alias retirement and stable archive readback."
+lastReviewedAt: "2026-11-12"
+lastReviewedCommit: "a538a4964c8cd0a45105c7801e961c92dda53768"
+lastReviewedNote: "Database #970: reviewed actor-only current publication catalog, exact migration head and local rollback validation; deployment remains separate."
 
 # Keep deterministic governance facts here.
 # AGENTS.md remains the repo contract entrypoint.

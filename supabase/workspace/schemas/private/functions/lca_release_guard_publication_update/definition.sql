@@ -21,7 +21,9 @@ begin
      or old.published_at is distinct from new.published_at
      or old.created_at is distinct from new.created_at
      or (not old.is_current and new.is_current)
-     or (old.status <> 'current' and old.status is distinct from new.status)
+     or (old.status <> 'current' and old.status is distinct from new.status
+       and not (old.status='superseded' and new.status='unpublished' and exists
+         (select 1 from private.final_result_publication_bindings where publication_id=old.id)))
      or (old.status = 'current' and new.status not in ('current', 'superseded', 'unpublished')) then
     raise exception 'lca_release_publication_immutable'
       using errcode = '23514';
