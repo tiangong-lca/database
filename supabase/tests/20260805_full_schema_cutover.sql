@@ -82,9 +82,10 @@ select is(
   -- Database #961 adds manager-only version/history inspection and explicit draft replacement.
   -- Database #964 adds the stable download facade during the Edge cutover.
   -- Database #966 removes the transition alias after the Edge cutover.
+  -- Database #970 adds current and historical published Result catalog readers.
   -- Database #972 adds five service-only Portal indexing facades.
-  442::bigint,
-  'Two demand-specific Portal readers, one additive organization dashboard v6 facade plus four Portal navigation/V3 facades: api contains the active cutover and consumer facades, including the two Open Data catalog readers and three dataset display RPCs, the reviewer Contact status and activation RPCs, eight additive Portal/Next version-search APIs, two V4, two V5 and two V6 review queues plus batch eligibility, the rejection-detail RPC, the actor-bound rejected-review report download descriptor RPC and the reviewer workload drill-down RPC, two partial-import APIs, the three manager-attested Result publication RPCs, the guarded owner-draft before-content save facade, and the five versioned v2 Time-alias protected endpoints (preflight/gate/admit/read plus the service-only execute callback), and five service-only Portal indexing facades'
+  444::bigint,
+  'Current and historical published Result catalog readers; two demand-specific Portal readers, one additive organization dashboard v6 facade plus four Portal navigation/V3 facades: api contains the active cutover and consumer facades, including the two Open Data catalog readers and three dataset display RPCs, the reviewer Contact status and activation RPCs, eight additive Portal/Next version-search APIs, two V4, two V5 and two V6 review queues plus batch eligibility, the rejection-detail RPC, the actor-bound rejected-review report download descriptor RPC and the reviewer workload drill-down RPC, two partial-import APIs, the three manager-attested Result publication RPCs, the guarded owner-draft before-content save facade, and the five versioned v2 Time-alias protected endpoints (preflight/gate/admit/read plus the service-only execute callback), and five service-only Portal indexing facades'
 );
 
 select is(

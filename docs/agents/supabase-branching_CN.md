@@ -23,8 +23,8 @@ checkPaths:
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
 lastReviewedAt: 2026-11-12
-lastReviewedCommit: a7980d65c90a73a39e52bdc607e92dcbb61b4825
-lastReviewedNote: "Database #961: reviewed controlled unpublished draft replacement, version conflicts and generated contract proof; ownership, runtime and deployment boundaries remain unchanged."
+lastReviewedCommit: 32874389bddc0a1a0aa846f6efbf9a1ee71f627e
+lastReviewedNote: "Database #970 and #972: reviewed actor-only Result catalog, service-only search notifications and deployment boundaries."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

@@ -32,8 +32,8 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-11
-lastReviewedCommit: 16be0a5f2357a05c74f9d3211cba5ac723e2af18
+lastReviewedAt: 2026-11-12
+lastReviewedCommit: a538a4964c8cd0a45105c7801e961c92dda53768
 lastReviewedNote: "Database #966 reviewed transition alias retirement and stable archive readback."
 related:
   - ../../AGENTS.md
@@ -2361,3 +2361,12 @@ require zero second-generation drift. The Release consumer separately qualifies
 real small Candidate/HDF5/7z files, actor HTTP preflight/replacement, lost-ACK
 readback and history navigation on the owned local database. Local receipts do
 not authorize hosted migration, production draft retirement or publication.
+
+
+### Current Result library summary
+
+Run `supabase test db supabase/tests/20261112_current_final_result_publication.sql` after the full local migration rebuild. The rollback-only synthetic fixture verifies ordinary-actor access, denied anonymous/service grants, no-actor rejection, draft/absent and withdrawn states, the exact three-field publication projection and independence from Process visibility. No hosted publication or business data is needed.
+
+### Result library history and default downloads
+
+Run `supabase/tests/20261112_final_result_publication_history.sql` after applying the history migration. The rollback-only synthetic fixture verifies omitted-current resolution, exact historical downloads, no-current/no-fallback behavior, keyset ordering and cursor bounds, withdrawn exclusion before pagination and denied downloads, manager-only historical withdrawal and immutable terminal state. Retain publication-package, activation/readback and exact API-closure regressions. CI includes this suite; local proof does not authorize hosted publication or withdrawal.

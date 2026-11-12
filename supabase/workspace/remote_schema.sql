@@ -11901,8 +11901,9 @@ begin
       'data', jsonb_build_object('publicationId', v_publication.id, 'status', 'unpublished')
     );
   end if;
-  if not v_publication.is_current or v_publication.status <> 'current' then
-    return private.lca_release_error('publication_not_current', 409, 'Only the current publication can be unpublished');
+  if not ((v_publication.is_current and v_publication.status = 'current') or
+    (v_publication.status = 'superseded' and exists(select 1 from private.final_result_publication_bindings where publication_id=v_publication.id))) then
+    return private.lca_release_error('publication_not_current', 409, 'Publication cannot be withdrawn');
   end if;
 
   update private.lca_release_publications
@@ -26985,11 +26986,44 @@ $$;
 ALTER FUNCTION "api"."processes_embedding_ft_input"("proc" "public"."processes") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "api"."qry_final_result_download"("p_publication_id" "uuid", "p_format" "text") RETURNS "jsonb"
+CREATE OR REPLACE FUNCTION "api"."qry_current_final_result_publication"() RETURNS "jsonb"
     LANGUAGE "plpgsql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
     AS $$
 declare
+  v_publication jsonb;
+begin
+  if auth.uid() is null then
+    return private.lca_release_error('auth_required', 401, 'Authentication required');
+  end if;
+  select jsonb_build_object(
+    'publicationId', p.id,
+    'releaseVersion', p.release_version,
+    'format', r.publication_format
+  ) into v_publication
+  from private.lca_release_publications p
+  join private.lca_release_runs r on r.id = p.release_run_id
+  join private.final_result_publication_bindings binding on binding.publication_id = p.id
+  where p.is_current and p.status = 'current'
+    and p.publication_series_key = 'global'
+    and p.publication_channel = 'public'
+    and p.visibility_scope = 'public'
+    and r.publication_format = 'final-result-pair.v2';
+
+  return jsonb_build_object('ok', true, 'data', jsonb_build_object('publication', v_publication));
+end;
+$$;
+
+
+ALTER FUNCTION "api"."qry_current_final_result_publication"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "api"."qry_final_result_download"("p_publication_id" "uuid" DEFAULT NULL::"uuid", "p_format" "text" DEFAULT NULL::"text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare
+  v_publication_id uuid;
   v_candidate text;
   v_target text;
   v_file jsonb;
@@ -26997,12 +27031,12 @@ begin
   if auth.uid() is null then
     return private.lca_release_error('auth_required', 401, 'Authentication required');
   end if;
-  if p_publication_id is null or p_format is null or p_format not in ('tidas', 'ilcd') then
-    raise exception using errcode = '22023', message = 'Exact publication and supported archive format are required';
+  if p_format is null or p_format not in ('tidas', 'ilcd') then
+    raise exception using errcode = '22023', message = 'Supported archive format is required';
   end if;
 
-  select plan.candidate_hash, plan.target_hash, file.value
-    into v_candidate, v_target, v_file
+  select p.id, plan.candidate_hash, plan.target_hash, file.value
+    into v_publication_id, v_candidate, v_target, v_file
   from private.lca_release_publications p
   join private.final_result_publication_bindings binding on binding.publication_id = p.id
   join private.final_result_release_plans plan on plan.release_run_id = p.release_run_id
@@ -27012,14 +27046,16 @@ begin
   join private.final_result_candidate_storage storage on storage.candidate_hash = plan.candidate_hash
     and storage.target_hash = plan.target_hash
   cross join lateral jsonb_array_elements(storage.receipt->'files') file
-  where p.id = p_publication_id and p.is_current and p.status = 'current'
+  where ((p_publication_id is null and p.is_current and p.status = 'current')
+      or (p_publication_id is not null and p.id = p_publication_id and p.status in ('current','superseded')))
+    and p.publication_series_key = 'global' and p.publication_channel = 'public' and p.visibility_scope = 'public'
     and file.value->>'name' = 'result.' || p_format || '.7z';
 
   if not found then
     return private.lca_release_error('result_package_not_available', 404, 'No complete prebuilt archive is available for this publication');
   end if;
   return jsonb_build_object('ok', true, 'data', jsonb_build_object(
-    'publicationId', p_publication_id, 'candidateHash', v_candidate,
+    'publicationId', v_publication_id, 'candidateHash', v_candidate,
     'targetHash', v_target, 'file', v_file));
 end;
 $$;
@@ -27046,6 +27082,47 @@ $$;
 
 
 ALTER FUNCTION "api"."qry_final_result_publication_head_v2"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "api"."qry_final_result_publication_history"("p_limit" integer DEFAULT 20, "p_before_published_at" timestamp with time zone DEFAULT NULL::timestamp with time zone, "p_before_id" "uuid" DEFAULT NULL::"uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare v_items jsonb; v_next jsonb;
+begin
+  if auth.uid() is null then
+    return private.lca_release_error('auth_required',401,'Authentication required');
+  end if;
+  if p_limit is null or p_limit < 1 or p_limit > 50
+    or ((p_before_id is null) <> (p_before_published_at is null))
+    or (p_before_published_at is not null and not isfinite(p_before_published_at)) then
+    raise exception using errcode='22023',message='Invalid publication history page';
+  end if;
+  with entries as materialized (
+    select p.id,p.release_version,p.published_at,p.status
+    from private.lca_release_publications p
+    join private.lca_release_runs r on r.id=p.release_run_id
+    join private.final_result_publication_bindings b on b.publication_id=p.id
+    where not p.is_current and p.status='superseded'
+      and p.publication_series_key='global' and p.publication_channel='public' and p.visibility_scope='public'
+      and r.publication_format='final-result-pair.v2'
+      and (p_before_id is null or (p.published_at,p.id)<(p_before_published_at,p_before_id))
+    order by p.published_at desc,p.id desc limit p_limit+1
+  ), page as (select * from entries order by published_at desc,id desc limit p_limit)
+  select coalesce((select jsonb_agg(jsonb_build_object(
+    'publicationId',id,'releaseVersion',release_version,'publishedAt',published_at,'status',status,
+    'formats',(select coalesce(jsonb_agg(fmt order by fmt),'[]'::jsonb) from unnest(array['tidas','ilcd']) fmt
+       where api.qry_final_result_download(id,fmt)->>'ok'='true')
+  ) order by published_at desc,id desc) from page),'[]'::jsonb),
+  case when (select count(*) from entries)>p_limit then
+    (select jsonb_build_object('publishedAt',published_at,'publicationId',id) from page order by published_at,id limit 1)
+  else null end into v_items,v_next;
+  return jsonb_build_object('ok',true,'data',jsonb_build_object('publications',v_items,'nextCursor',v_next));
+end;
+$$;
+
+
+ALTER FUNCTION "api"."qry_final_result_publication_history"("p_limit" integer, "p_before_published_at" timestamp with time zone, "p_before_id" "uuid") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "api"."qry_final_result_query_v2"("p_result_id" "uuid", "p_result_version" "text", "p_publication_id" "uuid" DEFAULT NULL::"uuid") RETURNS "jsonb"
@@ -71401,7 +71478,9 @@ begin
      or old.published_at is distinct from new.published_at
      or old.created_at is distinct from new.created_at
      or (not old.is_current and new.is_current)
-     or (old.status <> 'current' and old.status is distinct from new.status)
+     or (old.status <> 'current' and old.status is distinct from new.status
+       and not (old.status='superseded' and new.status='unpublished' and exists
+         (select 1 from private.final_result_publication_bindings where publication_id=old.id)))
      or (old.status = 'current' and new.status not in ('current', 'superseded', 'unpublished')) then
     raise exception 'lca_release_publication_immutable'
       using errcode = '23514';
@@ -114622,6 +114701,10 @@ CREATE INDEX "dataset_review_submit_requests_submit_worker_job_idx" ON "private"
 
 
 
+CREATE INDEX "final_result_publication_history_idx" ON "private"."lca_release_publications" USING "btree" ("published_at" DESC, "id" DESC) WHERE (NOT "is_current");
+
+
+
 CREATE INDEX "final_result_query_source_lookup_idx" ON "private"."final_result_query_sources" USING "btree" ("source_id", "source_version", "artifact_id", "row_ordinal");
 
 
@@ -121235,6 +121318,11 @@ GRANT ALL ON FUNCTION "api"."processes_embedding_ft_input"("proc" "public"."proc
 
 
 
+REVOKE ALL ON FUNCTION "api"."qry_current_final_result_publication"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."qry_current_final_result_publication"() TO "authenticated";
+
+
+
 REVOKE ALL ON FUNCTION "api"."qry_final_result_download"("p_publication_id" "uuid", "p_format" "text") FROM PUBLIC;
 GRANT ALL ON FUNCTION "api"."qry_final_result_download"("p_publication_id" "uuid", "p_format" "text") TO "authenticated";
 
@@ -121242,6 +121330,11 @@ GRANT ALL ON FUNCTION "api"."qry_final_result_download"("p_publication_id" "uuid
 
 REVOKE ALL ON FUNCTION "api"."qry_final_result_publication_head_v2"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "api"."qry_final_result_publication_head_v2"() TO "authenticated";
+
+
+
+REVOKE ALL ON FUNCTION "api"."qry_final_result_publication_history"("p_limit" integer, "p_before_published_at" timestamp with time zone, "p_before_id" "uuid") FROM PUBLIC;
+GRANT ALL ON FUNCTION "api"."qry_final_result_publication_history"("p_limit" integer, "p_before_published_at" timestamp with time zone, "p_before_id" "uuid") TO "authenticated";
 
 
 

@@ -32,8 +32,9 @@ begin
       'data', jsonb_build_object('publicationId', v_publication.id, 'status', 'unpublished')
     );
   end if;
-  if not v_publication.is_current or v_publication.status <> 'current' then
-    return private.lca_release_error('publication_not_current', 409, 'Only the current publication can be unpublished');
+  if not ((v_publication.is_current and v_publication.status = 'current') or
+    (v_publication.status = 'superseded' and exists(select 1 from private.final_result_publication_bindings where publication_id=v_publication.id))) then
+    return private.lca_release_error('publication_not_current', 409, 'Publication cannot be withdrawn');
   end if;
 
   update private.lca_release_publications

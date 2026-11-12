@@ -38,8 +38,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-12
-lastReviewedCommit: a7980d65c90a73a39e52bdc607e92dcbb61b4825
-lastReviewedNote: "Database #966 reviewed transition alias retirement and stable archive readback."
+lastReviewedCommit: 32874389bddc0a1a0aa846f6efbf9a1ee71f627e
+lastReviewedNote: "Database #970 and #972: reviewed actor-only Result catalog, service-only search notifications and deployment boundaries."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-validation.md
