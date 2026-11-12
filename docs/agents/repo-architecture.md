@@ -30,8 +30,8 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-11
-lastReviewedCommit: 16be0a5f2357a05c74f9d3211cba5ac723e2af18
+lastReviewedAt: 2026-11-12
+lastReviewedCommit: a538a4964c8cd0a45105c7801e961c92dda53768
 lastReviewedNote: "Database #966 reviewed transition alias retirement and stable archive readback."
 related:
   - ../../AGENTS.md
@@ -2027,3 +2027,16 @@ versions rather than latest datasets. Both additive APIs keep the existing
 restricted executor, capability admission and eight-second timeout; no projection,
 writer, persistent cache or index is added. Portal adoption belongs to its own
 reviewed delivery and must follow deployed Database capability verification.
+
+
+## Current Result library catalog
+
+`api.qry_current_final_result_publication()` is an authenticated, stable read for ordinary users. It projects only `publicationId`, `releaseVersion` and `format` for the current public/global `final-result-pair.v2` publication with its final binding. Absence returns `{publication: null}`. It does not expose draft/control-plane state, hashes, storage locators or supporting datasets, and does not require the manager role or traverse dataset permissions. Download remains bound to the returned publication through `api.qry_final_result_download`; explicit publication identities are never silently substituted.
+
+### Result library publication history
+
+`api.qry_final_result_publication_history` returns public/global final-Result publications in `superseded` state, excluding the current head. Pages use descending `(published_at, id)` keysets, default 20 and maximum 50 rows. Each row exposes only publication identity, release version, publication date, status and available archive formats; withdrawn rows are excluded before pagination; their internal audit records remain intact. No dataset dependency or per-dataset permission scan runs.
+
+`api.qry_final_result_download` accepts an omitted/null publication ID to resolve the current head once; an explicit ID resolves only that current or superseded publication. It returns the resolved identity for the caller to pin through signing. Missing or withdrawn versions never fall back to current. Complete sealed Candidate selection and registered archive requirements remain unchanged.
+
+The existing manager unpublish command can also withdraw a superseded publication with a final-Result binding. It retains reason, audit and idempotency behavior, leaves the current head unchanged, and cannot resurrect withdrawn publications.
