@@ -33,7 +33,7 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-12
-lastReviewedCommit: a490ebe3172cb63311887f3632f933417f0955f2
+lastReviewedCommit: a538a4964c8cd0a45105c7801e961c92dda53768
 lastReviewedNote: "Database #966 reviewed transition alias retirement and stable archive readback."
 related:
   - ../../AGENTS.md

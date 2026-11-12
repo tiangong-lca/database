@@ -2202,11 +2202,20 @@ export type Database = {
         Args: { proc: Database["public"]["Tables"]["processes"]["Row"] }
         Returns: string
       }
+      qry_current_final_result_publication: { Args: never; Returns: Json }
       qry_final_result_download: {
-        Args: { p_format: string; p_publication_id: string }
+        Args: { p_format?: string; p_publication_id?: string }
         Returns: Json
       }
       qry_final_result_publication_head_v2: { Args: never; Returns: Json }
+      qry_final_result_publication_history: {
+        Args: {
+          p_before_id?: string
+          p_before_published_at?: string
+          p_limit?: number
+        }
+        Returns: Json
+      }
       qry_final_result_query_v2: {
         Args: {
           p_publication_id?: string
