@@ -20,8 +20,8 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-11
-lastReviewedCommit: 16be0a5f2357a05c74f9d3211cba5ac723e2af18
+lastReviewedAt: 2026-11-12
+lastReviewedCommit: a7980d65c90a73a39e52bdc607e92dcbb61b4825
 lastReviewedNote: "Database #966 reviewed transition alias retirement and stable archive readback."
 related:
   - ../AGENTS.md

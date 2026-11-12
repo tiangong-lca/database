@@ -22,8 +22,8 @@ checkPaths:
   - .github/workflows/supabase-dev.yml
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
-lastReviewedAt: 2026-11-10
-lastReviewedCommit: 9c7b0d389060ef823723c19a542a7bf2b6981b89
+lastReviewedAt: 2026-11-12
+lastReviewedCommit: a7980d65c90a73a39e52bdc607e92dcbb61b4825
 lastReviewedNote: "Database #961: reviewed controlled unpublished draft replacement, version conflicts and generated contract proof; ownership, runtime and deployment boundaries remain unchanged."
 related:
   - ../../AGENTS.md

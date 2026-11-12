@@ -1,0 +1,1 @@
+CREATE INDEX "portal_index_outbox_baidu_withdrawal_idx" ON "private"."portal_index_outbox" USING "btree" ("dataset_kind", "dataset_id", "dataset_version", "event_id" DESC) WHERE ("provider" = 'baidu_withdrawal'::"text");
