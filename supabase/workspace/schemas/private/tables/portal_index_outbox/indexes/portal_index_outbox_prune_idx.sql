@@ -1,0 +1,1 @@
+CREATE INDEX "portal_index_outbox_prune_idx" ON "private"."portal_index_outbox" USING "btree" ("settled_at", "event_id") WHERE (("state" = ANY (ARRAY['accepted'::"text", 'skipped'::"text"])) AND ("provider" <> 'baidu_withdrawal'::"text"));

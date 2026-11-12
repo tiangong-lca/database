@@ -757,6 +757,40 @@ Reviewed parent corrections are separate data revisions. `data/portal-navigation
 
 The Portal executor is NOLOGIN/NOBYPASSRLS and receives only the minimum object privileges required by the façades. External wrapper ACLs are revoked from `PUBLIC` and classified by exact signature in `private.api_capability_grants`; raw core tables receive no new anon policy.
 
+Database #972 captures search notification work from the synchronized Portal
+display projection for one exact HTTPS origin and its configured brand set.
+Capture and dispatch start disabled. The destination is immutable after
+binding. Once capture is enabled, the owner pauses dispatch to preserve
+withdrawal history. The writer coalesces each Process or Flow version within the source
+transaction, keeping the first scoped brand and final scoped brand. A draft
+that enters and leaves scope before commit creates no work. Capture preserves
+the existing publication transaction.
+
+After activation, a display outage holds work in Database. The outage records
+the first and last scoped brand for each changed exact version across its
+transactions. This retains a pre-outage public withdrawal and discards a
+version that only appeared during the outage and disappeared before display
+resumed. Claims, Cron wakeups, and the feed remain closed until the owner
+reconciles the held rows. The transaction that restores display stays in
+the outage group through commit. Later writes use ordinary transaction
+grouping, even while dispatch remains paused.
+
+The service worker claims due rows without a sequence watermark and completes
+work under a time-bounded lease. Before dispatch it rechecks current scoped
+sitemap membership. A changed older version keeps its own public URL.
+Withdrawing the latest version can yield both the withdrawn URL and a newly
+exposed fallback. An unchanged settings write creates no notification.
+IndexNow, ordinary Baidu submissions, and
+Baidu dead-link verification use independent work queues. Provider pauses
+persist in Database, and retries retain exact locale receipts from the active
+lease. Provider HTTP calls run in Edge.
+
+Only the service role can read the withdrawal feed. Its exact locale entries
+require HTTP 404 proof from the newest recorded withdrawal and a current
+absence from the destination's scoped display. Reactivation removes the URL
+from feed results. A confirmed dead link stays pending Baidu registration.
+Portal retrieves this projection through the Edge feed credential.
+
 Summary, navigation, dataset and V3 facets exceptions retain their generic public
 code/message with null details/hints. Their server-only failure LOG records use
 closed category/reason labels, never original messages, stacks or request values

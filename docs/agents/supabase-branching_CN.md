@@ -23,8 +23,8 @@ checkPaths:
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
 lastReviewedAt: 2026-11-12
-lastReviewedCommit: a490ebe3172cb63311887f3632f933417f0955f2
-lastReviewedNote: "Database #970: reviewed actor-only current publication catalog, exact migration head and local rollback validation; deployment remains separate."
+lastReviewedCommit: 32874389bddc0a1a0aa846f6efbf9a1ee71f627e
+lastReviewedNote: "Database #970 and #972: reviewed actor-only Result catalog, service-only search notifications and deployment boundaries."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
