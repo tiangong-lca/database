@@ -2035,7 +2035,7 @@ reviewed delivery and must follow deployed Database capability verification.
 
 ### Result library publication history
 
-`api.qry_final_result_publication_history` returns public/global final-Result publications in `superseded` or `unpublished` state, excluding the current head. Pages use descending `(published_at, id)` keysets, default 20 and maximum 50 rows. Each row exposes only publication identity, release version, publication date, status and available archive formats; withdrawn rows have no formats. No dataset dependency or per-dataset permission scan runs.
+`api.qry_final_result_publication_history` returns public/global final-Result publications in `superseded` state, excluding the current head. Pages use descending `(published_at, id)` keysets, default 20 and maximum 50 rows. Each row exposes only publication identity, release version, publication date, status and available archive formats; withdrawn rows are excluded before pagination; their internal audit records remain intact. No dataset dependency or per-dataset permission scan runs.
 
 `api.qry_final_result_download` accepts an omitted/null publication ID to resolve the current head once; an explicit ID resolves only that current or superseded publication. It returns the resolved identity for the caller to pin through signing. Missing or withdrawn versions never fall back to current. Complete sealed Candidate selection and registered archive requirements remain unchanged.
 

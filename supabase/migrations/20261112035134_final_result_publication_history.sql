@@ -66,7 +66,7 @@ begin
     from private.lca_release_publications p
     join private.lca_release_runs r on r.id=p.release_run_id
     join private.final_result_publication_bindings b on b.publication_id=p.id
-    where not p.is_current and p.status in ('superseded','unpublished')
+    where not p.is_current and p.status='superseded'
       and p.publication_series_key='global' and p.publication_channel='public' and p.visibility_scope='public'
       and r.publication_format='final-result-pair.v2'
       and (p_before_id is null or (p.published_at,p.id)<(p_before_published_at,p_before_id))
@@ -74,9 +74,8 @@ begin
   ), page as (select * from entries order by published_at desc,id desc limit p_limit)
   select coalesce((select jsonb_agg(jsonb_build_object(
     'publicationId',id,'releaseVersion',release_version,'publishedAt',published_at,'status',status,
-    'formats',case when status='unpublished' then '[]'::jsonb else
-      (select coalesce(jsonb_agg(fmt order by fmt),'[]'::jsonb) from unnest(array['tidas','ilcd']) fmt
-       where api.qry_final_result_download(id,fmt)->>'ok'='true') end
+    'formats',(select coalesce(jsonb_agg(fmt order by fmt),'[]'::jsonb) from unnest(array['tidas','ilcd']) fmt
+       where api.qry_final_result_download(id,fmt)->>'ok'='true')
   ) order by published_at desc,id desc) from page),'[]'::jsonb),
   case when (select count(*) from entries)>p_limit then
     (select jsonb_build_object('publishedAt',published_at,'publicationId',id) from page order by published_at,id limit 1)

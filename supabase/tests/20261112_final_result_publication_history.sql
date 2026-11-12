@@ -69,7 +69,8 @@ select set_config('request.jwt.claim.sub','87930000-0000-4000-8000-000000000001'
 select is(api.cmd_lca_release_unpublish((select (publication#>>'{data,publicationId}')::uuid from package_publication),'withdraw old archive')->>'ok','true','manager can withdraw superseded final publication');
 select is(api.cmd_lca_release_unpublish((select (publication#>>'{data,publicationId}')::uuid from package_publication),'withdraw old archive')->>'reused','true','withdrawal retry is idempotent');
 select is(api.qry_final_result_download((select (publication#>>'{data,publicationId}')::uuid from package_publication),'tidas')->>'code','result_package_not_available','withdrawn history cannot be downloaded');
-select is((select value->'formats' from jsonb_array_elements(api.qry_final_result_publication_history()#>'{data,publications}') where value->>'status'='unpublished'),'[]'::jsonb,'withdrawn record remains visible without downloads');
+select is((select count(*) from jsonb_array_elements(api.qry_final_result_publication_history()#>'{data,publications}') where value->>'status'='unpublished'),0::bigint,'withdrawn records excluded before history pagination');
+select is(jsonb_array_length(api.qry_final_result_publication_history(1)#>'{data,publications}'),1,'withdrawn history does not consume a page slot');
 select set_config('request.jwt.claim.sub','',true);
 select is(api.qry_final_result_publication_history()->>'code','auth_required','history requires an actor');
 reset role;
