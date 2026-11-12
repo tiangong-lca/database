@@ -23,7 +23,7 @@ checkPaths:
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
 lastReviewedAt: 2026-11-12
-lastReviewedCommit: a7980d65c90a73a39e52bdc607e92dcbb61b4825
+lastReviewedCommit: a490ebe3172cb63311887f3632f933417f0955f2
 lastReviewedNote: "Database #970: reviewed actor-only current publication catalog, exact migration head and local rollback validation; deployment remains separate."
 related:
   - ../../AGENTS.md
