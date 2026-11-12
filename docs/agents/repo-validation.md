@@ -81,6 +81,48 @@ supabase db reset
 supabase migration list
 ```
 
+## Portal search notifications (#972)
+
+On a blank PG17 replay, run `20261112_portal_index_notifications.sql`,
+`20261010_portal_display_readers.sql`, `20261010_portal_display_brand_foundation.sql`,
+`20260827_portal_sitemap_shards_v1.sql`, and `20260806_api_contract_closure.sql`
+with `supabase test db`. Run
+`python3 supabase/tests/regression/20261112_portal_index_outbox_concurrency.py`
+alone against the owned `portal-index-972` project on database port 57422. Its committed fixtures
+verify that a lower event that commits late can still be leased, a locked
+peer does not stall a claim, and an expired lease cannot settle a reclaimed
+event. They also verify held withdrawals and suppression of a never-public
+version across independently committed maintenance writes. Regenerate the five
+schema views and exposed API types twice from the candidate migration head.
+
+The migration installs no scheduler and both Database switches start off.
+Before enabling capture, confirm the active scoped Portal display, the exact
+production origin, and the deployment's normalized brand set. Bind that
+identity through `private.portal_index_configure_v1(origin, brands, capture_enabled,
+dispatch_enabled)`. The owner enables the fixed one-minute job through
+`private.portal_index_set_scheduler_v1(true)` after provisioning Vault's
+`project_url`, `portal_index_dispatch_publishable_key`, and
+`portal_index_dispatch_secret` for that environment. The last value matches
+the Edge scheduler credential. The job only wakes Edge when work is due.
+Hosted provider delivery requires a separate canary.
+
+To pause dispatch, call the configuration function with capture enabled and
+dispatch disabled, then use `private.portal_index_set_scheduler_v1(false)`.
+Capture stays enabled after the first opt-in. Read the service status and
+the exact named Cron job when checking deployment.
+If the status reports `maintenanceGap`, restore the active display through
+the existing display transition procedure and commit that transaction. Then run
+`private.portal_index_reconcile_maintenance_v1(1000)` as owner in separate
+bounded transactions until the receipt reports `complete=true`. The last
+batch clears the hold. Pause dispatch first if the operator needs to review
+the backlog before resuming the worker. A suspended feed returns an error
+until reconciliation completes.
+
+The owner can requeue a bounded set of blocked rows by provider and recorded
+reason using `private.portal_index_requeue_v1(provider, reason, limit)` after
+resolving the cause. Verify receipt, manual dead-link registration, and provider
+recrawl as separate outcomes.
+
 ## Offline LCA Study durable contract (P0)
 
 For Database #885, run `python3 -B supabase/tests/lca_study_durable_contract.py`

@@ -3857,6 +3857,36 @@ export type Database = {
         }
         Returns: Json
       }
+      svc_portal_index_claim_v1: {
+        Args: {
+          p_allowed_brands: string[]
+          p_limit: number
+          p_origin: string
+          p_provider: string
+        }
+        Returns: Json
+      }
+      svc_portal_index_recheck_v1: {
+        Args: { p_event_id: string; p_lease_token: string; p_provider: string }
+        Returns: Json
+      }
+      svc_portal_index_settle_v1: {
+        Args: {
+          p_accepted: Json
+          p_event_id: string
+          p_lease_token: string
+          p_outcome: string
+          p_provider: string
+          p_reason: string
+          p_retry_after_seconds: number
+        }
+        Returns: boolean
+      }
+      svc_portal_index_status_v1: { Args: never; Returns: Json }
+      svc_portal_index_withdrawal_feed_v1: {
+        Args: { p_allowed_brands: string[]; p_origin: string }
+        Returns: Json
+      }
       svc_result_candidate_describe_v2: {
         Args: { p_candidate_hash: string; p_target_hash: string }
         Returns: Json
