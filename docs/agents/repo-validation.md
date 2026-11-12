@@ -2319,3 +2319,8 @@ require zero second-generation drift. The Release consumer separately qualifies
 real small Candidate/HDF5/7z files, actor HTTP preflight/replacement, lost-ACK
 readback and history navigation on the owned local database. Local receipts do
 not authorize hosted migration, production draft retirement or publication.
+
+
+### Current Result library summary
+
+Run `supabase test db supabase/tests/20261112_current_final_result_publication.sql` after the full local migration rebuild. The rollback-only synthetic fixture verifies ordinary-actor access, denied anonymous/service grants, no-actor rejection, draft/absent and withdrawn states, the exact three-field publication projection and independence from Process visibility. No hosted publication or business data is needed.

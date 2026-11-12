@@ -2027,3 +2027,8 @@ versions rather than latest datasets. Both additive APIs keep the existing
 restricted executor, capability admission and eight-second timeout; no projection,
 writer, persistent cache or index is added. Portal adoption belongs to its own
 reviewed delivery and must follow deployed Database capability verification.
+
+
+## Current Result library catalog
+
+`api.qry_current_final_result_publication()` is an authenticated, stable read for ordinary users. It projects only `publicationId`, `releaseVersion` and `format` for the current public/global `final-result-pair.v2` publication with its final binding. Absence returns `{publication: null}`. It does not expose draft/control-plane state, hashes, storage locators or supporting datasets, and does not require the manager role or traverse dataset permissions. Download remains bound to the returned publication through `api.qry_final_result_download`; a changed current publication must be refreshed, never silently substituted.

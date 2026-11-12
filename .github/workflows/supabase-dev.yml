@@ -109,6 +109,7 @@ jobs:
       - name: Verify controlled Final Result draft replacement
         run: |
           supabase test db supabase/tests/20261110_final_result_draft_replacement.sql
+          supabase test db supabase/tests/20261112_current_final_result_publication.sql
           python3 supabase/tests/regression/20261110_final_result_draft_replacement.py \
             --container supabase_db_database-engine --project database-engine \
             --report "$RUNNER_TEMP/final-result-draft-races.json"
