@@ -20,9 +20,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-12
-lastReviewedCommit: 32874389bddc0a1a0aa846f6efbf9a1ee71f627e
-lastReviewedNote: "Database #970 and #972: reviewed actor-only Result catalog, service-only search notifications and deployment boundaries."
+lastReviewedAt: 2026-11-17
+lastReviewedCommit: cf8f0bdff694c8592b03c55cd8ea2556c0444179
+lastReviewedNote: "Database #977: reviewed format-aware closure input selection, publication stability during snapshot admission and exact-local regression/schema proof."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
