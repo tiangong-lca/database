@@ -116,7 +116,8 @@ select is(
   -- Database #961 adds two guarded history triggers, version state/error and atomic draft helper.
   -- Database #964 retires the per-support-row archive ACL helper.
   -- Database #972 adds sixteen private Portal indexing capture, delivery and maintenance helpers.
-  799::bigint,
+  -- Database #976 adds the Model bundle lock key, write fence, snapshot and operation helpers.
+  803::bigint,
   'Three demand-specific navigation overloads and twenty-five navigation helpers plus: private contains the active helpers, including the Open Data filter and three dataset display helpers, the reviewer Contact reference-readiness helper, the review rejection-reason extractor, rejected-report exact-reference matcher, submitted-decision sync helper and shared reviewer workload classifier, the twenty-five exact-version, thirteen composite-name and one review-search internals, two partial-import helpers, two whole-package helpers, the example write guard, the two state-120 candidate-cache helpers, the state-120 lifecycle guard, the seven manager-attested Result publication helpers, the nineteen versioned v2 Time-alias helpers (four exact-numeric, ten leaf/derivation helpers, the guarded v2 batch executor, the plan key set, the six-key derivative-target checker, the guarded v2 plan executor and the deterministic derivative-chunk partition), and the eight closed Length*time profile helpers (the closed discriminator, the plan key set, the factor constant, the exact multiply, the instance rewrite, the guarded Length*time executor, the null-safe required-scalar check and the null-safe required-count check), the two Database #689 batch queue-cache helpers (the dispatch-body candidate-id extractor and the per-batch queue cache builder), the Database #703 internal derivative scheduler picker, and the Database #828 owner-only AI deadline expiry helper, and sixteen private Portal indexing helpers'
 );
 
@@ -168,7 +169,8 @@ select is(
   -- Database #912 adds immutable evidence, method assessment and method-report link guards.
   -- Database #961 adds replacement admission and deferred same-version target guards.
   -- Database #972 adds four indexing triggers on the display projection, rollout, Processes and Flows.
-  199::bigint,
+  -- Database #976 fences writes on lifecyclemodels and processes.
+  201::bigint,
   'Two private navigation writers and one seed guard plus: all active application triggers and two Process composite-name sync triggers plus seven example write guards remain present, including the review submitted-decision sync trigger, the Result lifecycle guard and the append-only Result guard and seven dataset display source-cleanup triggers, plus four Portal indexing triggers'
 );
 
@@ -286,7 +288,8 @@ select is(
   -- Database #916 replaces two Result registry FKs with one canonical content CHECK.
   -- Database #961 adds replacement CHECK, self-reference FK and deferred constraint trigger.
   -- Database #972 adds eighteen constraints on the private indexing configuration and outbox.
-  1166::bigint,
+  -- Database #976 adds the receipt primary key over actor and operation identity.
+  1167::bigint,
   'Twenty-nine navigation constraints plus: all application, OAuth registry and twenty-two composite-name constraints plus ten partial-import and four whole-package constraints, the review submitted-decision constraint, the Result publication attestation and dataset display exact-version and allowlist constraints remain present, and the versioned v2 Time-alias preflight/gate/request tables carry their own reviewed constraints, alongside eighteen Portal indexing constraints'
 );
 
@@ -325,7 +328,8 @@ select is(
   -- Database #909 adds five FORCE-RLS private advanced/configuration/intent/link tables.
   -- Database #912 adds six FORCE-RLS private method/config/evidence/intent/link tables.
   -- Database #972 adds the private indexing configuration and outbox with forced RLS.
-  161::bigint,
+  -- Database #976 enables RLS on the private Model bundle receipt table.
+  162::bigint,
   'RLS covers the Open Data publication relation, five new private navigation relations and existing tables plus four private composite-name relations and three private import plan/receipt relations and two private Portal indexing relations'
 );
 
