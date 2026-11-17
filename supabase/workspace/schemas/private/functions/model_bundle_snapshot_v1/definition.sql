@@ -5,7 +5,7 @@ CREATE OR REPLACE FUNCTION "private"."model_bundle_snapshot_v1"("p_actor" "uuid"
 declare
     v_model public.lifecyclemodels%rowtype;
     v_declared jsonb;
-    v_primary jsonb;
+    v_references jsonb;
     v_members jsonb;
     v_rows jsonb;
     v_result jsonb;
@@ -15,21 +15,24 @@ begin
     if not found then return null; end if;
 
     v_declared := coalesce(v_model.json_tg::jsonb->'submodels', '[]'::jsonb);
-    v_primary := v_model.json_ordered::jsonb #>
+    v_references := v_model.json_ordered::jsonb #>
       '{lifeCycleModelDataSet,lifeCycleModelInformation,dataSetInformation,referenceToResultingProcess}';
-    if jsonb_typeof(v_primary) = 'array' then
-        if jsonb_array_length(v_primary) > 1 then
-            raise exception 'MODEL_MEMBERSHIP_INVALID';
-        end if;
-        v_primary := v_primary->0;
-    end if;
-    if v_primary = 'null'::jsonb then v_primary := null; end if;
+    v_references := case
+        when v_references is null or v_references = 'null'::jsonb then '[]'::jsonb
+        when jsonb_typeof(v_references) = 'array' then v_references
+        else jsonb_build_array(v_references)
+    end;
     if jsonb_typeof(v_declared) <> 'array' then
         raise exception 'MODEL_MEMBERSHIP_INVALID';
     end if;
-    if v_declared = '[]'::jsonb and v_primary is not null then
+    if v_declared = '[]'::jsonb and jsonb_array_length(v_references) > 0 then
+        if jsonb_array_length(v_references) <> 1 then
+            raise exception 'MODEL_MEMBERSHIP_INVALID';
+        end if;
         v_declared := jsonb_build_array(jsonb_build_object(
-            'id', v_primary->>'@refObjectId', 'version', v_primary->>'@version', 'type', 'primary'
+            'id', v_references #>> '{0,@refObjectId}',
+            'version', v_references #>> '{0,@version}',
+            'type', 'primary'
         ));
     end if;
 
@@ -42,12 +45,23 @@ begin
     ) or exists (
         select 1 from jsonb_array_elements(v_declared) as m
         group by m->>'id', m->>'version' having count(*) > 1
+    ) or exists (
+        select 1 from jsonb_array_elements(v_references) r
+        group by r->>'@refObjectId', r->>'@version' having count(*) > 1
+    ) or exists (
+        select 1 from jsonb_array_elements(v_references) r
+        where not exists (
+            select 1 from jsonb_array_elements(v_declared) m
+            where m->>'type' in ('primary','secondary')
+              and m->>'id' = r->>'@refObjectId' and m->>'version' = r->>'@version'
+        )
     ) or (v_declared <> '[]'::jsonb and (
         (select count(*) from jsonb_array_elements(v_declared) m where m->>'type' = 'primary') <> 1
         or not exists (
             select 1 from jsonb_array_elements(v_declared) m
-            where m->>'type' = 'primary' and m->>'id' = v_primary->>'@refObjectId'
-              and m->>'version' = v_primary->>'@version'
+            join jsonb_array_elements(v_references) r
+              on m->>'id' = r->>'@refObjectId' and m->>'version' = r->>'@version'
+            where m->>'type' = 'primary'
         )
     )) then
         raise exception 'MODEL_MEMBERSHIP_INVALID';

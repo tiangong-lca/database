@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
-select plan(10);
+select plan(12);
 
 -- Publication derivatives are outside these transaction assertions.
 alter table public.processes disable trigger process_extract_md_trigger_insert;
@@ -134,6 +134,51 @@ set local role authenticated;
 select is(
     (select api.cmd_lifecycle_model_bundle_save((request - 'plan' - 'expectedRevision') || '{"action":"recover"}')->>'status' from bundle_fixture),
     'unknown', 'another actor cannot distinguish a real receipt from an absent one'
+);
+
+reset role;
+select set_config('request.jwt.claim.sub','b9760000-0000-4000-8000-000000000001',true);
+create temporary table multi_result_fixture as
+with base as (
+  select request, api.cmd_lifecycle_model_bundle_save(
+    (request - 'plan' - 'expectedRevision' - 'operationId') || '{"action":"inspect"}'
+  ) #>> '{snapshot,revision}' as revision
+  from bundle_fixture
+), candidate as (
+  select request || jsonb_build_object(
+    'operationId','b9760000-0000-4000-8000-000000000007',
+    'expectedRevision',revision
+  ) as request from base
+), members as (
+  select jsonb_set(
+    jsonb_set(
+      jsonb_set(request,'{plan,mode}','"update"'),
+      '{plan,parent,jsonTg,submodels,1}',
+      '{"id":"b9760000-0000-4000-8000-000000000008","version":"03.00.000","type":"secondary"}'
+    ),
+    '{plan,parent,jsonOrdered,lifeCycleModelDataSet,lifeCycleModelInformation,dataSetInformation,referenceToResultingProcess,1}',
+    '{"@refObjectId":"b9760000-0000-4000-8000-000000000008","@version":"03.00.000"}'
+  ) as request from candidate
+)
+select jsonb_set(request,'{plan,processMutations}',jsonb_build_array(
+  (request #> '{plan,processMutations,0}') || jsonb_build_object(
+    'id','b9760000-0000-4000-8000-000000000008',
+    'jsonOrdered','{"processDataSet":{"processInformation":{"dataSetInformation":{"common:UUID":"b9760000-0000-4000-8000-000000000008"}},"administrativeInformation":{"publicationAndOwnership":{"common:dataSetVersion":"03.00.000"}}}}'::jsonb
+  )
+)) as request from members;
+grant select on multi_result_fixture to authenticated;
+set local role authenticated;
+select throws_ok(
+  $$ select api.cmd_lifecycle_model_bundle_save(jsonb_set(
+    request,
+    '{plan,parent,jsonOrdered,lifeCycleModelDataSet,lifeCycleModelInformation,dataSetInformation,referenceToResultingProcess,1,@version}',
+    '"04.00.000"'
+  )) from multi_result_fixture $$,
+  'P0001','MODEL_MEMBERSHIP_INVALID','an incorrect canonical secondary reference rolls back its insert'
+);
+select is(
+  (select jsonb_array_length(api.cmd_lifecycle_model_bundle_save(request)->'members') from multi_result_fixture),
+  2, 'both correctly linked canonical products commit after the failed attempt'
 );
 select * from finish();
 rollback;
