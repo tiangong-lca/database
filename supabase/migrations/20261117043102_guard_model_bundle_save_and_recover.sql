@@ -81,6 +81,13 @@ begin
     v_declared := coalesce(v_model.json_tg::jsonb->'submodels', '[]'::jsonb);
     v_primary := v_model.json_ordered::jsonb #>
       '{lifeCycleModelDataSet,lifeCycleModelInformation,dataSetInformation,referenceToResultingProcess}';
+    if jsonb_typeof(v_primary) = 'array' then
+        if jsonb_array_length(v_primary) > 1 then
+            raise exception 'MODEL_MEMBERSHIP_INVALID';
+        end if;
+        v_primary := v_primary->0;
+    end if;
+    if v_primary = 'null'::jsonb then v_primary := null; end if;
     if jsonb_typeof(v_declared) <> 'array' then
         raise exception 'MODEL_MEMBERSHIP_INVALID';
     end if;

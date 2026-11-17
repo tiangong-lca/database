@@ -32,10 +32,10 @@ select $request$
           "lifeCycleModelInformation": {
             "dataSetInformation": {
               "common:UUID": "b9760000-0000-4000-8000-000000000002",
-              "referenceToResultingProcess": {
+              "referenceToResultingProcess": [{
                 "@refObjectId": "b9760000-0000-4000-8000-000000000004",
                 "@version": "02.00.000"
-              }
+              }]
             }
           },
           "administrativeInformation": {
