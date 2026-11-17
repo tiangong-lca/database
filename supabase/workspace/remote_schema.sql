@@ -12985,14 +12985,16 @@ CREATE OR REPLACE FUNCTION "api"."cmd_lifecycle_model_bundle_save"("p_plan" "jso
     SET "search_path" TO ''
     AS $$
 declare
-  v_actor uuid := auth.uid();
-  v_plan jsonb := coalesce(p_plan, '{}'::jsonb);
+    v_actor uuid := auth.uid();
 begin
-  if v_actor is null then
-    raise exception using errcode = '42501', message = 'AUTH_REQUIRED';
-  end if;
-  v_plan := jsonb_set(v_plan, '{actorUserId}', to_jsonb(v_actor::text), true);
-  return private.save_lifecycle_model_bundle(v_plan);
+    if v_actor is null then raise exception using errcode = '42501', message = 'AUTH_REQUIRED'; end if;
+    if p_plan ? 'protocol' then
+        if p_plan->>'protocol' is distinct from 'model-bundle.v1' then raise exception 'INVALID_PLAN'; end if;
+        return private.model_bundle_operation_v1(v_actor, p_plan);
+    end if;
+    return private.save_lifecycle_model_bundle(
+        jsonb_set(coalesce(p_plan, '{}'::jsonb), '{actorUserId}', to_jsonb(v_actor::text), true)
+    );
 end
 $$;
 
@@ -56456,28 +56458,64 @@ CREATE OR REPLACE FUNCTION "private"."delete_lifecycle_model_bundle"("p_model_id
     AS $_$
 declare
     v_rows_affected integer;
+    v_owner uuid;
+    v_expected_children integer;
 begin
     if p_model_id is null or nullif(btrim(coalesce(p_version, '')), '') is null then
         raise exception 'INVALID_PLAN';
     end if;
 
-    perform 1
+    select user_id into v_owner
       from public.lifecyclemodels
      where id = p_model_id
        and version = p_version
+       and state_code = 0
      for update;
 
     if not found then
         raise exception 'MODEL_NOT_FOUND';
     end if;
 
-    -- The relational ownership columns define bundle membership. json_tg is
-    -- frontend state and may be absent, stale, or malformed.
-    execute 'del' || 'ete from processes where model_id = $1 and coalesce(model_version, version) = $2'
-       using p_model_id, p_version;
+    -- Advisory locks cannot refresh a Repeatable Read transaction snapshot.
+    -- A whole-bundle destructive set requires the normal command isolation.
+    if current_setting('transaction_isolation') not in ('read committed', 'read uncommitted') then
+        raise exception using errcode = '0A000', message = 'UNSUPPORTED_TRANSACTION_ISOLATION';
+    end if;
 
-    execute 'del' || 'ete from lifecyclemodels where id = $1 and version = $2'
-       using p_model_id, p_version;
+    -- Fail immediately if a linked Process is in flight, including one whose
+    -- parent was absent when it was created. A subsequent attempt gets a fresh
+    -- committed membership set without inverting parent/child row-lock order.
+    if not pg_catalog.pg_try_advisory_xact_lock(
+        pg_catalog.hashtextextended(p_model_id::text || ':' || btrim(p_version), 880)
+    ) then
+        raise exception using errcode = '55P03', message = 'MODEL_MEMBERSHIP_BUSY';
+    end if;
+
+    -- Materialize and lock relational membership once, including legacy fallback
+    -- and cross-version children. The destructive set cannot gain later rows.
+    -- A count mismatch rejects the complete command and rolls back any deletion.
+    execute 'with members as materialized (
+        select id, version, user_id, state_code
+          from public.processes
+         where model_id = $1 and coalesce(model_version, version) = $2
+         order by id, version
+         for update
+    ), removed as (' || 'del' || 'ete from public.processes p using members m
+        where p.id = m.id and p.version = m.version
+          and p.model_id = $1 and coalesce(p.model_version, p.version) = $2
+          and m.user_id = $3 and m.state_code = 0
+          and p.user_id = $3 and p.state_code = 0
+        returning 1
+    ) select (select count(*) from removed), (select count(*) from members)'
+       into v_rows_affected, v_expected_children
+       using p_model_id, p_version, v_owner;
+    if v_rows_affected <> v_expected_children then
+        raise exception 'PROCESS_NOT_FOUND';
+    end if;
+
+    execute 'del' || 'ete from lifecyclemodels where id = $1 and version = $2
+        and user_id = $3 and state_code = 0'
+       using p_model_id, p_version, v_owner;
 
     get diagnostics v_rows_affected = row_count;
     if v_rows_affected = 0 then
@@ -69507,6 +69545,43 @@ $_$;
 ALTER FUNCTION "private"."display_validate_search_v3"("p_kind" "text", "p_query" "text", "p_filters" "jsonb", "p_sort" "text", "p_limit" integer) OWNER TO "portal_display_executor";
 
 
+CREATE OR REPLACE FUNCTION "private"."fence_model_bundle_write_v1"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO ''
+    AS $$
+declare
+    v_old_key bigint;
+    v_new_key bigint;
+begin
+    if tg_table_name = 'processes' then
+        if tg_op <> 'INSERT' then
+            v_old_key := private.model_bundle_lock_key(old.model_id, coalesce(old.model_version, old.version));
+        end if;
+        if tg_op <> 'DELETE' then
+            v_new_key := private.model_bundle_lock_key(new.model_id, coalesce(new.model_version, new.version));
+        end if;
+    else
+        if tg_op <> 'INSERT' then
+            v_old_key := private.model_bundle_lock_key(old.id, old.version);
+        end if;
+        if tg_op <> 'DELETE' then
+            v_new_key := private.model_bundle_lock_key(new.id, new.version);
+        end if;
+    end if;
+    if (v_old_key is not null and not pg_catalog.pg_try_advisory_xact_lock_shared(v_old_key))
+       or (v_new_key is not null and v_new_key is distinct from v_old_key
+           and not pg_catalog.pg_try_advisory_xact_lock_shared(v_new_key)) then
+        raise exception using errcode = '55P03', message = 'MODEL_MEMBERSHIP_BUSY';
+    end if;
+    if tg_op = 'DELETE' then return old; end if;
+    return new;
+end
+$$;
+
+
+ALTER FUNCTION "private"."fence_model_bundle_write_v1"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "private"."final_result_fresh_readiness"("p_verification" "uuid", "p_run" "uuid", "p_plan_hash" "text", "p_actor" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO ''
@@ -73607,6 +73682,263 @@ $$;
 
 
 ALTER FUNCTION "private"."maintain_lcia_scope_closure_candidate_cache"("p_max_rows" integer, "p_lock_timeout_ms" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."model_bundle_lock_key"("p_model_id" "uuid", "p_version" "text") RETURNS bigint
+    LANGUAGE "sql" IMMUTABLE STRICT
+    SET "search_path" TO ''
+    AS $$
+    select pg_catalog.hashtextextended(p_model_id::text || ':' || btrim(p_version), 880)
+$$;
+
+
+ALTER FUNCTION "private"."model_bundle_lock_key"("p_model_id" "uuid", "p_version" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."model_bundle_operation_v1"("p_actor" "uuid", "p_request" "jsonb") RETURNS "jsonb"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $_$
+declare
+    v_action text := p_request->>'action';
+    v_id uuid := (p_request->>'modelId')::uuid;
+    v_version text := p_request->>'version';
+    v_operation uuid := (p_request->>'operationId')::uuid;
+    v_plan jsonb := p_request->'plan';
+    v_expected text := p_request->>'expectedRevision';
+    v_request_hash bytea;
+    v_snapshot jsonb;
+    v_receipt private.model_bundle_save_receipts%rowtype;
+    v_mutation jsonb;
+    v_member_version text;
+    v_written jsonb;
+begin
+    if p_actor is null then raise exception using errcode = '42501', message = 'AUTH_REQUIRED'; end if;
+    if v_id is null or coalesce(v_version, '') !~ '^[0-9]{2}\.[0-9]{2}\.[0-9]{3}$'
+       or coalesce(v_action, '') not in ('inspect','recover','save') then
+        raise exception 'INVALID_PLAN';
+    end if;
+    if v_action = 'inspect' then
+        return jsonb_build_object('protocol','model-bundle.v1','status','observed',
+            'snapshot', private.model_bundle_snapshot_v1(p_actor, v_id, v_version));
+    end if;
+    if v_operation is null then raise exception 'INVALID_PLAN'; end if;
+
+    if v_action = 'save' then
+        if current_setting('transaction_isolation') not in ('read committed','read uncommitted') then
+            raise exception using errcode = '0A000', message = 'UNSUPPORTED_TRANSACTION_ISOLATION';
+        end if;
+        if not pg_catalog.pg_try_advisory_xact_lock(
+            pg_catalog.hashtextextended(p_actor::text || ':' || v_operation::text, 976)
+        ) then
+            raise exception using errcode = '55P03', message = 'MODEL_MEMBERSHIP_BUSY';
+        end if;
+        v_request_hash := sha256(convert_to(p_request::text, 'UTF8'));
+    end if;
+    select * into v_receipt from private.model_bundle_save_receipts
+    where actor_id = p_actor and operation_id = v_operation;
+    if found then
+        if v_action = 'save' and v_request_hash is distinct from v_receipt.request_hash then
+            raise exception 'MODEL_OPERATION_CONFLICT';
+        end if;
+        if v_id = v_receipt.model_id and v_version = v_receipt.model_version then
+            return jsonb_build_object('protocol','model-bundle.v1','status','committed',
+                'modelId',v_id,'version',v_version,'operationId',v_operation,
+                'revision',v_receipt.revision,'members',v_receipt.members,'savedAt',v_receipt.saved_at);
+        end if;
+    end if;
+    if v_action = 'recover' then
+        return jsonb_build_object('protocol','model-bundle.v1','status','unknown','operationId',v_operation);
+    end if;
+
+    if coalesce(v_plan->>'mode','') not in ('create','update')
+       or v_plan->>'modelId' is distinct from v_id::text
+       or v_plan->>'version' is distinct from v_version
+       or coalesce(v_plan->>'allocateVersion','false') <> 'false'
+       or jsonb_typeof(v_plan->'processMutations') is distinct from 'array'
+       or v_plan #>> '{parent,jsonOrdered,lifeCycleModelDataSet,lifeCycleModelInformation,dataSetInformation,common:UUID}'
+            is distinct from v_id::text
+       or v_plan #>> '{parent,jsonOrdered,lifeCycleModelDataSet,administrativeInformation,publicationAndOwnership,common:dataSetVersion}'
+            is distinct from v_version
+       or not (p_request ? 'expectedRevision') then
+        raise exception 'INVALID_PLAN';
+    end if;
+    if not pg_catalog.pg_try_advisory_xact_lock(private.model_bundle_lock_key(v_id, v_version)) then
+        raise exception using errcode = '55P03', message = 'MODEL_MEMBERSHIP_BUSY';
+    end if;
+    if v_plan->>'mode' = 'update' then
+        v_snapshot := private.model_bundle_snapshot_v1(p_actor, v_id, v_version);
+        if v_snapshot is null or v_snapshot #>> '{model,state_code}' <> '0'
+           or v_expected is null or v_snapshot->>'revision' is distinct from v_expected then
+            raise exception 'MODEL_BUNDLE_CONFLICT';
+        end if;
+    else
+        if v_expected is not null then raise exception 'INVALID_PLAN'; end if;
+        if exists (select 1 from public.lifecyclemodels where id = v_id and version = v_version)
+           or exists (select 1 from public.processes where model_id = v_id
+                        and coalesce(model_version, version) = v_version and state_code < 100) then
+            raise exception 'MODEL_BUNDLE_CONFLICT';
+        end if;
+    end if;
+
+    for v_mutation in select value from jsonb_array_elements(v_plan->'processMutations') loop
+        if coalesce(v_mutation->>'op','') not in ('create','update','delete') then
+            raise exception 'INVALID_PLAN';
+        end if;
+        if v_mutation->>'op' <> 'delete' then
+            v_member_version := v_mutation #>> '{jsonOrdered,processDataSet,administrativeInformation,publicationAndOwnership,common:dataSetVersion}';
+            if v_mutation #>> '{jsonOrdered,processDataSet,processInformation,dataSetInformation,common:UUID}'
+                  is distinct from v_mutation->>'id'
+               or v_member_version is null
+               or (v_mutation->>'op' = 'update' and v_member_version is distinct from v_mutation->>'version')
+               or v_mutation->>'modelId' is distinct from v_id::text then
+                raise exception 'INVALID_PLAN';
+            end if;
+        end if;
+        if v_mutation->>'op' <> 'create' and not exists (
+            select 1 from jsonb_array_elements(v_snapshot->'processes') r
+            where r->>'id' = v_mutation->>'id' and r->>'version' = v_mutation->>'version'
+              and r->>'state_code' = '0'
+        ) then
+            raise exception 'MODEL_MEMBERSHIP_INVALID';
+        end if;
+    end loop;
+
+    v_written := private.save_lifecycle_model_bundle(
+        jsonb_set(v_plan, '{actorUserId}', to_jsonb(p_actor::text))
+    );
+    if v_written->>'model_id' is distinct from v_id::text
+       or v_written->>'version' is distinct from v_version then
+        raise exception 'INVALID_PLAN';
+    end if;
+    v_snapshot := private.model_bundle_snapshot_v1(p_actor, v_id, v_version);
+    if v_snapshot is null or v_snapshot->'members' = '[]'::jsonb then
+        raise exception 'MODEL_MEMBERSHIP_INVALID';
+    end if;
+    insert into private.model_bundle_save_receipts
+        (actor_id,operation_id,request_hash,model_id,model_version,revision,members)
+    values
+        (p_actor,v_operation,v_request_hash,v_id,v_version,v_snapshot->>'revision',v_snapshot->'members')
+    returning * into v_receipt;
+    return jsonb_build_object('protocol','model-bundle.v1','status','committed',
+        'modelId',v_id,'version',v_version,'operationId',v_operation,
+        'revision',v_receipt.revision,'members',v_receipt.members,'savedAt',v_receipt.saved_at);
+end
+$_$;
+
+
+ALTER FUNCTION "private"."model_bundle_operation_v1"("p_actor" "uuid", "p_request" "jsonb") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "private"."model_bundle_snapshot_v1"("p_actor" "uuid", "p_id" "uuid", "p_version" "text") RETURNS "jsonb"
+    LANGUAGE "plpgsql" STABLE
+    SET "search_path" TO ''
+    AS $_$
+declare
+    v_model public.lifecyclemodels%rowtype;
+    v_declared jsonb;
+    v_references jsonb;
+    v_members jsonb;
+    v_rows jsonb;
+    v_result jsonb;
+begin
+    select * into v_model from public.lifecyclemodels
+     where id = p_id and version = p_version and user_id = p_actor;
+    if not found then return null; end if;
+
+    v_declared := coalesce(v_model.json_tg::jsonb->'submodels', '[]'::jsonb);
+    v_references := v_model.json_ordered::jsonb #>
+      '{lifeCycleModelDataSet,lifeCycleModelInformation,dataSetInformation,referenceToResultingProcess}';
+    v_references := case
+        when v_references is null or v_references = 'null'::jsonb then '[]'::jsonb
+        when jsonb_typeof(v_references) = 'array' then v_references
+        else jsonb_build_array(v_references)
+    end;
+    if jsonb_typeof(v_declared) <> 'array' then
+        raise exception 'MODEL_MEMBERSHIP_INVALID';
+    end if;
+    if v_declared = '[]'::jsonb and jsonb_array_length(v_references) > 0 then
+        if jsonb_array_length(v_references) <> 1 then
+            raise exception 'MODEL_MEMBERSHIP_INVALID';
+        end if;
+        v_declared := jsonb_build_array(jsonb_build_object(
+            'id', v_references #>> '{0,@refObjectId}',
+            'version', v_references #>> '{0,@version}',
+            'type', 'primary'
+        ));
+    end if;
+
+    if exists (
+        select 1 from jsonb_array_elements(v_declared) as m
+        where jsonb_typeof(m) <> 'object'
+           or coalesce(m->>'id', '') !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+           or coalesce(m->>'version', '') !~ '^[0-9]{2}\.[0-9]{2}\.[0-9]{3}$'
+           or coalesce(m->>'type', '') not in ('primary','secondary','allocated')
+    ) or exists (
+        select 1 from jsonb_array_elements(v_declared) as m
+        group by m->>'id', m->>'version' having count(*) > 1
+    ) or exists (
+        select 1 from jsonb_array_elements(v_references) r
+        group by r->>'@refObjectId', r->>'@version' having count(*) > 1
+    ) or exists (
+        select 1 from jsonb_array_elements(v_references) r
+        where not exists (
+            select 1 from jsonb_array_elements(v_declared) m
+            where m->>'type' in ('primary','secondary')
+              and m->>'id' = r->>'@refObjectId' and m->>'version' = r->>'@version'
+        )
+    ) or (v_declared <> '[]'::jsonb and (
+        (select count(*) from jsonb_array_elements(v_declared) m where m->>'type' = 'primary') <> 1
+        or not exists (
+            select 1 from jsonb_array_elements(v_declared) m
+            join jsonb_array_elements(v_references) r
+              on m->>'id' = r->>'@refObjectId' and m->>'version' = r->>'@version'
+            where m->>'type' = 'primary'
+        )
+    )) then
+        raise exception 'MODEL_MEMBERSHIP_INVALID';
+    end if;
+
+    with actual as materialized (
+        select id, version, model_version, user_id, state_code, modified_at,
+               json_ordered, rule_verification
+          from public.processes
+         where model_id = p_id and coalesce(model_version, version) = p_version
+           and state_code < 100
+    ), declared as materialized (
+        select m as member, (m->>'id')::uuid as id, m->>'version' as version
+          from jsonb_array_elements(v_declared) m
+    )
+    select
+        jsonb_agg(d.member order by d.id, d.version),
+        jsonb_agg(jsonb_build_object(
+            'id', a.id, 'version', a.version, 'model_id', p_id, 'model_version', a.model_version,
+            'state_code', a.state_code, 'modified_at', a.modified_at, 'json_ordered', a.json_ordered,
+            'rule_verification', a.rule_verification
+        ) order by d.id, d.version)
+        into v_members, v_rows
+      from declared d full join actual a on d.id = a.id and d.version = a.version
+      having count(*) = count(d.id) and count(*) = count(a.id)
+         and count(*) = count(*) filter (where a.user_id = p_actor);
+    if not found then raise exception 'MODEL_MEMBERSHIP_INVALID'; end if;
+
+    v_result := jsonb_build_object(
+        'model', jsonb_build_object(
+            'id', v_model.id, 'version', v_model.version, 'modified_at', v_model.modified_at,
+            'state_code', v_model.state_code, 'json_ordered', v_model.json_ordered,
+            'json_tg', v_model.json_tg, 'rule_verification', v_model.rule_verification
+        ),
+        'members', coalesce(v_members, '[]'::jsonb),
+        'processes', coalesce(v_rows, '[]'::jsonb)
+    );
+    return v_result || jsonb_build_object(
+        'revision', encode(sha256(convert_to(v_result::text, 'UTF8')), 'hex')
+    );
+end
+$_$;
+
+
+ALTER FUNCTION "private"."model_bundle_snapshot_v1"("p_actor" "uuid", "p_id" "uuid", "p_version" "text") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "private"."next_actor_lexical_version_candidates_v2"("p_kind" "text", "p_query" "text", "p_terms" "text"[], "p_residual_filter" "jsonb", "p_process_type" "text", "p_flow_types" "text"[], "p_as_input" boolean, "p_classification_codes" "text"[], "p_elementary_codes" "text"[], "p_data_source" "text", "p_state_code" integer, "p_team_id" "uuid") RETURNS TABLE("rank" bigint, "id" "uuid", "version" "text", "score" double precision)
@@ -84562,6 +84894,7 @@ declare
     v_mutation jsonb;
     v_child_id uuid;
     v_child_version text;
+    v_saved_child_version text;
     v_child_json_ordered jsonb;
     v_child_rule_verification boolean;
     v_result_row lifecyclemodels%rowtype;
@@ -84798,6 +85131,11 @@ begin
           from lifecyclemodels
          where id = v_model_id
            and version = v_expected_version
+           and state_code = 0
+           and (user_id = v_actor_user_id or (
+               v_process_mutations = '[]'::jsonb
+               and api.svc_membership_is_review_admin(v_actor_user_id) @> '{"ok":true,"data":true}'::jsonb
+           ))
          for update;
 
         if not found then
@@ -84837,8 +85175,8 @@ begin
                     raise exception 'INVALID_PLAN';
                 end if;
 
-                execute 'del' || 'ete from processes where id = $1 and version = $2 and model_id = $3 and coalesce(model_version, version) = $4'
-                   using v_child_id, v_child_version, v_model_id, v_model_version;
+                execute 'del' || 'ete from processes where id = $1 and version = $2 and model_id = $3 and coalesce(model_version, version) = $4 and user_id = $5 and state_code = 0'
+                   using v_child_id, v_child_version, v_model_id, v_model_version, v_actor_user_id;
 
                 get diagnostics v_rows_affected = row_count;
                 if v_rows_affected = 0 then
@@ -84929,10 +85267,18 @@ begin
                  where id = v_child_id
                    and version = v_child_version
                    and model_id = v_model_id
-                   and coalesce(model_version, version) = v_model_version;
+                   and coalesce(model_version, version) = v_model_version
+                   and user_id = v_actor_user_id
+                   and state_code = 0
+                returning version::text into v_saved_child_version;
 
                 if not found then
                     raise exception 'PROCESS_NOT_FOUND';
+                end if;
+                -- JSON synchronization may derive a different key from content.
+                -- Reject that change within the same transaction.
+                if v_saved_child_version is distinct from v_child_version then
+                    raise exception 'INVALID_PLAN';
                 end if;
             else
                 raise exception 'INVALID_PLAN';
@@ -84968,11 +85314,19 @@ begin
                rule_verification = v_parent_rule_verification
          where id = v_model_id
            and version = v_expected_version
+           and state_code = 0
+           and (user_id = v_actor_user_id or (
+               v_process_mutations = '[]'::jsonb
+               and api.svc_membership_is_review_admin(v_actor_user_id) @> '{"ok":true,"data":true}'::jsonb
+           ))
         returning *
              into v_result_row;
 
         if not found then
             raise exception 'MODEL_NOT_FOUND';
+        end if;
+        if v_result_row.version::text is distinct from v_expected_version then
+            raise exception 'INVALID_PLAN';
         end if;
     end if;
 
@@ -110455,6 +110809,21 @@ COMMENT ON COLUMN "private"."lcia_scope_closure_scan_executions"."numerical_snap
 
 
 
+CREATE TABLE IF NOT EXISTS "private"."model_bundle_save_receipts" (
+    "actor_id" "uuid" NOT NULL,
+    "operation_id" "uuid" NOT NULL,
+    "request_hash" "bytea" NOT NULL,
+    "model_id" "uuid" NOT NULL,
+    "model_version" "text" NOT NULL,
+    "revision" "text" NOT NULL,
+    "members" "jsonb" NOT NULL,
+    "saved_at" timestamp with time zone DEFAULT "transaction_timestamp"() NOT NULL
+);
+
+
+ALTER TABLE "private"."model_bundle_save_receipts" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "private"."next_hybrid_public_candidates_v2" (
     "dataset_kind" "text" NOT NULL,
     "id" "uuid" NOT NULL,
@@ -113660,6 +114029,11 @@ ALTER TABLE ONLY "private"."lcia_scope_closure_scan_executions"
 
 ALTER TABLE ONLY "private"."lcia_scope_closure_scan_executions"
     ADD CONSTRAINT "lcia_scope_closure_scan_executions_scan_key_key" UNIQUE ("scan_key");
+
+
+
+ALTER TABLE ONLY "private"."model_bundle_save_receipts"
+    ADD CONSTRAINT "model_bundle_save_receipts_pkey" PRIMARY KEY ("actor_id", "operation_id");
 
 
 
@@ -117249,6 +117623,14 @@ CREATE OR REPLACE TRIGGER "unitgroups_set_modified_at_trigger" BEFORE UPDATE OF 
 
 
 
+CREATE OR REPLACE TRIGGER "zz_model_bundle_write_fence" BEFORE INSERT OR DELETE OR UPDATE ON "public"."lifecyclemodels" FOR EACH ROW EXECUTE FUNCTION "private"."fence_model_bundle_write_v1"();
+
+
+
+CREATE OR REPLACE TRIGGER "zz_model_bundle_write_fence" BEFORE INSERT OR DELETE OR UPDATE ON "public"."processes" FOR EACH ROW EXECUTE FUNCTION "private"."fence_model_bundle_write_v1"();
+
+
+
 CREATE OR REPLACE TRIGGER "zz_next_hybrid_public_flow_candidate_v2" AFTER INSERT OR DELETE OR UPDATE OF "id", "version", "state_code", "team_id", "json", "embedding_ft", "modified_at" ON "public"."flows" FOR EACH ROW EXECUTE FUNCTION "private"."sync_next_hybrid_public_flow_candidate_v2"();
 
 
@@ -119016,6 +119398,9 @@ ALTER TABLE "private"."lcia_scope_closure_retention_summaries" ENABLE ROW LEVEL 
 
 
 ALTER TABLE "private"."lcia_scope_closure_scan_executions" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "private"."model_bundle_save_receipts" ENABLE ROW LEVEL SECURITY;
 
 
 CREATE POLICY "navigation_projection_contract_read_v1" ON "private"."portal_navigation_projection_contract_v1" FOR SELECT TO "portal_public_executor" USING (true);
@@ -123880,6 +124265,10 @@ GRANT ALL ON FUNCTION "private"."display_validate_search_v3"("p_kind" "text", "p
 
 
 
+REVOKE ALL ON FUNCTION "private"."fence_model_bundle_write_v1"() FROM PUBLIC;
+
+
+
 REVOKE ALL ON FUNCTION "private"."final_result_fresh_readiness"("p_verification" "uuid", "p_run" "uuid", "p_plan_hash" "text", "p_actor" "uuid") FROM PUBLIC;
 
 
@@ -124265,6 +124654,18 @@ GRANT ALL ON FUNCTION "private"."lifecyclemodels_sync_jsonb_version"() TO "api_i
 
 REVOKE ALL ON FUNCTION "private"."maintain_lcia_scope_closure_candidate_cache"("p_max_rows" integer, "p_lock_timeout_ms" integer) FROM PUBLIC;
 GRANT ALL ON FUNCTION "private"."maintain_lcia_scope_closure_candidate_cache"("p_max_rows" integer, "p_lock_timeout_ms" integer) TO "api_internal_executor";
+
+
+
+REVOKE ALL ON FUNCTION "private"."model_bundle_lock_key"("p_model_id" "uuid", "p_version" "text") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."model_bundle_operation_v1"("p_actor" "uuid", "p_request" "jsonb") FROM PUBLIC;
+
+
+
+REVOKE ALL ON FUNCTION "private"."model_bundle_snapshot_v1"("p_actor" "uuid", "p_id" "uuid", "p_version" "text") FROM PUBLIC;
 
 
 
