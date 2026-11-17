@@ -1111,5 +1111,18 @@ select ok((select e.numerical_snapshot_id=g.numerical_snapshot_id
   where e.completed_check_id=(select id from private.lcia_scope_closure_checks where request_idempotency_token='closure-e2e-a')
 ),'retention preserves the scan execution numerical snapshot UUID as a soft immutable reference');
 
+-- Simulate missing legacy membership inside this rollback-only fixture.
+-- Candidate availability must never silently repair an incomplete legacy release.
+alter table private.lca_release_dataset_versions disable trigger user;
+delete from private.lca_release_dataset_versions
+where release_run_id='c7220000-0000-4000-8000-000000000030';
+alter table private.lca_release_dataset_versions enable trigger user;
+select throws_ok($query$
+  select private.lcia_scope_closure_normalize_request(
+    '{"coverageMode":"global_eligible","lciaMethods":[]}'::jsonb
+  )
+$query$, '22023', 'current_release_has_no_eligible_processes',
+  'empty legacy release still fails instead of using candidate inputs');
+
 select * from finish();
 rollback;
