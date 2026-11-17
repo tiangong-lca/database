@@ -20,8 +20,8 @@ checkPaths:
   - .githooks/pre-push
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-12
-lastReviewedCommit: 32874389bddc0a1a0aa846f6efbf9a1ee71f627e
+lastReviewedAt: 2026-11-17
+lastReviewedCommit: 50006776090d2bb2772de8729c72d65aba4f8321
 lastReviewedNote: "Database #970 and #972: reviewed actor-only Result catalog, service-only search notifications and deployment boundaries."
 related:
   - ../../AGENTS.md
