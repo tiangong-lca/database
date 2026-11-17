@@ -23,11 +23,15 @@ begin
     raise exception using errcode = '22023', message = 'invalid_closure_scope_identity_list';
   end if;
 
-  select release_run_id
+  -- Final Result membership is an output selection. Only a legacy
+  -- publication supplies the release-bound calculation input universe.
+  select publication.release_run_id
   into v_release_id
-  from private.lca_release_publications
-  where is_current = true and status = 'current'
-  order by published_at desc
+  from private.lca_release_publications publication
+  join private.lca_release_runs release on release.id = publication.release_run_id
+  where publication.is_current = true and publication.status = 'current'
+    and release.publication_format = 'legacy-four-zip.v1'
+  order by publication.published_at desc
   limit 1;
 
   if v_release_id is not null then

@@ -62,6 +62,10 @@ begin
   select fingerprint into v_calculation_fingerprint
     from private.lca_active_calculation_contract where singleton for share;
 
+  -- Admission can normalize more than once, then freeze the source.
+  -- Hold the publication selector stable through all reads, including the
+  -- no-current-publication case. Concurrent checks share this lock.
+  lock table private.lca_release_publications in share mode;
   v_scope := private.lcia_scope_closure_normalize_request(p_requested_scope);
 
   if v_scope->>'eligibilityPredicateVersion' = 'current-public-release-manifest:v2' then
