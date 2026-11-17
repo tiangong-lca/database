@@ -508,5 +508,103 @@ select is(
 
 reset role;
 
+-- A selected Final Result publication must leave candidate calculation inputs usable.
+insert into private.lca_release_runs(
+  id, release_version, publication_format, scope_mode,
+  selection_manifest_hash, input_manifest_hash, calculation_bundle_hash,
+  calculation_bundle_ref, profile_lock_hash, publish_plan_hash, publish_plan,
+  artifact_set_hash, release_manifest_hash, release_manifest, status,
+  idempotency_key, request_hash, created_by
+) values (
+  'c7240000-0000-4000-8000-000000000090', '2026.11.0',
+  'final-result-pair.v2', 'selected_final_results', repeat('a',64), repeat('b',64),
+  null, null, repeat('d',64), repeat('e',64), '{}', repeat('f',64),
+  repeat('9',64), '{}', 'published', 'candidate-final-release', repeat('1',64),
+  'c7240000-0000-4000-8000-000000000001'
+);
+insert into private.lca_release_approvals(
+  id, release_run_id, publish_plan_hash, approval_hash, approved_by, approved_at, expires_at
+) values (
+  'c7240000-0000-4000-8000-000000000091',
+  'c7240000-0000-4000-8000-000000000090', repeat('e',64), repeat('2',64),
+  'c7240000-0000-4000-8000-000000000001', now(), now()+interval '1 day'
+);
+insert into private.lca_release_publications(
+  id, release_run_id, release_version, approval_id, approval_hash, publish_plan_hash,
+  release_manifest_hash, artifact_set_hash, approved_by, executed_by,
+  credential_fingerprint, idempotency_key, published_at
+) values (
+  'c7240000-0000-4000-8000-000000000092',
+  'c7240000-0000-4000-8000-000000000090', '2026.11.0',
+  'c7240000-0000-4000-8000-000000000091', repeat('2',64), repeat('e',64),
+  repeat('9',64), repeat('f',64), 'c7240000-0000-4000-8000-000000000001',
+  'c7240000-0000-4000-8000-000000000001', repeat('3',64), 'candidate-final-publication', now()
+);
+
+-- Reuse the exact pre-publication scopes to prove publication does not change inputs.
+create temporary table final_publication_scopes as
+select request_idempotency_token as original_token,
+  case when requested_scope_manifest->>'coverageMode' = 'global_eligible'
+    then requested_scope_manifest - 'processes'
+    else requested_scope_manifest end as scope
+from private.lcia_scope_closure_checks
+where request_idempotency_token in ('candidate-subset-a', 'candidate-global');
+grant select on final_publication_scopes to authenticated;
+set local role authenticated;
+create temporary table final_publication_result_set as
+select api.cmd_lcia_result_set_create('Final publication candidate regression') as result;
+create temporary table final_publication_responses as
+select original_token, api.cmd_lcia_scope_closure_check_request_v3(
+  (select (result->'data'->>'resultSetId')::uuid from final_publication_result_set),
+  scope, 'final-' || original_token, '{}'
+) as result from final_publication_scopes;
+select is((select count(*) from final_publication_responses where result->>'ok'='true'),
+  2::bigint, 'Final Result current publication admits subset and global through ResultSet RPC');
+select is(
+  api.cmd_lcia_scope_closure_check_request_v2(
+    (select scope || '{"certificateFreshnessPolicy":"current-membership-required-v1"}'
+     from final_publication_scopes where original_token='candidate-global'),
+    'final-current-membership', '{}'
+  )->>'code', 'current_release_required',
+  'Final Result publication does not satisfy calculation current-membership freshness'
+);
+select is(
+  api.cmd_lcia_scope_closure_check_request_v2(
+    (select scope || '{"lciaMethods":[{"id":"c7240000-0000-4000-8000-000000000099","version":"01.00.000"}]}'
+     from final_publication_scopes where original_token='candidate-global'),
+    'final-invalid-method', '{}'
+  )->>'code', 'invalid_closure_scope', 'Final Result path retains reviewed method validation'
+);
+reset role;
+select is((select count(*) from private.lcia_scope_closure_checks after_check
+  join private.lcia_scope_closure_checks before_check
+    on after_check.request_idempotency_token='final-' || before_check.request_idempotency_token
+  where before_check.request_idempotency_token in ('candidate-subset-a','candidate-global')
+    and after_check.requested_scope_hash=before_check.requested_scope_hash
+    and after_check.data_snapshot_token=before_check.data_snapshot_token
+    and after_check.scan_execution_id=before_check.scan_execution_id
+    and after_check.result_set_id is not null),
+  2::bigint, 'Final Result publication preserves candidate scope, frozen snapshot and reusable scan');
+select ok(exists(select 1 from pg_locks where pid=pg_backend_pid()
+  and relation='private.lca_release_publications'::regclass and mode='ShareLock' and granted),
+  'admission holds the publication selector stable until transaction completion');
+select is((select count(*) from private.lca_release_dataset_versions
+  where release_run_id='c7240000-0000-4000-8000-000000000090'),
+  0::bigint, 'candidate checks do not fabricate legacy release membership');
+
+-- Even a newer derived Result version must not replace its eligible Unit root.
+insert into public.processes(id,version,state_code,json,json_ordered,user_id)
+select id,'03.00.000',120,
+  jsonb_set(json, '{processDataSet,administrativeInformation,publicationAndOwnership,common:dataSetVersion}', '"03.00.000"'),
+  jsonb_set(json_ordered::jsonb, '{processDataSet,administrativeInformation,publicationAndOwnership,common:dataSetVersion}', '"03.00.000"')::json,
+  user_id from public.processes
+where id='c7240000-0000-4000-8000-000000000010' and version='02.00.000';
+select is(private.lcia_scope_closure_normalize_request(
+  (select scope from final_publication_scopes where original_token='candidate-global')
+)->'processes'->0->>'version', '02.00.000', 'Final Result path excludes state 120 from calculation roots');
+select throws_ok($query$select private.lcia_scope_closure_normalize_request(
+  '{"coverageMode":"subset","processes":[{"id":"c7240000-0000-4000-8000-000000000010","version":"03.00.000"}],"lciaMethods":[]}'
+)$query$, '22023', 'invalid_or_ineligible_process_selection', 'derived Results cannot be selected as calculation roots');
+
 select * from finish();
 rollback;
