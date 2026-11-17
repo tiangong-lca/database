@@ -12524,6 +12524,10 @@ begin
   select fingerprint into v_calculation_fingerprint
     from private.lca_active_calculation_contract where singleton for share;
 
+  -- Admission can normalize more than once, then freeze the source.
+  -- Hold the publication selector stable through all reads, including the
+  -- no-current-publication case. Concurrent checks share this lock.
+  lock table private.lca_release_publications in share mode;
   v_scope := private.lcia_scope_closure_normalize_request(p_requested_scope);
 
   if v_scope->>'eligibilityPredicateVersion' = 'current-public-release-manifest:v2' then
@@ -73001,11 +73005,15 @@ begin
     raise exception using errcode = '22023', message = 'invalid_closure_scope_identity_list';
   end if;
 
-  select release_run_id
+  -- Final Result membership is an output selection. Only a legacy
+  -- publication supplies the release-bound calculation input universe.
+  select publication.release_run_id
   into v_release_id
-  from private.lca_release_publications
-  where is_current = true and status = 'current'
-  order by published_at desc
+  from private.lca_release_publications publication
+  join private.lca_release_runs release on release.id = publication.release_run_id
+  where publication.is_current = true and publication.status = 'current'
+    and release.publication_format = 'legacy-four-zip.v1'
+  order by publication.published_at desc
   limit 1;
 
   if v_release_id is not null then

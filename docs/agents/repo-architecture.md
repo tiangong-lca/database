@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-17
-lastReviewedCommit: ede41da0bd1a9cb0bf3c32f656bfdf1b6b4c9b6a
-lastReviewedNote: "Database #966 reviewed transition alias retirement and stable archive readback."
+lastReviewedCommit: 2ce234efdf193744b2d636119c4cf3fe0a7ee106
+lastReviewedNote: "Database #977: reviewed format-aware closure input selection, publication stability during snapshot admission and exact-local regression/schema proof."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -216,6 +216,24 @@ All three APIs are service-only under `EDGE-DATA-PRODUCT-01`; raw tables remain
 ACL-closed with RLS. Neither storage receipts nor reconciliation grants actor
 access or creates a release/current pointer. The versioned publication adapter,
 reader readiness, selection activation and full-archive authorization remain required.
+
+## Calculation inputs after Final Result publication
+
+Scope-closure admission uses the current publication as a calculation source only
+when its run has `publication_format = legacy-four-zip.v1`. A current
+`final-result-pair.v2` publication uses the existing candidate public-state source,
+with exact state-100 Process eligibility, reviewed Methods and frozen dependency
+hashes. No-current-publication requests use the same candidate contract. Empty
+legacy manifests remain errors, and candidate checks still reject explicit
+`current-membership-required-v1` freshness. Published Final Result membership does
+not confer calculation-input eligibility.
+
+Admission holds a shared lock on the publication table from normalization through
+snapshot freezing and nested queue admission. Concurrent checks share the lock;
+publication activation/unpublication waits until admission completes. This also
+covers an initially empty publication table. Idempotent retries return the original
+check before acquiring this lock. Existing snapshots, certificates and build
+bindings retain their original identities.
 
 ## Final Result publication selection
 
