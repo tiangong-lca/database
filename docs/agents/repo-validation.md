@@ -1060,6 +1060,8 @@ previously granted reviewer behavior and expired, disabled or unknown
 OAuth clients. Hosted qualification uses the installed public CLI and a
 real author OAuth session on an explicitly authorized draft after deployment.
 
+For submission receipt recovery, verify the author can read the exact review ID by operation key and target. Test wrong keys, target versions or tables, a different author, reviewer denial, and ambiguity. The receipt query returns a single UUID only when the audit and visible review identify the same submission.
+
 ## SQL And Offline Node Contract Notes
 
 ### Advisor invokers and policy equivalence

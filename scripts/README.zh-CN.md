@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-18
-lastReviewedCommit: 3a9c54f71143fd55be93fc1719f6167c6bd90119
-lastReviewedNote: "Database #977: reviewed format-aware closure input selection, publication stability during snapshot admission and exact-local regression/schema proof."
+lastReviewedCommit: ae411bc190d9aece98a18f57e2c0b4ca933267d1
+lastReviewedNote: "Database #989: reviewed exact author receipt projection, capability closure and generated schema parity."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml

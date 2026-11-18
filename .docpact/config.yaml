@@ -1,8 +1,8 @@
 version: 1
 layout: repo
 lastReviewedAt: "2026-11-18"
-lastReviewedCommit: "814838e18e9d656e7219c1991ddd9b214b614cb1"
-lastReviewedNote: "Database #977: reviewed format-aware closure input selection, publication stability during snapshot admission and exact-local regression/schema proof."
+lastReviewedCommit: "ae411bc190d9aece98a18f57e2c0b4ca933267d1"
+lastReviewedNote: "Database #989: reviewed exact author receipt projection, capability closure and generated schema parity."
 
 # Keep deterministic governance facts here.
 # AGENTS.md remains the repo contract entrypoint.
