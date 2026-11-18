@@ -2932,6 +2932,15 @@ export type Database = {
         }
         Returns: Json
       }
+      qry_review_submit_receipt: {
+        Args: {
+          p_operation_key: string
+          p_target_id: string
+          p_target_table: string
+          p_target_version: string
+        }
+        Returns: string
+      }
       qry_root_review_reference_progress: {
         Args: { p_root_review_id: string }
         Returns: {

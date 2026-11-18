@@ -1,0 +1,1 @@
+COMMENT ON FUNCTION "api"."qry_review_submit_receipt"("p_operation_key" "text", "p_target_table" "text", "p_target_id" "uuid", "p_target_version" "text") IS 'Return only the visible review ID from one exact committed submission by the current actor. Missing or ambiguous operation evidence returns NULL.';

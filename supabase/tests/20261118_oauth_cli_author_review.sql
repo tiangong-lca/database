@@ -4,9 +4,13 @@ set local search_path = extensions, public;
 select no_plan();
 
 select ok(
-  (select count(*) = 2 and bool_and(allow_authenticated and not allow_anon and not allow_service_role)
+  (select array_agg(pg_catalog.to_regprocedure(routine_identity)::text order by routine_identity) = array[
+      'api.cmd_review_submit(text,uuid,text,jsonb)',
+      'api.qry_review_get_items(uuid[],uuid,text,integer[])',
+      'api.qry_review_submit_receipt(text,text,uuid,text)'
+    ] and bool_and(allow_authenticated and not allow_anon and not allow_service_role)
    from private.api_capability_grants where capability_id = 'CLI-REVIEW-AUTHOR-01'),
-  'only the two author RPC signatures use the narrow grant'
+  'only the exact author submit, read and receipt signatures use the narrow grant'
 );
 
 do $fixture$
@@ -73,7 +77,10 @@ select is(api.cmd_review_submit('contacts', '98400000-0000-4000-8000-00000000001
   'DATASET_NOT_FOUND', 'the command requires the exact requested version');
 
 create temporary table submit_receipt as
-select api.cmd_review_submit('contacts', '98400000-0000-4000-8000-000000000010', '01.00.000') as value;
+select api.cmd_review_submit(
+  'contacts', '98400000-0000-4000-8000-000000000010', '01.00.000',
+  jsonb_build_object('payload', jsonb_build_object('review_operation_key', repeat('a', 64)))
+) as value;
 select is((select value ->> 'ok' from submit_receipt), 'true', 'the author can submit the owned draft');
 select is((select jsonb_array_length(value #> '{data,affectedDatasets}') from submit_receipt), 1,
   'only the exact synthetic root was affected');
@@ -145,6 +152,36 @@ select is((select count(*) from api.qry_review_get_items(array['98400000-0000-40
 set local request.path = '/rpc/cmd_review_submit';
 select lives_ok('select api.oauth_client_pre_request()', 'an older review-command grant still admits submission');
 
+set local request.method = 'GET';
+set local request.path = '/rpc/qry_review_submit_receipt';
+set local request.jwt.claims = '{"role":"authenticated","sub":"98400000-0000-4000-8000-000000000001","client_id":"review984-author"}';
+select lives_ok('select api.oauth_client_pre_request()', 'author reaches exact receipt read');
+select is(api.qry_review_submit_receipt(repeat('a',64), 'contacts', '98400000-0000-4000-8000-000000000010', '01.00.000'),
+  (select (value #>> '{data,reviewId}')::uuid from submit_receipt), 'the actual committed audit supplies the original ID');
+select is(api.qry_review_submit_receipt(repeat('a',64), 'contacts', '98400000-0000-4000-8000-000000000010', '00.00.999'),
+  null::uuid, 'a stale version cannot resolve the receipt');
+select is(api.qry_review_submit_receipt(repeat('a',64), 'sources', '98400000-0000-4000-8000-000000000010', '01.00.000'),
+  null::uuid, 'a different table cannot resolve the receipt');
+select is(api.qry_review_submit_receipt(repeat('b',64), 'contacts', '98400000-0000-4000-8000-000000000010', '01.00.000'),
+  null::uuid, 'an unknown request cannot resolve a matching target');
+set local request.jwt.claims = '{"role":"authenticated","sub":"98400000-0000-4000-8000-000000000002","client_id":"review984-author"}';
+select is(api.qry_review_submit_receipt(repeat('a',64), 'contacts', '98400000-0000-4000-8000-000000000010', '01.00.000'),
+  null::uuid, 'another actor cannot read the receipt even with the capability');
+set local request.jwt.claims = '{"role":"authenticated","sub":"98400000-0000-4000-8000-000000000001","client_id":"review984-reviewer"}';
+select throws_ok('select api.oauth_client_pre_request()', '42501', 'OAuth client is not authorized for this API route',
+  'the old reviewer capability does not admit the new receipt route');
+
+reset role;
+insert into private.command_audit_log (command, actor_user_id, target_table, target_id, target_version, payload)
+  select command, actor_user_id, target_table, target_id, target_version, payload
+  from private.command_audit_log
+  where command = 'cmd_review_submit'
+    and target_id = '98400000-0000-4000-8000-000000000010'
+    and payload #>> '{payload,review_operation_key}' = repeat('a', 64);
+set local role authenticated;
+set local request.jwt.claims = '{"role":"authenticated","sub":"98400000-0000-4000-8000-000000000001","client_id":"review984-author"}';
+select is(api.qry_review_submit_receipt(repeat('a',64), 'contacts', '98400000-0000-4000-8000-000000000010', '01.00.000'),
+  null::uuid, 'ambiguous audits never select an arbitrary receipt');
 reset role;
 select * from finish();
 rollback;
