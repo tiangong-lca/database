@@ -20,8 +20,8 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-17
-lastReviewedCommit: 2ce234efdf193744b2d636119c4cf3fe0a7ee106
+lastReviewedAt: 2026-11-18
+lastReviewedCommit: 3a9c54f71143fd55be93fc1719f6167c6bd90119
 lastReviewedNote: "Database #977: reviewed format-aware closure input selection, publication stability during snapshot admission and exact-local regression/schema proof."
 related:
   - ../AGENTS.md
@@ -161,6 +161,11 @@ python3 scripts/test_oauth_release_migration_guard.py --local-container <isolate
 
 必须明确选择本任务拥有的本地 Database container；不支持 hosted DSN 或凭据参数。
 脚本输出 TAP 结果，local-contract CI 在 OAuth release capability suite 后运行它。
+
+### `test_oauth_cli_author_review_upgrade.py`
+
+在同一个最终回滚的事务中，对两种已有授权状态执行作者送审 migration 的实际守卫。
+使用 `--local-container` 指定本任务拥有的本地数据库容器。
 
 ### `configure_derivative_scheduler.py`
 

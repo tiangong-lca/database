@@ -20,8 +20,8 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-17
-lastReviewedCommit: 2ce234efdf193744b2d636119c4cf3fe0a7ee106
+lastReviewedAt: 2026-11-18
+lastReviewedCommit: 3a9c54f71143fd55be93fc1719f6167c6bd90119
 lastReviewedNote: "Database #977: reviewed format-aware closure input selection, publication stability during snapshot admission and exact-local regression/schema proof."
 related:
   - ../AGENTS.md
@@ -141,6 +141,12 @@ python3 scripts/test_oauth_release_migration_guard.py --local-container <isolate
 Select an explicit task-owned local Database container. The harness supports no hosted DSN
 or credential arguments and emits TAP results; local-contract CI runs it after the OAuth
 release capability suite.
+
+### `test_oauth_cli_author_review_upgrade.py`
+
+Runs the actual author Review migration guard against both populated predecessor
+vectors in a rollback-only transaction. Pass the exact task-owned local Database
+container via `--local-container`.
 
 ### `configure_derivative_scheduler.py`
 

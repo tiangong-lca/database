@@ -22,8 +22,8 @@ checkPaths:
   - .github/workflows/supabase-dev.yml
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
-lastReviewedAt: 2026-11-17
-lastReviewedCommit: 0900d71f28df9d10696a44b1a167c58c08388915
+lastReviewedAt: 2026-11-18
+lastReviewedCommit: 814838e18e9d656e7219c1991ddd9b214b614cb1
 lastReviewedNote: "Database #970 and #972: reviewed actor-only Result catalog, service-only search notifications and deployment boundaries."
 related:
   - ../../AGENTS.md

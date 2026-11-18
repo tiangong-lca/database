@@ -654,8 +654,8 @@ the service-only configuration façade after Supabase Auth registration; they
 are never hardcoded in a generic migration.
 
 The official Production CLI is an environment-specific registered client. Its
-exact capability class is `CLI-ALIAS-02`, `CLI-RPC-01`, `DB-CORE-READ-01`,
-`DB-CORE-WRITE-01`, `NX-CORE-02`, and `EDGE-BUNDLE-01`. The grant must change
+exact capability class is `CLI-ALIAS-02`, `CLI-REVIEW-AUTHOR-01`, `CLI-RPC-01`,
+`DB-CORE-READ-01`, `DB-CORE-WRITE-01`, `EDGE-BUNDLE-01`, and `NX-CORE-02`. The grant must change
 through `api.svc_oauth_client_configure`, after locking and verifying the exact
 current client and route-manifest state, with verification of both the result
 and append-only audit. A bounded one-time drift-repair migration may select one
@@ -663,6 +663,23 @@ client by its unique exact pre-change capability class and invoke that façade;
 it must no-op on zero matches, fail on ambiguity, and never embed an
 environment client ID. A consumer repository may own the public client
 identifier and live use case, but it does not own this database grant.
+
+`CLI-REVIEW-AUTHOR-01` admits the exact owner submission and review-item RPCs.
+Submission keeps the same ownership, exact version and lifecycle admission.
+Review-item reads under the author grant scope the rows to the authenticated
+submitter before filters and pagination. Reference records require the owner's
+actual submission audit. The author projection exposes target identity, state
+and the final rejection reason when present. Reviewer IDs, deadlines and
+internal logs stay in the existing participant projection. The prior
+`NX-CMD-01` and `NX-REV-01` grants retain access to their respective original
+routes. Review comments, assignments, decisions and queues retain their own grants.
+
+The author Review migration accepts the canonical `NX-REV-01` predecessor
+and the historical authenticated-only `CLI-RPC-01` review-read mapping in
+persistent Dev. Each route vector selects its own exact pre-change CLI grant
+class. With the Dev vector, the registered CLI has only `CLI-RPC-01`,
+`DB-CORE-READ-01`, and `DB-CORE-WRITE-01` before the author grant is added.
+The generic `CLI-RPC-01` capability grants no participant access after cutover.
 
 The five protected Time-alias v2 routes are gated by `CLI-ALIAS-02`. The four
 actor-facing routes are authenticated-only, and the service-only executor

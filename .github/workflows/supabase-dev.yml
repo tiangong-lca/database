@@ -235,6 +235,8 @@ jobs:
           supabase test db supabase/tests/20260915_result_process_publication.sql
           supabase test db supabase/tests/20260830_oauth_client_capability_foundation.sql
           supabase test db supabase/tests/20260831_oauth_actor_command_capabilities.sql
+          supabase test db supabase/tests/20261118_oauth_cli_author_review.sql
+          python3 scripts/test_oauth_cli_author_review_upgrade.py --local-container supabase_db_database-engine
           supabase test db supabase/tests/20261025_calculation_contract_identity.sql
           supabase test db supabase/tests/20261014_snapshot_build_terminal_guard.sql
           supabase test db supabase/tests/20261016_all_unit_terminal_guard.sql
