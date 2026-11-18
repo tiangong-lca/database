@@ -23044,6 +23044,8 @@ begin
         when 'cmd_review_submit' then 'NX-CMD-01'
         when 'qry_review_get_items' then 'NX-REV-01'
       end;
+    elsif v_route_name = 'qry_review_get_comment_items' and v_capability_id = 'NX-REV-01' then
+      v_legacy_review_capability := 'CLI-REVIEW-AUTHOR-01';
     end if;
   else
     v_profile := coalesce(
@@ -29352,45 +29354,52 @@ CREATE OR REPLACE FUNCTION "api"."qry_review_get_comment_items"("p_review_id" "u
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO 'api', 'private', 'public', 'util', 'extensions', 'pg_temp'
     AS $$
-  with actor as (
-    select
-      auth.uid() as actor_id,
-      api.cmd_review_is_review_admin(auth.uid()) as is_review_admin,
-      exists (
-        select 1
-        from private.reviews as r
-        where r.id = p_review_id
-          and ((r.json -> 'user' ->> 'id')::uuid = auth.uid())
-      ) as is_owner
+  with visible as materialized (
+    select r.*, lower(coalesce(p_scope, 'auto')) as requested_scope,
+      private.oauth_client_has_capability('NX-REV-01') as participant_access
+    from api.qry_review_get_items(array[p_review_id]) as r
+  ), scoped as (
+    select r.*, case
+      when requested_scope = 'returned' then 'returned'
+      when requested_scope = 'opinions' then opinion_scope
+      -- Existing participant scopes retain their established projection.
+      when participant_access and requested_scope in ('all', 'auto', 'mine', 'self') then 'legacy'
+    end as view_scope
+    from visible as r
   )
-  select
-    c.review_id,
-    c.reviewer_id,
+  select c.review_id,
+    case when r.view_scope <> 'returned' then c.reviewer_id end,
     c.state_code,
-    coalesce(c.json::jsonb, '{}'::jsonb) as json,
-    c.created_at,
-    c.modified_at
-  from private.comments as c
-  cross join actor as a
-  where c.review_id = p_review_id
-    and api.policy_review_can_read(p_review_id, a.actor_id)
-    and (
-      a.is_review_admin
-      or a.is_owner
-      or c.reviewer_id = a.actor_id
-    )
-    and (
-      lower(coalesce(p_scope, 'auto')) not in ('mine', 'self')
-      or c.reviewer_id = a.actor_id
-    )
-  order by c.created_at asc, c.reviewer_id asc
+    case when r.view_scope = 'returned' then
+      jsonb_build_object('modellingAndValidation', coalesce((
+        select jsonb_object_agg(field.key, field.value)
+        from jsonb_each(case when jsonb_typeof(c.json::jsonb->'modellingAndValidation') = 'object'
+          then c.json::jsonb->'modellingAndValidation' else '{}'::jsonb end) as field
+        where field.key in ('validation', 'complianceDeclarations')
+      ), '{}'::jsonb))
+    else coalesce(c.json::jsonb, '{}'::jsonb) end,
+    c.created_at, c.modified_at
+  from scoped as r
+  join private.comments as c on c.review_id = r.id
+  where case r.view_scope
+    when 'returned' then r.target_table = 'processes' and r.state_code = -1 and c.state_code = -1
+      and (r.json->'user'->>'id' = auth.uid()::text or r.opinion_scope = 'admin'
+           or (r.opinion_scope = 'reviewer' and c.reviewer_id = auth.uid()))
+    when 'admin' then true
+    when 'reviewer' then c.reviewer_id = auth.uid()
+    when 'legacy' then (r.opinion_scope = 'admin' or r.json->'user'->>'id' = auth.uid()::text
+                        or c.reviewer_id = auth.uid())
+      and (r.requested_scope not in ('mine', 'self') or c.reviewer_id = auth.uid())
+    else false
+  end
+  order by c.created_at, c.reviewer_id
 $$;
 
 
 ALTER FUNCTION "api"."qry_review_get_comment_items"("p_review_id" "uuid", "p_scope" "text") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "api"."qry_review_get_items"("p_review_ids" "uuid"[] DEFAULT NULL::"uuid"[], "p_data_id" "uuid" DEFAULT NULL::"uuid", "p_data_version" "text" DEFAULT NULL::"text", "p_state_codes" integer[] DEFAULT NULL::integer[]) RETURNS TABLE("id" "uuid", "data_id" "uuid", "data_version" "text", "state_code" integer, "reviewer_id" "jsonb", "json" "jsonb", "deadline" timestamp with time zone, "created_at" timestamp with time zone, "modified_at" timestamp with time zone)
+CREATE OR REPLACE FUNCTION "api"."qry_review_get_items"("p_review_ids" "uuid"[] DEFAULT NULL::"uuid"[], "p_data_id" "uuid" DEFAULT NULL::"uuid", "p_data_version" "text" DEFAULT NULL::"text", "p_state_codes" integer[] DEFAULT NULL::integer[]) RETURNS TABLE("id" "uuid", "data_id" "uuid", "data_version" "text", "state_code" integer, "reviewer_id" "jsonb", "json" "jsonb", "deadline" timestamp with time zone, "created_at" timestamp with time zone, "modified_at" timestamp with time zone, "target_table" "text", "submitted_revision_checksum" "text", "opinion_scope" "text")
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
     AS $$
@@ -29423,7 +29432,17 @@ CREATE OR REPLACE FUNCTION "api"."qry_review_get_items"("p_review_ids" "uuid"[] 
     end,
     case when a.participant_access then r.deadline end,
     r.created_at,
-    r.modified_at
+    r.modified_at,
+    coalesce(r.target_table, r.json->'data'->>'table'),
+    r.submitted_revision_checksum,
+    case
+      when a.participant_access and api.cmd_review_is_review_admin(a.id) then 'admin'
+      when a.participant_access and api.cmd_review_is_review_member(a.id)
+        and (r.reviewer_id ? a.id::text or exists (
+          select 1 from private.comments as c where c.review_id = r.id and c.reviewer_id = a.id
+        )) then 'reviewer'
+      else 'returned'
+    end
   from private.reviews as r
   cross join actor as a
   where a.id is not null
@@ -29431,12 +29450,12 @@ CREATE OR REPLACE FUNCTION "api"."qry_review_get_items"("p_review_ids" "uuid"[] 
     and (
       p_data_id is null
       or r.data_id = p_data_id
-      or coalesce(r.json -> 'data' ->> 'id', '') = p_data_id::text
+      or (r.data_id is null and r.json->'data'->>'id' = p_data_id::text)
     )
     and (
       p_data_version is null
       or r.data_version = p_data_version
-      or coalesce(r.json -> 'data' ->> 'version', '') = p_data_version
+      or (r.data_version is null and r.json->'data'->>'version' = p_data_version)
     )
     and (p_state_codes is null or r.state_code = any (p_state_codes))
     and (

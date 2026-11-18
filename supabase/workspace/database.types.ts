@@ -2620,8 +2620,11 @@ export type Database = {
           id: string
           json: Json
           modified_at: string
+          opinion_scope: string
           reviewer_id: Json
           state_code: number
+          submitted_revision_checksum: string
+          target_table: string
         }[]
       }
       qry_review_get_member_list: {

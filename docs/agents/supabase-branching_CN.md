@@ -23,8 +23,8 @@ checkPaths:
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
 lastReviewedAt: 2026-11-18
-lastReviewedCommit: 814838e18e9d656e7219c1991ddd9b214b614cb1
-lastReviewedNote: "Database #970 and #972: reviewed actor-only Result catalog, service-only search notifications and deployment boundaries."
+lastReviewedCommit: 0b956680ca942cbf8808e20c8418834daa03af4b
+lastReviewedNote: "Database #992 covers exact review targets and role-scoped opinion reads through the existing review RPCs."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
