@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION "api"."qry_review_get_items"("p_review_ids" "uuid"[] DEFAULT NULL::"uuid"[], "p_data_id" "uuid" DEFAULT NULL::"uuid", "p_data_version" "text" DEFAULT NULL::"text", "p_state_codes" integer[] DEFAULT NULL::integer[]) RETURNS TABLE("id" "uuid", "data_id" "uuid", "data_version" "text", "state_code" integer, "reviewer_id" "jsonb", "json" "jsonb", "deadline" timestamp with time zone, "created_at" timestamp with time zone, "modified_at" timestamp with time zone)
+CREATE OR REPLACE FUNCTION "api"."qry_review_get_items"("p_review_ids" "uuid"[] DEFAULT NULL::"uuid"[], "p_data_id" "uuid" DEFAULT NULL::"uuid", "p_data_version" "text" DEFAULT NULL::"text", "p_state_codes" integer[] DEFAULT NULL::integer[]) RETURNS TABLE("id" "uuid", "data_id" "uuid", "data_version" "text", "state_code" integer, "reviewer_id" "jsonb", "json" "jsonb", "deadline" timestamp with time zone, "created_at" timestamp with time zone, "modified_at" timestamp with time zone, "target_table" "text", "submitted_revision_checksum" "text", "opinion_scope" "text")
     LANGUAGE "sql" STABLE SECURITY DEFINER
     SET "search_path" TO ''
     AS $$
@@ -31,7 +31,17 @@ CREATE OR REPLACE FUNCTION "api"."qry_review_get_items"("p_review_ids" "uuid"[] 
     end,
     case when a.participant_access then r.deadline end,
     r.created_at,
-    r.modified_at
+    r.modified_at,
+    coalesce(r.target_table, r.json->'data'->>'table'),
+    r.submitted_revision_checksum,
+    case
+      when a.participant_access and api.cmd_review_is_review_admin(a.id) then 'admin'
+      when a.participant_access and api.cmd_review_is_review_member(a.id)
+        and (r.reviewer_id ? a.id::text or exists (
+          select 1 from private.comments as c where c.review_id = r.id and c.reviewer_id = a.id
+        )) then 'reviewer'
+      else 'returned'
+    end
   from private.reviews as r
   cross join actor as a
   where a.id is not null
@@ -39,12 +49,12 @@ CREATE OR REPLACE FUNCTION "api"."qry_review_get_items"("p_review_ids" "uuid"[] 
     and (
       p_data_id is null
       or r.data_id = p_data_id
-      or coalesce(r.json -> 'data' ->> 'id', '') = p_data_id::text
+      or (r.data_id is null and r.json->'data'->>'id' = p_data_id::text)
     )
     and (
       p_data_version is null
       or r.data_version = p_data_version
-      or coalesce(r.json -> 'data' ->> 'version', '') = p_data_version
+      or (r.data_version is null and r.json->'data'->>'version' = p_data_version)
     )
     and (p_state_codes is null or r.state_code = any (p_state_codes))
     and (

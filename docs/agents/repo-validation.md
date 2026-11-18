@@ -32,9 +32,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-17
-lastReviewedCommit: 2ce234efdf193744b2d636119c4cf3fe0a7ee106
-lastReviewedNote: "Database #977: reviewed format-aware closure input selection, publication stability during snapshot admission and exact-local regression/schema proof."
+lastReviewedAt: 2026-11-18
+lastReviewedCommit: 0b956680ca942cbf8808e20c8418834daa03af4b
+lastReviewedNote: "Database #992 covers exact review targets and role-scoped opinion reads through the existing review RPCs."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
