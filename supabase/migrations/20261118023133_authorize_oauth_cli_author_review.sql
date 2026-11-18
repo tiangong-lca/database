@@ -1,38 +1,5 @@
 begin;
 
--- Verify the exact existing authenticated signatures before remapping them.
-do $routes$
-begin
-  update private.api_capability_grants as manifest
-  set capability_id = 'CLI-REVIEW-AUTHOR-01'
-  where (
-    (pg_catalog.to_regprocedure(manifest.routine_identity) =
-      'api.cmd_review_submit(text,uuid,text,jsonb)'::regprocedure
-      and manifest.capability_id = 'NX-CMD-01')
-    or (pg_catalog.to_regprocedure(manifest.routine_identity) =
-      'api.qry_review_get_items(uuid[],uuid,text,integer[])'::regprocedure
-      and manifest.capability_id = 'NX-REV-01')
-  )
-  and manifest.allow_authenticated
-  and not manifest.allow_anon
-  and not manifest.allow_service_role;
-
-  if (
-    select array_agg(manifest.routine_identity::regprocedure::oid order by manifest.routine_identity::regprocedure::oid)
-    from private.api_capability_grants as manifest
-    where manifest.capability_id = 'CLI-REVIEW-AUTHOR-01'
-  ) is distinct from (
-    select array_agg(route order by route)
-    from unnest(array[
-      'api.cmd_review_submit(text,uuid,text,jsonb)'::regprocedure::oid,
-      'api.qry_review_get_items(uuid[],uuid,text,integer[])'::regprocedure::oid
-    ]) as routes(route)
-  ) then
-    raise exception 'Issue #984 author review capability must map exactly the two authenticated routes';
-  end if;
-end;
-$routes$;
-
 create or replace function api.oauth_client_pre_request()
 returns void
 language plpgsql
@@ -233,25 +200,76 @@ as $function$
   order by r.modified_at desc, r.id desc;
 $function$;
 
--- Environment-specific Auth client IDs are runtime state. Select only the
--- unique existing official CLI class, as in #677, and keep Preview/local
--- installations without a registered client valid.
-do $grant$
+-- Accept the canonical Production predecessor and the verified persistent
+-- Dev fallback. Validate the two exact routes before granting any capability.
+do $authorize_review$
 declare
-  v_before constant text[] := array[
+  v_submit constant regprocedure := 'api.cmd_review_submit(text,uuid,text,jsonb)'::regprocedure;
+  v_read constant regprocedure := 'api.qry_review_get_items(uuid[],uuid,text,integer[])'::regprocedure;
+  v_author constant text := 'CLI-REVIEW-AUTHOR-01';
+  v_production_before constant text[] := array[
     'CLI-ALIAS-02', 'CLI-RPC-01', 'DB-CORE-READ-01', 'DB-CORE-WRITE-01',
     'EDGE-BUNDLE-01', 'NX-CORE-02'
   ];
-  v_after constant text[] := array[
-    'CLI-ALIAS-02', 'CLI-REVIEW-AUTHOR-01', 'CLI-RPC-01', 'DB-CORE-READ-01',
-    'DB-CORE-WRITE-01', 'EDGE-BUNDLE-01', 'NX-CORE-02'
+  v_dev_before constant text[] := array[
+    'CLI-RPC-01', 'DB-CORE-READ-01', 'DB-CORE-WRITE-01'
   ];
+  v_read_capability text;
+  v_before text[];
+  v_after text[];
   v_matches text[];
   v_client_id text;
   v_audit_before bigint;
   v_result jsonb;
 begin
+  lock table private.api_capability_grants in share row exclusive mode;
+
+  if (
+    select count(*) from pg_catalog.pg_proc
+    where pronamespace = 'api'::regnamespace
+      and proname in ('cmd_review_submit', 'qry_review_get_items')
+  ) <> 2 or (
+    select count(*) from private.api_capability_grants as manifest
+    where pg_catalog.to_regprocedure(manifest.routine_identity) in (v_submit, v_read)
+  ) <> 2 or exists (
+    select 1 from private.api_capability_grants where capability_id = v_author
+  ) or exists (
+    select 1
+    from unnest(array[v_submit, v_read]) as route(signature)
+    where pg_catalog.has_function_privilege('anon', route.signature::oid, 'EXECUTE')
+       or not pg_catalog.has_function_privilege('authenticated', route.signature::oid, 'EXECUTE')
+       or pg_catalog.has_function_privilege('service_role', route.signature::oid, 'EXECUTE')
+  ) or not exists (
+    select 1 from private.api_capability_grants as manifest
+    where pg_catalog.to_regprocedure(manifest.routine_identity) = v_submit
+      and manifest.capability_id = 'NX-CMD-01'
+      and manifest.allow_authenticated and not manifest.allow_anon and not manifest.allow_service_role
+  ) then
+    raise exception 'Issue #984 author review route signatures or ACLs diverge from the expected manifest';
+  end if;
+
+  select capability_id into strict v_read_capability
+  from private.api_capability_grants as manifest
+  where pg_catalog.to_regprocedure(manifest.routine_identity) = v_read
+    and manifest.allow_authenticated and not manifest.allow_anon and not manifest.allow_service_role;
+
+  v_before := case v_read_capability
+    when 'NX-REV-01' then v_production_before
+    when 'CLI-RPC-01' then v_dev_before
+  end;
+  if v_before is null then
+    raise exception 'Issue #984 author review read capability has an unrecognized predecessor';
+  end if;
+
+  update private.api_capability_grants as manifest
+  set capability_id = v_author
+  where pg_catalog.to_regprocedure(manifest.routine_identity) in (v_submit, v_read);
+
+  -- Match the unique exact registered client class for this route vector.
+  -- Missing registrations in disposable projects are a no-op.
   lock table private.oauth_client_registry in share row exclusive mode;
+  select array_agg(capability order by capability) into v_after
+  from unnest(array_append(v_before, v_author)) as result(capability);
 
   select array_agg(client.client_id)
   into v_matches
@@ -295,6 +313,6 @@ begin
     raise exception 'Issue #984 CLI capability repair did not record the exact grant and audit';
   end if;
 end;
-$grant$;
+$authorize_review$;
 
 commit;

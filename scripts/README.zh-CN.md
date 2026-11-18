@@ -162,6 +162,11 @@ python3 scripts/test_oauth_release_migration_guard.py --local-container <isolate
 必须明确选择本任务拥有的本地 Database container；不支持 hosted DSN 或凭据参数。
 脚本输出 TAP 结果，local-contract CI 在 OAuth release capability suite 后运行它。
 
+### `test_oauth_cli_author_review_upgrade.py`
+
+在同一个最终回滚的事务中，对两种已有授权状态执行作者送审 migration 的实际守卫。
+使用 `--local-container` 指定本任务拥有的本地数据库容器。
+
 ### `configure_derivative_scheduler.py`
 
 在 #703 migration 部署后，仅切换派生 cron 的每轮请求访问数（5／25）。

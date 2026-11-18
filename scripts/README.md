@@ -142,6 +142,12 @@ Select an explicit task-owned local Database container. The harness supports no 
 or credential arguments and emits TAP results; local-contract CI runs it after the OAuth
 release capability suite.
 
+### `test_oauth_cli_author_review_upgrade.py`
+
+Runs the actual author Review migration guard against both populated predecessor
+vectors in a rollback-only transaction. Pass the exact task-owned local Database
+container via `--local-container`.
+
 ### `configure_derivative_scheduler.py`
 
 Installs no schema and writes no dataset. It changes only the protected derivative

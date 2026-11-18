@@ -38,7 +38,7 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-18
-lastReviewedCommit: 3a9c54f71143fd55be93fc1719f6167c6bd90119
+lastReviewedCommit: 814838e18e9d656e7219c1991ddd9b214b614cb1
 lastReviewedNote: "Database #977: reviewed format-aware closure input selection, publication stability during snapshot admission and exact-local regression/schema proof."
 related:
   - .docpact/config.yaml
