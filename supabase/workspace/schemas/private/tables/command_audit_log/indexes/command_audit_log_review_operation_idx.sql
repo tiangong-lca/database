@@ -1,0 +1,1 @@
+CREATE INDEX "command_audit_log_review_operation_idx" ON "private"."command_audit_log" USING "btree" ("actor_user_id", (("payload" #>> '{payload,review_operation_key}'::"text"[]))) WHERE (("command" = 'cmd_review_submit'::"text") AND (("payload" #>> '{payload,review_operation_key}'::"text"[]) IS NOT NULL));
