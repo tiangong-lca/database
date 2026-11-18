@@ -674,6 +674,13 @@ internal logs stay in the existing participant projection. The prior
 `NX-CMD-01` and `NX-REV-01` grants retain access to their respective original
 routes. Review comments, assignments, decisions and queues retain their own grants.
 
+The author Review migration accepts the canonical `NX-REV-01` predecessor
+and the historical authenticated-only `CLI-RPC-01` review-read mapping in
+persistent Dev. Each route vector selects its own exact pre-change CLI grant
+class. With the Dev vector, the registered CLI has only `CLI-RPC-01`,
+`DB-CORE-READ-01`, and `DB-CORE-WRITE-01` before the author grant is added.
+The generic `CLI-RPC-01` capability grants no participant access after cutover.
+
 The five protected Time-alias v2 routes are gated by `CLI-ALIAS-02`. The four
 actor-facing routes are authenticated-only, and the service-only executor
 callback keeps no anon/authenticated reach, so adding the capability can never

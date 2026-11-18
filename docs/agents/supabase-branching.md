@@ -23,7 +23,7 @@ checkPaths:
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
 lastReviewedAt: 2026-11-18
-lastReviewedCommit: 3a9c54f71143fd55be93fc1719f6167c6bd90119
+lastReviewedCommit: 814838e18e9d656e7219c1991ddd9b214b614cb1
 lastReviewedNote: "Database #970 and #972: reviewed actor-only Result catalog, service-only search notifications and deployment boundaries."
 related:
   - ../../AGENTS.md
