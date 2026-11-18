@@ -54,6 +54,8 @@ begin
         when 'cmd_review_submit' then 'NX-CMD-01'
         when 'qry_review_get_items' then 'NX-REV-01'
       end;
+    elsif v_route_name = 'qry_review_get_comment_items' and v_capability_id = 'NX-REV-01' then
+      v_legacy_review_capability := 'CLI-REVIEW-AUTHOR-01';
     end if;
   else
     v_profile := coalesce(

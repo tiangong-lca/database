@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-18
-lastReviewedCommit: ae411bc190d9aece98a18f57e2c0b4ca933267d1
-lastReviewedNote: "Database #989: reviewed exact author receipt projection, capability closure and generated schema parity."
+lastReviewedCommit: 0b956680ca942cbf8808e20c8418834daa03af4b
+lastReviewedNote: "Database #992 covers exact review targets and role-scoped opinion reads through the existing review RPCs."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -672,7 +672,7 @@ actual submission audit. The author projection exposes target identity, state
 and the final rejection reason when present. Reviewer IDs, deadlines and
 internal logs stay in the existing participant projection. The prior
 `NX-CMD-01` and `NX-REV-01` grants retain access to their respective original
-routes. Review comments, assignments, decisions and queues retain their own grants.
+routes. The opinion reader also admits the author capability for the returned Process feedback projection. Assignment, decision and queue routes retain their existing grants.
 
 The author Review migration accepts the canonical `NX-REV-01` predecessor
 and the historical authenticated-only `CLI-RPC-01` review-read mapping in

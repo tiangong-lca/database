@@ -123,7 +123,6 @@ select throws_ok(
   '42501', 'OAuth client is not authorized for this API route', 'author cannot use ' || route
 )
 from unnest(array[
-  '/rpc/qry_review_get_comment_items',
   '/rpc/qry_review_get_rejection_details_v1',
   '/rpc/cmd_review_assign_reviewers',
   '/rpc/cmd_review_approve',
