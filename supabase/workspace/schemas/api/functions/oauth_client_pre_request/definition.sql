@@ -25,6 +25,7 @@ declare
   v_command text;
   v_capability_id text;
   v_capability_count integer;
+  v_legacy_review_capability text;
 begin
   if v_client_id is null then
     return;
@@ -45,6 +46,15 @@ begin
     where namespace.nspname = 'api'
       and routine.proname = v_route_name
       and manifest.allow_authenticated;
+
+    -- Preserve admission for clients explicitly granted the previous capability
+    -- on either exact route. The author grant cannot stand in for either group.
+    if v_capability_id = 'CLI-REVIEW-AUTHOR-01' then
+      v_legacy_review_capability := case v_route_name
+        when 'cmd_review_submit' then 'NX-CMD-01'
+        when 'qry_review_get_items' then 'NX-REV-01'
+      end;
+    end if;
   else
     v_profile := coalesce(
       case
@@ -74,7 +84,10 @@ begin
   end if;
 
   if coalesce(v_capability_count, 0) <> 1
-     or not private.oauth_client_has_capability(v_capability_id) then
+     or not (
+       private.oauth_client_has_capability(v_capability_id)
+       or private.oauth_client_has_capability(v_legacy_review_capability)
+     ) then
     raise insufficient_privilege using
       message = 'OAuth client is not authorized for this API route';
   end if;
