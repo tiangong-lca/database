@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
-select plan(12);
+select plan(22);
 
 -- Publication derivatives are outside these transaction assertions.
 alter table public.processes disable trigger process_extract_md_trigger_insert;
@@ -180,5 +180,62 @@ select is(
   (select jsonb_array_length(api.cmd_lifecycle_model_bundle_save(request)->'members') from multi_result_fixture),
   2, 'both correctly linked canonical products commit after the failed attempt'
 );
+
+-- Start a new revision from the legacy two-result Model. Use the existing
+-- allocation path so all checks see the authoritative rewritten versions.
+reset role;
+create temporary table single_primary_fixture as
+select jsonb_set(request->'plan', '{parent,jsonTg,resultPolicy}', '"single-primary-v1"') ||
+    jsonb_build_object('allocateVersion', true, 'sourceVersion', '01.00.000',
+                       'actorUserId', 'b9760000-0000-4000-8000-000000000001') as plan
+from bundle_fixture;
+select is((select private.save_lifecycle_model_bundle(plan)->>'version' from single_primary_fixture),
+    '01.00.001', 'version allocation creates one exact primary');
+select is((select jsonb_array_length(json_tg::jsonb->'submodels') from public.lifecyclemodels
+    where id='b9760000-0000-4000-8000-000000000002' and version='01.00.000'),
+    2, 'the legacy source retains both members');
+create temporary table single_update as
+select jsonb_build_object('mode','update','modelId',id,'version',version,'actorUserId',user_id,
+    'parent',jsonb_build_object('jsonOrdered',json_ordered,'jsonTg',json_tg),
+    'processMutations','[]'::jsonb) as plan
+from public.lifecyclemodels where id='b9760000-0000-4000-8000-000000000002' and version='01.00.001';
+select is((select private.save_lifecycle_model_bundle(plan)->>'version' from single_update),
+    '01.00.001', 'layout-only updates reuse the existing exact group');
+select throws_ok($$ select private.save_lifecycle_model_bundle(plan #- '{parent,jsonTg,resultPolicy}') from single_update $$,
+    'P0001','INVALID_PLAN','an older writer cannot downgrade a marked version');
+select throws_ok($$ select private.save_lifecycle_model_bundle(jsonb_set(plan,
+    '{parent,jsonOrdered,lifeCycleModelDataSet,lifeCycleModelInformation,dataSetInformation,referenceToResultingProcess,0,@version}',
+    '"01.00.000"')) from single_update $$, 'P0001','INVALID_PLAN','a different result revision is rejected');
+select throws_ok($$ select private.save_lifecycle_model_bundle(jsonb_set(plan,
+    '{parent,jsonTg,submodels,0,finalId}', '{"allocatedExchangeFlowId":"different-product","allocatedExchangeDirection":"Output"}'))
+    from single_update $$, 'P0001','INVALID_PLAN','changing the primary product requires a new Model version');
+select is((select count(*) from public.processes where model_id='b9760000-0000-4000-8000-000000000002'
+    and model_version='01.00.001'), 1::bigint, 'rejected writes leave exactly the primary');
+
+-- Use the exact stored primary and add one graph-owned allocated dependency.
+create temporary table allocated_update as
+with extra as (
+    select request #> '{plan,processMutations,0}' as mutation from multi_result_fixture
+), identity as (
+    select mutation, mutation->>'id' as id
+    from extra
+)
+select jsonb_set(jsonb_set(jsonb_set(plan, '{processMutations}', jsonb_build_array(
+    jsonb_set(mutation, '{jsonOrdered,processDataSet,administrativeInformation,publicationAndOwnership,common:dataSetVersion}', '"01.00.001"')
+)), '{parent,jsonTg,submodels,1}', jsonb_build_object('id', id, 'version', '01.00.001', 'type', 'allocated')),
+    '{parent,jsonOrdered,lifeCycleModelDataSet,lifeCycleModelInformation,technology}', jsonb_build_object(
+       'processes',jsonb_build_object('processInstance',jsonb_build_object(
+           'referenceToProcess', jsonb_build_object('@refObjectId',id,'@version','01.00.001')))
+    )) as plan
+from single_update, identity;
+select throws_ok($$ select private.save_lifecycle_model_bundle(jsonb_set(plan,
+    '{parent,jsonOrdered,lifeCycleModelDataSet,lifeCycleModelInformation,technology,processes,processInstance,referenceToProcess,@version}',
+    '"03.00.000"')) from allocated_update $$, 'P0001','INVALID_PLAN','a historical revision cannot justify an allocated member');
+select is((select private.save_lifecycle_model_bundle(plan)->>'version' from allocated_update),
+    '01.00.001','a retry can add a graph dependency with an exact Process reference');
+select is((select jsonb_array_length(json_ordered::jsonb #> '{lifeCycleModelDataSet,lifeCycleModelInformation,dataSetInformation,referenceToResultingProcess}')
+    from public.lifecyclemodels where id='b9760000-0000-4000-8000-000000000002' and version='01.00.001'),
+    1,'adding the allocated Process preserves the single external result');
+
 select * from finish();
 rollback;
