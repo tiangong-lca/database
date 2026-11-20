@@ -36,6 +36,9 @@ declare
     v_included_refs jsonb;
     v_rewritten jsonb;
     v_mutation_index integer;
+    v_existing_model jsonb;
+    v_previous_primary jsonb;
+    v_primary jsonb;
 begin
     if v_mode not in ('create', 'update') then
         raise exception 'INVALID_PLAN';
@@ -250,7 +253,7 @@ begin
             raise exception 'INVALID_PLAN';
         end if;
 
-        perform 1
+        select json_tg into v_existing_model
           from lifecyclemodels
          where id = v_model_id
            and version = v_expected_version
@@ -407,6 +410,67 @@ begin
                 raise exception 'INVALID_PLAN';
         end case;
     end loop;
+
+    -- Validate the final, version-rewritten membership against this transaction's
+    -- stored Processes. Layout-only updates have no child mutations.
+    if v_mode = 'update' and v_existing_model->>'resultPolicy' is distinct from (v_parent_json_tg->>'resultPolicy') then
+        raise exception 'INVALID_PLAN';
+    end if;
+    if v_parent_json_tg ? 'resultPolicy' then
+        if (v_parent_json_tg->>'resultPolicy') is distinct from 'single-primary-v1'
+           or jsonb_typeof(v_parent_json_tg->'submodels') is distinct from 'array' then
+            raise exception 'INVALID_PLAN';
+        end if;
+        v_submodels := v_parent_json_tg->'submodels';
+        v_resulting_refs := v_parent_json_ordered #> '{lifeCycleModelDataSet,lifeCycleModelInformation,dataSetInformation,referenceToResultingProcess}';
+        if jsonb_typeof(v_resulting_refs) = 'array' then
+            if jsonb_array_length(v_resulting_refs) <> 1 then raise exception 'INVALID_PLAN'; end if;
+            v_resulting_refs := v_resulting_refs->0;
+        end if;
+        select m into v_primary from jsonb_array_elements(v_submodels) m where m->>'type' = 'primary';
+        if (select count(*) from jsonb_array_elements(v_submodels) m where m->>'type' = 'primary') <> 1
+           or v_resulting_refs->>'@refObjectId' is distinct from v_primary->>'id'
+           or v_resulting_refs->>'@version' is distinct from v_primary->>'version' then
+            raise exception 'INVALID_PLAN';
+        end if;
+
+        if v_mode = 'update' then
+            select m into v_previous_primary from jsonb_array_elements(v_existing_model->'submodels') m
+             where m->>'type' = 'primary';
+            if v_previous_primary->>'id' is distinct from v_primary->>'id'
+               or v_previous_primary->>'version' is distinct from v_primary->>'version'
+               or v_previous_primary #>> '{finalId,allocatedExchangeFlowId}' is distinct from v_primary #>> '{finalId,allocatedExchangeFlowId}'
+               or v_previous_primary #>> '{finalId,allocatedExchangeDirection}' is distinct from v_primary #>> '{finalId,allocatedExchangeDirection}' then
+                raise exception 'INVALID_PLAN';
+            end if;
+        end if;
+
+        v_process_instances := v_parent_json_ordered #> '{lifeCycleModelDataSet,lifeCycleModelInformation,technology,processes,processInstance}';
+        if jsonb_typeof(v_process_instances) is distinct from 'array' then
+            v_process_instances := jsonb_build_array(v_process_instances);
+        end if;
+        if exists (
+            with declared as (
+                select m->>'id' as id, m->>'version' as version, m->>'type' as role
+                  from jsonb_array_elements(v_submodels) m
+            ), stored as (
+                select p.id::text as id, p.version::text as version
+                  from public.processes p
+                 where p.model_id = v_model_id and coalesce(p.model_version, p.version) = v_model_version
+            )
+            select 1 from declared d full join stored s using (id, version)
+             where s.id is null or d.id is null or d.role is null or d.role not in ('primary','allocated')
+                or (d.role = 'allocated' and not exists (
+                    select 1 from jsonb_array_elements(v_process_instances) i
+                     where i #>> '{referenceToProcess,@refObjectId}' = d.id
+                       and i #>> '{referenceToProcess,@version}' = d.version
+                ))
+            union all
+            select 1 from declared group by id, version having count(*) > 1
+        ) then
+            raise exception 'INVALID_PLAN';
+        end if;
+    end if;
 
     if v_mode = 'create' then
         begin
