@@ -20,8 +20,8 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-18
-lastReviewedCommit: 0b956680ca942cbf8808e20c8418834daa03af4b
+lastReviewedAt: 2026-11-20
+lastReviewedCommit: 8782d7f8a7167c4143008043c67b55a7da8a8f5a
 lastReviewedNote: "Database #992 covers exact review targets and role-scoped opinion reads through the existing review RPCs."
 related:
   - ../AGENTS.md
