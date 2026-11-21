@@ -20,9 +20,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-20
-lastReviewedCommit: 8782d7f8a7167c4143008043c67b55a7da8a8f5a
-lastReviewedNote: "Database #992 covers exact review targets and role-scoped opinion reads through the existing review RPCs."
+lastReviewedAt: 2026-11-21
+lastReviewedCommit: 9e7b830bdda2dd223733eb3ce785e338fa34632b
+lastReviewedNote: "Database #1000: reviewed input-only Portal generation snapshots and unconditional final rendering. Independent checks, all SQL/upgrade gates, branch eligibility, deployable inputs, hosted authority, caches and timeouts remain unchanged."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -693,7 +693,13 @@ python3 scripts/build_portal_contract_types.py --check
 
 普通生成会让 `contracts/portal/generated/*.d.ts` 与按名称排序的
 `contracts/portal/*.schema.json` source set 同步。`--check` 只在临时目录渲染，
-若 module 缺失、变化或多余则失败，且不修改 checkout；CI 使用该只读检查。
+若 module 缺失、变化或多余则失败，且不修改 checkout；独立 `--check` 始终完整生成。
+
+CI 首时点用 `--capture-inputs "$RUNNER_TEMP/portal-type-inputs.json"` 记录 schema、
+已生成文件的完整清单与字节、生成器源码及 Node/npx 身份。该文件只是输入快照，不声明验证
+通过。末时点的 `--check --input-snapshot "$RUNNER_TEMP/portal-type-inputs.json"`
+仍完整生成所有 schema 并逐一比较，在生成前后同时拒绝输入、输出、文件清单或工具漂移；
+快照缺失或不匹配也失败。快照不能跳过真实生成，因此在保留两个观察时点的同时避免重复计算。
 
 ### `check_generated_workspace_legacy_tables.py`
 
