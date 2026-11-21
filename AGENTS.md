@@ -37,9 +37,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-20
-lastReviewedCommit: e5f199d9d22aab74e9140e179c1192d22db47240
-lastReviewedNote: "Database #992 covers exact review targets and role-scoped opinion reads through the existing review RPCs."
+lastReviewedAt: 2026-11-21
+lastReviewedCommit: 9e7b830bdda2dd223733eb3ce785e338fa34632b
+lastReviewedNote: "Database #1000: reviewed input-only Portal generation snapshots and unconditional final rendering. Independent checks, all SQL/upgrade gates, branch eligibility, deployable inputs, hosted authority, caches and timeouts remain unchanged."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-validation.md

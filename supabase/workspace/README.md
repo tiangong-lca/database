@@ -20,9 +20,9 @@ checkPaths:
   - .githooks/pre-push
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-20
-lastReviewedCommit: 8782d7f8a7167c4143008043c67b55a7da8a8f5a
-lastReviewedNote: "Database #992 covers exact review targets and role-scoped opinion reads through the existing review RPCs."
+lastReviewedAt: 2026-11-21
+lastReviewedCommit: 9e7b830bdda2dd223733eb3ce785e338fa34632b
+lastReviewedNote: "Database #1000: reviewed input-only Portal generation snapshots and unconditional final rendering. Independent checks, all SQL/upgrade gates, branch eligibility, deployable inputs, hosted authority, caches and timeouts remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
