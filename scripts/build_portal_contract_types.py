@@ -4,7 +4,11 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
+import shutil
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
@@ -14,6 +18,71 @@ SCHEMA_DIR = REPO_ROOT / "contracts" / "portal"
 OUTPUT_DIR = SCHEMA_DIR / "generated"
 TOOL_VERSION = "15.0.4"
 GENERATED_SUFFIX = ".d.ts"
+GENERATOR_PATH = Path(__file__).resolve()
+
+
+def tool_identity() -> dict:
+    tools = {}
+    for name in ("node", "npx"):
+        executable = shutil.which(name)
+        if executable is None:
+            raise ValueError(f"Portal generation requires {name}")
+        tools[name] = {
+            "path": str(Path(executable).resolve()),
+            "version": subprocess.check_output([executable, "--version"], text=True).strip(),
+        }
+    return {"python": sys.version, "tools": tools}
+
+
+def input_snapshot() -> dict:
+    for directory in (SCHEMA_DIR, OUTPUT_DIR):
+        if directory.is_symlink() or not directory.is_dir():
+            raise ValueError(f"Portal inputs require regular directories: {directory}")
+    schemas = sorted(SCHEMA_DIR.glob("*.schema.json"))
+    if not schemas:
+        raise ValueError("Portal schemas are missing")
+    files = [GENERATOR_PATH, *schemas, *sorted(OUTPUT_DIR.glob(f"*{GENERATED_SUFFIX}"))]
+    hashes = {}
+    for file in files:
+        if file.is_symlink() or not file.is_file():
+            raise ValueError(f"Portal inputs require regular files: {file}")
+        hashes[str(file.relative_to(REPO_ROOT))] = hashlib.sha256(file.read_bytes()).hexdigest()
+    return {
+        "schema": "portal-type-inputs.v1",
+        "root": str(REPO_ROOT.resolve()),
+        "generator_version": TOOL_VERSION,
+        "environment": tool_identity(),
+        "files": hashes,
+    }
+
+
+def capture_inputs(destination: Path) -> None:
+    # This records inputs only. It never asserts that generation or validation passed.
+    value = input_snapshot()
+    with destination.open("x", encoding="utf-8") as output:
+        json.dump(value, output, sort_keys=True)
+        output.write("\n")
+    print(f"Captured Portal input inventory ({len(value['files'])} files); generation still required")
+
+
+def verify_inputs(snapshot: Path) -> None:
+    if snapshot.is_symlink() or not snapshot.is_file():
+        if not snapshot.exists():
+            raise FileNotFoundError(snapshot)
+        raise ValueError("Portal input snapshot requires a regular file")
+    if json.loads(snapshot.read_text(encoding="utf-8")) != input_snapshot():
+        raise ValueError("Portal generation inputs, outputs or tools changed between checks")
+
+
+def check_with_snapshot(snapshot: Path | None = None) -> int:
+    if snapshot is not None:
+        verify_inputs(snapshot)
+    with tempfile.TemporaryDirectory(prefix="portal-contract-types-") as temp_dir:
+        rendered = render_all(Path(temp_dir))
+    result = check_generated(rendered)
+    if snapshot is not None:
+        verify_inputs(snapshot)
+    return result
 
 
 def output_name(schema: Path) -> str:
@@ -119,12 +188,22 @@ def main() -> int:
         action="store_true",
         help="fail on generated drift without modifying the checkout",
     )
+    parser.add_argument("--capture-inputs", type=Path, help="record inputs only; does not run or replace --check")
+    parser.add_argument("--input-snapshot", type=Path, help="with --check, also reject drift since the earlier input capture")
     args = parser.parse_args()
+
+    if args.capture_inputs:
+        if args.check or args.input_snapshot:
+            parser.error("--capture-inputs is independent of --check and --input-snapshot")
+        capture_inputs(args.capture_inputs)
+        return 0
+    if args.input_snapshot and not args.check:
+        parser.error("--input-snapshot requires --check")
+    if args.check:
+        return check_with_snapshot(args.input_snapshot)
 
     with tempfile.TemporaryDirectory(prefix="portal-contract-types-") as temp_dir:
         rendered = render_all(Path(temp_dir))
-    if args.check:
-        return check_generated(rendered)
     write_generated(rendered)
     return 0
 

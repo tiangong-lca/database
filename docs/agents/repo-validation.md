@@ -32,9 +32,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-20
-lastReviewedCommit: e5f199d9d22aab74e9140e179c1192d22db47240
-lastReviewedNote: "Database #992 covers exact review targets and role-scoped opinion reads through the existing review RPCs."
+lastReviewedAt: 2026-11-21
+lastReviewedCommit: 9e7b830bdda2dd223733eb3ce785e338fa34632b
+lastReviewedNote: "Database #1000: reviewed input-only Portal generation snapshots and unconditional final rendering. Independent checks, all SQL/upgrade gates, branch eligibility, deployable inputs, hosted authority, caches and timeouts remain unchanged."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -473,7 +473,11 @@ For workflow/Actions-monitoring changes that preserve every deployable input,
 run the offline workflow contract and YAML/config validation before delivery;
 no local or hosted database operation is needed for that scoped proof. The
 unchanged required hosted PR jobs still rebuild and validate the full database
-contract. Record those hosted results separately before merge; offline fixtures
+contract. Portal type generation records an initial input/tool/output snapshot
+and later performs the full original `--check` once, comparing that snapshot
+before and after generation. Run `python3 scripts/test_build_portal_contract_types.py`
+for missing/foreign snapshots, source/output/tool drift and real-generation failure;
+this input-only snapshot never qualifies validation or deployment by itself. Record those hosted results separately before merge; offline fixtures
 do not replace them.
 
 ## Final Result identity validation

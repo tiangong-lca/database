@@ -84,7 +84,8 @@ jobs:
           python3 scripts/check_portal_card_schema_parity.py
           python3 scripts/generate_portal_navigation_vocabulary.py --check
           python3 scripts/test_portal_navigation_revisions.py
-          python3 scripts/build_portal_contract_types.py --check
+          python3 scripts/test_build_portal_contract_types.py
+          python3 scripts/build_portal_contract_types.py --capture-inputs "$RUNNER_TEMP/portal-type-inputs.json"
           python3 -B -m unittest discover -s scripts -p 'test_benchmark_portal_facets_navigation*.py'
           python3 -B -m unittest discover -s scripts -p 'test_collect_portal_flow_cas_volume_upgrade.py'
           python3 -B -m unittest discover -s scripts -p 'test_collect_portal_flow_cas_writer_wal.py'
@@ -290,7 +291,7 @@ jobs:
       - name: Verify Portal JSON Schemas
         run: |
           python3 scripts/check_portal_json_schemas.py
-          python3 scripts/build_portal_contract_types.py --check
+          python3 scripts/build_portal_contract_types.py --check --input-snapshot "$RUNNER_TEMP/portal-type-inputs.json"
 
       - name: Stop local Supabase
         if: always()

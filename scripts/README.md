@@ -20,9 +20,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-20
-lastReviewedCommit: 8782d7f8a7167c4143008043c67b55a7da8a8f5a
-lastReviewedNote: "Database #992 covers exact review targets and role-scoped opinion reads through the existing review RPCs."
+lastReviewedAt: 2026-11-21
+lastReviewedCommit: 9e7b830bdda2dd223733eb3ce785e338fa34632b
+lastReviewedNote: "Database #1000: reviewed input-only Portal generation snapshots and unconditional final rendering. Independent checks, all SQL/upgrade gates, branch eligibility, deployable inputs, hosted authority, caches and timeouts remain unchanged."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
@@ -889,7 +889,16 @@ python3 scripts/build_portal_contract_types.py --check
 Normal generation synchronizes `contracts/portal/generated/*.d.ts` with the
 sorted `contracts/portal/*.schema.json` source set. `--check` renders into a
 temporary directory and fails on missing, changed, or unexpected generated
-modules without modifying the checkout. CI uses the read-only check.
+modules without modifying the checkout. Independent `--check` always performs full generation.
+
+CI captures the initial source, generated-file inventory, generator bytes and
+Node/npx identity with `--capture-inputs "$RUNNER_TEMP/portal-type-inputs.json"`.
+This is an input snapshot, not a successful-validation receipt. The later
+`--check --input-snapshot "$RUNNER_TEMP/portal-type-inputs.json"` still renders
+all schemas and compares every generated module; it also rejects source,
+output, inventory or tool drift both before and after generation. Missing or
+incompatible snapshots fail. No snapshot can suppress generation. This avoids
+running the same generator twice while preserving both observation points.
 
 ### `check_generated_workspace_legacy_tables.py`
 
