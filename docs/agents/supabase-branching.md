@@ -22,9 +22,9 @@ checkPaths:
   - .github/workflows/supabase-dev.yml
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
-lastReviewedAt: 2026-11-21
-lastReviewedCommit: 9e7b830bdda2dd223733eb3ce785e338fa34632b
-lastReviewedNote: "Database #1000: reviewed input-only Portal generation snapshots and unconditional final rendering. Independent checks, all SQL/upgrade gates, branch eligibility, deployable inputs, hosted authority, caches and timeouts remain unchanged."
+lastReviewedAt: 2026-11-23
+lastReviewedCommit: 309c7cdd9222d766e699c2731e6fdd34f9dfde0c
+lastReviewedNote: "Database #1004 reviewed the local-contract job that tests the populated Process V2 and Flow V1 cutover on an isolated predecessor."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

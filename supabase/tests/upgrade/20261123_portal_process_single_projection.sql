@@ -1,13 +1,16 @@
--- psql on an empty, disposable database-engine-1004 predecessor. This script
+-- psql on an empty, disposable local predecessor. This script
 -- commits synthetic versions and the actual migration to check deferred FKs.
 \set ON_ERROR_STOP on
-select :'HOST' = '127.0.0.1' and :'PORT' = '59422' and current_database()='postgres'
+\if :{?fixture_port}
+\else
+  \set fixture_port 59422
+\endif
+select :'HOST' = '127.0.0.1' and :'PORT' = :'fixture_port' and current_database()='postgres'
   and (select max(version) from supabase_migrations.schema_migrations)='20261120030000'
   and not exists (select from public.processes) and not exists (select from public.flows) as owned_prefix \gset
 \if :owned_prefix
 \else
-  \echo 'Expected empty #1004 local precursor on loopback port 59422'
-  \quit 3
+  do $$ begin raise exception 'Expected empty #1004 predecessor on the isolated loopback connection'; end $$;
 \endif
 
 create function pg_temp.check_that(ok boolean, test text) returns void language plpgsql as $$

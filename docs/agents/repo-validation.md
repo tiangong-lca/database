@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-23
-lastReviewedCommit: b9fdfe269400f39ef56dc8f901337dc296bd13f9
-lastReviewedNote: "Database #1004: reviewed the Process V2 and Flow V1 catalog parent split, populated cutover and separate display-mode ownership."
+lastReviewedCommit: 309c7cdd9222d766e699c2731e6fdd34f9dfde0c
+lastReviewedNote: "Database #1004 reviewed the local-contract job that tests the populated Process V2 and Flow V1 cutover on an isolated predecessor."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1440,6 +1440,9 @@ Do not collapse those phases into one validation note.
 For #1004, start an empty local `database-engine-1004` on port 59422 through
 predecessor `20261120030000`. Run
 `psql -X -h 127.0.0.1 -p 59422 -U postgres -d postgres -f supabase/tests/upgrade/20261123_portal_process_single_projection.sql`.
+The local-contract CI job runs the same file on its isolated port 55322 after
+resetting its own database to that predecessor. A wrong or populated starting
+state fails before the fixture writes data.
 The fixture commits synthetic Process and Flow versions with overlapping keys,
 compares full RPC pages and old cursor continuations across the actual migration,
 then publishes, modifies and withdraws a Process with all Portal writers active.

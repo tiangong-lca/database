@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-23
-lastReviewedCommit: b9fdfe269400f39ef56dc8f901337dc296bd13f9
-lastReviewedNote: "Database #1004: reviewed the Process V2 and Flow V1 catalog parent split, populated cutover and separate display-mode ownership."
+lastReviewedCommit: 309c7cdd9222d766e699c2731e6fdd34f9dfde0c
+lastReviewedNote: "Database #1004 reviewed the local-contract job that tests the populated Process V2 and Flow V1 cutover on an isolated predecessor."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
