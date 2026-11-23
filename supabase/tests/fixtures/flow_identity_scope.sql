@@ -355,7 +355,7 @@ set local session_replication_role = origin;
 create temp table flow_identity_state (
   key text primary key,
   value jsonb not null
-) on commit drop;
+);  -- Session-local so multi-transaction fence tests can retain the receipt.
 
 grant select, insert, update, delete on flow_identity_state to authenticated;
 

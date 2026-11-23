@@ -49,15 +49,14 @@ begin
       return new;
     end if;
 
-    -- Serialize both ownership domains.  This closes UPDATEs that move a row
-    -- from a foreign owner into the actor (or away from the actor).
+    -- Protect both ownership domains, including transfers into or out of an active scope.
     for v_actor in
       select distinct actor_id
       from (values (v_old_user_id), (v_new_user_id)) as actors(actor_id)
       where actor_id is not null
       order by actor_id
     loop
-      if not pg_try_advisory_xact_lock(hashtextextended(
+      if not pg_try_advisory_xact_lock_shared(hashtextextended(
         'dataset-flow-identity-actor:' || v_actor::text, 0
       )) then
         raise exception using errcode = '55P03',
@@ -222,7 +221,7 @@ begin
       where actor_id is not null
       order by actor_id
     loop
-      if not pg_try_advisory_xact_lock(hashtextextended(
+      if not pg_try_advisory_xact_lock_shared(hashtextextended(
         'dataset-flow-identity-actor:' || v_actor::text, 0
       )) then
         raise exception using errcode = '55P03',
@@ -289,7 +288,7 @@ begin
       )
       order by scope.actor_user_id
     loop
-      if not pg_try_advisory_xact_lock(hashtextextended(
+      if not pg_try_advisory_xact_lock_shared(hashtextextended(
         'dataset-flow-identity-actor:' || v_actor::text, 0
       )) then
         raise exception using errcode = '55P03',

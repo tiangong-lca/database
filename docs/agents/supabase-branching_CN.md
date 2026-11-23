@@ -23,8 +23,8 @@ checkPaths:
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
 lastReviewedAt: 2026-11-23
-lastReviewedCommit: c7384ac669b6cbc5dc3e431becf80eb237d6534d
-lastReviewedNote: "Database #1007 reviewed migration row protection and its writeback tests on Dev with the #1004 Portal projection upgrade and #1005 extraction queue."
+lastReviewedCommit: f90a22023b51844bc7ae91b15081212b4cde69f4
+lastReviewedNote: "Database #1011 复核了两次既有 CI 本地数据库重置之间的并发回归。"
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
