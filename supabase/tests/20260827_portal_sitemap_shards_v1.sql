@@ -65,7 +65,7 @@ grant select on portal_sitemap_capacity_ids to api_internal_executor;
 grant api_internal_executor to postgres;
 set local role api_internal_executor;
 
-insert into private.portal_catalog_search_rows_v1 (
+insert into private.portal_catalog_search_rows_v2 (
   dataset_kind,
   id,
   version,
@@ -89,7 +89,7 @@ select
     'classifications', '[]'::jsonb
   ),
   'sitemap capacity fixture',
-  1
+  2
 from portal_sitemap_capacity_ids as fixture
 where fixture.ordinal <= 4096;
 
@@ -150,7 +150,7 @@ select extensions.is(
 grant api_internal_executor to postgres;
 set local role api_internal_executor;
 
-insert into private.portal_catalog_search_rows_v1 (
+insert into private.portal_catalog_search_rows_v2 (
   dataset_kind,
   id,
   version,
@@ -173,7 +173,7 @@ select
     'classifications', '[]'::jsonb
   ),
   'sitemap capacity newer visible version',
-  1
+  2
 from portal_sitemap_capacity_ids as fixture
 where fixture.ordinal = 1;
 
@@ -213,7 +213,7 @@ select extensions.is(
 grant api_internal_executor to postgres;
 set local role api_internal_executor;
 
-insert into private.portal_catalog_search_rows_v1 (
+insert into private.portal_catalog_search_rows_v2 (
   dataset_kind,
   id,
   version,
@@ -236,7 +236,7 @@ select
     'classifications', '[]'::jsonb
   ),
   'sitemap capacity overflow identity',
-  1
+  2
 from portal_sitemap_capacity_ids as fixture
 where fixture.ordinal = 4097;
 
@@ -297,7 +297,7 @@ select extensions.is(
 grant api_internal_executor to postgres;
 set local role api_internal_executor;
 
-delete from private.portal_catalog_search_rows_v1
+delete from private.portal_catalog_search_rows_v2
 where dataset_kind = 'process'
   and id = (
     select id
@@ -323,7 +323,7 @@ select extensions.is(
 grant api_internal_executor to postgres;
 set local role api_internal_executor;
 
-delete from private.portal_catalog_search_rows_v1
+delete from private.portal_catalog_search_rows_v2
 where dataset_kind = 'process'
   and id = (
     select id

@@ -20,8 +20,11 @@ begin
       'private.portal_navigation_versions_v1'::regclass,'private.portal_navigation_membership_v1'::regclass)
       and c.relrowsecurity and c.relforcerowsecurity and pg_get_userbyid(c.relowner)='postgres')<>2
     or (select count(*) from pg_constraint c where c.contype='f' and c.convalidated and c.confdeltype='c'
-      and ((c.conrelid='private.portal_navigation_versions_v1'::regclass and c.confrelid in (
-        'private.portal_catalog_search_rows_v1'::regclass,'private.portal_catalog_search_rows_v2'::regclass))
+      and ((c.conrelid='private.portal_navigation_versions_v1'::regclass and c.condeferrable and c.condeferred and (
+        (c.confrelid='private.portal_catalog_search_rows_v1'::regclass and c.conname='portal_navigation_versions_v1_dataset_kind_id_version_fkey'
+         and c.conkey=array[1,2,(select attnum from pg_attribute where attrelid=c.conrelid and attname='flow_version' and attgenerated='s')]::smallint[])
+        or (c.confrelid='private.portal_catalog_search_rows_v2'::regclass and c.conkey=array[1,4,5]::smallint[]))
+        and c.confkey=array[1,2,3]::smallint[])
         or (c.conrelid='private.portal_navigation_membership_v1'::regclass and c.confrelid='private.portal_navigation_versions_v1'::regclass)))<>3
     or not exists(select 1 from pg_trigger t where t.tgrelid='private.portal_catalog_search_rows_v1'::regclass
       and t.tgname='portal_navigation_flow_sync_v1' and t.tgenabled='O' and t.tgtype=21 and t.tgattr::text='6' and not t.tgdeferrable and not t.tginitdeferred and t.tgfoid='private.sync_portal_navigation_row_v1()'::regprocedure)

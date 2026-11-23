@@ -30,7 +30,6 @@ end $$;
 -- Suppress unrelated authoring, webhooks and jobs only in this rollback fixture.
 -- Keep all existing public projection writers and ALL private child triggers.
 alter table public.processes disable trigger user;
-alter table public.processes enable trigger portal_catalog_projection_content_sync_v1;
 alter table public.processes enable trigger portal_catalog_projection_content_sync_v2;
 alter table public.flows disable trigger user;
 alter table public.flows enable trigger portal_catalog_projection_content_sync_v1;

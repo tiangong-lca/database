@@ -290,7 +290,8 @@ select is(
   -- Database #961 adds replacement CHECK, self-reference FK and deferred constraint trigger.
   -- Database #972 adds eighteen constraints on the private indexing configuration and outbox.
   -- Database #976 adds the receipt primary key over actor and operation identity.
-  1167::bigint,
+  -- Database #1004 splits the shared facet parent into kind-specific foreign keys.
+  1168::bigint,
   'Twenty-nine navigation constraints plus: all application, OAuth registry and twenty-two composite-name constraints plus ten partial-import and four whole-package constraints, the review submitted-decision constraint, the Result publication attestation and dataset display exact-version and allowlist constraints remain present, and the versioned v2 Time-alias preflight/gate/request tables carry their own reviewed constraints, alongside eighteen Portal indexing constraints'
 );
 

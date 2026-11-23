@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-23
-lastReviewedCommit: b9fdfe269400f39ef56dc8f901337dc296bd13f9
-lastReviewedNote: "Database #1007: reviewed Flow/Process identity-fence ordering, guarded worker writebacks, isolated PG17 replay and generated schema evidence."
+lastReviewedCommit: 5f630920682484045162798721cae137db843753
+lastReviewedNote: "Database #1007: reviewed migration row protection and its writeback tests with the populated Portal projection upgrade from #1004."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

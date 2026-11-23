@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-23
-lastReviewedCommit: b9fdfe269400f39ef56dc8f901337dc296bd13f9
-lastReviewedNote: "Database #1007: reviewed Flow/Process identity-fence ordering, guarded worker writebacks, isolated PG17 replay and generated schema evidence."
+lastReviewedCommit: 5f630920682484045162798721cae137db843753
+lastReviewedNote: "Database #1007: reviewed migration row protection and its writeback tests with the populated Portal projection upgrade from #1004."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -770,9 +770,16 @@ V2 and Flow V1 without copying Flow data. Mutable readers update in place at
 cutover; only immutable derivation/rank controls and their required helpers have
 separate `cn1` identities. V1 latest-only and V2 matched-version RPC behavior
 remain distinct. The literal manifests leave the frozen V1 closure and registry
-intact. Process retains both writers so its name-independent facet/sitemap facts
-continue through the V1 chain; Flow gains no write amplification. A later reviewed
-contraction may retire redundant Process storage. Search and Hybrid V2 cursor
+intact. For the legacy state-100/200 catalog, the Process source trigger writes V2 only.
+V1 accepts Flow only. Both projection tables run the existing facet derivation
+on their own changes. Facets reference their kind's parent through a stored
+conditional version key, and sitemap rows continue to reference exact facets.
+Navigation retains its deferred Process V2 FK and a conditional Flow V1 FK.
+The other kind's parent cannot cascade across an identical UUID/version.
+Old Process V1 characters disappear with the retired parent. The owner-only
+legacy exact semantic fallback delegates to the current Process helper.
+Display-mode RPCs use a separate brand-scoped graph. A visible Process still
+writes both display card generations there, including when its state is a draft. Search and Hybrid V2 cursor
 fingerprints use a new name epoch. Rollout and recovery are owned by
 `portal-projection-migration-recovery.md`.
 
@@ -1628,7 +1635,7 @@ not an assumption that a small row count implies small documents.
 Current Process search uses V2 physical projections. Its V1-only document
 PGroonga and rank GIN, and four closed owner-only legacy rank/guard/manifest
 routines, are retired together. Shared V1 name/classification key functions are
-retained for the live V2 rank GIN. Flow V1, both frozen/current Process writers,
+retained for the live V2 rank GIN. Flow V1, the Process V2 writer,
 current cn1 guards and their manifests remain. LCIA's unused JSON PGroonga is
 also retired; no registered LCIA full-text API is removed. The migration rejects
 unknown definitions, external grants, unexpected callers/dependencies and mixed

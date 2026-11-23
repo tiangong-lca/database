@@ -1,7 +1,7 @@
 ---
-lastReviewedAt: 2026-10-16
-lastReviewedCommit: "9b7f6571c9587ac12e06355eab5d8c12c08d0d65"
-lastReviewedNote: "Database #935 residual recovery: reviewed branch and lexical visibility work, complete scope intersection and explicit hosted-load qualification limits."
+lastReviewedAt: 2026-11-23
+lastReviewedCommit: b9fdfe269400f39ef56dc8f901337dc296bd13f9
+lastReviewedNote: "Database #1004: reviewed the Process V2 and Flow V1 catalog parent split, populated cutover and separate display-mode ownership."
 title: Portal Projection Migration Recovery
 docType: runbook
 scope: repo
@@ -994,13 +994,24 @@ Ten migrations implement the Process-only change:
    and public wrappers. Only immutable generations coexist; there is no duplicate
    general Search/Hybrid/Facet reader graph.
 
-The original source JSON, version and modified_at remain unchanged. Both Process
-writers commit together, keeping the existing facet/sitemap chain synchronized.
+At the #628 prefix, both Process writers commit together and the V1 writer
+supplies facet and sitemap facts. The #1004 contraction later transfers that
+responsibility to V2.
 Each bounded Process quarter must demonstrate at least 2x statement-timeout
 headroom on the representative populated upgrade. Preview counts alone are not
 production-volume proof. A wrong or invalid concurrent index fails cutover; inspect
 only that exact unrecorded index before the normal reviewed recovery. Ordinary
 transaction failures roll back the file. Never edit persistent migration history.
+
+Migration `20261123034022` locks the two sources before their projections,
+checks writer and exact-version coverage, switches both facet parents and the
+deferred navigation FK, then removes the redundant Process V1 rows. It keeps
+both original navigation FK names for the four historical backfill shards.
+The lock timeout is five seconds and each statement has a 120-second budget.
+On a timeout, a missing parent/child or an unexpected inbound FK, verify the
+transaction rolled back. Resolve the reported drift on the original schema
+before retrying the migration. A retry must start before the contraction.
+The display-mode graph has a separate visibility contract and writer.
 
 PR #629's earlier 24-file sequence was applied only to its disposable Preview.
 The revised ten-file canonical sequence requires explicit discard/reprovision of
