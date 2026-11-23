@@ -23,8 +23,8 @@ checkPaths:
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
 lastReviewedAt: 2026-11-23
-lastReviewedCommit: 309c7cdd9222d766e699c2731e6fdd34f9dfde0c
-lastReviewedNote: "数据库 #1004 已审阅 local-contract 作业中的独立前序库升级验证，覆盖已有 Process v2 和 Flow v1 记录。"
+lastReviewedCommit: 5f630920682484045162798721cae137db843753
+lastReviewedNote: "Database #1005: reviewed extraction queue registration and its CI coverage with the populated Portal projection upgrade from #1004."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-23
-lastReviewedCommit: b9fdfe269400f39ef56dc8f901337dc296bd13f9
-lastReviewedNote: "Database #1004: reviewed the Process V2 and Flow V1 catalog parent split, populated cutover and separate display-mode ownership."
+lastReviewedCommit: 5f630920682484045162798721cae137db843753
+lastReviewedNote: "Database #1005: reviewed extraction queue registration and its CI coverage with the populated Portal projection upgrade from #1004."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
