@@ -683,8 +683,6 @@ values (
 -- naming an exact publication.
 alter table public.processes disable trigger user;
 alter table public.processes
-  enable trigger portal_catalog_projection_content_sync_v1;
-alter table public.processes
   enable trigger portal_catalog_projection_content_sync_v2;
 
 insert into public.processes (id, version, json, user_id, state_code)
@@ -3701,8 +3699,6 @@ reset role;
 -- been frozen.  It is deliberately absent from the prepared projection and
 -- proves that open license alone cannot synthesize LCIA capability.
 alter table public.processes disable trigger user;
-alter table public.processes
-  enable trigger portal_catalog_projection_content_sync_v1;
 alter table public.processes
   enable trigger portal_catalog_projection_content_sync_v2;
 insert into public.processes (id, version, json, user_id, state_code)

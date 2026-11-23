@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-23
-lastReviewedCommit: b9fdfe269400f39ef56dc8f901337dc296bd13f9
-lastReviewedNote: "Database #1000: reviewed input-only Portal generation snapshots and unconditional final rendering. Independent checks, all SQL/upgrade gates, branch eligibility, deployable inputs, hosted authority, caches and timeouts remain unchanged."
+lastReviewedCommit: 5f630920682484045162798721cae137db843753
+lastReviewedNote: "Database #1005: reviewed extraction queue registration and its CI coverage with the populated Portal projection upgrade from #1004."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
