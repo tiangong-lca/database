@@ -1,0 +1,1 @@
+COMMENT ON TRIGGER "flows_z_identity_active_fence" ON "public"."flows" IS 'Fail-closed Step 3 actor fence. Only extracted_md, embedding_ft, embedding_ft_at, and asynchronous search_text projection updates bypass the owner-wide fence.';

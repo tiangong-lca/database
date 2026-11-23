@@ -51904,8 +51904,6 @@ declare
   v_new_state_code integer;
   v_actor uuid;
   v_permit_scope uuid;
-  v_old_payload jsonb;
-  v_new_payload jsonb;
   v_is_exact_process boolean := false;
   v_is_guarded boolean := false;
 begin
@@ -51914,33 +51912,31 @@ begin
     v_old_version := btrim(old.version::text);
     v_old_user_id := old.user_id;
     v_old_state_code := old.state_code;
-    if tg_table_name in ('processes', 'flows') then
-      v_old_payload := old.json_ordered::jsonb;
-    end if;
   end if;
   if tg_op <> 'DELETE' then
     v_new_id := new.id;
     v_new_version := btrim(new.version::text);
     v_new_user_id := new.user_id;
     v_new_state_code := new.state_code;
-    if tg_table_name in ('processes', 'flows') then
-      v_new_payload := new.json_ordered::jsonb;
-    end if;
   end if;
 
   if tg_table_name = 'processes' then
     -- Derivative workers may continue while a scope is active, but only when
-    -- every primary identity/payload/policy column is byte-for-byte stable.
+    -- the protected columns are stable. Identical JSON text needs no parse;
+    -- different spellings still use the original JSONB equality semantics.
     if tg_op = 'UPDATE'
       and new.id is not distinct from old.id
       and new.version is not distinct from old.version
       and new.user_id is not distinct from old.user_id
       and new.state_code is not distinct from old.state_code
-      and new.json::jsonb is not distinct from old.json::jsonb
-      and new.json_ordered::jsonb
-        is not distinct from old.json_ordered::jsonb
       and new.model_id is not distinct from old.model_id
-      and new.rule_verification is not distinct from old.rule_verification then
+      and new.rule_verification is not distinct from old.rule_verification
+      and new.json is not distinct from old.json
+      and (case
+        when new.json_ordered::text collate "C" is not distinct from old.json_ordered::text
+          then true
+        else new.json_ordered::jsonb is not distinct from old.json_ordered::jsonb
+      end) then
       return new;
     end if;
 
@@ -52031,10 +52027,10 @@ begin
         on guard.receipt_id = scope.receipt_id
       cross join lateral jsonb_array_elements(
         case when scope.actor_user_id = v_old_user_id
-          then coalesce(private.dataset_flow_identity_exchanges(v_old_payload), '[]'::jsonb)
+          then coalesce(private.dataset_flow_identity_exchanges(old.json_ordered::jsonb), '[]'::jsonb)
           else '[]'::jsonb end
         || case when scope.actor_user_id = v_new_user_id
-          then coalesce(private.dataset_flow_identity_exchanges(v_new_payload), '[]'::jsonb)
+          then coalesce(private.dataset_flow_identity_exchanges(new.json_ordered::jsonb), '[]'::jsonb)
           else '[]'::jsonb end
       ) as exchange(value)
       where scope.status in (
@@ -52053,6 +52049,32 @@ begin
   end if;
 
   if tg_table_name = 'flows' then
+    if tg_op = 'UPDATE' then
+      declare
+        old_primary public.flows := old;
+        new_primary public.flows := new;
+      begin
+        -- Mask only the four worker outputs. Future columns participate too.
+        -- Compare storage images first: json has no native equality operator.
+        old_primary.extracted_md := null;
+        old_primary.search_text := null;
+        old_primary.embedding_ft := null;
+        old_primary.embedding_ft_at := null;
+        new_primary.extracted_md := null;
+        new_primary.search_text := null;
+        new_primary.embedding_ft := null;
+        new_primary.embedding_ft_at := null;
+        if old_primary operator(pg_catalog.*=) new_primary then
+          return new;
+        end if;
+        -- Different encodings can have the same JSON meaning (e.g. whitespace,
+        -- numeric scale, or a SQL NULL versus JSON null inside a record).
+        if to_jsonb(old_primary) = to_jsonb(new_primary) then
+          return new;
+        end if;
+      end;
+    end if;
+
     -- Acquire every OLD/NEW and guarded-scope actor in one globally sorted
     -- pass.  Splitting those sets into two loops permits A->Z and Z->A lock
     -- inversion for cross-owner public-target updates.
@@ -52107,12 +52129,12 @@ begin
         and (
           (scope.actor_user_id = v_old_user_id
             and v_old_state_code = 0
-            and v_old_payload #>>
+            and old.json_ordered::jsonb #>>
               '{flowDataSet,modellingAndValidation,LCIMethod,typeOfDataSet}'
               = 'Elementary flow')
           or (scope.actor_user_id = v_new_user_id
             and v_new_state_code = 0
-            and v_new_payload #>>
+            and new.json_ordered::jsonb #>>
               '{flowDataSet,modellingAndValidation,LCIMethod,typeOfDataSet}'
               = 'Elementary flow')
           or exists (
@@ -117460,14 +117482,6 @@ CREATE OR REPLACE TRIGGER "dataset_display_source_cleanup" AFTER DELETE OR UPDAT
 
 
 
-CREATE OR REPLACE TRIGGER "dataset_flow_identity_flow_active_fence" BEFORE UPDATE ON "public"."flows" FOR EACH ROW WHEN ((("to_jsonb"("new".*) - ARRAY['extracted_md'::"text", 'embedding_ft'::"text", 'embedding_ft_at'::"text", 'search_text'::"text"]) IS DISTINCT FROM ("to_jsonb"("old".*) - ARRAY['extracted_md'::"text", 'embedding_ft'::"text", 'embedding_ft_at'::"text", 'search_text'::"text"]))) EXECUTE FUNCTION "private"."dataset_flow_identity_active_fence"();
-
-
-
-COMMENT ON TRIGGER "dataset_flow_identity_flow_active_fence" ON "public"."flows" IS 'Fail-closed Step 3 actor fence. Only extracted_md, embedding_ft, embedding_ft_at, and asynchronous search_text projection updates bypass the owner-wide fence.';
-
-
-
 CREATE OR REPLACE TRIGGER "dataset_flow_identity_flow_insert_delete_active_fence" BEFORE INSERT OR DELETE ON "public"."flows" FOR EACH ROW EXECUTE FUNCTION "private"."dataset_flow_identity_active_fence"();
 
 
@@ -117569,6 +117583,14 @@ CREATE OR REPLACE TRIGGER "flows_json_sync_trigger" BEFORE INSERT OR UPDATE OF "
 
 
 CREATE OR REPLACE TRIGGER "flows_set_modified_at_trigger" BEFORE UPDATE OF "json", "json_ordered", "user_id", "state_code", "version", "team_id", "review_id", "rule_verification", "reviews" ON "public"."flows" FOR EACH ROW EXECUTE FUNCTION "private"."update_modified_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "flows_z_identity_active_fence" BEFORE UPDATE ON "public"."flows" FOR EACH ROW EXECUTE FUNCTION "private"."dataset_flow_identity_active_fence"();
+
+
+
+COMMENT ON TRIGGER "flows_z_identity_active_fence" ON "public"."flows" IS 'Fail-closed Step 3 actor fence. Only extracted_md, embedding_ft, embedding_ft_at, and asynchronous search_text projection updates bypass the owner-wide fence.';
 
 
 
