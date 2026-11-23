@@ -40,7 +40,7 @@ def main() -> None:
             raise RuntimeError(result.stderr)
         return result.stdout.strip()
 
-    if sql("select inet_server_addr() is null; select count(*) from private.portal_catalog_search_rows_v1;") != "t\n0":
+    if sql("select inet_server_addr() is null; select count(*) from private.portal_catalog_search_current_v2;") != "t\n0":
         parser.error("Empty local public projection required")
     command = ["docker", "exec", "-i", args.container, "psql", "-U", "postgres", "-d", "postgres", "-Atq", "-v", "ON_ERROR_STOP=1"]
     source = (ROOT / "supabase/tests/20260919_portal_navigation_v1.sql").read_text()
@@ -131,7 +131,7 @@ def main() -> None:
         drop function if exists private.navigation_backfill_test_barrier();
         delete from private.portal_catalog_search_rows_v1 where id::text like '%56de000-%';
         """)
-    assert sql("select count(*) from private.portal_catalog_search_rows_v1") == "0"
+    assert sql("select count(*) from private.portal_catalog_search_current_v2") == "0"
     results["scope"] = "local populated projection-parent upgrade/replay and two-connection races; no hosted or raw-data mutations"
     args.report.write_text(json.dumps(results, indent=2) + "\n")
     print(json.dumps(results, indent=2))

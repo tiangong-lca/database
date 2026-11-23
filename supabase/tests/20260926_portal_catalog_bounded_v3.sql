@@ -23,9 +23,8 @@ lateral jsonb_array_elements(g->'values') v where g->>'id'=group_id and v->>'val
 $$;
 
 -- Unrelated authoring/webhook jobs are suppressed only in this rollback fixture.
--- Both Process writers, the Flow writer, and all private children remain active.
+-- The Process and Flow writers, and all private children remain active.
 alter table public.processes disable trigger user;
-alter table public.processes enable trigger portal_catalog_projection_content_sync_v1;
 alter table public.processes enable trigger portal_catalog_projection_content_sync_v2;
 alter table public.flows disable trigger user;
 alter table public.flows enable trigger portal_catalog_projection_content_sync_v1;

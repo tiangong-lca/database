@@ -771,7 +771,7 @@ select extensions.ok(
     select 1
     from pg_catalog.pg_proc as routine
     where routine.oid = any (array[
-        'private.portal_projection_semantic_process_exact_v1(extensions.vector)'::regprocedure::oid,
+        'private.portal_projection_semantic_process_exact_cn1(extensions.vector)'::regprocedure::oid,
         'private.portal_projection_semantic_flow_exact_v1(extensions.vector)'::regprocedure::oid
       ])
       and not (
@@ -1063,8 +1063,6 @@ grant execute on function pg_temp.portal_candidate_process_payload(text)
 
 alter table public.processes disable trigger user;
 alter table public.flows disable trigger user;
-alter table public.processes
-  enable trigger portal_catalog_projection_content_sync_v1;
 alter table public.processes
   enable trigger portal_catalog_projection_content_sync_v2;
 alter table public.flows
@@ -2054,14 +2052,14 @@ select extensions.ok(
         projection.version,
         projection.state_code,
         projection.modified_at
-      from private.portal_catalog_search_rows_v1 as projection
+      from private.portal_catalog_search_current_v2 as projection
       except
       select character_row.dataset_kind,
         character_row.id,
         character_row.version,
         character_row.state_code,
         character_row.modified_at
-      from private.portal_catalog_character_rows_v1 as character_row
+      from private.portal_catalog_character_current_v2 as character_row
     )
     union all
     (
@@ -2070,14 +2068,14 @@ select extensions.ok(
         character_row.version,
         character_row.state_code,
         character_row.modified_at
-      from private.portal_catalog_character_rows_v1 as character_row
+      from private.portal_catalog_character_current_v2 as character_row
       except
       select projection.dataset_kind,
         projection.id,
         projection.version,
         projection.state_code,
         projection.modified_at
-      from private.portal_catalog_search_rows_v1 as projection
+      from private.portal_catalog_search_current_v2 as projection
     )
   )
   and (
@@ -2091,8 +2089,8 @@ select extensions.ok(
         private.portal_catalog_character_field_set_v1(
           projection.card -> 'names', 'value', true
         )
-    from private.portal_catalog_search_rows_v1 as projection
-    join private.portal_catalog_character_rows_v1 as character_row
+    from private.portal_catalog_search_rows_v2 as projection
+    join private.portal_catalog_character_rows_v2 as character_row
       on character_row.dataset_kind = projection.dataset_kind
      and character_row.id = projection.id
      and character_row.version = projection.version
@@ -2117,13 +2115,13 @@ select extensions.is(
 select extensions.is(
   (
     select projection.document
-    from private.portal_catalog_search_rows_v1 as projection
+    from private.portal_catalog_search_rows_v2 as projection
     where projection.dataset_kind = 'process'
       and projection.id = '53100000-0000-4000-8000-000000000102'
       and projection.version = '01.00.000'
   ),
   (
-    select private.portal_catalog_card_v1(
+    select private.portal_catalog_card_cn1(
       'process', process.state_code, process.json
     ) ->> 'document'
     from public.processes as process
@@ -2187,7 +2185,7 @@ select extensions.ok(
       and facts.value -> 'processSubtype' is not distinct from card.value -> 'processSubtype'
       and facts.value -> 'source' is not distinct from card.value -> 'source'
       and facts.value -> 'casNumber' is not distinct from card.value -> 'casNumber'
-    from private.portal_catalog_search_rows_v1 as projection
+    from private.portal_catalog_search_rows_v2 as projection
     cross join lateral (
       select private.catalog_portal_card_facts_v1(
         projection.card,
@@ -2285,8 +2283,6 @@ grant execute on function pg_temp.portal_candidate_vector(integer)
 
 alter table public.processes disable trigger user;
 alter table public.flows disable trigger user;
-alter table public.processes
-  enable trigger portal_catalog_projection_content_sync_v1;
 alter table public.processes
   enable trigger portal_catalog_projection_content_sync_v2;
 alter table public.flows
@@ -2472,13 +2468,13 @@ with approximate as materialized (
     and process.embedding_ft is not null
     and exists (
       select 1
-      from private.portal_catalog_search_rows_v1 as projection
+      from private.portal_catalog_search_rows_v2 as projection
       where projection.dataset_kind = 'process'
         and projection.id = process.id
         and projection.version = process.version::text
         and not exists (
           select 1
-          from private.portal_catalog_search_rows_v1 as newer
+          from private.portal_catalog_search_rows_v2 as newer
           where newer.dataset_kind = projection.dataset_kind
             and newer.id = projection.id
             and (
@@ -2629,11 +2625,6 @@ select extensions.is(
 grant api_internal_executor to postgres;
 set local role api_internal_executor;
 
-delete from private.portal_catalog_search_rows_v1
-where dataset_kind = 'process'
-  and id >= '53200000-0000-4000-8000-000000000051'::uuid
-  and id <= '53200000-0000-4000-8000-000000000205'::uuid;
-
 delete from private.portal_catalog_search_rows_v2
 where dataset_kind = 'process'
   and id >= '53200000-0000-4000-8000-000000000051'::uuid
@@ -2698,7 +2689,7 @@ select extensions.ok(
         projection.dataset_kind,
         projection.id,
         projection.version
-      from private.portal_catalog_search_rows_v1 as projection
+      from private.portal_catalog_search_rows_v2 as projection
       join public.processes as process
         on projection.dataset_kind = 'process'
        and process.id = projection.id
@@ -2799,13 +2790,13 @@ with source_rows as (
     and process.embedding_ft is not null
     and exists (
       select 1
-      from private.portal_catalog_search_rows_v1 as projection
+      from private.portal_catalog_search_rows_v2 as projection
       where projection.dataset_kind = 'process'
         and projection.id = process.id
         and projection.version = process.version::text
         and not exists (
           select 1
-          from private.portal_catalog_search_rows_v1 as newer
+          from private.portal_catalog_search_rows_v2 as newer
           where newer.dataset_kind = projection.dataset_kind
             and newer.id = projection.id
             and (
@@ -2962,8 +2953,6 @@ grant execute on function pg_temp.portal_candidate_flow_payload(text)
 
 alter table public.processes disable trigger user;
 alter table public.flows disable trigger user;
-alter table public.processes
-  enable trigger portal_catalog_projection_content_sync_v1;
 alter table public.processes
   enable trigger portal_catalog_projection_content_sync_v2;
 alter table public.flows
@@ -3166,8 +3155,10 @@ select extensions.ok(
     'facet_process_subtype:text:no',
     'facet_reference_year:text:no',
     'facet_source:text:no',
+    'flow_version:text:no',
     'id:uuid:yes',
     'modified_at:timestamp with time zone:yes',
+    'process_version:text:no',
     'state_code:integer:yes',
     'version:text:yes'
   ]::text[]
@@ -3187,7 +3178,7 @@ select extensions.ok(
         'private.portal_catalog_facet_rows_v1'::regclass
       and parent_fk.confrelid =
         'private.portal_catalog_search_rows_v1'::regclass
-      and parent_fk.conname = 'portal_catalog_facet_rows_projection_v1_fk'
+      and parent_fk.conname = 'portal_facet_flow_parent_fk'
       and parent_fk.confupdtype = 'r'
       and parent_fk.confdeltype = 'c'
   )
@@ -3252,11 +3243,10 @@ select extensions.ok(
   and (
     select count(*)
     from pg_catalog.pg_trigger as trigger
-    where trigger.tgrelid in (
-        'public.processes'::regclass,
-        'public.flows'::regclass
+    where (trigger.tgrelid, trigger.tgname) in (
+        ('public.processes'::regclass,'portal_catalog_projection_content_sync_v2'),
+        ('public.flows'::regclass,'portal_catalog_projection_content_sync_v1')
       )
-      and trigger.tgname = 'portal_catalog_projection_content_sync_v1'
       and trigger.tgtype = 29
       and pg_catalog.pg_get_triggerdef(trigger.oid) ~ 'json_ordered'
   ) = 2
@@ -3293,11 +3283,11 @@ select extensions.ok(
     from private.portal_catalog_facet_rows_v1
   ) = (
     select count(*)
-    from private.portal_catalog_search_rows_v1
+    from private.portal_catalog_search_current_v2
   )
   and not exists (
     select 1
-    from private.portal_catalog_search_rows_v1 as projection
+    from private.portal_catalog_search_current_v2 as projection
     cross join lateral private.portal_catalog_facet_facts_v1(
       projection.dataset_kind,
       projection.card

@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS "private"."portal_catalog_search_rows_v1" (
     CONSTRAINT "portal_catalog_search_rows_contract_version_v1_chk" CHECK (("projection_contract_version" = 1)),
     CONSTRAINT "portal_catalog_search_rows_v1_card_check" CHECK (("jsonb_typeof"("card") = 'object'::"text")),
     CONSTRAINT "portal_catalog_search_rows_v1_check" CHECK ((COALESCE(("card" ->> 'document'::"text"), ''::"text") = "document")),
-    CONSTRAINT "portal_catalog_search_rows_v1_dataset_kind_check" CHECK (("dataset_kind" = ANY (ARRAY['process'::"text", 'flow'::"text"]))),
+    CONSTRAINT "portal_catalog_search_rows_v1_dataset_kind_check" CHECK (("dataset_kind" = 'flow'::"text")),
     CONSTRAINT "portal_catalog_search_rows_v1_state_code_check" CHECK (("state_code" = ANY (ARRAY[100, 200]))),
     CONSTRAINT "portal_catalog_search_rows_v1_version_check" CHECK (("version" ~ '^\d{2}\.\d{2}\.\d{3}$'::"text"))
 );

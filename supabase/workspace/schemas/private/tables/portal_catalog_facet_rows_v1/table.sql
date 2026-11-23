@@ -10,6 +10,16 @@ CREATE TABLE IF NOT EXISTS "private"."portal_catalog_facet_rows_v1" (
     "facet_process_subtype" "text",
     "facet_source" "text",
     "facet_contract_version" smallint NOT NULL,
+    "flow_version" "text" GENERATED ALWAYS AS (
+CASE
+    WHEN ("dataset_kind" = 'flow'::"text") THEN "version"
+    ELSE NULL::"text"
+END) STORED,
+    "process_version" "text" GENERATED ALWAYS AS (
+CASE
+    WHEN ("dataset_kind" = 'process'::"text") THEN "version"
+    ELSE NULL::"text"
+END) STORED,
     CONSTRAINT "portal_catalog_facet_rows_contract_version_v1_chk" CHECK (("facet_contract_version" = 1)),
     CONSTRAINT "portal_catalog_facet_rows_process_subtype_v1_chk" CHECK ((("dataset_kind" = 'process'::"text") OR ("facet_process_subtype" IS NULL))),
     CONSTRAINT "portal_catalog_facet_rows_v1_dataset_kind_check" CHECK (("dataset_kind" = ANY (ARRAY['process'::"text", 'flow'::"text"]))),
@@ -28,7 +38,10 @@ ALTER TABLE ONLY "private"."portal_catalog_facet_rows_v1"
     ADD CONSTRAINT "portal_catalog_facet_rows_contract_version_v1_fk" FOREIGN KEY ("facet_contract_version") REFERENCES "private"."portal_catalog_facet_contract_v1"("contract_version") ON UPDATE RESTRICT ON DELETE RESTRICT;
 
 ALTER TABLE ONLY "private"."portal_catalog_facet_rows_v1"
-    ADD CONSTRAINT "portal_catalog_facet_rows_projection_v1_fk" FOREIGN KEY ("dataset_kind", "id", "version") REFERENCES "private"."portal_catalog_search_rows_v1"("dataset_kind", "id", "version") ON UPDATE RESTRICT ON DELETE CASCADE;
+    ADD CONSTRAINT "portal_facet_flow_parent_fk" FOREIGN KEY ("dataset_kind", "id", "flow_version") REFERENCES "private"."portal_catalog_search_rows_v1"("dataset_kind", "id", "version") ON UPDATE RESTRICT ON DELETE CASCADE;
+
+ALTER TABLE ONLY "private"."portal_catalog_facet_rows_v1"
+    ADD CONSTRAINT "portal_facet_process_parent_fk" FOREIGN KEY ("dataset_kind", "id", "process_version") REFERENCES "private"."portal_catalog_search_rows_v2"("dataset_kind", "id", "version") ON UPDATE RESTRICT ON DELETE CASCADE;
 
 ALTER TABLE "private"."portal_catalog_facet_rows_v1" ENABLE ROW LEVEL SECURITY;
 

@@ -88,6 +88,8 @@ CONTROL_FUNCTION_IDENTITIES = (
     "private.portal_projection_semantic_process_exact_v1(extensions.vector)",
     "private.portal_projection_semantic_flow_exact_v1(extensions.vector)",
 )
+# #1004 rebinds exactly one storage guard and one owner-only fallback.
+PROCESS_CONTRACTION_NAME = "20261123034022_portal_process_single_search_projection.sql"
 FACET_MANIFEST_SHA256 = (
     "b238e9573ef08a9339062a2fa3092c0776318d13979ec8bf54ffc7a1ba0c7e3a"
 )
@@ -191,6 +193,16 @@ def mutation_pattern(identity: str) -> re.Pattern[str]:
         rf'"?{re.escape(function_name)}"?\s*\(',
         flags=re.IGNORECASE,
     )
+
+
+def reviewed_process_contraction(name: str, sql: str, identity: str) -> bool:
+    if name != PROCESS_CONTRACTION_NAME or identity not in {
+        "private.assert_portal_catalog_facet_contract_v1()",
+        "private.portal_projection_semantic_process_exact_v1(extensions.vector)",
+    }:
+        return False
+    mutations = list(mutation_pattern(identity).finditer(sql))
+    return len(mutations) == 1 and mutations[0].group().lower().startswith("create or replace function ")
 
 
 def reviewed_process_rank_retirement(name: str, sql: str, identity: str) -> bool:
@@ -341,6 +353,8 @@ def main() -> int:
         executable_sql = sql_without_comments(migration.read_text(encoding="utf-8"))
         for identity, pattern in patterns.items():
             if pattern.search(executable_sql):
+                if reviewed_process_contraction(migration.name, executable_sql, identity):
+                    continue
                 if (
                     migration.name == FLOW_CAS_RLS_POLICY_NAME
                     and identity
@@ -375,7 +389,7 @@ def main() -> int:
             continue
         executable_sql = sql_without_comments(migration.read_text(encoding="utf-8"))
         for identity, pattern in facet_patterns.items():
-            if pattern.search(executable_sql):
+            if pattern.search(executable_sql) and not reviewed_process_contraction(migration.name, executable_sql, identity):
                 violations.append(f"{migration.name}: {identity}")
 
     context_anchor = MIGRATIONS_DIR / CARD_CONTEXT_ANCHOR_NAME

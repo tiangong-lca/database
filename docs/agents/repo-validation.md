@@ -32,9 +32,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-21
-lastReviewedCommit: 9e7b830bdda2dd223733eb3ce785e338fa34632b
-lastReviewedNote: "Database #1000: reviewed input-only Portal generation snapshots and unconditional final rendering. Independent checks, all SQL/upgrade gates, branch eligibility, deployable inputs, hosted authority, caches and timeouts remain unchanged."
+lastReviewedAt: 2026-11-23
+lastReviewedCommit: b9fdfe269400f39ef56dc8f901337dc296bd13f9
+lastReviewedNote: "Database #1004: reviewed the Process V2 and Flow V1 catalog parent split, populated cutover and separate display-mode ownership."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -1437,11 +1437,20 @@ Do not collapse those phases into one validation note.
 
 ## Composite Process names
 
+For #1004, start an empty local `database-engine-1004` on port 59422 through
+predecessor `20261120030000`. Run
+`psql -X -h 127.0.0.1 -p 59422 -U postgres -d postgres -f supabase/tests/upgrade/20261123_portal_process_single_projection.sql`.
+The fixture commits synthetic Process and Flow versions with overlapping keys,
+compares full RPC pages and old cursor continuations across the actual migration,
+then publishes, modifies and withdraws a Process with all Portal writers active.
+Use the display reader/brand suites for the independent settings-based mode.
+Reset the owned stack to the candidate before running the ordinary SQL suites.
+
 For the composite-name projection, run a blank reset, all `*portal*.sql` suites,
 `20260805_full_schema_cutover.sql`, `20260806_api_contract_closure.sql`, adjacent
 OAuth/Hybrid contracts, and the isolated concurrency runner documented in
-`portal-projection-migration-recovery.md`. Keep both Process projection triggers and the sole Flow V1 trigger enabled
-in synthetic fixtures that disable unrelated authoring triggers. Prove no Flow
+`portal-projection-migration-recovery.md`. Keep the Process V2 trigger and the Flow V1 trigger enabled in current
+fixtures that disable unrelated authoring triggers. The #628 prefix still uses both Process triggers. Prove no Flow
 shadow rows or second writer and exact invoker-view routing/security. Preserve
 V1 latest-only and V2 matched-version expectations. Record populated shard timing,
 replay/concurrency results, long multilingual page/cursor bounds, strict consumer

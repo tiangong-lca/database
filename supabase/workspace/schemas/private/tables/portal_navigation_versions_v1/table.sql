@@ -18,6 +18,11 @@ END) STORED,
     "reference_year" integer,
     "process_subtype" "text",
     "source" "text",
+    "flow_version" "text" GENERATED ALWAYS AS (
+CASE
+    WHEN ("dataset_kind" = 'flow'::"text") THEN "version"
+    ELSE NULL::"text"
+END) STORED,
     CONSTRAINT "portal_navigation_versions_v1_dataset_kind_check" CHECK (("dataset_kind" = ANY (ARRAY['process'::"text", 'flow'::"text"])))
 );
 
@@ -29,7 +34,7 @@ ALTER TABLE ONLY "private"."portal_navigation_versions_v1"
     ADD CONSTRAINT "portal_navigation_versions_v1_pkey" PRIMARY KEY ("dataset_kind", "id", "version");
 
 ALTER TABLE ONLY "private"."portal_navigation_versions_v1"
-    ADD CONSTRAINT "portal_navigation_versions_v1_dataset_kind_id_version_fkey" FOREIGN KEY ("dataset_kind", "id", "version") REFERENCES "private"."portal_catalog_search_rows_v1"("dataset_kind", "id", "version") ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+    ADD CONSTRAINT "portal_navigation_versions_v1_dataset_kind_id_version_fkey" FOREIGN KEY ("dataset_kind", "id", "flow_version") REFERENCES "private"."portal_catalog_search_rows_v1"("dataset_kind", "id", "version") ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
 
 ALTER TABLE ONLY "private"."portal_navigation_versions_v1"
     ADD CONSTRAINT "portal_navigation_versions_v1_dataset_kind_process_id_proc_fkey" FOREIGN KEY ("dataset_kind", "process_id", "process_version") REFERENCES "private"."portal_catalog_search_rows_v2"("dataset_kind", "id", "version") ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;

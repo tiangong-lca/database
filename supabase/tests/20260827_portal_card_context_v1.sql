@@ -151,23 +151,14 @@ select extensions.ok(
     select count(*)
     from pg_catalog.pg_trigger as trigger
     where not trigger.tgisinternal
-      and (
-        (
-          trigger.tgrelid in (
-            'public.processes'::regclass,
-            'public.flows'::regclass
-          )
-          and trigger.tgname =
-            'portal_catalog_projection_content_sync_v1'
-        )
-        or (
-          trigger.tgrelid =
-            'private.portal_catalog_search_rows_v1'::regclass
-          and trigger.tgname = 'portal_catalog_facet_sync_v1'
-        )
+      and (trigger.tgrelid,trigger.tgname) in (
+        ('public.processes'::regclass,'portal_catalog_projection_content_sync_v2'),
+        ('public.flows'::regclass,'portal_catalog_projection_content_sync_v1'),
+        ('private.portal_catalog_search_rows_v1'::regclass,'portal_catalog_facet_sync_v1'),
+        ('private.portal_catalog_search_rows_v2'::regclass,'portal_catalog_facet_sync_v2')
       )
-  ) = 3,
-  'the #531 source/card/facet writer graph remains the exact three-trigger path with zero context work'
+  ) = 4,
+  'each source has its own projection writer and facet trigger, with zero context work'
 );
 
 grant portal_public_executor to postgres;
