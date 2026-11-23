@@ -46,9 +46,17 @@ select ok((select reloptions @> array['security_invoker=true'] from pg_class whe
 alter view private.portal_catalog_search_current_v2 set (security_invoker=false);
 select throws_ok('select private.assert_portal_catalog_projection_contract_cn1()','55000','Portal name routing contract drifted','routing security drift fails closed');
 alter view private.portal_catalog_search_current_v2 set (security_invoker=true);
+alter table private.portal_catalog_search_rows_v2 disable trigger portal_catalog_facet_sync_v2;
+select throws_ok('select private.assert_portal_catalog_facet_contract_v1()','55000',
+ 'Portal facet derivation contract drifted','the shared facet guard requires its Process V2 trigger');
+alter table private.portal_catalog_search_rows_v2 enable trigger portal_catalog_facet_sync_v2;
+select ok((select proowner='api_internal_executor'::regrole and prosecdef
+ and prosrc like '%private.portal_projection_semantic_process_exact_cn1(p_query_embedding)%'
+ from pg_proc where oid='private.portal_projection_semantic_process_exact_v1(extensions.vector)'::regprocedure)
+ and not has_function_privilege('anon','private.portal_projection_semantic_process_exact_v1(extensions.vector)','execute'),
+ 'earlier exact Process fallback dispatches to current keys under its original owner');
 -- Disable unrelated publication/embedding jobs only in this rollback fixture.
 alter table public.processes disable trigger user;
-alter table public.processes enable trigger portal_catalog_projection_content_sync_v1;
 alter table public.processes enable trigger portal_catalog_projection_content_sync_v2;
 insert into public.processes(id,version,json,state_code,modified_at)
 select '62810000-0000-4000-8000-000000000001','01.00.00'||i,
@@ -58,8 +66,13 @@ select '62810000-0000-4000-8000-000000000001','01.00.00'||i,
  'functionalUnitFlowProperties',jsonb_build_object('@xml:lang','en','#text','Voltage628 铜'))),100,'2026-09-08T00:00:00Z'
 from generate_series(0,1) i;
 select is((select count(*) from private.portal_catalog_search_rows_v2 where id='62810000-0000-4000-8000-000000000001'),2::bigint,'new writes preserve both exact versions');
-select is((select count(*) from private.portal_catalog_search_rows_v2 n join private.portal_catalog_search_rows_v1 o using(dataset_kind,id,version)
- where n.id='62810000-0000-4000-8000-000000000001' and n.card - 'names' - 'document'=o.card-'names'-'document' and n.modified_at=o.modified_at),2::bigint,'all unrelated card fields and source timestamp unchanged');
+select is((select count(*) from private.portal_catalog_search_rows_v2 n join public.processes o on o.id=n.id and o.version::text=n.version
+ where n.id='62810000-0000-4000-8000-000000000001' and n.card - 'names' - 'document'=(private.portal_catalog_card_v1('process',o.state_code,o.json)-'names'-'document') and n.modified_at=o.modified_at),2::bigint,'all unrelated card fields and source timestamp unchanged');
+select is((select count(*) from private.portal_catalog_search_rows_v1 where dataset_kind='process'),0::bigint,
+ 'publication writes no frozen Process card');
+select throws_ok($test$insert into private.portal_catalog_search_rows_v1
+select dataset_kind,id,version,state_code,modified_at,card,document,1 from private.portal_catalog_search_rows_v2
+where id='62810000-0000-4000-8000-000000000001'$test$,'23514',null,'the V1 table rejects Process keys');
 create temp table names_results(label text primary key,payload jsonb);
 grant select,insert on names_results to anon;
 set local role anon;
@@ -112,7 +125,7 @@ select ok((select (api.portal_search_processes_v1('LongName628','{}','name_asc',
 update public.processes set state_code=20 where id='62810000-0000-4000-8000-000000000001';
 select is((select count(*) from private.portal_catalog_search_rows_v2 where id='62810000-0000-4000-8000-000000000001'),0::bigint,'withdrawal removes new search rows');
 select is((select count(*) from private.portal_catalog_character_rows_v2 where id='62810000-0000-4000-8000-000000000001'),0::bigint,'withdrawal cascades new character rows');
-select is((select count(*) from private.portal_catalog_facet_rows_v1 where id='62810000-0000-4000-8000-000000000001'),0::bigint,'name-independent facets remain synchronized through frozen writer');
+select is((select count(*) from private.portal_catalog_facet_rows_v1 where id='62810000-0000-4000-8000-000000000001'),0::bigint,'Process withdrawal cascades from V2 to its name-independent facets');
 -- Unchanged Flow content is read directly from V1, including future updates.
 alter table public.flows disable trigger user;
 alter table public.flows enable trigger portal_catalog_projection_content_sync_v1;
