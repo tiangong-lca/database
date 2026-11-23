@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-23
-lastReviewedCommit: 5f630920682484045162798721cae137db843753
-lastReviewedNote: "Database #1007: reviewed migration row protection and its writeback tests with the populated Portal projection upgrade from #1004."
+lastReviewedCommit: f90a22023b51844bc7ae91b15081212b4cde69f4
+lastReviewedNote: "Database #1011 added committed two-session proof for ordinary writes, scope sealing and Result publication."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -70,6 +70,15 @@ version, in-review root links, denied/repeated submissions and an injected
 SQLSTATE 57014 rollback remain covered. Compare the predecessor as a negative
 control. Local timing is not production performance proof; repeat the real
 authenticated model submission after exact Dev/Main deployment.
+
+## Flow identity owner locks
+
+On an empty disposable local PG17 replay, run
+`psql -X -h 127.0.0.1 -p <port> -U postgres -d postgres -v fixture_port=<port> -f supabase/tests/regression/20261123_flow_identity_owner_locks.sql`.
+The two backends commit synthetic rows. Reset the project after the run.
+Check both ordinary commits, a stale seal waking after an edit, scope and
+permit enforcement across transactions, and the Result publisher's same-request retry.
+CI runs this between the clean candidate reset and the calculation export upgrade reset.
 
 ## Flow identity worker writebacks
 

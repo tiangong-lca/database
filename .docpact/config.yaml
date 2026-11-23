@@ -1,8 +1,8 @@
 version: 1
 layout: repo
 lastReviewedAt: "2026-11-23"
-lastReviewedCommit: c7384ac669b6cbc5dc3e431becf80eb237d6534d
-lastReviewedNote: "Database #1007 reviewed migration row protection and its writeback tests on Dev with the #1004 Portal projection upgrade and #1005 extraction queue."
+lastReviewedCommit: "f90a22023b51844bc7ae91b15081212b4cde69f4"
+lastReviewedNote: "Database #1011 reviewed migration, test and CI routing for shared ordinary owner locks."
 
 # Keep deterministic governance facts here.
 # AGENTS.md remains the repo contract entrypoint.

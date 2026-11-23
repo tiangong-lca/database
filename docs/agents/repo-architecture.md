@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-23
-lastReviewedCommit: 5f630920682484045162798721cae137db843753
-lastReviewedNote: "Database #1007: reviewed migration row protection and its writeback tests with the populated Portal projection upgrade from #1004."
+lastReviewedCommit: f90a22023b51844bc7ae91b15081212b4cde69f4
+lastReviewedNote: "Database #1011 documented the ordinary and migration lock modes and the guard between transactions."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -608,6 +608,16 @@ and eligible Comment dependencies retain their exact current Reference Review
 guard. Report Sources in approving submissions retain existing review admission.
 Rejected report download uses its separate actor-bound descriptor RPC and
 retains Source RLS; it does not publish the Source or add a business dependency.
+
+## Flow identity migration fences
+
+Ordinary Process, Flow and guarded support writes take non-blocking shared
+transaction locks on the affected owner keys. Ownership transfers lock both
+owners in UUID order. Capture, preflight, rewrite, finalize, cancel and recovery
+take exclusive transaction locks on the same actor key. Between those
+transactions the active scope protects its captured process versions and flow
+and support references. The rewrite trigger consumes one transaction-bound
+permit for the expected before and after payloads.
 
 ## Protected Derivative Scheduling
 
