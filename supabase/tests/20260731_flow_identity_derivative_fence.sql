@@ -3,21 +3,19 @@ begin;
 create extension if not exists pgtap with schema extensions;
 create extension if not exists dblink with schema extensions;
 
-select extensions.plan(9);
+select extensions.plan(13);
 
 select extensions.ok(
   (
     select trigger.tgtype = 19
-      and trigger.tgqual is not null
-      and pg_get_triggerdef(trigger.oid, true) like '%extracted_md%'
-      and pg_get_triggerdef(trigger.oid, true) like '%embedding_ft%'
-      and pg_get_triggerdef(trigger.oid, true) like '%embedding_ft_at%'
+      and trigger.tgqual is null and trigger.tgattr = ''::int2vector
+      and trigger.tgfoid = 'private.dataset_flow_identity_active_fence()'::regprocedure
     from pg_trigger as trigger
     where trigger.tgrelid = 'public.flows'::regclass
-      and trigger.tgname = 'dataset_flow_identity_flow_active_fence'
+      and trigger.tgname = 'flows_z_identity_active_fence'
       and not trigger.tgisinternal
   ),
-  'Flow UPDATE actor fence excludes the four guard-neutral derivative columns'
+  'Flow UPDATE checks actual row values inside the identity fence'
 );
 
 select extensions.ok(
@@ -146,6 +144,47 @@ select extensions.throws_ok(
   '55P03',
   'FLOW_IDENTITY_ACTIVE_SCOPE_ACTOR_FENCE_BUSY',
   'Flow guard timestamp mutation remains fail-closed behind the actor fence'
+);
+
+select extensions.lives_ok(
+  $$update public.flows set search_text = array['latest'], extracted_md = '# latest'
+    where id = 'fa324000-0000-4000-8000-000000000001'$$,
+  'combined extraction writeback bypasses the uncommitted activation lock'
+);
+
+-- The fixture and its authored timestamp were created in this transaction,
+-- so the timestamp hook sets the same value. Only JSON spelling differs.
+select extensions.lives_ok(
+  $$update public.flows set json_ordered = ' { } '::json, search_text = array['same body']
+    where id = 'fa324000-0000-4000-8000-000000000001'$$,
+  'different JSON spelling with the same final primary values is still neutral'
+);
+
+-- The SET list alone cannot establish neutrality. Observe NEW as rewritten
+-- by an earlier BEFORE trigger, even when the caller targets only search_text.
+create function pg_temp.change_flow_team() returns trigger language plpgsql as $$
+begin
+  new.team_id := 'fa324000-0000-4000-8000-000000000003';
+  return new;
+end
+$$;
+create trigger aa_change_flow_team before update of search_text on public.flows
+for each row execute function pg_temp.change_flow_team();
+select extensions.throws_ok(
+  $$update public.flows set search_text = array['trigger change']
+    where id = 'fa324000-0000-4000-8000-000000000001'$$,
+  '55P03', 'FLOW_IDENTITY_ACTIVE_SCOPE_ACTOR_FENCE_BUSY',
+  'a worker SET list cannot hide an earlier trigger changing a business column'
+);
+drop trigger aa_change_flow_team on public.flows;
+
+-- A future column inherits the original default protection automatically.
+alter table public.flows add column test_future_column text;
+select extensions.throws_ok(
+  $$update public.flows set search_text = array['mixed'], test_future_column = 'changed'
+    where id = 'fa324000-0000-4000-8000-000000000001'$$,
+  '55P03', 'FLOW_IDENTITY_ACTIVE_SCOPE_ACTOR_FENCE_BUSY',
+  'mixed write to a newly added column still participates in the actor fence'
 );
 
 select extensions.dblink_exec('flow_derivative_actor_lock', 'rollback');

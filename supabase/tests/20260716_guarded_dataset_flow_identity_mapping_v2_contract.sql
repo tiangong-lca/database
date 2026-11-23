@@ -494,7 +494,7 @@ select is(
     where not trigger.tgisinternal
       and trigger.tgname = any(array[
         'dataset_flow_identity_process_active_fence',
-        'dataset_flow_identity_flow_active_fence',
+        'flows_z_identity_active_fence',
         'dataset_flow_identity_flowproperty_active_fence',
         'dataset_flow_identity_unitgroup_active_fence'
       ])

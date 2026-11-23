@@ -50,7 +50,7 @@ as $$
   group by trg.oid;
 $$;
 
-select plan(18);
+select plan(25);
 
 select is(
   pg_temp.trigger_update_columns(
@@ -81,11 +81,11 @@ select is(
 
 select is(
   (
-    with expected(table_name, trigger_name, edge_function_name) as (
+    with expected(table_name, trigger_name) as (
       values
-        ('flows', 'flow_extract_md_trigger_update', 'webhook_flow_embedding_ft'),
-        ('processes', 'process_extract_md_trigger_update', 'webhook_process_embedding_ft'),
-        ('lifecyclemodels', 'lifecyclemodel_extract_md_trigger_update', 'webhook_model_embedding_ft')
+        ('flows', 'flow_extract_md_trigger_update'),
+        ('processes', 'process_extract_md_trigger_update'),
+        ('lifecyclemodels', 'lifecyclemodel_extract_md_trigger_update')
     )
     select count(*)::integer
     from expected e
@@ -96,16 +96,14 @@ select is(
     join pg_namespace pn on pn.oid = p.pronamespace
     where not t.tgisinternal
       and pn.nspname = 'util'
-      and p.proname = 'invoke_edge_webhook'
+      and p.proname = 'queue_dataset_extraction_jobs'
       and lower(replace(pg_get_triggerdef(t.oid, true), '"', ''))
         like '%after update of json, json_ordered%'
       and lower(replace(pg_get_triggerdef(t.oid, true), '"', ''))
         like '%new.json is distinct from old.json%'
-      and pg_get_triggerdef(t.oid, true) like '%' || e.edge_function_name || '%'
-      and pg_get_triggerdef(t.oid, true) like '%''1000''%'
   ),
   3,
-  'all three update hooks preserve timing, no-op guard, function, target, and timeout'
+  'all three update hooks preserve column targeting and change guards'
 );
 
 alter table public.flows disable trigger flow_dataset_extraction_trigger_insert;
@@ -176,7 +174,7 @@ alter table public.flows enable trigger flow_dataset_extraction_trigger_insert;
 alter table public.processes enable trigger process_extract_md_trigger_insert;
 alter table public.lifecyclemodels enable trigger lifecyclemodel_extract_md_trigger_insert;
 
-truncate pg_temp.derivative_webhook_calls;
+delete from pgmq.q_dataset_extraction_jobs;
 
 update public.flows
 set json = jsonb_set(json, '{derivativeProbe}', '"direct-json"')
@@ -194,32 +192,31 @@ where id = 'e7300000-0000-0000-0000-000000000001'
   and version = '01.00.000';
 
 select is(
-  (select count(*)::integer from pg_temp.derivative_webhook_calls),
+  (select count(*)::integer from pgmq.q_dataset_extraction_jobs),
   3,
-  'direct json changes invoke one webhook per dataset table'
+  'direct json changes enqueue one refresh per dataset table'
 );
 
 select is(
   (
-    select count(distinct body->>'table')::integer
-    from pg_temp.derivative_webhook_calls
-    where body->>'type' = 'UPDATE'
+    select count(distinct message->>'table')::integer
+    from pgmq.q_dataset_extraction_jobs
+    where message->>'extraction_kind' = 'extracted_md'
   ),
   3,
-  'direct json webhook payloads identify all three updated tables'
+  'direct json queue messages identify all three updated tables'
 );
 
 select is(
   (
-    select count(distinct edge_function)::integer
-    from pg_temp.derivative_webhook_calls
-    where timeout_milliseconds = 1000
+    select count(distinct message->>'entity_kind')::integer
+    from pgmq.q_dataset_extraction_jobs
   ),
   3,
-  'direct json webhook calls retain the three exact Edge targets and timeout'
+  'direct json messages distinguish all three entity kinds'
 );
 
-truncate pg_temp.derivative_webhook_calls;
+delete from pgmq.q_dataset_extraction_jobs;
 
 update public.flows
 set json_ordered = jsonb_set(json_ordered::jsonb, '{derivativeProbe}', '"ordered-json"')::json
@@ -237,19 +234,19 @@ where id = 'e7300000-0000-0000-0000-000000000001'
   and version = '01.00.000';
 
 select is(
-  (select count(*)::integer from pg_temp.derivative_webhook_calls),
+  (select count(*)::integer from pgmq.q_dataset_extraction_jobs),
   3,
-  'json_ordered changes invoke one webhook per dataset table'
+  'json_ordered changes enqueue one refresh per dataset table'
 );
 
 select is(
   (
-    select count(distinct body->>'table')::integer
-    from pg_temp.derivative_webhook_calls
-    where body->>'type' = 'UPDATE'
+    select count(distinct message->>'table')::integer
+    from pgmq.q_dataset_extraction_jobs
+    where message->>'extraction_kind' = 'extracted_md'
   ),
   3,
-  'json_ordered webhook payloads identify all three updated tables'
+  'json_ordered queue messages identify all three updated tables'
 );
 
 select is(
@@ -288,7 +285,7 @@ select is(
   'lifecycle model ordered JSON canonicalizes json without synchronously mutating extracted_md'
 );
 
-truncate pg_temp.derivative_webhook_calls;
+delete from pgmq.q_dataset_extraction_jobs;
 
 update public.flows
 set json = jsonb_set(json, '{derivativeProbe}', '"both-columns"'),
@@ -309,7 +306,7 @@ where id = 'e7300000-0000-0000-0000-000000000001'
   and version = '01.00.000';
 
 select is(
-  (select count(*)::integer from pg_temp.derivative_webhook_calls),
+  (select count(*)::integer from pgmq.q_dataset_extraction_jobs),
   3,
   'one UPDATE naming both JSON columns invokes only once per row'
 );
@@ -318,9 +315,9 @@ select is(
   (
     select count(*)::integer
     from (
-      select body->>'table'
-      from pg_temp.derivative_webhook_calls
-      group by body->>'table'
+      select message->>'table'
+      from pgmq.q_dataset_extraction_jobs
+      group by message->>'table'
       having count(*) = 1
     ) exactly_once
   ),
@@ -328,7 +325,7 @@ select is(
   'both-column updates produce one call for each dataset table'
 );
 
-truncate pg_temp.derivative_webhook_calls;
+delete from pgmq.q_dataset_extraction_jobs;
 
 update public.flows
 set json_ordered = json_ordered
@@ -346,7 +343,7 @@ where id = 'e7300000-0000-0000-0000-000000000001'
   and version = '01.00.000';
 
 select is(
-  (select count(*)::integer from pg_temp.derivative_webhook_calls),
+  (select count(*)::integer from pgmq.q_dataset_extraction_jobs),
   0,
   'same-value ordered JSON updates do not invoke markdown extraction'
 );
@@ -367,7 +364,7 @@ where id = 'e7300000-0000-0000-0000-000000000001'
   and version = '01.00.000';
 
 select is(
-  (select count(*)::integer from pg_temp.derivative_webhook_calls),
+  (select count(*)::integer from pgmq.q_dataset_extraction_jobs),
   0,
   'unrelated changed columns do not invoke markdown extraction'
 );
@@ -413,11 +410,35 @@ select is(
     )
       and not t.tgisinternal
       and pn.nspname = 'util'
-      and p.proname = 'invoke_edge_webhook'
+      and p.proname = 'queue_dataset_extraction_jobs'
   ),
   3,
-  'all update triggers remain attached to the governed webhook function'
+  'all update triggers use the extraction queue'
 );
+
+select is((select count(*)::integer from pg_temp.derivative_webhook_calls), 0,
+  'body edits never invoke the full-row Edge webhook');
+-- An unread wake-up is reusable. A claimed one must have an independent successor.
+savepoint before_edit;
+update public.flows set json = json || '{"edit":1}'
+where id = 'e7100000-0000-0000-0000-000000000001';
+select is((select count(*)::int from pgmq.q_dataset_extraction_jobs), 1, 'refresh visible in saving transaction');
+rollback to savepoint before_edit;
+select is((select count(*)::int from pgmq.q_dataset_extraction_jobs), 0, 'rollback removes the refresh');
+select ok(not (select json ? 'edit' from public.flows where id = 'e7100000-0000-0000-0000-000000000001'),
+  'rollback restores the source');
+
+update public.flows set json = json || '{"edit":1}' where id = 'e7100000-0000-0000-0000-000000000001';
+update public.flows set json = json || '{"edit":2}' where id = 'e7100000-0000-0000-0000-000000000001';
+update public.flows set json = json || '{"edit":3}' where id = 'e7100000-0000-0000-0000-000000000001';
+select is((select count(*)::int from pgmq.q_dataset_extraction_jobs), 1, 'three unclaimed saves share one message');
+
+create temporary table first_claim as select msg_id from pgmq.read('dataset_extraction_jobs', 300, 1);
+update public.flows set json = json || '{"edit":4}' where id = 'e7100000-0000-0000-0000-000000000001';
+select is((select count(*)::int from pgmq.q_dataset_extraction_jobs), 2, 'an in-flight refresh has a separate successor');
+select pgmq.delete('dataset_extraction_jobs', msg_id) from first_claim;
+select is((select count(*)::int from pgmq.q_dataset_extraction_jobs
+  where read_ct=0 and msg_id not in (select msg_id from first_claim)), 1, 'old ACK leaves the unread successor intact');
 
 select * from finish();
 rollback;

@@ -52,10 +52,9 @@ select ok((select pg_get_functiondef(
  'private.catalog_portal_process_keyword_keys_cn1(text,text,uuid,text,integer)'::regprocedure)
  like '%private.portal_catalog_search_rows_v2%'),
  'current Process ranking uses V2 physical rows');
-select ok((select count(*)=2 from pg_trigger where tgrelid='public.processes'::regclass
- and tgname in('portal_catalog_projection_content_sync_v1','portal_catalog_projection_content_sync_v2')
- and tgenabled='O'),
- 'frozen and current Process writers remain enabled');
+select ok((select array_agg(tgname) = array['portal_catalog_projection_content_sync_v2']::name[] from pg_trigger where tgrelid='public.processes'::regclass
+ and tgname like 'portal_catalog_projection_content_sync_%' and tgenabled='O'),
+ 'only the current Process writer remains enabled');
 select ok((select exists(select 1 from pg_policies where schemaname='public' and tablename='lciamethods'
  and cmd='SELECT' and roles=array['authenticated']::name[] and qual='true')),
  'authenticated LCIA public relation SELECT contract remains');

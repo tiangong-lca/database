@@ -46,12 +46,14 @@ begin
        where relation.oid =
          'private.portal_catalog_facet_rows_v1'::regclass
      ) is not false
-     or not exists (
-       select 1
+     or (
+       select count(*)
        from pg_catalog.pg_trigger as trigger
-       where trigger.tgrelid =
-           'private.portal_catalog_search_rows_v1'::regclass
-         and trigger.tgname = 'portal_catalog_facet_sync_v1'
+       where (trigger.tgrelid,trigger.tgname) in (
+           ('private.portal_catalog_search_rows_v1'::regclass,'portal_catalog_facet_sync_v1'),
+           ('private.portal_catalog_search_rows_v2'::regclass,'portal_catalog_facet_sync_v2')
+         )
+         and trigger.tgqual is null
          and trigger.tgfoid =
            'private.sync_portal_catalog_facet_row_v1()'::regprocedure
          and trigger.tgenabled = 'O'
@@ -73,7 +75,7 @@ begin
            'modified_at',
            'card'
          ]::name[]
-     )
+     ) <> 2
      or exists (
        select 1
        from pg_catalog.pg_constraint as constraint_catalog
@@ -83,40 +85,17 @@ begin
          )
          and not constraint_catalog.convalidated
      )
-     or not exists (
-       select 1
-       from pg_catalog.pg_constraint as parent_fk
-       where parent_fk.conrelid =
-           'private.portal_catalog_facet_rows_v1'::regclass
-         and parent_fk.confrelid =
-           'private.portal_catalog_search_rows_v1'::regclass
-         and parent_fk.conname =
-           'portal_catalog_facet_rows_projection_v1_fk'
-         and parent_fk.contype = 'f'
-         and parent_fk.convalidated
-         and parent_fk.confupdtype = 'r'
-         and parent_fk.confdeltype = 'c'
-         and parent_fk.conkey = array[
-           (
-             select attribute.attnum
-             from pg_catalog.pg_attribute as attribute
-             where attribute.attrelid = parent_fk.conrelid
-               and attribute.attname = 'dataset_kind'
-           ),
-           (
-             select attribute.attnum
-             from pg_catalog.pg_attribute as attribute
-             where attribute.attrelid = parent_fk.conrelid
-               and attribute.attname = 'id'
-           ),
-           (
-             select attribute.attnum
-             from pg_catalog.pg_attribute as attribute
-             where attribute.attrelid = parent_fk.conrelid
-               and attribute.attname = 'version'
-           )
-         ]::smallint[]
-     )
+     or (
+       select count(*) from pg_catalog.pg_constraint fk
+       join pg_catalog.pg_attribute v on v.attrelid=fk.conrelid and v.attnum=fk.conkey[3]
+       where fk.conrelid='private.portal_catalog_facet_rows_v1'::regclass
+         and (fk.confrelid,fk.conname,v.attname) in (
+           ('private.portal_catalog_search_rows_v1'::regclass,'portal_facet_flow_parent_fk','flow_version'),
+           ('private.portal_catalog_search_rows_v2'::regclass,'portal_facet_process_parent_fk','process_version'))
+         and fk.contype='f' and fk.convalidated and fk.confupdtype='r' and fk.confdeltype='c'
+         and fk.conkey = array[1,2,v.attnum]::smallint[] and fk.confkey=array[1,2,3]::smallint[]
+         and v.attgenerated='s'
+     ) <> 2
      or not exists (
        select 1
        from pg_catalog.pg_constraint as contract_fk

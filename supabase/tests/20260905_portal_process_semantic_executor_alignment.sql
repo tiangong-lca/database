@@ -154,7 +154,7 @@ select extensions.ok(
 -- Controlled source rows prove that the new vector privilege does not bypass
 -- RLS. User triggers are disabled only inside this rollback-only transaction.
 alter table public.processes disable trigger user;
-alter table private.portal_catalog_search_rows_v1 disable trigger user;
+alter table private.portal_catalog_search_rows_v2 disable trigger user;
 alter table private.portal_catalog_facet_rows_v1 disable trigger user;
 insert into public.processes(id, version, state_code, embedding_ft)
 values
@@ -177,7 +177,7 @@ values
     )::extensions.vector(1024)
   );
 
-insert into private.portal_catalog_search_rows_v1(
+insert into private.portal_catalog_search_rows_v2(
   dataset_kind,
   id,
   version,
@@ -195,13 +195,8 @@ values(
   '2026-09-04 00:00:00+00',
   '{"accessLevel":"open","geography":{"code":"zz620"},"document":""}',
   '',
-  1
+  2
 );
-
-insert into private.portal_catalog_search_rows_v2
-select dataset_kind,id,version,state_code,modified_at,card,document,2
-from private.portal_catalog_search_rows_v1
-where dataset_kind='process' and id='62000000-0000-4000-8000-000000000002';
 
 insert into private.portal_catalog_facet_rows_v1(
   dataset_kind,

@@ -38604,12 +38604,14 @@ begin
        where relation.oid =
          'private.portal_catalog_facet_rows_v1'::regclass
      ) is not false
-     or not exists (
-       select 1
+     or (
+       select count(*)
        from pg_catalog.pg_trigger as trigger
-       where trigger.tgrelid =
-           'private.portal_catalog_search_rows_v1'::regclass
-         and trigger.tgname = 'portal_catalog_facet_sync_v1'
+       where (trigger.tgrelid,trigger.tgname) in (
+           ('private.portal_catalog_search_rows_v1'::regclass,'portal_catalog_facet_sync_v1'),
+           ('private.portal_catalog_search_rows_v2'::regclass,'portal_catalog_facet_sync_v2')
+         )
+         and trigger.tgqual is null
          and trigger.tgfoid =
            'private.sync_portal_catalog_facet_row_v1()'::regprocedure
          and trigger.tgenabled = 'O'
@@ -38631,7 +38633,7 @@ begin
            'modified_at',
            'card'
          ]::name[]
-     )
+     ) <> 2
      or exists (
        select 1
        from pg_catalog.pg_constraint as constraint_catalog
@@ -38641,40 +38643,17 @@ begin
          )
          and not constraint_catalog.convalidated
      )
-     or not exists (
-       select 1
-       from pg_catalog.pg_constraint as parent_fk
-       where parent_fk.conrelid =
-           'private.portal_catalog_facet_rows_v1'::regclass
-         and parent_fk.confrelid =
-           'private.portal_catalog_search_rows_v1'::regclass
-         and parent_fk.conname =
-           'portal_catalog_facet_rows_projection_v1_fk'
-         and parent_fk.contype = 'f'
-         and parent_fk.convalidated
-         and parent_fk.confupdtype = 'r'
-         and parent_fk.confdeltype = 'c'
-         and parent_fk.conkey = array[
-           (
-             select attribute.attnum
-             from pg_catalog.pg_attribute as attribute
-             where attribute.attrelid = parent_fk.conrelid
-               and attribute.attname = 'dataset_kind'
-           ),
-           (
-             select attribute.attnum
-             from pg_catalog.pg_attribute as attribute
-             where attribute.attrelid = parent_fk.conrelid
-               and attribute.attname = 'id'
-           ),
-           (
-             select attribute.attnum
-             from pg_catalog.pg_attribute as attribute
-             where attribute.attrelid = parent_fk.conrelid
-               and attribute.attname = 'version'
-           )
-         ]::smallint[]
-     )
+     or (
+       select count(*) from pg_catalog.pg_constraint fk
+       join pg_catalog.pg_attribute v on v.attrelid=fk.conrelid and v.attnum=fk.conkey[3]
+       where fk.conrelid='private.portal_catalog_facet_rows_v1'::regclass
+         and (fk.confrelid,fk.conname,v.attname) in (
+           ('private.portal_catalog_search_rows_v1'::regclass,'portal_facet_flow_parent_fk','flow_version'),
+           ('private.portal_catalog_search_rows_v2'::regclass,'portal_facet_process_parent_fk','process_version'))
+         and fk.contype='f' and fk.convalidated and fk.confupdtype='r' and fk.confdeltype='c'
+         and fk.conkey = array[1,2,v.attnum]::smallint[] and fk.confkey=array[1,2,3]::smallint[]
+         and v.attgenerated='s'
+     ) <> 2
      or not exists (
        select 1
        from pg_catalog.pg_constraint as contract_fk
@@ -39122,8 +39101,11 @@ begin
       'private.portal_navigation_versions_v1'::regclass,'private.portal_navigation_membership_v1'::regclass)
       and c.relrowsecurity and c.relforcerowsecurity and pg_get_userbyid(c.relowner)='postgres')<>2
     or (select count(*) from pg_constraint c where c.contype='f' and c.convalidated and c.confdeltype='c'
-      and ((c.conrelid='private.portal_navigation_versions_v1'::regclass and c.confrelid in (
-        'private.portal_catalog_search_rows_v1'::regclass,'private.portal_catalog_search_rows_v2'::regclass))
+      and ((c.conrelid='private.portal_navigation_versions_v1'::regclass and c.condeferrable and c.condeferred and (
+        (c.confrelid='private.portal_catalog_search_rows_v1'::regclass and c.conname='portal_navigation_versions_v1_dataset_kind_id_version_fkey'
+         and c.conkey=array[1,2,(select attnum from pg_attribute where attrelid=c.conrelid and attname='flow_version' and attgenerated='s')]::smallint[])
+        or (c.confrelid='private.portal_catalog_search_rows_v2'::regclass and c.conkey=array[1,4,5]::smallint[]))
+        and c.confkey=array[1,2,3]::smallint[])
         or (c.conrelid='private.portal_navigation_membership_v1'::regclass and c.confrelid='private.portal_navigation_versions_v1'::regclass)))<>3
     or not exists(select 1 from pg_trigger t where t.tgrelid='private.portal_catalog_search_rows_v1'::regclass
       and t.tgname='portal_navigation_flow_sync_v1' and t.tgenabled='O' and t.tgtype=21 and t.tgattr::text='6' and not t.tgdeferrable and not t.tginitdeferred and t.tgfoid='private.sync_portal_navigation_row_v1()'::regprocedure)
@@ -51904,8 +51886,6 @@ declare
   v_new_state_code integer;
   v_actor uuid;
   v_permit_scope uuid;
-  v_old_payload jsonb;
-  v_new_payload jsonb;
   v_is_exact_process boolean := false;
   v_is_guarded boolean := false;
 begin
@@ -51914,33 +51894,31 @@ begin
     v_old_version := btrim(old.version::text);
     v_old_user_id := old.user_id;
     v_old_state_code := old.state_code;
-    if tg_table_name in ('processes', 'flows') then
-      v_old_payload := old.json_ordered::jsonb;
-    end if;
   end if;
   if tg_op <> 'DELETE' then
     v_new_id := new.id;
     v_new_version := btrim(new.version::text);
     v_new_user_id := new.user_id;
     v_new_state_code := new.state_code;
-    if tg_table_name in ('processes', 'flows') then
-      v_new_payload := new.json_ordered::jsonb;
-    end if;
   end if;
 
   if tg_table_name = 'processes' then
     -- Derivative workers may continue while a scope is active, but only when
-    -- every primary identity/payload/policy column is byte-for-byte stable.
+    -- the protected columns are stable. Identical JSON text needs no parse;
+    -- different spellings still use the original JSONB equality semantics.
     if tg_op = 'UPDATE'
       and new.id is not distinct from old.id
       and new.version is not distinct from old.version
       and new.user_id is not distinct from old.user_id
       and new.state_code is not distinct from old.state_code
-      and new.json::jsonb is not distinct from old.json::jsonb
-      and new.json_ordered::jsonb
-        is not distinct from old.json_ordered::jsonb
       and new.model_id is not distinct from old.model_id
-      and new.rule_verification is not distinct from old.rule_verification then
+      and new.rule_verification is not distinct from old.rule_verification
+      and new.json is not distinct from old.json
+      and (case
+        when new.json_ordered::text collate "C" is not distinct from old.json_ordered::text
+          then true
+        else new.json_ordered::jsonb is not distinct from old.json_ordered::jsonb
+      end) then
       return new;
     end if;
 
@@ -52031,10 +52009,10 @@ begin
         on guard.receipt_id = scope.receipt_id
       cross join lateral jsonb_array_elements(
         case when scope.actor_user_id = v_old_user_id
-          then coalesce(private.dataset_flow_identity_exchanges(v_old_payload), '[]'::jsonb)
+          then coalesce(private.dataset_flow_identity_exchanges(old.json_ordered::jsonb), '[]'::jsonb)
           else '[]'::jsonb end
         || case when scope.actor_user_id = v_new_user_id
-          then coalesce(private.dataset_flow_identity_exchanges(v_new_payload), '[]'::jsonb)
+          then coalesce(private.dataset_flow_identity_exchanges(new.json_ordered::jsonb), '[]'::jsonb)
           else '[]'::jsonb end
       ) as exchange(value)
       where scope.status in (
@@ -52053,6 +52031,32 @@ begin
   end if;
 
   if tg_table_name = 'flows' then
+    if tg_op = 'UPDATE' then
+      declare
+        old_primary public.flows := old;
+        new_primary public.flows := new;
+      begin
+        -- Mask only the four worker outputs. Future columns participate too.
+        -- Compare storage images first: json has no native equality operator.
+        old_primary.extracted_md := null;
+        old_primary.search_text := null;
+        old_primary.embedding_ft := null;
+        old_primary.embedding_ft_at := null;
+        new_primary.extracted_md := null;
+        new_primary.search_text := null;
+        new_primary.embedding_ft := null;
+        new_primary.embedding_ft_at := null;
+        if old_primary operator(pg_catalog.*=) new_primary then
+          return new;
+        end if;
+        -- Different encodings can have the same JSON meaning (e.g. whitespace,
+        -- numeric scale, or a SQL NULL versus JSON null inside a record).
+        if to_jsonb(old_primary) = to_jsonb(new_primary) then
+          return new;
+        end if;
+      end;
+    end if;
+
     -- Acquire every OLD/NEW and guarded-scope actor in one globally sorted
     -- pass.  Splitting those sets into two loops permits A->Z and Z->A lock
     -- inversion for cross-owner public-target updates.
@@ -52107,12 +52111,12 @@ begin
         and (
           (scope.actor_user_id = v_old_user_id
             and v_old_state_code = 0
-            and v_old_payload #>>
+            and old.json_ordered::jsonb #>>
               '{flowDataSet,modellingAndValidation,LCIMethod,typeOfDataSet}'
               = 'Elementary flow')
           or (scope.actor_user_id = v_new_user_id
             and v_new_state_code = 0
-            and v_new_payload #>>
+            and new.json_ordered::jsonb #>>
               '{flowDataSet,modellingAndValidation,LCIMethod,typeOfDataSet}'
               = 'Elementary flow')
           or exists (
@@ -81885,39 +81889,7 @@ CREATE OR REPLACE FUNCTION "private"."portal_projection_semantic_process_exact_v
     SET "jit" TO 'off'
     SET "row_security" TO 'on'
     AS $$
-  with latest_keys as materialized (
-    select distinct on (projection.id)
-      projection.id,
-      projection.version
-    from private.portal_catalog_search_rows_v1 as projection
-    where projection.dataset_kind = 'process'
-    order by projection.id,
-      projection.version desc,
-      projection.modified_at desc,
-      projection.state_code desc
-  ), eligible as materialized (
-    select process.id,
-      process.version::text as version,
-      process.embedding_ft operator(extensions.<=>) p_query_embedding
-        as semantic_distance
-    from public.processes as process
-    join latest_keys as latest
-      on latest.id = process.id
-     and process.version = latest.version::character(9)
-    where process.state_code in (100, 200)
-      and process.embedding_ft is not null
-  )
-  select eligible.id,
-    eligible.version,
-    eligible.semantic_distance
-  from eligible
-  where eligible.semantic_distance is not null
-    and eligible.semantic_distance >= 0::double precision
-    and eligible.semantic_distance <= 0.5::double precision
-  order by eligible.semantic_distance,
-    eligible.id,
-    eligible.version desc
-  limit 200
+  select * from private.portal_projection_semantic_process_exact_cn1(p_query_embedding)
 $$;
 
 
@@ -106024,6 +105996,7 @@ begin
   v_entity_kind := case TG_TABLE_NAME
     when 'flows' then 'flow'
     when 'processes' then 'process'
+    when 'lifecyclemodels' then 'lifecyclemodel'
     when 'contacts' then 'contact'
     when 'flowproperties' then 'flowproperty'
     when 'sources' then 'source'
@@ -106033,6 +106006,25 @@ begin
 
   if v_entity_kind is null then
     raise exception 'unsupported dataset extraction table %', TG_TABLE_NAME;
+  end if;
+
+  -- The dataset row already serializes saves for this primary key. Lock the
+  -- unread message until COMMIT so a claimant cannot read the previous body
+  -- while this transaction is reusing that wake-up. A claim in progress gets
+  -- its own successor with a different msg_id (and its own retry budget).
+  if TG_TABLE_NAME in ('flows', 'processes', 'lifecyclemodels') then
+    perform 1 from pgmq.q_dataset_extraction_jobs q
+    where q.read_ct = 0
+      and q.message->>'schema' = 'public'
+      and q.message->>'extraction_kind' = 'extracted_md'
+      and q.message->>'table' = TG_TABLE_NAME
+      and q.message->>'entity_kind' = v_entity_kind
+      and q.message->>'id' = NEW.id::text
+      and q.message->>'version' = btrim(NEW.version::text)
+    limit 1 for update skip locked;
+    if found then
+      return NEW;
+    end if;
   end if;
 
   v_message := jsonb_build_object(
@@ -111251,6 +111243,16 @@ CREATE TABLE IF NOT EXISTS "private"."portal_catalog_facet_rows_v1" (
     "facet_process_subtype" "text",
     "facet_source" "text",
     "facet_contract_version" smallint NOT NULL,
+    "flow_version" "text" GENERATED ALWAYS AS (
+CASE
+    WHEN ("dataset_kind" = 'flow'::"text") THEN "version"
+    ELSE NULL::"text"
+END) STORED,
+    "process_version" "text" GENERATED ALWAYS AS (
+CASE
+    WHEN ("dataset_kind" = 'process'::"text") THEN "version"
+    ELSE NULL::"text"
+END) STORED,
     CONSTRAINT "portal_catalog_facet_rows_contract_version_v1_chk" CHECK (("facet_contract_version" = 1)),
     CONSTRAINT "portal_catalog_facet_rows_process_subtype_v1_chk" CHECK ((("dataset_kind" = 'process'::"text") OR ("facet_process_subtype" IS NULL))),
     CONSTRAINT "portal_catalog_facet_rows_v1_dataset_kind_check" CHECK (("dataset_kind" = ANY (ARRAY['process'::"text", 'flow'::"text"]))),
@@ -111314,7 +111316,7 @@ CREATE TABLE IF NOT EXISTS "private"."portal_catalog_search_rows_v1" (
     CONSTRAINT "portal_catalog_search_rows_contract_version_v1_chk" CHECK (("projection_contract_version" = 1)),
     CONSTRAINT "portal_catalog_search_rows_v1_card_check" CHECK (("jsonb_typeof"("card") = 'object'::"text")),
     CONSTRAINT "portal_catalog_search_rows_v1_check" CHECK ((COALESCE(("card" ->> 'document'::"text"), ''::"text") = "document")),
-    CONSTRAINT "portal_catalog_search_rows_v1_dataset_kind_check" CHECK (("dataset_kind" = ANY (ARRAY['process'::"text", 'flow'::"text"]))),
+    CONSTRAINT "portal_catalog_search_rows_v1_dataset_kind_check" CHECK (("dataset_kind" = 'flow'::"text")),
     CONSTRAINT "portal_catalog_search_rows_v1_state_code_check" CHECK (("state_code" = ANY (ARRAY[100, 200]))),
     CONSTRAINT "portal_catalog_search_rows_v1_version_check" CHECK (("version" ~ '^\d{2}\.\d{2}\.\d{3}$'::"text"))
 );
@@ -111634,6 +111636,11 @@ END) STORED,
     "reference_year" integer,
     "process_subtype" "text",
     "source" "text",
+    "flow_version" "text" GENERATED ALWAYS AS (
+CASE
+    WHEN ("dataset_kind" = 'flow'::"text") THEN "version"
+    ELSE NULL::"text"
+END) STORED,
     CONSTRAINT "portal_navigation_versions_v1_dataset_kind_check" CHECK (("dataset_kind" = ANY (ARRAY['process'::"text", 'flow'::"text"])))
 );
 
@@ -117216,6 +117223,10 @@ CREATE OR REPLACE TRIGGER "portal_catalog_facet_sync_v1" AFTER INSERT OR UPDATE 
 
 
 
+CREATE OR REPLACE TRIGGER "portal_catalog_facet_sync_v2" AFTER INSERT OR UPDATE OF "dataset_kind", "id", "version", "state_code", "modified_at", "card" ON "private"."portal_catalog_search_rows_v2" FOR EACH ROW EXECUTE FUNCTION "private"."sync_portal_catalog_facet_row_v1"();
+
+
+
 CREATE OR REPLACE TRIGGER "portal_display_index_gap_v1" BEFORE UPDATE OF "mode" ON "private"."portal_display_rollout" FOR EACH ROW EXECUTE FUNCTION "private"."portal_display_index_gap_v1"();
 
 
@@ -117460,14 +117471,6 @@ CREATE OR REPLACE TRIGGER "dataset_display_source_cleanup" AFTER DELETE OR UPDAT
 
 
 
-CREATE OR REPLACE TRIGGER "dataset_flow_identity_flow_active_fence" BEFORE UPDATE ON "public"."flows" FOR EACH ROW WHEN ((("to_jsonb"("new".*) - ARRAY['extracted_md'::"text", 'embedding_ft'::"text", 'embedding_ft_at'::"text", 'search_text'::"text"]) IS DISTINCT FROM ("to_jsonb"("old".*) - ARRAY['extracted_md'::"text", 'embedding_ft'::"text", 'embedding_ft_at'::"text", 'search_text'::"text"]))) EXECUTE FUNCTION "private"."dataset_flow_identity_active_fence"();
-
-
-
-COMMENT ON TRIGGER "dataset_flow_identity_flow_active_fence" ON "public"."flows" IS 'Fail-closed Step 3 actor fence. Only extracted_md, embedding_ft, embedding_ft_at, and asynchronous search_text projection updates bypass the owner-wide fence.';
-
-
-
 CREATE OR REPLACE TRIGGER "dataset_flow_identity_flow_insert_delete_active_fence" BEFORE INSERT OR DELETE ON "public"."flows" FOR EACH ROW EXECUTE FUNCTION "private"."dataset_flow_identity_active_fence"();
 
 
@@ -117540,7 +117543,7 @@ CREATE OR REPLACE TRIGGER "flow_embedding_ft_on_extract_md_update" AFTER UPDATE 
 
 
 
-CREATE OR REPLACE TRIGGER "flow_extract_md_trigger_update" AFTER UPDATE OF "json", "json_ordered" ON "public"."flows" FOR EACH ROW WHEN (("new"."json" IS DISTINCT FROM "old"."json")) EXECUTE FUNCTION "util"."invoke_edge_webhook"('webhook_flow_embedding_ft', '1000');
+CREATE OR REPLACE TRIGGER "flow_extract_md_trigger_update" AFTER UPDATE OF "json", "json_ordered" ON "public"."flows" FOR EACH ROW WHEN ((("new"."json" IS DISTINCT FROM "old"."json") OR (("new"."json_ordered")::"text" IS DISTINCT FROM ("old"."json_ordered")::"text"))) EXECUTE FUNCTION "util"."queue_dataset_extraction_jobs"();
 
 
 
@@ -117569,6 +117572,14 @@ CREATE OR REPLACE TRIGGER "flows_json_sync_trigger" BEFORE INSERT OR UPDATE OF "
 
 
 CREATE OR REPLACE TRIGGER "flows_set_modified_at_trigger" BEFORE UPDATE OF "json", "json_ordered", "user_id", "state_code", "version", "team_id", "review_id", "rule_verification", "reviews" ON "public"."flows" FOR EACH ROW EXECUTE FUNCTION "private"."update_modified_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "flows_z_identity_active_fence" BEFORE UPDATE ON "public"."flows" FOR EACH ROW EXECUTE FUNCTION "private"."dataset_flow_identity_active_fence"();
+
+
+
+COMMENT ON TRIGGER "flows_z_identity_active_fence" ON "public"."flows" IS 'Fail-closed Step 3 actor fence. Only extracted_md, embedding_ft, embedding_ft_at, and asynchronous search_text projection updates bypass the owner-wide fence.';
 
 
 
@@ -117624,11 +117635,11 @@ CREATE OR REPLACE TRIGGER "lifecyclemodel_embedding_ft_on_extract_md_update" AFT
 
 
 
-CREATE OR REPLACE TRIGGER "lifecyclemodel_extract_md_trigger_insert" AFTER INSERT ON "public"."lifecyclemodels" FOR EACH ROW EXECUTE FUNCTION "util"."invoke_edge_webhook"('webhook_model_embedding_ft', '1000');
+CREATE OR REPLACE TRIGGER "lifecyclemodel_extract_md_trigger_insert" AFTER INSERT ON "public"."lifecyclemodels" FOR EACH ROW EXECUTE FUNCTION "util"."queue_dataset_extraction_jobs"();
 
 
 
-CREATE OR REPLACE TRIGGER "lifecyclemodel_extract_md_trigger_update" AFTER UPDATE OF "json", "json_ordered" ON "public"."lifecyclemodels" FOR EACH ROW WHEN (("new"."json" IS DISTINCT FROM "old"."json")) EXECUTE FUNCTION "util"."invoke_edge_webhook"('webhook_model_embedding_ft', '1000');
+CREATE OR REPLACE TRIGGER "lifecyclemodel_extract_md_trigger_update" AFTER UPDATE OF "json", "json_ordered" ON "public"."lifecyclemodels" FOR EACH ROW WHEN ((("new"."json" IS DISTINCT FROM "old"."json") OR (("new"."json_ordered")::"text" IS DISTINCT FROM ("old"."json_ordered")::"text"))) EXECUTE FUNCTION "util"."queue_dataset_extraction_jobs"();
 
 
 
@@ -117641,10 +117652,6 @@ CREATE OR REPLACE TRIGGER "lifecyclemodels_set_modified_at_trigger" BEFORE UPDAT
 
 
 CREATE OR REPLACE TRIGGER "portal_catalog_projection_content_sync_v1" AFTER INSERT OR DELETE OR UPDATE OF "id", "version", "json", "json_ordered", "state_code", "modified_at" ON "public"."flows" FOR EACH ROW EXECUTE FUNCTION "private"."sync_portal_catalog_search_row_v1"('content');
-
-
-
-CREATE OR REPLACE TRIGGER "portal_catalog_projection_content_sync_v1" AFTER INSERT OR DELETE OR UPDATE OF "id", "version", "json", "json_ordered", "state_code", "modified_at" ON "public"."processes" FOR EACH ROW EXECUTE FUNCTION "private"."sync_portal_catalog_search_row_v1"('content');
 
 
 
@@ -117708,11 +117715,11 @@ CREATE OR REPLACE TRIGGER "process_embedding_ft_on_extract_md_update" AFTER UPDA
 
 
 
-CREATE OR REPLACE TRIGGER "process_extract_md_trigger_insert" AFTER INSERT ON "public"."processes" FOR EACH ROW EXECUTE FUNCTION "util"."invoke_edge_webhook"('webhook_process_embedding_ft', '1000');
+CREATE OR REPLACE TRIGGER "process_extract_md_trigger_insert" AFTER INSERT ON "public"."processes" FOR EACH ROW EXECUTE FUNCTION "util"."queue_dataset_extraction_jobs"();
 
 
 
-CREATE OR REPLACE TRIGGER "process_extract_md_trigger_update" AFTER UPDATE OF "json", "json_ordered" ON "public"."processes" FOR EACH ROW WHEN (("new"."json" IS DISTINCT FROM "old"."json")) EXECUTE FUNCTION "util"."invoke_edge_webhook"('webhook_process_embedding_ft', '1000');
+CREATE OR REPLACE TRIGGER "process_extract_md_trigger_update" AFTER UPDATE OF "json", "json_ordered" ON "public"."processes" FOR EACH ROW WHEN ((("new"."json" IS DISTINCT FROM "old"."json") OR (("new"."json_ordered")::"text" IS DISTINCT FROM ("old"."json_ordered")::"text"))) EXECUTE FUNCTION "util"."queue_dataset_extraction_jobs"();
 
 
 
@@ -118389,11 +118396,6 @@ ALTER TABLE ONLY "private"."portal_catalog_facet_rows_v1"
 
 
 
-ALTER TABLE ONLY "private"."portal_catalog_facet_rows_v1"
-    ADD CONSTRAINT "portal_catalog_facet_rows_projection_v1_fk" FOREIGN KEY ("dataset_kind", "id", "version") REFERENCES "private"."portal_catalog_search_rows_v1"("dataset_kind", "id", "version") ON UPDATE RESTRICT ON DELETE CASCADE;
-
-
-
 ALTER TABLE ONLY "private"."portal_catalog_search_rows_v1"
     ADD CONSTRAINT "portal_catalog_search_rows_contract_version_v1_fk" FOREIGN KEY ("projection_contract_version") REFERENCES "private"."portal_catalog_projection_contract_v1"("contract_version") ON UPDATE RESTRICT ON DELETE RESTRICT;
 
@@ -118401,6 +118403,16 @@ ALTER TABLE ONLY "private"."portal_catalog_search_rows_v1"
 
 ALTER TABLE ONLY "private"."portal_catalog_search_rows_v2"
     ADD CONSTRAINT "portal_catalog_search_rows_contract_version_v2_fk" FOREIGN KEY ("projection_contract_version") REFERENCES "private"."portal_catalog_projection_contract_v2"("contract_version") ON UPDATE RESTRICT ON DELETE RESTRICT;
+
+
+
+ALTER TABLE ONLY "private"."portal_catalog_facet_rows_v1"
+    ADD CONSTRAINT "portal_facet_flow_parent_fk" FOREIGN KEY ("dataset_kind", "id", "flow_version") REFERENCES "private"."portal_catalog_search_rows_v1"("dataset_kind", "id", "version") ON UPDATE RESTRICT ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "private"."portal_catalog_facet_rows_v1"
+    ADD CONSTRAINT "portal_facet_process_parent_fk" FOREIGN KEY ("dataset_kind", "id", "process_version") REFERENCES "private"."portal_catalog_search_rows_v2"("dataset_kind", "id", "version") ON UPDATE RESTRICT ON DELETE CASCADE;
 
 
 
@@ -118465,7 +118477,7 @@ ALTER TABLE ONLY "private"."portal_navigation_node_v1"
 
 
 ALTER TABLE ONLY "private"."portal_navigation_versions_v1"
-    ADD CONSTRAINT "portal_navigation_versions_v1_dataset_kind_id_version_fkey" FOREIGN KEY ("dataset_kind", "id", "version") REFERENCES "private"."portal_catalog_search_rows_v1"("dataset_kind", "id", "version") ON UPDATE CASCADE ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
+    ADD CONSTRAINT "portal_navigation_versions_v1_dataset_kind_id_version_fkey" FOREIGN KEY ("dataset_kind", "id", "flow_version") REFERENCES "private"."portal_catalog_search_rows_v1"("dataset_kind", "id", "version") ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED;
 
 
 

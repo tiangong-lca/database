@@ -115,7 +115,14 @@ jobs:
           python3 supabase/tests/regression/20261110_final_result_draft_replacement.py \
             --container supabase_db_database-engine --project database-engine \
             --report "$RUNNER_TEMP/final-result-draft-races.json"
-          supabase db reset --no-seed
+
+      - name: Verify populated Portal Process projection upgrade
+        env:
+          PGPASSWORD: postgres
+        run: |
+          supabase db reset --local --version 20261120030000 --no-seed
+          psql -X -h 127.0.0.1 -p 55322 -U postgres -d postgres -v fixture_port=55322 \
+            -f supabase/tests/upgrade/20261123_portal_process_single_projection.sql
 
       - name: Verify Scope Closure scanner admission and populated upgrade
         env:
@@ -160,6 +167,8 @@ jobs:
           supabase test db supabase/tests/20260920_portal_china_administrative_navigation.sql
           supabase test db supabase/tests/20260805_full_schema_cutover.sql
           supabase test db supabase/tests/20260806_api_contract_closure.sql
+          supabase test db supabase/tests/20260731_flow_identity_derivative_fence.sql
+          supabase test db supabase/tests/20261123_flow_identity_writebacks.sql
           supabase test db supabase/tests/20261102_final_result_zip_retirement.sql
           supabase test db supabase/tests/20260611_dataset_create_version_rpc.sql
           supabase test db supabase/tests/20260902_process_model_version.sql
@@ -194,6 +203,9 @@ jobs:
           supabase test db supabase/tests/20261001_filtered_latest_flow_payloads.sql
           supabase test db supabase/tests/20261002_sources_rls_performance.sql
           supabase test db supabase/tests/20260921_guarded_dataset_save_draft.sql
+          supabase test db supabase/tests/20260526_dataset_extraction_jobs.sql
+          supabase test db supabase/tests/20260528_webhook_hook_governance.sql
+          supabase test db supabase/tests/20260713_json_ordered_derivative_webhooks.sql
           supabase test db supabase/tests/20260714_guarded_dataset_derivative_rebuild.sql
           supabase test db supabase/tests/20260715_guarded_dataset_derivative_rebuild_batch.sql
           supabase test db supabase/tests/20260928_edge_dispatch_modern_secret_headers.sql
