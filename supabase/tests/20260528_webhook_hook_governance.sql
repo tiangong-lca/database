@@ -32,13 +32,13 @@ select is(
 
 select is(
   (
-    with expected(table_name, trigger_name, edge_function_name) as (
+    with expected(table_name, trigger_name) as (
       values
-        ('flows', 'flow_extract_md_trigger_update', 'webhook_flow_embedding_ft'),
-        ('lifecyclemodels', 'lifecyclemodel_extract_md_trigger_insert', 'webhook_model_embedding_ft'),
-        ('lifecyclemodels', 'lifecyclemodel_extract_md_trigger_update', 'webhook_model_embedding_ft'),
-        ('processes', 'process_extract_md_trigger_insert', 'webhook_process_embedding_ft'),
-        ('processes', 'process_extract_md_trigger_update', 'webhook_process_embedding_ft')
+        ('flows', 'flow_extract_md_trigger_update'),
+        ('lifecyclemodels', 'lifecyclemodel_extract_md_trigger_insert'),
+        ('lifecyclemodels', 'lifecyclemodel_extract_md_trigger_update'),
+        ('processes', 'process_extract_md_trigger_insert'),
+        ('processes', 'process_extract_md_trigger_update')
     )
     select count(*)::integer
     from expected e
@@ -49,11 +49,10 @@ select is(
     join pg_namespace pn on pn.oid = p.pronamespace
     where not t.tgisinternal
       and pn.nspname = 'util'
-      and p.proname = 'invoke_edge_webhook'
-      and pg_get_triggerdef(t.oid, true) like '%' || e.edge_function_name || '%'
+      and p.proname = 'queue_dataset_extraction_jobs'
   ),
   5,
-  'required markdown extraction webhooks are migration-managed util.invoke_edge_webhook triggers'
+  'all five additional extraction triggers register compact jobs'
 );
 
 select is(

@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-23
-lastReviewedCommit: 5f630920682484045162798721cae137db843753
-lastReviewedNote: "Database #1007: reviewed migration row protection and its writeback tests with the populated Portal projection upgrade from #1004."
+lastReviewedCommit: c7384ac669b6cbc5dc3e431becf80eb237d6534d
+lastReviewedNote: "Database #1007 reviewed migration row protection and its writeback tests on Dev with the #1004 Portal projection upgrade and #1005 extraction queue."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml

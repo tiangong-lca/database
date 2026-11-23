@@ -13,6 +13,7 @@ begin
   v_entity_kind := case TG_TABLE_NAME
     when 'flows' then 'flow'
     when 'processes' then 'process'
+    when 'lifecyclemodels' then 'lifecyclemodel'
     when 'contacts' then 'contact'
     when 'flowproperties' then 'flowproperty'
     when 'sources' then 'source'
@@ -22,6 +23,25 @@ begin
 
   if v_entity_kind is null then
     raise exception 'unsupported dataset extraction table %', TG_TABLE_NAME;
+  end if;
+
+  -- The dataset row already serializes saves for this primary key. Lock the
+  -- unread message until COMMIT so a claimant cannot read the previous body
+  -- while this transaction is reusing that wake-up. A claim in progress gets
+  -- its own successor with a different msg_id (and its own retry budget).
+  if TG_TABLE_NAME in ('flows', 'processes', 'lifecyclemodels') then
+    perform 1 from pgmq.q_dataset_extraction_jobs q
+    where q.read_ct = 0
+      and q.message->>'schema' = 'public'
+      and q.message->>'extraction_kind' = 'extracted_md'
+      and q.message->>'table' = TG_TABLE_NAME
+      and q.message->>'entity_kind' = v_entity_kind
+      and q.message->>'id' = NEW.id::text
+      and q.message->>'version' = btrim(NEW.version::text)
+    limit 1 for update skip locked;
+    if found then
+      return NEW;
+    end if;
   end if;
 
   v_message := jsonb_build_object(
