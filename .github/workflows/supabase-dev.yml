@@ -147,6 +147,13 @@ jobs:
           supabase test db "$proof_dir/transactions.sql"
           supabase db reset --local --no-seed
 
+      - name: Verify concurrent ordinary writes and Flow identity migration fences
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -X -h 127.0.0.1 -p 55322 -U postgres -d postgres -v fixture_port=55322 \
+            -f supabase/tests/regression/20261123_flow_identity_owner_locks.sql
+
       - name: Verify calculation export populated upgrade
         env:
           CALCULATION_EXPORT_UPGRADE_ALLOW_RESET: isolated
