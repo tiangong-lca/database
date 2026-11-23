@@ -41,13 +41,14 @@ select extensions.is(
 
 select extensions.ok(
   (
-    select pg_get_triggerdef(trigger.oid, true) like '%search_text%'
+    select trigger.tgtype = 19 and trigger.tgattr = ''::int2vector
+      and trigger.tgfoid = 'private.dataset_flow_identity_active_fence()'::regprocedure
     from pg_trigger as trigger
     where trigger.tgrelid = 'public.flows'::regclass
-      and trigger.tgname = 'dataset_flow_identity_flow_active_fence'
+      and trigger.tgname = 'flows_z_identity_active_fence'
       and not trigger.tgisinternal
   ),
-  'Flow identity fence treats search_text as guard-neutral'
+  'Flow updates including search_text reach the row-value identity fence'
 );
 
 select extensions.is(

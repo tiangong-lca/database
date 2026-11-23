@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-23
-lastReviewedCommit: 309c7cdd9222d766e699c2731e6fdd34f9dfde0c
-lastReviewedNote: "Database #1004 reviewed the local-contract job that tests the populated Process V2 and Flow V1 cutover on an isolated predecessor."
+lastReviewedCommit: 5f630920682484045162798721cae137db843753
+lastReviewedNote: "Database #1007: reviewed migration row protection and its writeback tests with the populated Portal projection upgrade from #1004."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
