@@ -1199,6 +1199,16 @@ authored content, review metadata, and `modified_at` immutable outside the
 existing review-controlled command context; only `extracted_md`, `search_text`,
 `embedding_ft`, and `embedding_ft_at` are derivative-write exceptions.
 
+Flow, Process and LifecycleModel inserts and body edits register compact
+`dataset_extraction_jobs` messages transactionally. An indexed lookup locks
+one unread message for the same table, ID, version and Markdown extraction.
+PGMQ skips that lock until commit. An already claimed or locked message gets
+a separate successor, so an old message ID can only acknowledge its own work.
+The service consumer reads the ordered body and PostgreSQL `xmin` together
+and updates both derivatives with the exact primary key and that short-lived
+row-version predicate. The existing Markdown-change trigger registers the
+vector refresh. The scheduler claims five jobs every ten seconds.
+
 Contacts, FlowProperties, Sources, and UnitGroups otherwise follow the same
 durable search-derivative shape as the established Process, Flow, and
 LifecycleModel surfaces: compact extraction jobs persist `extracted_md`, and

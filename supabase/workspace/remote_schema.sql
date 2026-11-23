@@ -106024,6 +106024,7 @@ begin
   v_entity_kind := case TG_TABLE_NAME
     when 'flows' then 'flow'
     when 'processes' then 'process'
+    when 'lifecyclemodels' then 'lifecyclemodel'
     when 'contacts' then 'contact'
     when 'flowproperties' then 'flowproperty'
     when 'sources' then 'source'
@@ -106033,6 +106034,25 @@ begin
 
   if v_entity_kind is null then
     raise exception 'unsupported dataset extraction table %', TG_TABLE_NAME;
+  end if;
+
+  -- The dataset row already serializes saves for this primary key. Lock the
+  -- unread message until COMMIT so a claimant cannot read the previous body
+  -- while this transaction is reusing that wake-up. A claim in progress gets
+  -- its own successor with a different msg_id (and its own retry budget).
+  if TG_TABLE_NAME in ('flows', 'processes', 'lifecyclemodels') then
+    perform 1 from pgmq.q_dataset_extraction_jobs q
+    where q.read_ct = 0
+      and q.message->>'schema' = 'public'
+      and q.message->>'extraction_kind' = 'extracted_md'
+      and q.message->>'table' = TG_TABLE_NAME
+      and q.message->>'entity_kind' = v_entity_kind
+      and q.message->>'id' = NEW.id::text
+      and q.message->>'version' = btrim(NEW.version::text)
+    limit 1 for update skip locked;
+    if found then
+      return NEW;
+    end if;
   end if;
 
   v_message := jsonb_build_object(
@@ -117540,7 +117560,7 @@ CREATE OR REPLACE TRIGGER "flow_embedding_ft_on_extract_md_update" AFTER UPDATE 
 
 
 
-CREATE OR REPLACE TRIGGER "flow_extract_md_trigger_update" AFTER UPDATE OF "json", "json_ordered" ON "public"."flows" FOR EACH ROW WHEN (("new"."json" IS DISTINCT FROM "old"."json")) EXECUTE FUNCTION "util"."invoke_edge_webhook"('webhook_flow_embedding_ft', '1000');
+CREATE OR REPLACE TRIGGER "flow_extract_md_trigger_update" AFTER UPDATE OF "json", "json_ordered" ON "public"."flows" FOR EACH ROW WHEN ((("new"."json" IS DISTINCT FROM "old"."json") OR (("new"."json_ordered")::"text" IS DISTINCT FROM ("old"."json_ordered")::"text"))) EXECUTE FUNCTION "util"."queue_dataset_extraction_jobs"();
 
 
 
@@ -117624,11 +117644,11 @@ CREATE OR REPLACE TRIGGER "lifecyclemodel_embedding_ft_on_extract_md_update" AFT
 
 
 
-CREATE OR REPLACE TRIGGER "lifecyclemodel_extract_md_trigger_insert" AFTER INSERT ON "public"."lifecyclemodels" FOR EACH ROW EXECUTE FUNCTION "util"."invoke_edge_webhook"('webhook_model_embedding_ft', '1000');
+CREATE OR REPLACE TRIGGER "lifecyclemodel_extract_md_trigger_insert" AFTER INSERT ON "public"."lifecyclemodels" FOR EACH ROW EXECUTE FUNCTION "util"."queue_dataset_extraction_jobs"();
 
 
 
-CREATE OR REPLACE TRIGGER "lifecyclemodel_extract_md_trigger_update" AFTER UPDATE OF "json", "json_ordered" ON "public"."lifecyclemodels" FOR EACH ROW WHEN (("new"."json" IS DISTINCT FROM "old"."json")) EXECUTE FUNCTION "util"."invoke_edge_webhook"('webhook_model_embedding_ft', '1000');
+CREATE OR REPLACE TRIGGER "lifecyclemodel_extract_md_trigger_update" AFTER UPDATE OF "json", "json_ordered" ON "public"."lifecyclemodels" FOR EACH ROW WHEN ((("new"."json" IS DISTINCT FROM "old"."json") OR (("new"."json_ordered")::"text" IS DISTINCT FROM ("old"."json_ordered")::"text"))) EXECUTE FUNCTION "util"."queue_dataset_extraction_jobs"();
 
 
 
@@ -117708,11 +117728,11 @@ CREATE OR REPLACE TRIGGER "process_embedding_ft_on_extract_md_update" AFTER UPDA
 
 
 
-CREATE OR REPLACE TRIGGER "process_extract_md_trigger_insert" AFTER INSERT ON "public"."processes" FOR EACH ROW EXECUTE FUNCTION "util"."invoke_edge_webhook"('webhook_process_embedding_ft', '1000');
+CREATE OR REPLACE TRIGGER "process_extract_md_trigger_insert" AFTER INSERT ON "public"."processes" FOR EACH ROW EXECUTE FUNCTION "util"."queue_dataset_extraction_jobs"();
 
 
 
-CREATE OR REPLACE TRIGGER "process_extract_md_trigger_update" AFTER UPDATE OF "json", "json_ordered" ON "public"."processes" FOR EACH ROW WHEN (("new"."json" IS DISTINCT FROM "old"."json")) EXECUTE FUNCTION "util"."invoke_edge_webhook"('webhook_process_embedding_ft', '1000');
+CREATE OR REPLACE TRIGGER "process_extract_md_trigger_update" AFTER UPDATE OF "json", "json_ordered" ON "public"."processes" FOR EACH ROW WHEN ((("new"."json" IS DISTINCT FROM "old"."json") OR (("new"."json_ordered")::"text" IS DISTINCT FROM ("old"."json_ordered")::"text"))) EXECUTE FUNCTION "util"."queue_dataset_extraction_jobs"();
 
 
 
