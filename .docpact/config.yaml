@@ -1,7 +1,7 @@
 version: 1
 layout: repo
-lastReviewedAt: "2026-11-23"
-lastReviewedCommit: "f90a22023b51844bc7ae91b15081212b4cde69f4"
+lastReviewedAt: "2026-11-24"
+lastReviewedCommit: "a48435b66a7669d5c7b13cb34e091145fbb05ed3"
 lastReviewedNote: "Database #1011 reviewed migration, test and CI routing for shared ordinary owner locks."
 
 # Keep deterministic governance facts here.
