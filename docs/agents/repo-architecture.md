@@ -30,8 +30,8 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-23
-lastReviewedCommit: f90a22023b51844bc7ae91b15081212b4cde69f4
+lastReviewedAt: 2026-11-24
+lastReviewedCommit: 8c103739cd2492ce06a3ca06d99f541fb9b6f032
 lastReviewedNote: "Database #1011 documented the ordinary and migration lock modes and the guard between transactions."
 related:
   - ../../AGENTS.md

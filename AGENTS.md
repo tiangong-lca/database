@@ -37,8 +37,8 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-23
-lastReviewedCommit: f90a22023b51844bc7ae91b15081212b4cde69f4
+lastReviewedAt: 2026-11-24
+lastReviewedCommit: a48435b66a7669d5c7b13cb34e091145fbb05ed3
 lastReviewedNote: "Database #1011 reviewed the private Flow identity fence and the two-session PG17 regression."
 related:
   - .docpact/config.yaml
