@@ -107,6 +107,13 @@ jobs:
           git diff --exit-code -- supabase/workspace
           test -z "$(git status --porcelain --untracked-files=all -- supabase/workspace)"
 
+      - name: Verify concurrent review rejections
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -X -h 127.0.0.1 -p 55322 -U postgres -d postgres -v fixture_port=55322 \
+            -f supabase/tests/regression/20261127_review_reject_concurrency.sql
+
       - name: Verify controlled Final Result draft replacement
         run: |
           supabase test db supabase/tests/20261110_final_result_draft_replacement.sql

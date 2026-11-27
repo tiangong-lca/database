@@ -37,9 +37,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-23
-lastReviewedCommit: f90a22023b51844bc7ae91b15081212b4cde69f4
-lastReviewedNote: "Database #1011 reviewed the private Flow identity fence and the two-session PG17 regression."
+lastReviewedAt: 2026-11-27
+lastReviewedCommit: a86a93e7ee1adbbef1858b3b0f6d1add635318cb
+lastReviewedNote: "Database #1016 routes the rejection migration and its two-session regression through the Dev contract checks."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-validation.md

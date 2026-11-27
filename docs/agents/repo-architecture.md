@@ -30,9 +30,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-23
-lastReviewedCommit: f90a22023b51844bc7ae91b15081212b4cde69f4
-lastReviewedNote: "Database #1011 documented the ordinary and migration lock modes and the guard between transactions."
+lastReviewedAt: 2026-11-27
+lastReviewedCommit: a86a93e7ee1adbbef1858b3b0f6d1add635318cb
+lastReviewedNote: "Database #1016 documents the release rule for concurrent rejections of a dataset version."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -60,6 +60,12 @@ updates only targets below state 100; approved/commercial references must not
 receive timestamp-only writes that fan out through catalog/search triggers.
 Collection, exact ownership/version checks, draft freezing and Root/Reference
 Review semantics remain unchanged.
+
+When a Review Admin rejects a Root or Reference Review,
+`api.cmd_review_finalize_reject` locks the open reviews for that dataset table,
+ID and version in review-ID order before checking for another open review.
+The first rejection keeps the dataset under review while a peer is open.
+The last rejection returns a dataset in state 20 to draft (state 0).
 
 Certificate-bound calculation admission uses the Closure's frozen effective
 scope for eligibility metadata and counts. The owner-only envelope helper keeps

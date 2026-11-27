@@ -20,9 +20,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-23
-lastReviewedCommit: f90a22023b51844bc7ae91b15081212b4cde69f4
-lastReviewedNote: "Database #1011 已在 PG17 核对重新生成的触发函数定义和 Data API 类型。"
+lastReviewedAt: 2026-11-27
+lastReviewedCommit: a86a93e7ee1adbbef1858b3b0f6d1add635318cb
+lastReviewedNote: "Database #1016 regenerated the rejection RPC from the migrated local database and verified unchanged Data API types."
 related:
   - ../AGENTS.md
   - ../.docpact/config.yaml
