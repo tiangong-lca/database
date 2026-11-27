@@ -33,7 +33,7 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-27
-lastReviewedCommit: a86a93e7ee1adbbef1858b3b0f6d1add635318cb
+lastReviewedCommit: 50eaaf1f3fb5e13d65ce6da1bc15a7740cd066bf
 lastReviewedNote: "Database #1016 verifies two concurrent authenticated rejections and independent versions on PostgreSQL 17."
 related:
   - ../../AGENTS.md
@@ -486,12 +486,12 @@ pgTAP files explicitly after a clean reset, and run the change-specific shell
 or Node upgrade/transport harnesses named in the proof matrix. Workflows that
 need Git provenance still check out full history (`fetch-depth: 0`).
 
-The local contract job in `supabase-dev.yml` always runs the package capability,
+The local contract CI jobs (`local-contract`, `local-contract-upgrades`, and `local-contract-suites` in `supabase-dev.yml`) run in parallel before hosted steps and cover the complete package capability,
 ownership, bulk-refresh, selected-root-refresh, review-queue full-text-search,
 TIDAS partial-import, example-dataset-scope, guarded owner-draft
 before-content save, result-process-state-120,
-result-process-lifecycle-protection, result-process-product-read-isolation, and
-manager-attested-result-publication suites before hosted steps.
+result-process-lifecycle-protection, result-process-product-read-isolation,
+manager-attested-result-publication, and populated upgrade suites. A fail-closed `pr-scope` classifier skips Docker-backed jobs only for proven documentation-only PRs targeting `dev` (unless labeled `ci:full`), while always running the fast Python workflow/contract checks; `push` to `dev`, `main` PRs, and `workflow_dispatch` always run the full parallel matrix.
 
 The local contract CI job includes Model bundle version allocation. For focused validation, run `20261009_model_bundle_process_references.sql` with `20260611_dataset_create_version_rpc.sql` and `20260902_process_model_version.sql`. Verify exact same-bundle reference rewriting, external version preservation, singleton/array shape and child ownership after a blank rebuild and a populated upgrade.
 
