@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-27
-lastReviewedCommit: 3858ab1e7ade2e07b76ab4dbce188cb12f71d754
-lastReviewedNote: "Database #1024 checked the 17 exact preimages in production read-only and exercised cohort exclusion and drift failures on isolated PostgreSQL."
+lastReviewedCommit: 02e22b7aeac955a68679fae1472ce0c877e3a32f
+lastReviewedNote: "Database #1024 verified the reserved version contains only comments and the deployed migration-head contract is preserved."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

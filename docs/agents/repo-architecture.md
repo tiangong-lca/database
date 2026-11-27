@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-27
-lastReviewedCommit: 3858ab1e7ade2e07b76ab4dbce188cb12f71d754
-lastReviewedNote: "Database #1024 repairs a fixed production cohort without adding any persistent object or changing the review command contract."
+lastReviewedCommit: 02e22b7aeac955a68679fae1472ce0c877e3a32f
+lastReviewedNote: "Database #1024 removes the historical data correction from the migration. The recorded version has no executable statements."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

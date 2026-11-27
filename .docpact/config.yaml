@@ -1,8 +1,8 @@
 version: 1
 layout: repo
 lastReviewedAt: "2026-11-27"
-lastReviewedCommit: 3858ab1e7ade2e07b76ab4dbce188cb12f71d754
-lastReviewedNote: "Database #1024 reviewed the existing migration routing for the one-time historical review-state correction."
+lastReviewedCommit: 02e22b7aeac955a68679fae1472ce0c877e3a32f
+lastReviewedNote: "Database #1024 reviewed migration routing for a previously recorded version now containing only comments."
 
 # Keep deterministic governance facts here.
 # AGENTS.md remains the repo contract entrypoint.

@@ -38,8 +38,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-27
-lastReviewedCommit: 3858ab1e7ade2e07b76ab4dbce188cb12f71d754
-lastReviewedNote: "Database #1024 follows the existing reviewed migration and production verification path for a fixed historical cohort."
+lastReviewedCommit: 02e22b7aeac955a68679fae1472ce0c877e3a32f
+lastReviewedNote: "Database #1024 preserves the previously recorded migration identity while returning operational data corrections to Utilities."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-validation.md
