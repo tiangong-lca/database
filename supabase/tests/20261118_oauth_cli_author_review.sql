@@ -7,10 +7,11 @@ select ok(
   (select array_agg(pg_catalog.to_regprocedure(routine_identity)::text order by routine_identity) = array[
       'api.cmd_review_submit(text,uuid,text,jsonb)',
       'api.qry_review_get_items(uuid[],uuid,text,integer[])',
-      'api.qry_review_submit_receipt(text,text,uuid,text)'
+      'api.qry_review_submit_receipt(text,text,uuid,text)',
+      'api.qry_review_submit_scope(text,uuid,text)'
     ] and bool_and(allow_authenticated and not allow_anon and not allow_service_role)
    from private.api_capability_grants where capability_id = 'CLI-REVIEW-AUTHOR-01'),
-  'only the exact author submit, read and receipt signatures use the narrow grant'
+  'only the exact author submit, read, receipt and scope preview signatures use the narrow grant'
 );
 
 do $fixture$

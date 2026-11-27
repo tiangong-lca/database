@@ -32,9 +32,12 @@ set local statement_timeout = '20s';
 select plan(11);
 
 -- Rehearse #984 against its own historical route manifest.
--- The later #989 receipt grant is removed only inside this rollback-only fixture.
+-- Later #989/#548 additive grants are removed only inside this rollback-only fixture.
 delete from private.api_capability_grants
-where routine_identity = 'api.qry_review_submit_receipt(text, text, uuid, text)'
+where routine_identity in (
+  'api.qry_review_submit_receipt(text, text, uuid, text)',
+  'api.qry_review_submit_scope(text, uuid, text)'
+)
   and capability_id = '{AUTHOR}';
 
 create function pg_temp.predecessor(read_capability text, cli_grants text[], other_grants text[])
