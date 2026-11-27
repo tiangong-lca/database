@@ -404,9 +404,9 @@ def main() -> int:
     supabase_cli_versions = re.findall(
         r"uses: supabase/setup-cli@v3\s+with:\s+version:\s*([^\s#]+)", text
     )
-    if supabase_cli_versions != ["2.117.0"] * 11:
+    if supabase_cli_versions != ["2.117.0"] * 13:
         failures.append(
-            "all eleven local (core/upgrades/upgrades-cutover/suites), ARM profile, persistent-Dev, Preview, isolated Study, P3 review, P4 advanced and method Supabase CLI pins "
+            "all thirteen local (core/upgrades/upgrades-cutover/suites/suites-portal), ARM profile, persistent-Dev, Preview, isolated Study, Study P2 reporting, P3 review, P4 advanced and method Supabase CLI pins "
             f"must be 2.117.0, found {supabase_cli_versions or 'none'}"
         )
 
@@ -432,13 +432,15 @@ def main() -> int:
     upgrades_workflow = jobs.get("local-contract-upgrades", "")
     upgrades_cutover_workflow = jobs.get("local-contract-upgrades-cutover", "")
     suites_workflow = jobs.get("local-contract-suites", "")
+    suites_portal_workflow = jobs.get("local-contract-suites-portal", "")
     local_contracts = "\n".join(
-        (local_workflow, upgrades_workflow, upgrades_cutover_workflow, suites_workflow)
+        (local_workflow, upgrades_workflow, upgrades_cutover_workflow, suites_workflow, suites_portal_workflow)
     )
     profile_workflow = jobs.get("scheduler-profile", "")
     hosted_workflow = jobs.get("deploy-and-verify", "")
     preview_workflow = jobs.get("preview-runtime-contract", "")
     study_workflow = jobs.get("study-runtime-concurrency", "")
+    reporting_workflow = jobs.get("study-reporting-concurrency", "")
     review_workflow = jobs.get("study-review-concurrency", "")
     advanced_workflow = jobs.get("study-advanced-concurrency", "")
 
@@ -491,6 +493,17 @@ def main() -> int:
     ):
         if token not in study_workflow:
             failures.append(f"isolated Study proof must preserve its owned-project boundary: {token}")
+    for token in (
+        'scripts/prepare_study_runtime_project.py --destination "$RUNNER_TEMP/study894"',
+        'STUDY_RUNTIME_UPGRADE_ALLOW_RESET: isolated',
+        'scripts/test_study_runtime_reporting_upgrade.py',
+        'supabase/tests/regression/20261103_study_analysis_concurrency.py',
+        'supabase/tests/regression/20261103_study_report_concurrency.py',
+        'supabase stop --project-id study894 --no-backup',
+        'label=com.supabase.cli.project=study894',
+    ):
+        if token not in reporting_workflow:
+            failures.append(f"isolated Study P2 reporting proof must preserve its owned-project boundary: {token}")
     for suite in ('20261103_study_durable_runtime.sql', '20261103_study_task_admission.sql', '20261103_study_task_disclosure.sql', '20261103_study_task_input_parity.sql', '20261103_study_review_finalization_sharing.sql', '20261104_study_advanced_analysis.sql'):
         if f'supabase test db supabase/tests/{suite}' not in local_contracts:
             failures.append(f'local contract must execute the exact Study suite: {suite}')
@@ -504,6 +517,8 @@ def main() -> int:
         failures.append("x64 local contract upgrades cutover job is missing")
     if not suites_workflow:
         failures.append("x64 local contract suites job is missing")
+    if not suites_portal_workflow:
+        failures.append("x64 local contract suites portal job is missing")
     if not profile_workflow:
         failures.append("ARM64 scheduler profile job is missing")
     if not hosted_workflow:
@@ -580,7 +595,7 @@ def main() -> int:
 
     hosted_required = (
         "uses: actions/checkout@v7",
-        "needs: [local-contract, local-contract-upgrades, local-contract-upgrades-cutover, local-contract-suites, scheduler-profile]",
+        "needs: [local-contract, local-contract-upgrades, local-contract-upgrades-cutover, local-contract-suites, local-contract-suites-portal, scheduler-profile]",
         "SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DEV_DB_PASSWORD }}",
         'supabase link --project-ref "$SUPABASE_PROJECT_ID"',
         "supabase db push --include-all",

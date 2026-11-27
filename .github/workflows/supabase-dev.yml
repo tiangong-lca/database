@@ -162,7 +162,7 @@ jobs:
 
       - name: Rebuild migration history
         if: needs.pr-scope.outputs.run_db_checks == 'true'
-        run: supabase start -x studio,imgproxy,mailpit,edge-runtime,logflare,vector,supavisor,realtime && supabase db reset --no-seed
+        run: supabase start -x studio,imgproxy,mailpit,edge-runtime,logflare,vector,supavisor,realtime
 
       - name: Verify generated schema and Data API types
         if: needs.pr-scope.outputs.run_db_checks == 'true'
@@ -376,7 +376,7 @@ jobs:
         run: supabase stop --no-backup
 
   local-contract-suites:
-    name: Verify schema and capability contract suites
+    name: Verify schema and capability contract suites (core & foundry)
     needs: [pr-scope]
     if: needs.pr-scope.outputs.run_db_checks == 'true'
     runs-on: ubuntu-latest
@@ -395,9 +395,9 @@ jobs:
           version: 2.117.0
 
       - name: Rebuild migration history
-        run: supabase start -x studio,imgproxy,mailpit,postgres-meta,edge-runtime,logflare,vector,supavisor,realtime && supabase db reset --no-seed
+        run: supabase start -x studio,imgproxy,mailpit,postgres-meta,edge-runtime,logflare,vector,supavisor,realtime
 
-      - name: Verify schema and capability contracts (extended)
+      - name: Verify schema and capability contracts (core & foundry)
         run: |
           supabase test db supabase/tests/20261009_dataset_display_settings.sql
           supabase test db supabase/tests/20261009_dataset_display_list_page_hydration.sql
@@ -436,6 +436,35 @@ jobs:
           supabase test db supabase/tests/20261118_shared_review_opinions.sql
           supabase test db supabase/tests/20261118_oauth_cli_author_review.sql
           python3 scripts/test_oauth_cli_author_review_upgrade.py --local-container supabase_db_database-engine
+
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup
+
+  local-contract-suites-portal:
+    name: Verify schema and capability contract suites (portal & release)
+    needs: [pr-scope]
+    if: needs.pr-scope.outputs.run_db_checks == 'true'
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v3
+        with:
+          version: 2.117.0
+
+      - name: Rebuild migration history
+        run: supabase start -x studio,imgproxy,mailpit,postgres-meta,edge-runtime,logflare,vector,supavisor,realtime
+
+      - name: Verify schema and capability contracts (portal & release)
+        run: |
           supabase test db supabase/tests/20261025_calculation_contract_identity.sql
           supabase test db supabase/tests/20261014_snapshot_build_terminal_guard.sql
           supabase test db supabase/tests/20261016_all_unit_terminal_guard.sql
@@ -516,7 +545,7 @@ jobs:
     if: >-
       github.event_name == 'push' && github.ref == 'refs/heads/dev' &&
       needs.local-contract.outputs.deploy_required == 'true'
-    needs: [local-contract, local-contract-upgrades, local-contract-upgrades-cutover, local-contract-suites, scheduler-profile]
+    needs: [local-contract, local-contract-upgrades, local-contract-upgrades-cutover, local-contract-suites, local-contract-suites-portal, scheduler-profile]
     runs-on: ubuntu-latest
     concurrency:
       group: supabase-persistent-dev
@@ -706,7 +735,7 @@ jobs:
       github.event_name == 'pull_request' &&
       github.event.pull_request.base.ref == 'main' &&
       github.event.pull_request.head.repo.full_name == github.repository
-    needs: [local-contract, local-contract-upgrades, local-contract-upgrades-cutover, local-contract-suites]
+    needs: [local-contract, local-contract-upgrades, local-contract-upgrades-cutover, local-contract-suites, local-contract-suites-portal]
     runs-on: ubuntu-latest
     permissions:
       checks: read
@@ -1464,26 +1493,6 @@ jobs:
         env:
           STUDY_RUNTIME_UPGRADE_ALLOW_RESET: isolated
         run: python3 -B scripts/test_study_runtime_upgrade.py --workdir "$RUNNER_TEMP/study894" --report "$RUNNER_TEMP/study894-upgrade.json"
-      - name: Verify populated P2 upgrade and blank candidate
-        env:
-          STUDY_RUNTIME_UPGRADE_ALLOW_RESET: isolated
-        run: >-
-          python3 -B scripts/test_study_runtime_reporting_upgrade.py
-          --workdir "$RUNNER_TEMP/study894"
-          --ownership-manifest "$RUNNER_TEMP/study894/ownership.json"
-          --report "$RUNNER_TEMP/study904-upgrade.json"
-      - name: Observe independent P2 Analysis and Report races
-        run: |
-          python3 -B supabase/tests/regression/20261103_study_analysis_concurrency.py \
-            --database postgres --owned-ci-project "$RUNNER_TEMP/study894" \
-            --report "$RUNNER_TEMP/study904-analysis-concurrency.json"
-          supabase db reset --local --no-seed --workdir "$RUNNER_TEMP/study894" \
-            > "$RUNNER_TEMP/study904-after-analysis-reset.log" 2>&1
-          python3 -B supabase/tests/regression/20261103_study_report_concurrency.py \
-            --database postgres --owned-ci-project "$RUNNER_TEMP/study894" \
-            --report "$RUNNER_TEMP/study904-report-concurrency.json"
-          supabase db reset --local --no-seed --workdir "$RUNNER_TEMP/study894" \
-            > "$RUNNER_TEMP/study904-after-report-reset.log" 2>&1
       - name: Observe independent Study transaction races
         run: python3 -B supabase/tests/regression/20261103_study_runtime_concurrency.py --report "$RUNNER_TEMP/study894-concurrency.json"
       - name: Verify real Study actor and OAuth PostgREST transport
@@ -1505,14 +1514,6 @@ jobs:
           if [ -f "$RUNNER_TEMP/study895-source-concurrency.json" ]; then
             cat "$RUNNER_TEMP/study895-source-concurrency.json" >> "$GITHUB_STEP_SUMMARY"
           fi
-      - name: Preserve P2 proof summary
-        if: always()
-        run: |
-          for receipt in "$RUNNER_TEMP/study904-upgrade.json" "$RUNNER_TEMP/study904-analysis-concurrency.json" "$RUNNER_TEMP/study904-report-concurrency.json"; do
-            if [ -f "$receipt" ]; then
-              cat "$receipt" >> "$GITHUB_STEP_SUMMARY"
-            fi
-          done
       - name: Release only the owned Study project
         if: always()
         shell: bash
@@ -1524,4 +1525,68 @@ jobs:
             test -z "$(docker volume ls -q --filter label=com.supabase.cli.project=study894)"
             test -z "$(docker network ls -q --filter label=com.supabase.cli.project=study894)"
             echo "Study894 task containers released; exact project volumes deleted by pinned CLI --no-backup." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  study-reporting-concurrency:
+    name: Verify isolated Study P2 reporting concurrency
+    needs: [pr-scope]
+    if: needs.pr-scope.outputs.run_db_checks == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: supabase/setup-cli@v3
+        with:
+          version: 2.117.0
+      - name: Prepare independently owned Study P2 project
+        run: python3 scripts/prepare_study_runtime_project.py --destination "$RUNNER_TEMP/study894"
+      - name: Rebuild isolated candidate
+        shell: bash
+        run: |
+          # CLI startup prints generated local keys: keep its raw output private.
+          umask 077
+          supabase start --workdir "$RUNNER_TEMP/study894" \
+            -x studio,imgproxy,mailpit,postgres-meta,edge-runtime,logflare,vector,supavisor,realtime \
+            > "$RUNNER_TEMP/study894-start.log" 2>&1
+      - name: Verify populated P2 upgrade and blank candidate
+        env:
+          STUDY_RUNTIME_UPGRADE_ALLOW_RESET: isolated
+        run: >-
+          python3 -B scripts/test_study_runtime_reporting_upgrade.py
+          --workdir "$RUNNER_TEMP/study894"
+          --ownership-manifest "$RUNNER_TEMP/study894/ownership.json"
+          --report "$RUNNER_TEMP/study904-upgrade.json"
+      - name: Observe independent P2 Analysis and Report races
+        run: |
+          python3 -B supabase/tests/regression/20261103_study_analysis_concurrency.py \
+            --database postgres --owned-ci-project "$RUNNER_TEMP/study894" \
+            --report "$RUNNER_TEMP/study904-analysis-concurrency.json"
+          supabase db reset --local --no-seed --workdir "$RUNNER_TEMP/study894" \
+            > "$RUNNER_TEMP/study904-after-analysis-reset.log" 2>&1
+          python3 -B supabase/tests/regression/20261103_study_report_concurrency.py \
+            --database postgres --owned-ci-project "$RUNNER_TEMP/study894" \
+            --report "$RUNNER_TEMP/study904-report-concurrency.json"
+          supabase db reset --local --no-seed --workdir "$RUNNER_TEMP/study894" \
+            > "$RUNNER_TEMP/study904-after-report-reset.log" 2>&1
+      - name: Preserve P2 proof summary
+        if: always()
+        run: |
+          for receipt in "$RUNNER_TEMP/study904-upgrade.json" "$RUNNER_TEMP/study904-analysis-concurrency.json" "$RUNNER_TEMP/study904-report-concurrency.json"; do
+            if [ -f "$receipt" ]; then
+              cat "$receipt" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+      - name: Release only the owned Study P2 project
+        if: always()
+        shell: bash
+        run: |
+          if [ -f "$RUNNER_TEMP/study894/ownership.json" ]; then
+            supabase stop --project-id study894 --no-backup
+            remaining="$(docker ps -aq --filter label=com.supabase.cli.project=study894)"
+            test -z "$remaining"
+            test -z "$(docker volume ls -q --filter label=com.supabase.cli.project=study894)"
+            test -z "$(docker network ls -q --filter label=com.supabase.cli.project=study894)"
+            echo "Study894 P2 task containers released; exact project volumes deleted by pinned CLI --no-backup." >> "$GITHUB_STEP_SUMMARY"
           fi
