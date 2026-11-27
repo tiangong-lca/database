@@ -38,8 +38,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-27
-lastReviewedCommit: a86a93e7ee1adbbef1858b3b0f6d1add635318cb
-lastReviewedNote: "Database #1016 routes the rejection migration and its two-session regression through the Dev contract checks."
+lastReviewedCommit: 0528c49612409d741093c8f6a9b1bdf03ae920fd
+lastReviewedNote: "Database #1024 follows the existing reviewed migration and production verification path for a fixed historical cohort."
 related:
   - .docpact/config.yaml
   - docs/agents/repo-validation.md
