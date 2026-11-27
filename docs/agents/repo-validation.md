@@ -32,8 +32,8 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-27
-lastReviewedCommit: 02e22b7aeac955a68679fae1472ce0c877e3a32f
+lastReviewedAt: 2026-11-28
+lastReviewedCommit: e159dcb9149d0042bc01edeb46e81278b74623e4
 lastReviewedNote: "Database #1024 verified the reserved version contains only comments and the deployed migration-head contract is preserved."
 related:
   - ../../AGENTS.md

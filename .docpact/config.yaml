@@ -681,3 +681,4 @@ rules:
       - path: docs/agents/dependency-maintenance.md
         mode: review_or_update
     reason: Actions monitoring cadence and Dev/Main activation need one focused guide; workflow, scripts and deployable source retain their existing stricter rules.
+# lastReviewedIssue: #1030

@@ -20,8 +20,8 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-27
-lastReviewedCommit: 37e06689119bf6d481b1e734af7e5ce4a45dbfcd
+lastReviewedAt: 2026-11-28
+lastReviewedCommit: e159dcb9149d0042bc01edeb46e81278b74623e4
 lastReviewedNote: "Database #1016 regenerated the rejection RPC from the migrated local database and verified unchanged Data API types."
 related:
   - ../AGENTS.md
