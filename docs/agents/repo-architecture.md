@@ -31,7 +31,7 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-27
-lastReviewedCommit: 3cdb06b4f8e7ee4f562bcf59d4eb2ba641fd5d37
+lastReviewedCommit: 3858ab1e7ade2e07b76ab4dbce188cb12f71d754
 lastReviewedNote: "Database #1024 repairs a fixed production cohort without adding any persistent object or changing the review command contract."
 related:
   - ../../AGENTS.md

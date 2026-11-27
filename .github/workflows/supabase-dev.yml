@@ -273,7 +273,7 @@ jobs:
         run: supabase stop --no-backup
 
   local-contract-upgrades:
-    name: Verify populated migration upgrades and locks
+    name: Verify populated migration upgrades (portal, scope, export)
     needs: [pr-scope]
     if: needs.pr-scope.outputs.run_db_checks == 'true'
     runs-on: ubuntu-latest
@@ -291,8 +291,8 @@ jobs:
         with:
           version: 2.117.0
 
-      - name: Rebuild migration history
-        run: supabase start -x studio,imgproxy,mailpit,postgres-meta,edge-runtime,logflare,vector,supavisor,realtime && supabase db reset --no-seed
+      - name: Start isolated local Supabase
+        run: supabase start -x studio,imgproxy,mailpit,postgres-meta,edge-runtime,logflare,vector,supavisor,realtime
 
       - name: Verify populated Portal Process projection upgrade
         env:
@@ -313,6 +313,37 @@ jobs:
           supabase test db supabase/tests/20260722_data_product_scope_closure_and_task_feed.sql
           supabase test db supabase/tests/20261108_calculation_certificate_admission.sql
 
+      - name: Verify calculation export populated upgrade
+        env:
+          CALCULATION_EXPORT_UPGRADE_ALLOW_RESET: isolated
+        run: scripts/test_calculation_export_upgrade.sh
+
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup
+
+  local-contract-upgrades-cutover:
+    name: Verify populated migration upgrades (admission, locks, cutover)
+    needs: [pr-scope]
+    if: needs.pr-scope.outputs.run_db_checks == 'true'
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v3
+        with:
+          version: 2.117.0
+
+      - name: Start isolated local Supabase
+        run: supabase start -x studio,imgproxy,mailpit,postgres-meta,edge-runtime,logflare,vector,supavisor,realtime
+
       - name: Verify populated calculation admission upgrade and committed retry
         run: |
           proof_dir="$(mktemp -d "$RUNNER_TEMP/calculation-admission-XXXXXX")"
@@ -331,11 +362,6 @@ jobs:
         run: |
           psql -X -h 127.0.0.1 -p 55322 -U postgres -d postgres -v fixture_port=55322 \
             -f supabase/tests/regression/20261123_flow_identity_owner_locks.sql
-
-      - name: Verify calculation export populated upgrade
-        env:
-          CALCULATION_EXPORT_UPGRADE_ALLOW_RESET: isolated
-        run: scripts/test_calculation_export_upgrade.sh
 
       - name: Verify full schema cutover and review rejection upgrades
         run: |
@@ -490,7 +516,7 @@ jobs:
     if: >-
       github.event_name == 'push' && github.ref == 'refs/heads/dev' &&
       needs.local-contract.outputs.deploy_required == 'true'
-    needs: [local-contract, local-contract-upgrades, local-contract-suites, scheduler-profile]
+    needs: [local-contract, local-contract-upgrades, local-contract-upgrades-cutover, local-contract-suites, scheduler-profile]
     runs-on: ubuntu-latest
     concurrency:
       group: supabase-persistent-dev
@@ -680,7 +706,7 @@ jobs:
       github.event_name == 'pull_request' &&
       github.event.pull_request.base.ref == 'main' &&
       github.event.pull_request.head.repo.full_name == github.repository
-    needs: [local-contract, local-contract-upgrades, local-contract-suites]
+    needs: [local-contract, local-contract-upgrades, local-contract-upgrades-cutover, local-contract-suites]
     runs-on: ubuntu-latest
     permissions:
       checks: read

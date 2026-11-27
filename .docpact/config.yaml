@@ -1,7 +1,7 @@
 version: 1
 layout: repo
 lastReviewedAt: "2026-11-27"
-lastReviewedCommit: 3cdb06b4f8e7ee4f562bcf59d4eb2ba641fd5d37
+lastReviewedCommit: 3858ab1e7ade2e07b76ab4dbce188cb12f71d754
 lastReviewedNote: "Database #1024 reviewed the existing migration routing for the one-time historical review-state correction."
 
 # Keep deterministic governance facts here.

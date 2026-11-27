@@ -23,7 +23,7 @@ checkPaths:
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
 lastReviewedAt: 2026-11-27
-lastReviewedCommit: 50eaaf1f3fb5e13d65ce6da1bc15a7740cd066bf
+lastReviewedCommit: 37e06689119bf6d481b1e734af7e5ce4a45dbfcd
 lastReviewedNote: "Database #1016 routes the rejection migration and its two-session regression through the Dev contract checks."
 related:
   - ../../AGENTS.md
