@@ -32,9 +32,9 @@ checkPaths:
   - scripts/docpact
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
-lastReviewedAt: 2026-11-24
-lastReviewedCommit: a48435b66a7669d5c7b13cb34e091145fbb05ed3
-lastReviewedNote: "Database #1011 added committed two-session proof for ordinary writes, scope sealing and Result publication."
+lastReviewedAt: 2026-11-27
+lastReviewedCommit: a86a93e7ee1adbbef1858b3b0f6d1add635318cb
+lastReviewedNote: "Database #1016 verifies two concurrent authenticated rejections and independent versions on PostgreSQL 17."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
@@ -70,6 +70,10 @@ version, in-review root links, denied/repeated submissions and an injected
 SQLSTATE 57014 rollback remain covered. Compare the predecessor as a negative
 control. Local timing is not production performance proof; repeat the real
 authenticated model submission after exact Dev/Main deployment.
+
+## Concurrent review rejections
+
+Run `supabase/tests/regression/20261127_review_reject_concurrency.sql` on a freshly reset local PostgreSQL database using `psql -X -h 127.0.0.1 -p <port> -U postgres -d postgres -v fixture_port=<port> -f <file>`. The test uses two connections to check that the second rejection waits on the first, the last rejection releases the dataset, and a different version can proceed during that wait. It also checks permissions, retry behavior, audit entries and owner notifications.
 
 ## Flow identity owner locks
 

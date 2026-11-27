@@ -22,9 +22,9 @@ checkPaths:
   - .github/workflows/supabase-dev.yml
   - .env.supabase.dev.local.example
   - .env.supabase.main.local.example
-lastReviewedAt: 2026-11-23
-lastReviewedCommit: f90a22023b51844bc7ae91b15081212b4cde69f4
-lastReviewedNote: "Database #1011 复核了两次既有 CI 本地数据库重置之间的并发回归。"
+lastReviewedAt: 2026-11-27
+lastReviewedCommit: a86a93e7ee1adbbef1858b3b0f6d1add635318cb
+lastReviewedNote: "Database #1016 routes the rejection migration and its two-session regression through the Dev contract checks."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

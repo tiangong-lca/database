@@ -15260,6 +15260,22 @@ begin
     );
   end if;
 
+  -- Root and Reference decisions for the same dataset version must see the
+  -- preceding decision before checking whether the dataset can be released.
+  -- Use the same lock order regardless of which review was requested.
+  perform peer.id
+  from private.reviews as requested
+  join private.reviews as peer
+    on peer.target_table = requested.target_table
+    and peer.data_id = requested.data_id
+    and btrim(peer.data_version::text) = btrim(requested.data_version::text)
+  where requested.id = p_review_id
+    and requested.review_kind in ('root', 'reference')
+    and requested.state_code in (0, 1)
+    and peer.state_code in (0, 1)
+  order by peer.id
+  for update of peer;
+
   select review_row.*
   into v_review
   from private.reviews as review_row
