@@ -33,8 +33,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-27
-lastReviewedCommit: 50eaaf1f3fb5e13d65ce6da1bc15a7740cd066bf
-lastReviewedNote: "Database #1016 verifies two concurrent authenticated rejections and independent versions on PostgreSQL 17."
+lastReviewedCommit: 3cdb06b4f8e7ee4f562bcf59d4eb2ba641fd5d37
+lastReviewedNote: "Database #1024 checked the 17 exact preimages in production read-only and exercised cohort exclusion and drift failures on isolated PostgreSQL."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml

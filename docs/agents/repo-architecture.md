@@ -31,8 +31,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-27
-lastReviewedCommit: 50eaaf1f3fb5e13d65ce6da1bc15a7740cd066bf
-lastReviewedNote: "Database #1016 documents the release rule for concurrent rejections of a dataset version."
+lastReviewedCommit: 3cdb06b4f8e7ee4f562bcf59d4eb2ba641fd5d37
+lastReviewedNote: "Database #1024 repairs a fixed production cohort without adding any persistent object or changing the review command contract."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
