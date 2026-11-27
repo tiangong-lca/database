@@ -1,8 +1,8 @@
 version: 1
 layout: repo
 lastReviewedAt: "2026-11-27"
-lastReviewedCommit: "37e06689119bf6d481b1e734af7e5ce4a45dbfcd"
-lastReviewedNote: "Database #1016 routes the rejection migration and its two-session regression through the Dev contract checks."
+lastReviewedCommit: 3858ab1e7ade2e07b76ab4dbce188cb12f71d754
+lastReviewedNote: "Database #1024 reviewed the existing migration routing for the one-time historical review-state correction."
 
 # Keep deterministic governance facts here.
 # AGENTS.md remains the repo contract entrypoint.
