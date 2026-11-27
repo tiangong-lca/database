@@ -404,9 +404,9 @@ def main() -> int:
     supabase_cli_versions = re.findall(
         r"uses: supabase/setup-cli@v3\s+with:\s+version:\s*([^\s#]+)", text
     )
-    if supabase_cli_versions != ["2.117.0"] * 10:
+    if supabase_cli_versions != ["2.117.0"] * 11:
         failures.append(
-            "all ten local (core/upgrades/suites), ARM profile, persistent-Dev, Preview, isolated Study, P3 review, P4 advanced and method Supabase CLI pins "
+            "all eleven local (core/upgrades/upgrades-cutover/suites), ARM profile, persistent-Dev, Preview, isolated Study, P3 review, P4 advanced and method Supabase CLI pins "
             f"must be 2.117.0, found {supabase_cli_versions or 'none'}"
         )
 
@@ -430,8 +430,11 @@ def main() -> int:
     pr_scope_workflow = jobs.get("pr-scope", "")
     local_workflow = jobs.get("local-contract", "")
     upgrades_workflow = jobs.get("local-contract-upgrades", "")
+    upgrades_cutover_workflow = jobs.get("local-contract-upgrades-cutover", "")
     suites_workflow = jobs.get("local-contract-suites", "")
-    local_contracts = "\n".join((local_workflow, upgrades_workflow, suites_workflow))
+    local_contracts = "\n".join(
+        (local_workflow, upgrades_workflow, upgrades_cutover_workflow, suites_workflow)
+    )
     profile_workflow = jobs.get("scheduler-profile", "")
     hosted_workflow = jobs.get("deploy-and-verify", "")
     preview_workflow = jobs.get("preview-runtime-contract", "")
@@ -497,6 +500,8 @@ def main() -> int:
         failures.append("x64 local contract job is missing")
     if not upgrades_workflow:
         failures.append("x64 local contract upgrades job is missing")
+    if not upgrades_cutover_workflow:
+        failures.append("x64 local contract upgrades cutover job is missing")
     if not suites_workflow:
         failures.append("x64 local contract suites job is missing")
     if not profile_workflow:
@@ -575,7 +580,7 @@ def main() -> int:
 
     hosted_required = (
         "uses: actions/checkout@v7",
-        "needs: [local-contract, local-contract-upgrades, local-contract-suites, scheduler-profile]",
+        "needs: [local-contract, local-contract-upgrades, local-contract-upgrades-cutover, local-contract-suites, scheduler-profile]",
         "SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DEV_DB_PASSWORD }}",
         'supabase link --project-ref "$SUPABASE_PROJECT_ID"',
         "supabase db push --include-all",

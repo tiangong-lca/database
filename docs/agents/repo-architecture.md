@@ -31,7 +31,7 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-27
-lastReviewedCommit: 50eaaf1f3fb5e13d65ce6da1bc15a7740cd066bf
+lastReviewedCommit: 37e06689119bf6d481b1e734af7e5ce4a45dbfcd
 lastReviewedNote: "Database #1016 documents the release rule for concurrent rejections of a dataset version."
 related:
   - ../../AGENTS.md
