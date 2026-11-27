@@ -173,24 +173,6 @@ jobs:
           git diff --exit-code -- supabase/workspace
           test -z "$(git status --porcelain --untracked-files=all -- supabase/workspace)"
 
-      - name: Verify concurrent review rejections
-        if: needs.pr-scope.outputs.run_db_checks == 'true'
-        env:
-          PGPASSWORD: postgres
-        run: |
-          psql -X -h 127.0.0.1 -p 55322 -U postgres -d postgres -v fixture_port=55322 \
-            -f supabase/tests/regression/20261127_review_reject_concurrency.sql
-
-      - name: Verify controlled Final Result draft replacement
-        if: needs.pr-scope.outputs.run_db_checks == 'true'
-        run: |
-          supabase test db supabase/tests/20261110_final_result_draft_replacement.sql
-          supabase test db supabase/tests/20261112_current_final_result_publication.sql
-          supabase test db supabase/tests/20261112_final_result_publication_history.sql
-          python3 supabase/tests/regression/20261110_final_result_draft_replacement.py \
-            --container supabase_db_database-engine --project database-engine \
-            --report "$RUNNER_TEMP/final-result-draft-races.json"
-
       - name: Verify schema and capability contracts (core)
         if: needs.pr-scope.outputs.run_db_checks == 'true'
         run: |
@@ -222,6 +204,24 @@ jobs:
           supabase test db supabase/tests/20260810_issue_448_package_ownership_and_attempt_diagnostics.sql
           supabase test db supabase/tests/20260810_issue_455_mutable_export_terminal_refresh.sql
           supabase test db supabase/tests/20260910_selected_export_refresh.sql
+
+      - name: Verify concurrent review rejections
+        if: needs.pr-scope.outputs.run_db_checks == 'true'
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -X -h 127.0.0.1 -p 55322 -U postgres -d postgres -v fixture_port=55322 \
+            -f supabase/tests/regression/20261127_review_reject_concurrency.sql
+
+      - name: Verify controlled Final Result draft replacement
+        if: needs.pr-scope.outputs.run_db_checks == 'true'
+        run: |
+          supabase test db supabase/tests/20261110_final_result_draft_replacement.sql
+          supabase test db supabase/tests/20261112_current_final_result_publication.sql
+          supabase test db supabase/tests/20261112_final_result_publication_history.sql
+          python3 supabase/tests/regression/20261110_final_result_draft_replacement.py \
+            --container supabase_db_database-engine --project database-engine \
+            --report "$RUNNER_TEMP/final-result-draft-races.json"
           supabase test db supabase/tests/20260909_review_queue_full_text_search.sql
           supabase test db supabase/tests/20260930_review_member_workload_drilldown.sql
           supabase test db supabase/tests/20260928_review_rejection_visibility.sql
