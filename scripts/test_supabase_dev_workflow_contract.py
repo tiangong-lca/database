@@ -134,6 +134,7 @@ def exercise_scope_classifiers(text: str) -> int:
     """Use disposable Git history, no Supabase runtime or hosted authority."""
 
     push = step_script(text, "Classify exact persistent Dev push scope")
+    pr_scope = step_script(text, "Classify PR database check scope")
     preview = step_script(text, "Classify exact Supabase Preview scope")
     authority = step_script(text, "Check Preview verification authority")
     current = step_script(text, "Verify current persistent Dev deployment scope")
@@ -312,6 +313,72 @@ def exercise_scope_classifiers(text: str) -> int:
         run(current, {**current_values(c), "PATH": str(shim) + os.pathsep + env["PATH"]}, None, fail=True)
         git("remote", "remove", "origin")
         run(current, current_values(c), None, fail=True)
+
+        # Exercise fail-closed PR docs-only classifier on Dev PRs vs runtime/Main/push.
+        def run_pr_scope(values: dict[str, str], expected: str) -> None:
+            nonlocal checks
+            output = root / "pr_scope_output"
+            output.write_text("")
+            result = subprocess.run(
+                ["bash", "--noprofile", "--norc", "-e", "-o", "pipefail", "-c", pr_scope],
+                cwd=repo,
+                env={**env, **values, "GITHUB_OUTPUT": str(output)},
+                text=True,
+                capture_output=True,
+            )
+            assert result.returncode == 0, (values, result.returncode, result.stderr)
+            assert output.read_text() == f"run_db_checks={expected}\n", (values, output.read_text())
+            checks += 1
+
+        git("checkout", "-q", "--detach", base)
+        write("README.md", "docs-only update\n")
+        docs_head = commit(base)
+        run_pr_scope({
+            "EVENT_NAME": "pull_request",
+            "PR_BASE_REF": "dev",
+            "PR_BASE_SHA": base,
+            "PR_HEAD_SHA": docs_head,
+            "HAS_FULL_LABEL": "false",
+        }, "false")
+        run_pr_scope({
+            "EVENT_NAME": "pull_request",
+            "PR_BASE_REF": "dev",
+            "PR_BASE_SHA": base,
+            "PR_HEAD_SHA": docs_head,
+            "HAS_FULL_LABEL": "true",
+        }, "true")
+        run_pr_scope({
+            "EVENT_NAME": "pull_request",
+            "PR_BASE_REF": "main",
+            "PR_BASE_SHA": base,
+            "PR_HEAD_SHA": docs_head,
+            "HAS_FULL_LABEL": "false",
+        }, "true")
+        run_pr_scope({
+            "EVENT_NAME": "push",
+            "PR_BASE_REF": "",
+            "PR_BASE_SHA": "",
+            "PR_HEAD_SHA": "",
+            "HAS_FULL_LABEL": "false",
+        }, "true")
+        run_pr_scope({
+            "EVENT_NAME": "pull_request",
+            "PR_BASE_REF": "dev",
+            "PR_BASE_SHA": base,
+            "PR_HEAD_SHA": base,
+            "HAS_FULL_LABEL": "false",
+        }, "true")
+        for runtime_path in ("supabase/migrations/001.sql", "scripts/test.py", ".github/workflows/supabase-dev.yml"):
+            git("checkout", "-q", "--detach", base)
+            write(runtime_path, "runtime update\n")
+            rt_head = commit(base)
+            run_pr_scope({
+                "EVENT_NAME": "pull_request",
+                "PR_BASE_REF": "dev",
+                "PR_BASE_SHA": base,
+                "PR_HEAD_SHA": rt_head,
+                "HAS_FULL_LABEL": "false",
+            }, "true")
     return checks
 
 
@@ -337,9 +404,9 @@ def main() -> int:
     supabase_cli_versions = re.findall(
         r"uses: supabase/setup-cli@v3\s+with:\s+version:\s*([^\s#]+)", text
     )
-    if supabase_cli_versions != ["2.117.0"] * 8:
+    if supabase_cli_versions != ["2.117.0"] * 10:
         failures.append(
-            "all eight local, ARM profile, persistent-Dev, Preview, isolated Study, P3 review, P4 advanced and method Supabase CLI pins "
+            "all ten local (core/upgrades/suites), ARM profile, persistent-Dev, Preview, isolated Study, P3 review, P4 advanced and method Supabase CLI pins "
             f"must be 2.117.0, found {supabase_cli_versions or 'none'}"
         )
 
@@ -360,7 +427,11 @@ def main() -> int:
         )
 
     jobs = job_sections(text)
+    pr_scope_workflow = jobs.get("pr-scope", "")
     local_workflow = jobs.get("local-contract", "")
+    upgrades_workflow = jobs.get("local-contract-upgrades", "")
+    suites_workflow = jobs.get("local-contract-suites", "")
+    local_contracts = "\n".join((local_workflow, upgrades_workflow, suites_workflow))
     profile_workflow = jobs.get("scheduler-profile", "")
     hosted_workflow = jobs.get("deploy-and-verify", "")
     preview_workflow = jobs.get("preview-runtime-contract", "")
@@ -418,10 +489,16 @@ def main() -> int:
         if token not in study_workflow:
             failures.append(f"isolated Study proof must preserve its owned-project boundary: {token}")
     for suite in ('20261103_study_durable_runtime.sql', '20261103_study_task_admission.sql', '20261103_study_task_disclosure.sql', '20261103_study_task_input_parity.sql', '20261103_study_review_finalization_sharing.sql', '20261104_study_advanced_analysis.sql'):
-        if f'supabase test db supabase/tests/{suite}' not in local_workflow:
+        if f'supabase test db supabase/tests/{suite}' not in local_contracts:
             failures.append(f'local contract must execute the exact Study suite: {suite}')
+    if not pr_scope_workflow:
+        failures.append("PR scope classifier job is missing")
     if not local_workflow:
         failures.append("x64 local contract job is missing")
+    if not upgrades_workflow:
+        failures.append("x64 local contract upgrades job is missing")
+    if not suites_workflow:
+        failures.append("x64 local contract suites job is missing")
     if not profile_workflow:
         failures.append("ARM64 scheduler profile job is missing")
     if not hosted_workflow:
@@ -439,11 +516,11 @@ def main() -> int:
     failures.extend(
         f"local Scope Closure validation missing {command}"
         for command in scope_closure_checks
-        if command not in local_workflow
+        if command not in local_contracts
     )
-    if "continue-on-error:" in local_workflow:
+    if "continue-on-error:" in local_contracts:
         failures.append("local contract checks must not allow failures")
-    if "SCOPE_CLOSURE_UPGRADE_ALLOW_RESET: isolated" not in local_workflow:
+    if "SCOPE_CLOSURE_UPGRADE_ALLOW_RESET: isolated" not in local_contracts:
         failures.append("scanner upgrade must use the explicitly isolated local runner")
     upgrade_script = (REPO_ROOT / "scripts/test_scope_closure_scanner_upgrade.sh").read_text()
     for isolation_token in (
@@ -469,7 +546,7 @@ def main() -> int:
         "timeout-minutes: 25",
         "uses: actions/checkout@v7",
         "uses: supabase/setup-cli@v3",
-        "run: supabase start && supabase db reset --no-seed",
+        "run: supabase start -x studio,imgproxy,mailpit,postgres-meta,edge-runtime,logflare,vector,supavisor,realtime && supabase db reset --no-seed",
         "supabase test db supabase/tests/20260923_derivative_scheduler_benchmark.sql",
         "supabase test db supabase/tests/20260923_derivative_scheduler_history_profile.sql",
         "if: always()",
@@ -488,7 +565,7 @@ def main() -> int:
         < profile_workflow.find(history)
     ):
         failures.append("ARM64 profiles must run in order with an isolated database reset")
-    if benchmark in local_workflow or history in local_workflow:
+    if benchmark in local_contracts or history in local_contracts:
         failures.append("production-shape profiles must run only in the separate ARM64 job")
     if any(token in profile_workflow for token in (
         "SUPABASE_ACCESS_TOKEN", "SUPABASE_DB_PASSWORD", "supabase link", "supabase db push",
@@ -498,7 +575,7 @@ def main() -> int:
 
     hosted_required = (
         "uses: actions/checkout@v7",
-        "needs: [local-contract, scheduler-profile]",
+        "needs: [local-contract, local-contract-upgrades, local-contract-suites, scheduler-profile]",
         "SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DEV_DB_PASSWORD }}",
         'supabase link --project-ref "$SUPABASE_PROJECT_ID"',
         "supabase db push --include-all",
@@ -552,7 +629,7 @@ def main() -> int:
             continue
         if effective_condition(step.split("        run:", 1)[0], 8) != "steps.current_dev_scope.outputs.required == 'true'":
             failures.append(f"hosted step must require the complete current Dev scope condition: {name}")
-    if "secrets." in local_workflow or "SUPABASE_ACCESS_TOKEN" in push_scope:
+    if "secrets." in local_contracts or "secrets." in pr_scope_workflow or "SUPABASE_ACCESS_TOKEN" in push_scope:
         failures.append("push classification/local checks must remain free of hosted authority")
     for path in ("supabase/config.toml", "supabase/migrations/", "supabase/seed.sql",
                  "supabase/seeds/", "supabase/functions/"):

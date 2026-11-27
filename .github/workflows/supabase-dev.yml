@@ -19,8 +19,71 @@ concurrency:
   cancel-in-progress: ${{ github.event_name != 'push' }}
 
 jobs:
+  pr-scope:
+    name: Classify PR database check scope
+    runs-on: ubuntu-latest
+    outputs:
+      run_db_checks: ${{ steps.pr_scope.outputs.run_db_checks }}
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+    steps:
+      - name: Checkout repository
+        if: github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'dev'
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Classify PR database check scope
+        id: pr_scope
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_REF: ${{ github.event.pull_request.base.ref || '' }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
+          HAS_FULL_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'ci:full') }}
+        run: |
+          set -euo pipefail
+          emit() {
+            echo "PR database scope: run_db_checks=$1 reason=$2"
+            echo "run_db_checks=$1" >> "$GITHUB_OUTPUT"
+            exit 0
+          }
+          if [[ "$EVENT_NAME" != "pull_request" ]]; then
+            emit true "non-pr-event"
+          fi
+          if [[ "$PR_BASE_REF" != "dev" ]]; then
+            emit true "non-dev-pr-base"
+          fi
+          if [[ "$HAS_FULL_LABEL" == "true" ]]; then
+            emit true "ci-full-label"
+          fi
+          if ! [[ "$PR_BASE_SHA" =~ ^[0-9a-f]{40}$ && "$PR_HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            emit true "unproven-pr-commits"
+          fi
+          if ! git cat-file -e "${PR_BASE_SHA}^{commit}" || ! git cat-file -e "${PR_HEAD_SHA}^{commit}"; then
+            emit true "missing-pr-history"
+          fi
+          changed_count=0
+          while IFS= read -r file; do
+            [[ -n "$file" ]] || continue
+            changed_count=$((changed_count + 1))
+            case "$file" in
+              AGENTS.md|README.md|README.zh-CN.md|docs/*|.docpact/*|scripts/README.md|scripts/README.zh-CN.md|supabase/workspace/README.md|supabase/workspace/README.zh-CN.md|.gitignore|.github/CODEOWNERS|.github/ISSUE_TEMPLATE/*)
+                ;;
+              *)
+                emit true "runtime-or-contract-path:$file"
+                ;;
+            esac
+          done < <(git diff --name-only --no-renames "${PR_BASE_SHA}...${PR_HEAD_SHA}")
+          if [[ "$changed_count" -eq 0 ]]; then
+            emit true "empty-diff"
+          fi
+          emit false "docs-only-dev-pr"
+
   local-contract:
     name: Rebuild and verify database contract
+    needs: [pr-scope]
     runs-on: ubuntu-latest
     outputs:
       deploy_required: ${{ steps.dev_scope.outputs.required }}
@@ -66,6 +129,7 @@ jobs:
           esac
 
       - name: Setup Supabase CLI
+        if: needs.pr-scope.outputs.run_db_checks == 'true'
         uses: supabase/setup-cli@v3
         with:
           version: 2.117.0
@@ -97,9 +161,11 @@ jobs:
         run: python3 -B supabase/tests/lca_study_durable_contract.py
 
       - name: Rebuild migration history
-        run: supabase start && supabase db reset --no-seed
+        if: needs.pr-scope.outputs.run_db_checks == 'true'
+        run: supabase start -x studio,imgproxy,mailpit,edge-runtime,logflare,vector,supavisor,realtime && supabase db reset --no-seed
 
       - name: Verify generated schema and Data API types
+        if: needs.pr-scope.outputs.run_db_checks == 'true'
         run: |
           python scripts/build_schema_workspace.py --environment local \
             --schemas public api private util archive
@@ -107,7 +173,40 @@ jobs:
           git diff --exit-code -- supabase/workspace
           test -z "$(git status --porcelain --untracked-files=all -- supabase/workspace)"
 
+      - name: Verify schema and capability contracts (core)
+        if: needs.pr-scope.outputs.run_db_checks == 'true'
+        run: |
+          supabase test db supabase/tests/20261103_study_durable_runtime.sql
+          supabase test db supabase/tests/20261103_study_task_admission.sql
+          supabase test db supabase/tests/20261103_study_task_disclosure.sql
+          supabase test db supabase/tests/20261103_study_task_input_parity.sql
+          supabase test db supabase/tests/20261103_study_analysis_reporting.sql
+          supabase test db supabase/tests/20261103_study_report_producer.sql
+          supabase test db supabase/tests/20261103_study_review_finalization_sharing.sql
+          supabase test db supabase/tests/20261104_study_advanced_analysis.sql
+          supabase test db supabase/tests/20261104_study_method_assessment.sql
+          supabase test db supabase/tests/20261006_search_request_identity.sql
+          supabase test db supabase/tests/20260920_portal_china_administrative_navigation.sql
+          supabase test db supabase/tests/20260805_full_schema_cutover.sql
+          supabase test db supabase/tests/20260806_api_contract_closure.sql
+          supabase test db supabase/tests/20260731_flow_identity_derivative_fence.sql
+          supabase test db supabase/tests/20261123_flow_identity_writebacks.sql
+          supabase test db supabase/tests/20261102_final_result_zip_retirement.sql
+          supabase test db supabase/tests/20260611_dataset_create_version_rpc.sql
+          supabase test db supabase/tests/20260902_process_model_version.sql
+          supabase test db supabase/tests/20261107_review_current_model_results.sql
+          supabase test db supabase/tests/20261108_review_submit_published_readonly.sql
+          supabase test db supabase/tests/20261009_model_bundle_process_references.sql
+          supabase test db supabase/tests/20261101_model_bundle_children.sql
+          supabase test db supabase/tests/20261117_guarded_model_bundle_save.sql
+          supabase test db supabase/tests/20260806_identity_center_facades.sql
+          supabase test db supabase/tests/20260806_lca_package_capability_facades.sql
+          supabase test db supabase/tests/20260810_issue_448_package_ownership_and_attempt_diagnostics.sql
+          supabase test db supabase/tests/20260810_issue_455_mutable_export_terminal_refresh.sql
+          supabase test db supabase/tests/20260910_selected_export_refresh.sql
+
       - name: Verify concurrent review rejections
+        if: needs.pr-scope.outputs.run_db_checks == 'true'
         env:
           PGPASSWORD: postgres
         run: |
@@ -115,6 +214,7 @@ jobs:
             -f supabase/tests/regression/20261127_review_reject_concurrency.sql
 
       - name: Verify controlled Final Result draft replacement
+        if: needs.pr-scope.outputs.run_db_checks == 'true'
         run: |
           supabase test db supabase/tests/20261110_final_result_draft_replacement.sql
           supabase test db supabase/tests/20261112_current_final_result_publication.sql
@@ -122,6 +222,77 @@ jobs:
           python3 supabase/tests/regression/20261110_final_result_draft_replacement.py \
             --container supabase_db_database-engine --project database-engine \
             --report "$RUNNER_TEMP/final-result-draft-races.json"
+          supabase test db supabase/tests/20260909_review_queue_full_text_search.sql
+          supabase test db supabase/tests/20260930_review_member_workload_drilldown.sql
+          supabase test db supabase/tests/20260928_review_rejection_visibility.sql
+          supabase test db supabase/tests/20260929_rejected_review_report_download.sql
+          supabase test db supabase/tests/20261103_review_metadata_guard.sql
+          supabase test db supabase/tests/20261001_rejected_comment_reference_scope.sql
+          supabase test db supabase/tests/20260909_tidas_partial_import.sql
+          supabase test db supabase/tests/20260918_tidas_full_package_import.sql
+          supabase test db supabase/tests/20260919_portal_navigation_v1.sql
+          supabase test db supabase/tests/20261006_portal_empty_reads.sql
+          supabase test db supabase/tests/20261006_advisor_hardening.sql
+          supabase test db supabase/tests/20261007_raw_search_request_bounds.sql
+          supabase test db supabase/tests/20261007_raw_flow_hybrid_payloads.sql
+          supabase test db supabase/tests/20261007_search_index_retirement.sql
+          supabase test db supabase/tests/20260919_portal_catalog_summary_bounded.sql
+          supabase test db supabase/tests/20260926_portal_catalog_bounded_v3.sql
+          supabase test db supabase/tests/20260927_portal_catalog_bounded_v2.sql
+          supabase test db supabase/tests/20260910_example_dataset_scope.sql
+          supabase test db supabase/tests/20261001_filtered_latest_flow_payloads.sql
+          supabase test db supabase/tests/20261002_sources_rls_performance.sql
+          supabase test db supabase/tests/20260921_guarded_dataset_save_draft.sql
+          supabase test db supabase/tests/20260526_dataset_extraction_jobs.sql
+          supabase test db supabase/tests/20260528_webhook_hook_governance.sql
+          supabase test db supabase/tests/20260713_json_ordered_derivative_webhooks.sql
+          supabase test db supabase/tests/20260714_guarded_dataset_derivative_rebuild.sql
+          supabase test db supabase/tests/20260715_guarded_dataset_derivative_rebuild_batch.sql
+          supabase test db supabase/tests/20260928_edge_dispatch_modern_secret_headers.sql
+          supabase test db supabase/tests/20260525_embedding_backpressure_and_deferred_queue.sql
+          supabase test db supabase/tests/20260728_embedding_queue_selector_plan_governance.sql
+          supabase test db supabase/tests/20260923_derivative_scheduler_budget.sql
+          supabase test db supabase/tests/20260923_retired_sample_library_contract.sql
+          supabase test db supabase/tests/20260923_open_data_catalog_publications.sql
+
+      - name: Verify Portal validation and redacted diagnostics
+        if: needs.pr-scope.outputs.run_db_checks == 'true'
+        run: |
+          set -o pipefail
+          supabase test db supabase/tests/20261106_portal_validation_cost.sql
+          supabase test db supabase/tests/20260927_portal_read_failure_diagnostics.sql 2>&1 | tee "$RUNNER_TEMP/portal-read-failures.log"
+          python3 scripts/check_portal_read_failure_diagnostics.py --log "$RUNNER_TEMP/portal-read-failures.log"
+
+      - name: Verify Portal JSON Schemas
+        run: |
+          python3 scripts/check_portal_json_schemas.py
+          python3 scripts/build_portal_contract_types.py --check --input-snapshot "$RUNNER_TEMP/portal-type-inputs.json"
+
+      - name: Stop local Supabase
+        if: always() && needs.pr-scope.outputs.run_db_checks == 'true'
+        run: supabase stop --no-backup
+
+  local-contract-upgrades:
+    name: Verify populated migration upgrades and locks
+    needs: [pr-scope]
+    if: needs.pr-scope.outputs.run_db_checks == 'true'
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v3
+        with:
+          version: 2.117.0
+
+      - name: Rebuild migration history
+        run: supabase start -x studio,imgproxy,mailpit,postgres-meta,edge-runtime,logflare,vector,supavisor,realtime && supabase db reset --no-seed
 
       - name: Verify populated Portal Process projection upgrade
         env:
@@ -166,68 +337,42 @@ jobs:
           CALCULATION_EXPORT_UPGRADE_ALLOW_RESET: isolated
         run: scripts/test_calculation_export_upgrade.sh
 
-      - name: Verify schema and capability contracts
+      - name: Verify full schema cutover and review rejection upgrades
         run: |
-          supabase test db supabase/tests/20261103_study_durable_runtime.sql
-          supabase test db supabase/tests/20261103_study_task_admission.sql
-          supabase test db supabase/tests/20261103_study_task_disclosure.sql
-          supabase test db supabase/tests/20261103_study_task_input_parity.sql
-          supabase test db supabase/tests/20261103_study_analysis_reporting.sql
-          supabase test db supabase/tests/20261103_study_report_producer.sql
-          supabase test db supabase/tests/20261103_study_review_finalization_sharing.sql
-          supabase test db supabase/tests/20261104_study_advanced_analysis.sql
-          supabase test db supabase/tests/20261104_study_method_assessment.sql
-          supabase test db supabase/tests/20261006_search_request_identity.sql
-          supabase test db supabase/tests/20260920_portal_china_administrative_navigation.sql
-          supabase test db supabase/tests/20260805_full_schema_cutover.sql
-          supabase test db supabase/tests/20260806_api_contract_closure.sql
-          supabase test db supabase/tests/20260731_flow_identity_derivative_fence.sql
-          supabase test db supabase/tests/20261123_flow_identity_writebacks.sql
-          supabase test db supabase/tests/20261102_final_result_zip_retirement.sql
-          supabase test db supabase/tests/20260611_dataset_create_version_rpc.sql
-          supabase test db supabase/tests/20260902_process_model_version.sql
-          supabase test db supabase/tests/20261107_review_current_model_results.sql
-          supabase test db supabase/tests/20261108_review_submit_published_readonly.sql
-          supabase test db supabase/tests/20261009_model_bundle_process_references.sql
-          supabase test db supabase/tests/20261101_model_bundle_children.sql
-          supabase test db supabase/tests/20261117_guarded_model_bundle_save.sql
-          supabase test db supabase/tests/20260806_identity_center_facades.sql
-          supabase test db supabase/tests/20260806_lca_package_capability_facades.sql
-          supabase test db supabase/tests/20260810_issue_448_package_ownership_and_attempt_diagnostics.sql
-          supabase test db supabase/tests/20260810_issue_455_mutable_export_terminal_refresh.sql
-          supabase test db supabase/tests/20260910_selected_export_refresh.sql
-          supabase test db supabase/tests/20260909_review_queue_full_text_search.sql
-          supabase test db supabase/tests/20260930_review_member_workload_drilldown.sql
-          supabase test db supabase/tests/20260928_review_rejection_visibility.sql
-          supabase test db supabase/tests/20260929_rejected_review_report_download.sql
-          supabase test db supabase/tests/20261103_review_metadata_guard.sql
-          supabase test db supabase/tests/20261001_rejected_comment_reference_scope.sql
-          supabase test db supabase/tests/20260909_tidas_partial_import.sql
-          supabase test db supabase/tests/20260918_tidas_full_package_import.sql
-          supabase test db supabase/tests/20260919_portal_navigation_v1.sql
-          supabase test db supabase/tests/20261006_portal_empty_reads.sql
-          supabase test db supabase/tests/20261006_advisor_hardening.sql
-          supabase test db supabase/tests/20261007_raw_search_request_bounds.sql
-          supabase test db supabase/tests/20261007_raw_flow_hybrid_payloads.sql
-          supabase test db supabase/tests/20261007_search_index_retirement.sql
-          supabase test db supabase/tests/20260919_portal_catalog_summary_bounded.sql
-          supabase test db supabase/tests/20260926_portal_catalog_bounded_v3.sql
-          supabase test db supabase/tests/20260927_portal_catalog_bounded_v2.sql
-          supabase test db supabase/tests/20260910_example_dataset_scope.sql
-          supabase test db supabase/tests/20261001_filtered_latest_flow_payloads.sql
-          supabase test db supabase/tests/20261002_sources_rls_performance.sql
-          supabase test db supabase/tests/20260921_guarded_dataset_save_draft.sql
-          supabase test db supabase/tests/20260526_dataset_extraction_jobs.sql
-          supabase test db supabase/tests/20260528_webhook_hook_governance.sql
-          supabase test db supabase/tests/20260713_json_ordered_derivative_webhooks.sql
-          supabase test db supabase/tests/20260714_guarded_dataset_derivative_rebuild.sql
-          supabase test db supabase/tests/20260715_guarded_dataset_derivative_rebuild_batch.sql
-          supabase test db supabase/tests/20260928_edge_dispatch_modern_secret_headers.sql
-          supabase test db supabase/tests/20260525_embedding_backpressure_and_deferred_queue.sql
-          supabase test db supabase/tests/20260728_embedding_queue_selector_plan_governance.sql
-          supabase test db supabase/tests/20260923_derivative_scheduler_budget.sql
-          supabase test db supabase/tests/20260923_retired_sample_library_contract.sql
-          supabase test db supabase/tests/20260923_open_data_catalog_publications.sql
+          scripts/test_full_schema_cutover_upgrade.sh
+          supabase db reset --version 20260928125728 --no-seed
+          supabase test db supabase/tests/upgrade/20260928_review_rejection_visibility_base.sql
+          supabase migration up --local
+          supabase test db supabase/tests/upgrade/20260928_review_rejection_visibility_head.sql
+
+      - name: Stop local Supabase
+        if: always()
+        run: supabase stop --no-backup
+
+  local-contract-suites:
+    name: Verify schema and capability contract suites
+    needs: [pr-scope]
+    if: needs.pr-scope.outputs.run_db_checks == 'true'
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v3
+        with:
+          version: 2.117.0
+
+      - name: Rebuild migration history
+        run: supabase start -x studio,imgproxy,mailpit,postgres-meta,edge-runtime,logflare,vector,supavisor,realtime && supabase db reset --no-seed
+
+      - name: Verify schema and capability contracts (extended)
+        run: |
           supabase test db supabase/tests/20261009_dataset_display_settings.sql
           supabase test db supabase/tests/20261009_dataset_display_list_page_hydration.sql
           supabase test db supabase/tests/20261013_dataset_classification_catalog.sql
@@ -301,23 +446,6 @@ jobs:
           supabase test db supabase/tests/20261101_final_result_release_recovery_views.sql
           python3 scripts/test_protected_alias_postgrest_routing.py
           python3 scripts/test_portal_navigation_backfill.py --container supabase_db_database-engine --report /tmp/portal-navigation-backfill.json
-          scripts/test_full_schema_cutover_upgrade.sh
-          supabase db reset --version 20260928125728 --no-seed
-          supabase test db supabase/tests/upgrade/20260928_review_rejection_visibility_base.sql
-          supabase migration up --local
-          supabase test db supabase/tests/upgrade/20260928_review_rejection_visibility_head.sql
-
-      - name: Verify Portal validation and redacted diagnostics
-        run: |
-          set -o pipefail
-          supabase test db supabase/tests/20261106_portal_validation_cost.sql
-          supabase test db supabase/tests/20260927_portal_read_failure_diagnostics.sql 2>&1 | tee "$RUNNER_TEMP/portal-read-failures.log"
-          python3 scripts/check_portal_read_failure_diagnostics.py --log "$RUNNER_TEMP/portal-read-failures.log"
-
-      - name: Verify Portal JSON Schemas
-        run: |
-          python3 scripts/check_portal_json_schemas.py
-          python3 scripts/build_portal_contract_types.py --check --input-snapshot "$RUNNER_TEMP/portal-type-inputs.json"
 
       - name: Stop local Supabase
         if: always()
@@ -325,6 +453,8 @@ jobs:
 
   scheduler-profile:
     name: Profile derivative scheduling on ARM64
+    needs: [pr-scope]
+    if: needs.pr-scope.outputs.run_db_checks == 'true'
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 25
     env:
@@ -342,7 +472,7 @@ jobs:
           version: 2.117.0
 
       - name: Rebuild migration history
-        run: supabase start && supabase db reset --no-seed
+        run: supabase start -x studio,imgproxy,mailpit,postgres-meta,edge-runtime,logflare,vector,supavisor,realtime && supabase db reset --no-seed
 
       - name: Profile production-shape derivative cohorts
         run: |
@@ -360,7 +490,7 @@ jobs:
     if: >-
       github.event_name == 'push' && github.ref == 'refs/heads/dev' &&
       needs.local-contract.outputs.deploy_required == 'true'
-    needs: [local-contract, scheduler-profile]
+    needs: [local-contract, local-contract-upgrades, local-contract-suites, scheduler-profile]
     runs-on: ubuntu-latest
     concurrency:
       group: supabase-persistent-dev
@@ -550,7 +680,7 @@ jobs:
       github.event_name == 'pull_request' &&
       github.event.pull_request.base.ref == 'main' &&
       github.event.pull_request.head.repo.full_name == github.repository
-    needs: local-contract
+    needs: [local-contract, local-contract-upgrades, local-contract-suites]
     runs-on: ubuntu-latest
     permissions:
       checks: read
@@ -1111,6 +1241,8 @@ jobs:
 
   study-method-concurrency:
     name: Verify isolated Study method and evidence contracts
+    needs: [pr-scope]
+    if: needs.pr-scope.outputs.run_db_checks == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -1169,6 +1301,8 @@ jobs:
 
   study-advanced-concurrency:
     name: Verify isolated Study advanced profiles and V5 reporting
+    needs: [pr-scope]
+    if: needs.pr-scope.outputs.run_db_checks == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -1225,6 +1359,8 @@ jobs:
 
   study-review-concurrency:
     name: Verify isolated Study review and sharing
+    needs: [pr-scope]
+    if: needs.pr-scope.outputs.run_db_checks == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -1277,6 +1413,8 @@ jobs:
 
   study-runtime-concurrency:
     name: Verify isolated Study PG17 concurrency
+    needs: [pr-scope]
+    if: needs.pr-scope.outputs.run_db_checks == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
