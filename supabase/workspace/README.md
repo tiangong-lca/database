@@ -21,8 +21,8 @@ checkPaths:
   - scripts/docpact-gate.sh
   - scripts/install-git-hooks.sh
 lastReviewedAt: 2026-11-28
-lastReviewedCommit: e159dcb9149d0042bc01edeb46e81278b74623e4
-lastReviewedNote: "Database #1016 regenerated the rejection RPC from the migrated local database and verified unchanged Data API types."
+lastReviewedCommit: 27edfe81f9c5183949b8a30d2d383eed3f1e4973
+lastReviewedNote: "Database #1028 reviewed review-submit collector optimization, published-reference fast paths, read-only qry_review_submit_scope preview, and atomic REVIEW_SCOPE_DRIFT guard (#1330, #548)."
 related:
   - ../../AGENTS.md
   - ../../.docpact/config.yaml
