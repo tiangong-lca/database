@@ -159,7 +159,10 @@ begin
       from api.cmd_review_extract_refs(coalesce(v_current_row->'json_ordered', '{}'::jsonb))
       union
       select *
-      from api.cmd_review_extract_refs(coalesce(v_current_row->'json', '{}'::jsonb))
+      from api.cmd_review_extract_refs(v_current_row->'json')
+      where v_current_row->'json' is not null
+        and v_current_row->'json' <> '{}'::jsonb
+        and v_current_row->'json' is distinct from coalesce(v_current_row->'json_ordered', '{}'::jsonb)
     ) loop
       v_ref_table := api.cmd_review_ref_type_to_table(v_ref.ref_type);
 
@@ -196,7 +199,15 @@ begin
       from public.processes as model_process
       join (
         select refs.value->>'@refObjectId' as id, refs.value->>'@version' as version
-        from (values (v_current_row->'json_ordered'), (v_current_row->'json')) as doc(payload)
+        from (
+          select v_current_row->'json_ordered' as payload
+          where v_current_row->'json_ordered' is not null
+          union all
+          select v_current_row->'json' as payload
+          where v_current_row->'json' is not null
+            and v_current_row->'json' <> '{}'::jsonb
+            and v_current_row->'json' is distinct from coalesce(v_current_row->'json_ordered', '{}'::jsonb)
+        ) as doc(payload)
         cross join lateral (
           select value from jsonb_path_query(coalesce(doc.payload, '{}'::jsonb),
             '$.lifeCycleModelDataSet.lifeCycleModelInformation.dataSetInformation.referenceToResultingProcess[*]') as item(value)
