@@ -2944,6 +2944,14 @@ export type Database = {
         }
         Returns: string
       }
+      qry_review_submit_scope: {
+        Args: {
+          p_target_id: string
+          p_target_table: string
+          p_target_version: string
+        }
+        Returns: Json
+      }
       qry_root_review_reference_progress: {
         Args: { p_root_review_id: string }
         Returns: {
